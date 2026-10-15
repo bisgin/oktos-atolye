@@ -1,6 +1,8 @@
 // 3D QR hikâye sahnesi: oturma odası köşesi. Konsolda modem ve Wi-Fi standı; kafe masasında menü
 // karosu, fincanlar, kartvizit ve QR anahtarlık. Kodlar gerçektir (telefonla okunur).
+// Yakınlaşınca kodun üstünden telefon taraması gibi bir çizgi geçer (onFocus).
 import * as THREE from 'three';
+import { gsap } from 'gsap';
 import qrcode from 'https://cdn.jsdelivr.net/npm/qrcode-generator@1.4.4/+esm';
 import { initCSG } from '../../core/csg.js';
 import { solid, fonts, textSolid, plate, C } from '../../core/scene-kit.js';
@@ -49,10 +51,36 @@ export async function buildScene({ scene, P, lang }) {
       }, P.clay(color, { rough: 0.45 }));
       g.add(word);
     }
+    // Tarama çizgisi: başta gizli, yakınlaşınca kodun üstünden geçer.
+    const scan = new THREE.Mesh(
+      new THREE.PlaneGeometry(size * 1.06, Math.max(1.6, cell * 1.4)),
+      new THREE.MeshBasicMaterial({ color: 0xff9a52, transparent: true, opacity: 0, blending: THREE.AdditiveBlending, depthWrite: false }),
+    );
+    scan.position.set(0, -size / 2, 5.8);
+    scan.visible = false;
+    scan.renderOrder = 6;
+    g.add(scan);
     g.userData.h = H;
     g.userData.size = size;
+    g.userData.scan = scan;
     return g;
   }
+  function scanTile(tile) {
+    const s = tile?.userData.scan;
+    if (!s) return;
+    const half = tile.userData.size / 2;
+    // Önceki tarama yarıda kalırsa akışın kendisi öldürülür: eski bitişi yeni taramayı gizlemesin.
+    tile.userData.scanTl?.kill();
+    s.visible = true;
+    s.position.y = -half;
+    s.material.opacity = 0;
+    tile.userData.scanTl = gsap.timeline({ delay: 0.45, onComplete: () => { s.visible = false; } })
+      .to(s.material, { opacity: 0.9, duration: 0.15 }, 0)
+      .to(s.position, { y: half, duration: 0.85, ease: 'power1.inOut' }, 0)
+      .to(s.position, { y: -half, duration: 0.85, ease: 'power1.inOut' })
+      .to(s.material, { opacity: 0, duration: 0.25 }, '-=0.25');
+  }
+  const tiles = {};
 
   // Karoyu dik bir kaideye yaslar (arkaya 14° eğik), ön yüzü −Y.
   function standing(tileGroup, { baseW = 90, color = K.woodLight } = {}) {
@@ -86,6 +114,7 @@ export async function buildScene({ scene, P, lang }) {
     const wifi = qrTile('WIFI:T:WPA;S:Oktos Misafir;P:atolye-2026;;', { size: 92, header: 'Wi-Fi', color: K.ink });
     const st = standing(wifi, { baseW: 104 });
     put(st, SX + 40, SY - 30, ST, -0.12);
+    tiles.wifi = wifi;
     hotspots.push({ id: 'wifi', preset: null, object: st });
   }
 
@@ -97,6 +126,7 @@ export async function buildScene({ scene, P, lang }) {
     const menu = qrTile('https://oktosworkshop.com', { size: 110, header: lang === 'en' ? 'MENU' : 'MENÜ', color: K.accent });
     const st = standing(menu, { baseW: 124, color: K.ink });
     put(st, TX - 40, TY + 140, TT, -0.35);
+    tiles.menu = menu;
     hotspots.push({ id: 'menu', preset: null, object: st });
   }
   put(P.cafeCup(), TX - 230, TY - 40, TT, 0.4);
@@ -119,6 +149,7 @@ export async function buildScene({ scene, P, lang }) {
     card2.rotation.z = -0.25;
     g.add(card2);
     put(g, TX + 40, TY - 170, TT + 1.3, 0.3);
+    tiles.card = q;
     hotspots.push({ id: 'card', preset: null, object: g });
   }
   {
@@ -133,6 +164,7 @@ export async function buildScene({ scene, P, lang }) {
     key.rotation.z = 0.9;
     g.add(key);
     put(g, TX + 230, TY - 120, TT, -0.5);
+    tiles.key = tagQ;
     hotspots.push({ id: 'key', preset: null, object: g });
   }
   put(P.phone(), TX + 250, TY - 260 + 60, TT, 0.6);
@@ -145,5 +177,7 @@ export async function buildScene({ scene, P, lang }) {
     lights: { center: [350, -50, 750], shadowSpan: 1600, key: [-1000, -1600, 2500] },
     hotspots,
     langGeometry: true, // sahnedeki 3B yazılar dile bağlı
+    onFocus(id, { reduced } = {}) { if (!reduced) scanTile(tiles[id]); },
+    onPoke(id, { reduced } = {}) { if (!reduced) scanTile(tiles[id]); },
   };
 }

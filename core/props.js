@@ -342,6 +342,39 @@ export function screwGeometry(len = 16, dia = 4) {
   return merge([head, shank, tip]);
 }
 
+// Bağlantı elemanı çeşitleri (vida ayırıcı sahnesi). Uzun olanlar dik, ucu z=0'da; somun ve pul düz, tabanı z=0'da.
+// Dönüş: { geo, r: yatarken eksenin yerden yüksekliği, lying: yan yatan uzun parça mı, len: boy }
+export function fastener(kind, { len = 16, dia = 4 } = {}) {
+  switch (kind) {
+    case 'flat': { // havşa başlı (ahşap / alçıpan vidası)
+      const hh = dia * 0.62;
+      const head = cyl(dia * 0.95, dia * 0.42, hh, 18); head.translate(0, 0, len - hh);
+      const shank = cyl(dia * 0.42, dia * 0.42, len - hh - 4, 10); shank.translate(0, 0, 4);
+      const tip = cyl(dia * 0.42, 0.25, 4, 10);
+      return { geo: merge([head, shank, tip]), r: dia * 0.95, sr: dia * 0.42, lying: true, len };
+    }
+    case 'pan': return { geo: screwGeometry(len, dia), r: dia, sr: dia / 2, lying: true, len };
+    case 'bolt': { // altıgen başlı cıvata
+      const hh = dia * 0.65;
+      const head = cyl(dia * 0.95, dia * 0.95, hh, 6); head.translate(0, 0, len);
+      return { geo: merge([cyl(dia / 2, dia / 2, len, 12), head]), r: dia * 0.95, sr: dia / 2, lying: true, len: len + hh };
+    }
+    case 'plug': { // kaburgalı plastik dübel
+      const pts = [[0, 0], [dia * 0.32, 0]];
+      for (let z = 0; z < len - 3; z += len / 7) pts.push([dia * 0.5, z + len / 14], [dia * 0.4, z + len / 7]);
+      pts.push([dia * 0.42, len - 2], [dia * 0.78, len - 1.6], [dia * 0.78, len], [0, len]);
+      return { geo: lathe(pts, 14), r: dia * 0.78, sr: dia * 0.5, lying: true, len };
+    }
+    case 'washer': {
+      const s = new THREE.Shape(); s.absarc(0, 0, dia * 1.05, 0, Math.PI * 2, false);
+      const h = new THREE.Path(); h.absarc(0, 0, dia * 0.55, 0, Math.PI * 2, true); s.holes.push(h);
+      return { geo: new THREE.ExtrudeGeometry(s, { depth: dia * 0.22, bevelEnabled: false, curveSegments: 20 }), r: 0, lying: false, len: dia * 0.22, w: dia * 2.1 };
+    }
+    default: // somun
+      return { geo: nutGeometry(dia * 1.75, dia * 0.8, dia * 0.5), r: 0, lying: false, len: dia * 0.8, w: dia * 2.02 };
+  }
+}
+
 export function nutGeometry(s = 7, h = 3.2, hole = 2) {
   const shape = new THREE.Shape();
   for (let i = 0; i < 6; i++) {
@@ -499,30 +532,34 @@ export function flower({ h = 320, color = 0xf2d16b, petals = 7, seed = 1, bend =
   g.add(mesh(new THREE.TubeGeometry(curve, 24, 2.2, 6, false), clay(PALETTE.stem, { rough: 0.75 })));
   const head = new THREE.Group();
   head.position.copy(pts[3]);
+  // Taç yapraklar: bloom() için kapalı (tomurcuk) ve açık durumları saklanır. Açık durum = varsayılan görünüm.
+  const petalData = [];
+  const petal = (p, a, r0, r1, z0, z1, t0, t1) => {
+    petalData.push({ m: p, a, r0, r1, z0, z1, t0, t1 });
+    p.position.set(Math.cos(a) * r1, Math.sin(a) * r1, z1);
+    p.rotation.set(0, 0, a);
+    p.rotateY(t1);
+    head.add(p);
+  };
   if (kind === 'tulip') {
     const pm = clay(color, { rough: 0.6 });
     for (let i = 0; i < 6; i++) {
       const p = mesh(new THREE.SphereGeometry(1, 16, 12), pm);
       p.scale.set(13, 7, 26);
-      const a = (i / 6) * Math.PI * 2;
-      p.position.set(Math.cos(a) * 8, Math.sin(a) * 8, 20);
-      p.rotation.z = a;
-      p.rotateY(i % 2 ? 0.18 : 0.08);
-      head.add(p);
+      const open = i % 2 ? 0.18 : 0.08;
+      petal(p, (i / 6) * Math.PI * 2, 5, 8, 18, 20, -0.12, open);
     }
   } else {
     const pm = clay(color, { rough: 0.65 });
     for (let i = 0; i < petals; i++) {
       const p = mesh(new THREE.SphereGeometry(1, 14, 8), pm);
       p.scale.set(17, 6.5, 2.4);
-      const a = (i / petals) * Math.PI * 2;
-      p.position.set(Math.cos(a) * 17, Math.sin(a) * 17, 0);
-      p.rotation.z = a;
-      p.rotateY(-0.25);
-      head.add(p);
+      petal(p, (i / petals) * Math.PI * 2, 5, 17, 9, 0, -1.3, -0.25);
     }
     head.add(at(mesh(new THREE.SphereGeometry(8.5, 16, 12), clay(0xb8862f, { rough: 0.9 })), 0, 0, 2));
   }
+  g.userData.head = head;
+  g.userData.petals = petalData;
   // Sapa bir yaprak
   const leaf = mesh(new THREE.SphereGeometry(1, 12, 8), clay(PALETTE.leaf, { rough: 0.7 }));
   leaf.scale.set(26, 5, 9);
@@ -532,6 +569,24 @@ export function flower({ h = 320, color = 0xf2d16b, petals = 7, seed = 1, bend =
   g.add(head);
   g.userData.seed = r() * 10;
   return g;
+}
+
+// Çiçeğin açılma durumu: k = 0 kısa saplı tomurcuk, 1 tam boy ve açık (flower()'ın varsayılan görünümü).
+// Sap tabandan uzar; taç yapraklar merkezden dışa açılır.
+export function bloom(f, k) {
+  const u = f.userData;
+  if (!u.petals) return;
+  const kk = Math.max(0, Math.min(1, k));
+  const grow = 0.45 + 0.55 * Math.max(0, k); // 1'i biraz aşan k sapı esnetir (yaylanma); taç yapraklar sınırlı
+  f.scale.set(1, 1, grow);
+  const hs = 0.6 + 0.4 * kk;
+  u.head.scale.set(hs, hs, hs / grow); // sap kısalırken taç basılmasın
+  for (const p of u.petals) {
+    const r = p.r0 + (p.r1 - p.r0) * kk;
+    p.m.position.set(Math.cos(p.a) * r, Math.sin(p.a) * r, p.z0 + (p.z1 - p.z0) * kk);
+    p.m.rotation.set(0, 0, p.a);
+    p.m.rotateY(p.t0 + (p.t1 - p.t0) * kk);
+  }
 }
 
 // Masa lambası: kollar +X yönüne uzanır, abajur aşağı ve hafif ileri bakar.

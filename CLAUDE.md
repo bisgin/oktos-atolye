@@ -1,14 +1,15 @@
 # Oktos Workshop: proje kuralları
 
 - Commit mesajlarında yapay zekâ imzası YOK: `Co-Authored-By`, "Generated with", emoji yazılmaz. PR açıklamaları da aynı. (Kesin kural.)
-- Repo gizli. Herkese açmak kullanıcı kararıdır.
+- Repo herkese açık (GitHub Pages yayını için, 2026-10-15 kullanıcı kararı). Parola, anahtar, yerel klasör yolu ve kişisel veri commit edilmez; `.impeccable/` raporları yerelde kalır.
 - Derleme aracı yok: düz ES modülleri + importmap (CDN, sürümü sabit). Node gerektiren bir şey ekleme.
 - Birim her yerde mm, Z ekseni yukarı. Dışa aktarılan model watertight (manifold) olmalı.
 - Başka sitelerin kodu / STL'i / görseli kopyalanmaz. Gridfinity ölçüleri açık standarttır.
 - Arayüz metinleri `core/i18n.js` içinde, TR varsayılan + EN.
 - Ticari model: yalnız yerel sipariş (2026-10-15 kullanıcı kararı). Müşteriye STL/3MF indirme YOK; "Sipariş ver" WhatsApp'a hazır mesaj açar (core/order-config.js). Atölye için dışa aktarma ?atolye=1 ile görünür (gizleme, güvenlik değil).
-- Araç sayfaları elle yazılmaz: 	emplates/tool.html + python scripts/sayfalar.py (önce --dry-run).
-- Hikâye sahneleri: motor core/story.js, eşyalar core/props.js, metin core/story-data.js (üslup: docs/uslup-karti.md), her aracın sahnesi 	ools/<id>/scene.js. Yeni sahne önce lab/sahne.html?arac=<id> üzerinde kurulur, onaydan sonra araca bağlanır (creative-coding kuralı).
+- Araç sayfaları elle yazılmaz: `templates/tool.html` + `python scripts/sayfalar.py` (önce `--dry-run`).
+- Hikâye sahneleri: motor `core/story.js`, eşyalar `core/props.js`, toparlama/zıplatma hareketleri `core/motion.js`, metin `core/story-data.js` (üslup: `docs/uslup-karti.md`), her aracın sahnesi `tools/<id>/scene.js`. Yeni sahne önce `lab/sahne.html?arac=<id>` üzerinde kurulur, onaydan sonra araca bağlanır (creative-coding kuralı).
+- Sahne etkileşimi: tıklanan şablona kamera yaklaşır, sahne `onFocus(id)` ile canlanır (vidalar ayırıcıya düşer, çiçek açar), kartta "Bu şablonla tasarla". Yakın plan ayarı hotspot'ta: `focusRadius`, `focusElev`, `focusCenter`, `extra`.
 - manifold nesneleri WASM belleğinde yaşar: geometri `csg.scope()` içinde üretilir, ara nesneler otomatik silinir.
 
 ## Skill haritası (bu projede etkin, 2026-10-15)
@@ -29,7 +30,7 @@ Her iş türünde ilgili skill'i çağır, önce Gotchas bölümünü oku.
 | Araç bitince kod incelemesi | `code-review`, `simplify`; ajanlar `senior-reviewer`, `qa-quality-control` |
 
 ## Gotchas
-- [2026-10-15] `bisgin/oktos-workshop` adı zaten Documents\Oktos çalışma alanı reposuna ait → Atölye sitesi oraya konmaz (o repo hiç açılmamalı) → Site ayrı repo adıyla açılır.
+- [2026-10-15] Kullanıcının çalışma alanı reposu ayrıdır ve özel kalır (adı bu herkese açık repoda yazılmaz) → Atölye sitesi oraya konmaz → Site ayrı repo adıyla açılır.
 - [2026-10-15] Bilgisayarda Node yok → Vite planı düştü → Derlemesiz ES modülü + importmap; yerel sunucu `scripts/serve.ps1` (Python).
 - [2026-10-15] `python -m http.server` modülleri önbelleğe aldırıyor, yeni export "bulunamadı" hatası veriyor → Önbellek başlığı yok → Her zaman `scripts/serve.py` (Cache-Control: no-store) kullan.
 - [2026-10-15] Uzun vazo "kesik" göründü → Model değil, dar ekranda iki satırlık ölçü kutusu tepeyi örtüyordu → Önce `window.oktos.viewer` ile NDC ölç, sonra düzelt. Telefonda ikincil ölçüler gizli (`.minor`).
@@ -46,3 +47,10 @@ Her iş türünde ilgili skill'i çağır, önce Gotchas bölümünü oku.
 - [2026-10-15] Yatay için kurulan sahneler dikey telefonda kenarlardan kesildi → `story.js` dikey oranda kamerayı geri çekip şablonların ortasına çevirir; yeni sahnede ayrıca ayar gerekmez, ama dikeyde mutlaka bak.
 - [2026-10-15] Şablon seçimi önceki şablonun alakasız değerlerini taşıyordu (istif, kepçe) → `applyPreset` önce varsayılanlara döner (renk, yazıcı, kenar, kalite korunur), sonra şablonu yazar.
 - [2026-10-15] Tarayıcı paneli gizliyken requestAnimationFrame hiç çalışmaz; GSAP akışları ilerlemez → Test için `oktosPage.gsap.ticker.lagSmoothing(0)` + `setInterval(() => gsap.ticker.tick(), 16)`; görüntü için `story().debug.seek(p)`.
+- [2026-10-15] Gizli panelde ekran görüntüsü WebGL karesini göstermedi → Kareyi `renderer.domElement.toDataURL()` ile al, `.story-canvas` içine `<img>` olarak koy; animasyon zamanını `gsap.globalTimeline.pause()` + `.time(T + t)` ile kare kare ilerlet.
+- [2026-10-15] Yatay kayan şablon şeridi, ızgaranın `1fr` sütununu içeriği kadar (924 px) genişletti → telefonda sayfa taştı, sabit sahne katmanı ekrandan geniş kuruldu, başlık kesildi → Izgara sütunları `minmax(0, 1fr)`; kayan içerik ekleyince telefonda `document.documentElement.scrollWidth` ölç.
+- [2026-10-15] Yakın planda bölmeli kutunun içi görünmedi (duvarlar örttü); çapraz dizili vidalar bakış yönüne paralel kalıp dik duruyormuş gibi göründü → Hotspot `focusElev` ile yukarıdan bak; uzun eşyaları bakış yönüne dik diz.
+- [2026-10-15] Parlak odada SpotLight ile "yalayan ışık" ton eşlemede kayboldu (ortalama parlaklık ~%5 değişti) → Vurguyu ışıkla değil nesnenin kendi hareketiyle ver (ölçek, renk çarpanı).
+- [2026-10-15] Kartın gecikmeli açılışı (delay 0.35) ile kapanışın `onComplete: hidden` yarıştı; hızlı "Geri → başka şablon"da kart kayboldu → GSAP `overwrite: 'auto'` henüz başlamamış gecikmeli tween'i öldürmez → Aç/kapa başında `gsap.killTweensOf(...)`, `onComplete` içinde durumu yeniden kontrol et.
+- [2026-10-15] Üzerine gelince 7 mm yükselen şablona tıklanınca eşyalar gruba havadayken bağlandı, grup inince masaya gömüldü → `focusOn` önce kaldırmayı sıfırlar, sonra `onFocus` (tidy/attach) çalışır.
+- [2026-10-15] PowerShell çift tırnaklı dizgede ters tırnak + t sekmeye döndü ("`templates" bozuldu); Türkçe kıvrık tırnak (“ ”) ayrıştırma hatası verdi → Metin değişikliğini Write/Edit aracıyla yap; PowerShell'de yalnız tek tırnaklı, kısa değiştirmeler.

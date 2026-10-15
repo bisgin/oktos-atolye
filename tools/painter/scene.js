@@ -1,7 +1,9 @@
 // Filament Painter hikâye sahnesi: pencereye asılı arkadan ışıklı panel, duvarda çerçeveli rölyef,
 // şövalede kartpostal. Rölyefler kodla çizilen manzaralardan üretilir: parlaklık → yükseklik,
 // 4 filament rengi katman bantlarıyla (HueForge mantığı).
+// Yakınlaşınca: pencere paneli bir kez daha parlar; rölyef ve kartpostal katman katman yeniden basılır.
 import * as THREE from 'three';
+import { gsap } from 'gsap';
 
 const BACK = 400;
 const WIN = { x: 620, w: 900, z0: 900, z1: 2100 };
@@ -99,12 +101,15 @@ export async function buildScene({ scene, P }) {
   motes.position.set(WIN.x + 120, BACK - 800, 450);
   scene.add(motes);
   const hotspots = [];
+  let panelMat = null;
+  const layered = {}; // id → katman katman büyüyecek rölyef ağı
 
   // ---- Pencere ışıklığı: arkadan ışık almış gibi parlak (ışıksız malzeme), iki ipe asılı ----
   {
     const img = landscape('lake', 150, 100, 3);
     const geo = reliefGeometry(img, 360, 240, { colors: FILAMENTS.lake.map((c) => new THREE.Color(c).multiplyScalar(1.18).getHex()) });
     const panel = new THREE.Mesh(geo, new THREE.MeshBasicMaterial({ vertexColors: true }));
+    panelMat = panel.material;
     const g = stand(panel, 240);
     const frameMat = P.clay(K.ink, { rough: 0.5 });
     // İnce siyah kenar: panel x −180..180, z 0..240 aralığında.
@@ -131,6 +136,7 @@ export async function buildScene({ scene, P }) {
     const geo = reliefGeometry(img, 420, 294, { colors: FILAMENTS.sunset });
     const relief = new THREE.Mesh(geo, new THREE.MeshStandardMaterial({ vertexColors: true, roughness: 0.75, envMapIntensity: 0.6 }));
     relief.castShadow = true; relief.receiveShadow = true;
+    layered.frame = relief;
     const g = new THREE.Group();
     const r = stand(relief, 294);
     r.position.set(0, -8, 26);
@@ -154,6 +160,7 @@ export async function buildScene({ scene, P }) {
     const geo = reliefGeometry(img, 150, 100, { top: 4, colors: FILAMENTS.sea });
     const card = new THREE.Mesh(geo, new THREE.MeshStandardMaterial({ vertexColors: true, roughness: 0.75, envMapIntensity: 0.6 }));
     card.castShadow = true;
+    layered.card = card;
     const g = new THREE.Group();
     const easel = new THREE.Group();
     const em = P.clay(K.woodLight, { rough: 0.7 });
@@ -172,6 +179,27 @@ export async function buildScene({ scene, P }) {
   put(P.plant({ kind: 'leafy', size: 2.4, seed: 4, pot: K.paper }), -300, 150, 0);
   put(P.mug({ color: K.terracotta }), FX - 120, BACK - 230, 760, 0.6);
 
+  // Yakın plan canlandırması. Art arda tıklamada önceki akış öldürülür (aynı değerlerde yarışmasınlar).
+  const running = {};
+  function focusFx(id) {
+    running[id]?.kill();
+    if (id === 'window') {
+      if (!panelMat) return;
+      running[id] = gsap.timeline({ delay: 0.4 })
+        .to(panelMat.color, { r: 1.4, g: 1.4, b: 1.4, duration: 0.9, ease: 'sine.inOut' }, 0)
+        .to(shaft.material, { opacity: 0.16, duration: 0.9, ease: 'sine.inOut' }, 0)
+        .to(panelMat.color, { r: 1, g: 1, b: 1, duration: 1.4, ease: 'sine.inOut' })
+        .to(shaft.material, { opacity: 0.085, duration: 1.4, ease: 'sine.inOut' }, '<');
+      return;
+    }
+    // Rölyef düzleşir, sonra 18 adımda yeniden yükselir: yazıcı katman katman basıyormuş gibi.
+    const m = layered[id];
+    if (!m) return;
+    running[id] = gsap.timeline({ delay: 0.4 })
+      .to(m.scale, { z: 0.06, duration: 0.3, ease: 'power2.in' })
+      .to(m.scale, { z: 1, duration: 1.9, ease: 'steps(18)' });
+  }
+
   return {
     shots: {
       intro: { pos: [-1500, -5000, 2400], target: [450, 200, 1250] },
@@ -180,5 +208,7 @@ export async function buildScene({ scene, P }) {
     lights: { center: [950, 200, 1100], shadowSpan: 1900, key: [-550, -1600, 2600], rim: [WIN.x, BACK + 2200, 2600] },
     hotspots,
     update(t) { motes.userData.update(t); },
+    onFocus(id, { reduced } = {}) { if (!reduced) focusFx(id); },
+    onPoke(id, { reduced } = {}) { if (!reduced) focusFx(id); },
   };
 }

@@ -6,3 +6,6 @@ node_modules/
 .DS_Store
 Thumbs.db
 _silinecek/
+
+# impeccable eleştiri raporları yerel kalır (yerel klasör yolları içerir)
+.impeccable/

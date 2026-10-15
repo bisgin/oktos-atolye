@@ -234,7 +234,8 @@ export async function createTool(tool, opts = {}) {
     const parts = [];
     const price = priceOf(lastStats.grams);
     if (price) parts.push(`${t('common.estPrice')} ${fmtNum(price, 0)} ${ORDER.currency}`);
-    if (ORDER.leadDays) parts.push(t('common.lead', { d: ORDER.leadDays }));
+    const lead = ORDER.lead?.[getLang()] || ORDER.lead?.tr;
+    if (lead) parts.push(t('common.lead', { d: lead }));
     orderMeta.textContent = parts.join(' · ');
     orderMeta.hidden = !parts.length;
   }

@@ -51,7 +51,8 @@
 .story-cta:hover { background: var(--accent-ink); transform: translateY(-1px); }
 .story-hint { font-size: 14px; color: var(--ink-2); }
 
-/* Sahne üzerindeki işaretçiler (fare kolaylığı). Konum JS ile her karede güncellenir. */
+/* Sahne üzerindeki işaretçiler: her tıklanabilir şablonun yanında kısa bir not.
+   Konum JS ile her karede güncellenir; üst üste binen notlarda arkadaki yalnız nokta kalır (.mini). */
 .story-pins { position: absolute; inset: 0; pointer-events: none; }
 .pin {
   position: absolute;
@@ -60,36 +61,105 @@
   pointer-events: auto;
   transition: opacity 0.2s ease-out;
 }
-.pin.off { opacity: 0; pointer-events: none; }
+.pin::before { /* dokunmatik için 44 px vuruş alanı */
+  content: '';
+  position: absolute;
+  left: -22px; top: -22px;
+  width: 44px; height: 44px;
+}
+.pin.off, .pin.is-cur { opacity: 0; pointer-events: none; }
 .pin-dot {
   position: absolute;
-  left: -7px; top: -7px;
-  width: 14px; height: 14px;
+  left: -6px; top: -6px;
+  width: 12px; height: 12px;
   border-radius: 50%;
   background: #fff;
   box-shadow: 0 0 0 3px var(--accent), 0 2px 8px rgba(0, 0, 0, 0.25);
   transition: transform 0.18s cubic-bezier(0, 0, 0.2, 1);
 }
+/* Sahne açılınca her nokta iki kez nabız atar: "buraya tıklanabilir". */
+.pin-dot::after {
+  content: '';
+  position: absolute;
+  inset: -3px;
+  border-radius: 50%;
+  box-shadow: 0 0 0 2px var(--accent);
+  opacity: 0;
+}
+.story.pins-ready .pin-dot::after { animation: pin-pulse 1.5s cubic-bezier(0, 0, 0.2, 1) 2 both; animation-delay: calc(var(--i, 0) * 110ms); }
+@keyframes pin-pulse {
+  0% { transform: scale(1); opacity: 0.9; }
+  100% { transform: scale(2.8); opacity: 0; }
+}
 .pin-label {
   position: absolute;
-  left: 14px; top: -16px;
+  left: 13px; top: -13px;
   display: flex; flex-direction: column;
   white-space: nowrap;
-  padding: 6px 11px 7px;
-  border-radius: 9px;
-  background: var(--ink);
+  padding: 4px 9px 5px;
+  border-radius: 8px;
+  background: rgba(43, 48, 54, 0.88);
   color: var(--panel);
-  font-size: 13px; line-height: 1.25;
+  font-size: 12.5px; line-height: 1.25;
   text-align: left;
-  opacity: 0;
-  transform: translateX(-6px);
-  transition: opacity 0.18s ease-out, transform 0.18s cubic-bezier(0, 0, 0.2, 1);
-  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.18);
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.16);
+  transition: opacity 0.18s ease-out, transform 0.18s cubic-bezier(0, 0, 0.2, 1), background-color 0.15s ease-out;
 }
 .pin-label b { font-weight: 600; }
-.pin-label i { font-style: normal; font-size: 12px; color: #f2b48a; }
-.pin.on .pin-dot { transform: scale(1.25); }
-.pin.on .pin-label { opacity: 1; transform: none; }
+.pin-label i { display: none; font-style: normal; font-size: 12px; color: #f2b48a; }
+.pin.left .pin-label { left: auto; right: 13px; align-items: flex-end; text-align: right; }
+.pin.on .pin-dot { transform: scale(1.3); }
+.pin.on .pin-label { background: var(--ink); }
+.pin.on .pin-label i { display: block; }
+.pin.mini:not(.on) .pin-label { opacity: 0; transform: translateX(-4px); pointer-events: none; }
+.pin.left.mini:not(.on) .pin-label { transform: translateX(4px); }
+
+/* Yakın planda notlar susar (yalnız noktalar kalır); üzerine gelinen not görünür. */
+.story.is-focused .pin:not(.on) .pin-label { opacity: 0; transform: translateX(-4px); pointer-events: none; }
+.story.is-focused .story-canvas canvas { touch-action: none; }
+
+/* Yakın plan kartı: şablonun adı, tek cümle, "Bu şablonla tasarla" ve "Geri". */
+.story-card {
+  position: absolute;
+  left: clamp(20px, 6vw, 96px);
+  bottom: 96px;
+  z-index: 2;
+  width: min(380px, calc(100% - 40px));
+  padding: 18px 20px 16px;
+  border-radius: 14px;
+  background: var(--panel);
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.06), 0 14px 40px rgba(30, 35, 40, 0.16);
+}
+.sc-title { margin: 0 0 6px; font-size: 20px; line-height: 1.2; letter-spacing: -0.01em; font-weight: 650; color: var(--ink); }
+.sc-desc { margin: 0 0 14px; font-size: 15px; line-height: 1.5; color: var(--ink-2); text-wrap: pretty; }
+.sc-desc:empty { display: none; }
+.sc-actions { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+.sc-go {
+  border: 0;
+  background: var(--accent);
+  color: #fff;
+  font-weight: 600; font-size: 15px;
+  padding: 11px 18px;
+  border-radius: 10px;
+  box-shadow: 0 1px 2px rgba(120, 50, 10, 0.25), 0 6px 16px rgba(190, 85, 25, 0.2);
+  transition: background-color 0.15s ease-out;
+}
+.sc-go:hover { background: var(--accent-ink); }
+.sc-back {
+  border: 1px solid var(--line-strong);
+  background: transparent;
+  color: var(--ink);
+  font-weight: 600; font-size: 15px;
+  padding: 10px 16px;
+  border-radius: 10px;
+  transition: background-color 0.15s ease-out;
+}
+.sc-back:hover { background: var(--sunk); }
+.sc-soon { flex: 1 1 100%; font-size: 14px; color: var(--ink-2); }
+.sc-hint { margin: 12px 0 0; font-size: 13px; color: var(--ink-3); }
+@media (prefers-reduced-motion: reduce) {
+  .story.pins-ready .pin-dot::after { animation: none; }
+}
 
 /* Şablon şeridi: klavye, ekran okuyucu ve dokunmatik için ana yol. */
 .story-strip {
@@ -133,16 +203,20 @@
 
 .story.no-webgl .story-canvas { display: none; }
 .story.no-webgl .story-veil { display: none; }
+.story.no-webgl .story-pins { display: none; } /* 3B yoksa notların konumu da yok; şerit yeterli */
 
 @media (max-width: 860px) {
   .story-copy { top: 18px; left: 18px; width: calc(100% - 36px); }
   .story-title { font-size: clamp(32px, 9vw, 44px); margin-bottom: 10px; }
   .story-lede { font-size: 15px; margin-bottom: 14px; }
   .story-cta { padding: 11px 16px; }
-  .story-pins { display: none; }
+  .pin-label { font-size: 12px; padding: 3px 8px 4px; }
   .story-strip { left: 12px; right: 12px; transform: none; max-width: none; bottom: 12px; }
+  .story-card { left: 12px; right: 12px; width: auto; bottom: 80px; padding: 14px 16px 14px; }
+  .sc-title { font-size: 18px; }
+  .sc-desc { font-size: 14px; margin-bottom: 12px; }
 }
-@media (pointer: coarse) { .story-pins { display: none; } }
+@media (pointer: coarse) { .sc-go, .sc-back { min-height: 44px; } }
 
 /* ---------- Sayfa düzeni: sahne açıkken atölye gizli (yer kaplar, boyutlanır) ---------- */
 .story { display: none; }

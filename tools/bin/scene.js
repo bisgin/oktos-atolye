@@ -1,13 +1,21 @@
 // Organizer hikâye sahnesi: çalışma masası, açık çekmeceli dolap ve duvar rafı.
-// Şablonlar Kutu aracının gerçek modelleri (TOOL.build), içleri hikâyeyi anlatan eşyalarla dolu.
+// Şablonlar Kutu aracının gerçek modelleri (TOOL.build). Sahne dağınık açılır: masaya 45 vida, somun, pul
+// saçılmış, kalemler yatıyor, anahtar ve paralar ortada, dolabın üstü yığın, raftaki kutular yerinde değil.
+// Bir şablona yakınlaşınca (onFocus) eşyaları zıplayıp içine yerleşir: "Her şeyin bir yeri olsun."
 import * as THREE from 'three';
-import { initCSG, scope } from '../../core/csg.js';
+import { initCSG } from '../../core/csg.js';
 import { toGeometry } from '../../core/mesh3.js';
+import { pose, setPose, tidy } from '../../core/motion.js';
 import { TOOL } from './app.js';
 
 const DESK_TOP = 740;
+const MAT = { x0: -230, x1: 370, y0: -295, y1: 155, top: DESK_TOP + 3 }; // kesim matı, masanın üstünde
+const TAU = Math.PI * 2;
+const X = new THREE.Vector3(1, 0, 0);
+const Z = new THREE.Vector3(0, 0, 1);
+const tmpQ = new THREE.Quaternion();
 
-export async function buildScene({ scene, P, quality }) {
+export async function buildScene({ scene, P }) {
   await initCSG();
   const { PALETTE: C } = P;
   const printed = (color) => P.clay(color, { rough: 0.55, env: 0.7 });
@@ -35,31 +43,152 @@ export async function buildScene({ scene, P, quality }) {
     return out;
   }
 
+  // ---- dağınıklık yardımcıları (dünya koordinatı) ----
+  const surf = (x, y) => (x > MAT.x0 && x < MAT.x1 && y > MAT.y0 && y < MAT.y1 ? MAT.top : DESK_TOP);
+  // Yan yatan uzun eşya: ucu (yerel z=0) p'de, gövdesi yaw yönünde uzanır. Sıra: kendi ekseninde döner (roll),
+  // yatırılır (tilt > 0: öbür ucu alçalır), sonra masada yaw kadar çevrilir.
+  const lying = (p, yaw, roll = 0, tilt = 0) => ({
+    pos: new THREE.Vector3(...p),
+    quat: new THREE.Quaternion().setFromAxisAngle(Z, yaw)
+      .multiply(tmpQ.setFromAxisAngle(X, Math.PI / 2 + tilt))
+      .multiply(tmpQ.setFromAxisAngle(Z, roll)),
+  });
+  // Ortası (cx, cy)'de duracak uzun eşyanın uç noktası
+  const tipFor = (cx, cy, yaw, len) => [cx - (Math.sin(yaw) * len) / 2, cy + (Math.cos(yaw) * len) / 2];
+  const strew = (obj, ps) => { setPose(obj, ps); scene.add(obj); return obj; };
+  const taken = []; // dağınık eşyalar birbirinin içine girmesin
+  function freeSpot(sample, ok, minD) {
+    for (let i = 0; i < 90; i++) {
+      const [x, y] = sample();
+      if (ok(x, y) && !taken.some(([a, b, d]) => Math.hypot(a - x, b - y) < Math.max(d, minD))) { taken.push([x, y, minD]); return [x, y]; }
+    }
+    const p = sample();
+    taken.push([...p, minD]);
+    return p;
+  }
+
   // ---- oda ----
   scene.add(P.room({ back: 430, w: 7000, d: 5200 }));
-  const desk = P.desk({ w: 1500, d: 720, h: DESK_TOP });
-  scene.add(desk);
+  scene.add(P.desk({ w: 1500, d: 720, h: DESK_TOP }));
   const mat = P.cuttingMat({ w: 600, d: 450 });
   mat.position.set(70, -70, DESK_TOP);
   scene.add(mat);
 
   const hotspots = [];
+  const tidies = {};
   const add = (obj, x, y, z, rotZ = 0) => { obj.position.set(x, y, z); obj.rotation.z = rotZ; scene.add(obj); return obj; };
+  // Şablon + toparlanacak eşyaları kaydeder. İşaretçi noktası (anchor) toparlanınca yeni tepeye taşınır.
+  // focusRadius: yakın planda kadraja girecek yarıçap (mm); focusElev: bakış yüksekliği (bölmelerin içi görünsün).
+  function register(id, g, items, { focusRadius, focusElev, extra = items.map((it) => it.obj) } = {}) {
+    const box = new THREE.Box3();
+    const anchor = new THREE.Vector3();
+    const fit = () => { box.setFromObject(g); box.getCenter(anchor); anchor.z = box.max.z + 18; };
+    fit();
+    hotspots.push({ id, preset: id, object: g, anchor, extra, focusRadius, focusElev });
+    tidies[id] = { g, items, fit };
+  }
 
-  // ---- Kalemlik (yuvarlak) + kalemler ----
+  // ---- Vida ayırıcı + 45 bağlantı elemanı: 9 çeşit × 5 ----
+  {
+    const { g, s } = presetModel('screws');
+    const SX = 210, SY = -110;
+    add(g, SX, SY, MAT.top, -0.12);
+    const cs = cells(s);
+    const m = {
+      zinc: P.metal(0xcdb35e, 0.35), black: P.metal(0x2b2f35, 0.45), steel: P.metal(C.steel, 0.3),
+      brass: P.metal(C.brass, 0.35), plug: P.clay(0xd9d4c8, { rough: 0.6 }),
+    };
+    // lay: bölmede diziliş. diag = çapraz paralel, row = yan yana, stack = üst üste, grid = 2×2 + üstte bir
+    const KINDS = [
+      { kind: 'flat', len: 24, dia: 4, mat: m.zinc, lay: 'diag' },   // ahşap vidası
+      { kind: 'flat', len: 26, dia: 3.6, mat: m.black, lay: 'diag' }, // alçıpan vidası
+      { kind: 'pan', len: 14, dia: 3.6, mat: m.steel, lay: 'row' },   // yuvarlak başlı vida
+      { kind: 'pan', len: 10, dia: 3, mat: m.brass, lay: 'row' },     // küçük pirinç vida
+      { kind: 'bolt', len: 20, dia: 4, mat: m.steel, lay: 'diag' },   // altıgen cıvata
+      { kind: 'nut', dia: 5, mat: m.steel, lay: 'stack' },            // somun
+      { kind: 'nut', dia: 4, mat: m.brass, lay: 'grid' },             // pirinç somun
+      { kind: 'washer', dia: 5, mat: m.steel, lay: 'stack' },         // pul
+      { kind: 'plug', len: 24, dia: 5, mat: m.plug, lay: 'diag' },    // dübel
+    ];
+    const SLOTS = [0, 2, 4, 10, 12, 14, 20, 22, 24]; // çeşit başına bir bölme, satranç düzeni
+    const r = P.rng(77);
+    // Bölmedeki düzenli duruş (ayırıcının yerel koordinatı)
+    function slot(F, lay, c, n) {
+      const jit = (r() - 0.5) * 0.12;
+      if (lay === 'row') { // kısa vidalar yan yana, baş-uç dönüşümlü
+        const gap = F.r + F.sr + 0.4;
+        const yaw = n % 2 ? Math.PI : 0;
+        const [tx, ty] = tipFor(c.x + (n - 2) * gap, c.y, yaw, F.len);
+        return lying([tx, ty, s.floor + F.r], yaw, r() * TAU);
+      }
+      if (lay === 'diag') { // uzunlar çapraz: altta üç, üstte iki. Köşegen kameranın bakışına dik: boyları görünsün
+        const gap = F.r + F.sr + 0.3;
+        const yaw = -Math.PI / 4 + (n % 2 ? Math.PI : 0);
+        const up = n >= 3;
+        const off = up ? (n - 3.5) * gap : (n - 1) * gap;
+        const [tx, ty] = tipFor(c.x + Math.SQRT1_2 * off, c.y - Math.SQRT1_2 * off, yaw, F.len);
+        return lying([tx, ty, s.floor + F.r + (up ? F.r * 1.45 : 0)], yaw, r() * TAU);
+      }
+      if (lay === 'grid') {
+        if (n === 4) return pose([c.x, c.y, s.floor + F.len], [0, 0, 0.5 + jit]);
+        const q = [[-1, -1], [1, -1], [-1, 1], [1, 1]][n];
+        return pose([c.x + q[0] * F.w * 0.55, c.y + q[1] * F.w * 0.55, s.floor], [0, 0, jit]);
+      }
+      return pose([c.x, c.y, s.floor + n * F.len], [0, 0, jit * 4]); // üst üste
+    }
+    const items = [];
+    KINDS.forEach((K, t) => {
+      const F = P.fastener(K.kind, K);
+      const c = cs[SLOTS[t]];
+      for (let n = 0; n < 5; n++) {
+        const obj = P.mesh(F.geo, K.mat);
+        // Dağınık: ayırıcının çevresinde, matın ve masanın üstünde
+        const [x, y] = freeSpot(
+          () => { const a = r() * TAU, d = 140 + r() * 165; return [SX + Math.cos(a) * d, SY + Math.sin(a) * d * 0.8]; },
+          (px, py) => py > -335 && py < 300 && px > -60 && px < 410 && !(px < 20 && py > 150),
+          19,
+        );
+        const yaw = r() * TAU;
+        if (F.lying) {
+          const [tx, ty] = tipFor(x, y, yaw, F.len);
+          strew(obj, lying([tx, ty, surf(x, y) + F.sr], yaw, r() * TAU, -(F.r - F.sr) / F.len));
+        } else {
+          strew(obj, pose([x, y, surf(x, y)], [0, 0, yaw]));
+        }
+        const stack = K.lay === 'stack' || K.lay === 'grid';
+        items.push({
+          obj, home: slot(F, K.lay, c, n),
+          at: 0.5 + t * 0.16 + n * (stack ? 0.11 : 0.05),
+          dur: stack ? 0.7 : undefined,
+          arc: 60 + r() * 45, arrive: 0.8, spins: 1, bounce: F.lying ? 2 : 1.2,
+        });
+      }
+    });
+    register('screws', g, items, { focusRadius: 175, focusElev: 0.9 });
+  }
+
+  // ---- Kalemlik: kalemler masada yatıyor ----
   {
     const { g, s } = presetModel('pencup');
+    add(g, -520, 190, DESK_TOP, 0.3);
     const r = P.rng(11);
     const colors = [C.yellow, C.yellow, C.blue, C.red, C.yellow, C.sage, C.ink];
-    colors.forEach((col, i) => {
-      const pc = i === 2 || i === 6 ? P.pen({ color: col }) : P.pencil({ color: col, len: 170 + r() * 15 });
-      const a = (i / colors.length) * Math.PI * 2;
-      pc.position.set(Math.cos(a) * 16, Math.sin(a) * 16, s.floor);
-      pc.rotation.set(Math.sin(a) * 0.16, -Math.cos(a) * 0.16, r() * 3);
-      g.add(pc);
+    const items = colors.map((col, i) => {
+      const isPen = i === 2 || i === 6;
+      const len = isPen ? 145 : 170 + r() * 15;
+      const pc = isPen ? P.pen({ color: col }) : P.pencil({ color: col, len });
+      const a = (i / colors.length) * TAU;
+      const [x, y] = freeSpot(() => [-560 + r() * 230, -35 + r() * 140], () => true, 16);
+      const yaw = Math.PI / 2 + (r() - 0.5) * 1.3;
+      const [tx, ty] = tipFor(x, y, yaw, len);
+      strew(pc, lying([tx, ty, DESK_TOP + (isPen ? 4.8 : 3.8)], yaw, r() * TAU));
+      return {
+        obj: pc,
+        home: pose([Math.cos(a) * 16, Math.sin(a) * 16, s.floor], [Math.sin(a) * 0.16, -Math.cos(a) * 0.16, r() * 3]),
+        at: 0.45 + i * 0.13, arc: 150, arrive: 0.66, dur: 0.95 + r() * 0.1, bounce: 4,
+      };
     });
-    add(g, -520, 190, DESK_TOP, 0.3);
-    hotspots.push({ id: 'pencup', preset: 'pencup', object: g });
+    register('pencup', g, items, { focusRadius: 215, focusElev: 0.5 });
   }
 
   // ---- Lamba (kalemliğin arkasında) ----
@@ -74,109 +203,110 @@ export async function buildScene({ scene, P, quality }) {
     scene.add(spot, spot.target);
   }
 
-  // ---- Masa düzenleyici + içindekiler ----
+  // ---- Masa düzenleyici: kalemler, not destesi, telefon, silgi, USB önünde dağınık ----
   {
     const { g, s } = presetModel('desk', { w: 260, d: 115, h: 70, cols: 4, rows: 1 });
+    add(g, -140, 240, DESK_TOP, 0);
     const cs = cells(s);
     const r = P.rng(4);
-    // 1: keçeli kalemler
+    const spot = (minD) => freeSpot(() => [-235 + r() * 200, 45 + r() * 100], () => true, minD);
+    const items = [];
+    const flat = (obj, minD, home, opts) => {
+      const [x, y] = spot(minD);
+      strew(obj, pose([x, y, DESK_TOP], [0, 0, r() * TAU]));
+      items.push({ obj, home, ...opts });
+    };
+    // keçeli kalemler
     [C.accent, C.blue, C.ink].forEach((col, k) => {
       const pn = P.pen({ color: col, len: 135 });
-      pn.position.set(cs[0].x - 12 + k * 12, cs[0].y + (r() - 0.5) * 30, s.floor);
-      pn.rotation.set(0.12, (k - 1) * 0.12, 0);
-      g.add(pn);
+      const [x, y] = spot(14);
+      const yaw = Math.PI / 2 + (r() - 0.5) * 1.1;
+      const [tx, ty] = tipFor(x, y, yaw, 135);
+      strew(pn, lying([tx, ty, DESK_TOP + 4.8], yaw, r() * TAU));
+      items.push({ obj: pn, home: pose([cs[0].x - 12 + k * 12, cs[0].y + (r() - 0.5) * 30, s.floor], [0.12, (k - 1) * 0.12, 0]), arc: 130, arrive: 0.66, dur: 0.9, bounce: 3 });
     });
-    // 2: yapışkan not destesi
-    const notes = P.mesh(P.rbox(48, 48, 26, 1.5), P.clay(0xf1d36b, { rough: 0.9 }));
-    notes.position.set(cs[1].x, cs[1].y - 20, s.floor);
-    g.add(notes);
-    // 3: telefon, dik
-    // Dik duran telefon: uzun kenarı yukarıda, hafif geriye yaslı.
+    flat(P.mesh(P.rbox(48, 48, 26, 1.5), P.clay(0xf1d36b, { rough: 0.9 })), 40, pose([cs[1].x, cs[1].y - 20, s.floor]), { arc: 90, bounce: 2 });
+    // telefon: masada yatıyor, bölmesine dik oturur
     const ph = P.phone();
-    ph.rotation.set(Math.PI / 2 - 0.22, 0, 0);
     ph.scale.setScalar(0.65);
-    ph.position.set(cs[2].x, cs[2].y + 6, s.floor + 50);
-    g.add(ph);
-    // 4: cetvel ve makas yerine: iki silgi ve USB bellekler
-    const er = P.mesh(P.rbox(40, 18, 12, 2), P.clay(0xf2f0ea));
-    er.position.set(cs[3].x, cs[3].y - 25, s.floor);
-    g.add(er);
-    const usb = P.mesh(P.rbox(18, 50, 9, 2), P.clay(C.ink, { rough: 0.4 }));
-    usb.position.set(cs[3].x, cs[3].y + 20, s.floor);
-    g.add(usb);
-    add(g, -140, 240, DESK_TOP, 0);
-    hotspots.push({ id: 'desk', preset: 'desk', object: g });
+    flat(ph, 55, pose([cs[2].x, cs[2].y + 6, s.floor + 50], [Math.PI / 2 - 0.22, 0, 0]), { arc: 120, arrive: 0.7, dur: 0.95, bounce: 2 });
+    flat(P.mesh(P.rbox(40, 18, 12, 2), P.clay(0xf2f0ea)), 28, pose([cs[3].x, cs[3].y - 25, s.floor]), { arc: 80, spins: 1, bounce: 2 });
+    flat(P.mesh(P.rbox(18, 50, 9, 2), P.clay(C.ink, { rough: 0.4 })), 30, pose([cs[3].x, cs[3].y + 20, s.floor]), { arc: 80, spins: 1, bounce: 2 });
+    items.forEach((it, i) => { it.at = 0.45 + i * 0.12; });
+    register('desk', g, items, { focusRadius: 190, focusElev: 0.6 });
   }
 
-  // ---- Vida ayırıcı (mat üstünde) + vidalar ----
-  {
-    const { g, s } = presetModel('screws');
-    const cs = cells(s);
-    const screw = P.screwGeometry(14, 4.2);
-    const longScrew = P.screwGeometry(24, 4.6);
-    const nut = P.nutGeometry(7, 3.2, 2.1);
-    const washer = P.cyl(5, 5, 1, 18);
-    const steel = P.metal(C.steel, 0.3);
-    const brass = P.metal(C.brass, 0.35);
-    const fills = [[screw, steel, 8], [nut, steel, 7], [longScrew, steel, 6], [washer, brass, 9], [screw, brass, 7], [nut, brass, 6], [longScrew, steel, 5], [washer, steel, 8]];
-    const pick = [0, 2, 4, 6, 8, 11, 13, 17, 19, 22];
-    pick.forEach((ci, k) => {
-      const c = cs[ci];
-      const [geo, m, n] = fills[k % fills.length];
-      g.add(P.scatter({ x: c.x, y: c.y, z: c.z, w: c.w - 8, d: c.d - 8 }, [{ geo, mat: m, n }], { seed: 20 + k }));
-    });
-    add(g, 210, -110, DESK_TOP + 3, -0.12);
-    hotspots.push({ id: 'screws', preset: 'screws', object: g });
-  }
-
-  // ---- Yuvarlak tepsi + anahtar, bozuk para ----
+  // ---- Yuvarlak tepsi: anahtar ve bozuk paralar masada ----
   {
     const { g, s } = presetModel('roundtray', { w: 170 });
-    const k1 = P.key(); k1.position.set(-30, 18, s.floor + 0.2); k1.rotation.z = 0.6; k1.scale.setScalar(0.9); g.add(k1);
-    const k2 = P.key({ color: C.steel }); k2.position.set(-36, -24, s.floor + 2.4); k2.rotation.z = -0.4; k2.scale.setScalar(0.85); g.add(k2);
-    const r = P.rng(9);
-    for (let i = 0; i < 7; i++) {
-      const cn = P.coin({ r: 11 + r() * 3, color: i % 3 ? C.brass : C.steel });
-      const a = Math.PI * 0.15 + r() * 1.2;
-      cn.position.set(Math.cos(a) * 45, Math.sin(a) * 45 - 10, s.floor + (i % 3) * 1.9);
-      cn.rotation.set((r() - 0.5) * 0.15, (r() - 0.5) * 0.15, 0);
-      g.add(cn);
-    }
     add(g, -430, -170, DESK_TOP, 0);
-    hotspots.push({ id: 'roundtray', preset: 'roundtray', object: g });
+    const r = P.rng(9);
+    const spot = (minD) => freeSpot(() => [-330 + r() * 200, -330 + r() * 230], (x, y) => Math.hypot(x + 430, y + 170) > 112, minD);
+    const items = [];
+    // Tepsi: ortada yuvarlak göbek (yarıçap 41,6), dışta 6 dilim (ortası 62,4 mm'de, 0°, 60°, ... yönlerinde).
+    // Anahtarlar göbeğe, paralar dilimlere: üç dilimde üst üste ya da yan yana.
+    [[C.brass, -26, 9, 0.1, 0.9], [C.steel, -18, -13, -0.3, 0.85]].forEach(([col, hx, hy, rz, sc]) => {
+      const k = P.key({ color: col });
+      k.scale.setScalar(sc);
+      const [x, y] = spot(48);
+      strew(k, pose([x, y, DESK_TOP], [0, 0, r() * TAU]));
+      items.push({ obj: k, home: pose([hx, hy, s.floor + 0.2], [0, 0, rz]), arc: 110, spins: 1, axis: Z, bounce: 2 });
+    });
+    const RING = 62.4;
+    const COINS = [[0, 0, 0], [0, 0, 1], [0, 0, 2], [1, -13, 0], [1, 13, 0], [5, 0, 0], [5, 0, 1]]; // [dilim, yana kayma, kat]
+    COINS.forEach(([k, t, layer], i) => {
+      const cn = P.coin({ r: 11 + r() * 2, color: k === 1 ? C.steel : C.brass });
+      const a = (k * Math.PI) / 3;
+      const [x, y] = spot(28);
+      strew(cn, pose([x, y, DESK_TOP]));
+      items.push({
+        obj: cn, home: pose([Math.cos(a) * RING - Math.sin(a) * t, Math.sin(a) * RING + Math.cos(a) * t, s.floor + layer * 1.9], [0, 0, r() * TAU]),
+        arc: 100 + r() * 40, spins: 2, bounce: 1.5, dur: layer ? 0.75 : undefined,
+      });
+    });
+    items.forEach((it, i) => { it.at = 0.45 + i * 0.09; });
+    register('roundtray', g, items, { focusRadius: 170, focusElev: 0.75 });
   }
 
   // ---- Kupa, defter, telefon (masanın sağı) ----
   add(P.mug({ color: C.paper }), 560, 200, DESK_TOP, -0.6);
   add(P.notebook({ color: C.blue }), 520, -150, DESK_TOP, 0.28);
-  const ph2 = P.phone();
-  add(ph2, 590, -150, DESK_TOP + 14, 0.32);
+  add(P.phone(), 590, -150, DESK_TOP + 14, 0.32);
 
-  // ---- Çekmeceli dolap + Çekmece içi ----
+  // ---- Çekmeceli dolap + Çekmece içi: eşyalar dolabın üstüne yığılmış ----
   {
-    const UX = -1020, UY = -40;
-    const unit = P.drawerUnit({ w: 440, d: 560, h: 610, openIndex: 0, open: 300, front: C.sage });
+    const UX = -1020, UY = -40, TOPZ = 610;
+    const unit = P.drawerUnit({ w: 440, d: 560, h: TOPZ, openIndex: 0, open: 300, front: C.sage });
     add(unit, UX, UY, 0, 0);
     const dr = unit.userData.drawers[0].inner;
     const { g, s } = presetModel('drawer', { w: 300, d: 240, h: 42, cols: 4, rows: 3 });
-    const cs = cells(s);
-    const bat = P.batteryGeometry();
-    g.add(P.scatter({ x: cs[0].x, y: cs[0].y, z: s.floor, w: 20, d: 30 }, [{ geo: bat, mat: P.clay(0xd9a43a, { rough: 0.5 }), n: 3 }], { seed: 4, lying: false }));
-    g.add(P.scatter({ x: cs[5].x, y: cs[5].y, z: s.floor, w: 30, d: 30 }, [{ geo: P.nutGeometry(9, 4, 3), mat: P.metal(), n: 6 }], { seed: 6 }));
-    const measure = P.mesh(P.rbox(58, 58, 30, 9), P.clay(C.accent, { rough: 0.5 }));
-    measure.position.set(cs[8].x, cs[8].y, s.floor);
-    g.add(measure);
-    const tape = P.mesh(P.cyl(28, 28, 18, 32), P.clay(C.yellow, { rough: 0.6 }));
-    tape.position.set(cs[10].x, cs[10].y, s.floor);
-    g.add(tape);
-    for (let i = 0; i < 3; i++) {
-      const usb = P.mesh(P.rbox(16, 46, 8, 2), P.clay([C.ink, C.red, C.blue][i], { rough: 0.4 }));
-      usb.position.set(cs[3].x - 18 + i * 18, cs[3].y, s.floor);
-      g.add(usb);
-    }
     g.position.set(UX + dr.x, UY + dr.y, dr.z);
     scene.add(g);
-    hotspots.push({ id: 'drawer', preset: 'drawer', object: g });
+    const cs = cells(s); // ön iki sıra (0–7) çekmece dışında, görünür
+    const r = P.rng(6);
+    const spot = (minD) => freeSpot(() => [UX - 160 + r() * 320, UY - 255 + r() * 190], () => true, minD);
+    const items = [];
+    const put = (obj, mess, home, opts = {}) => { strew(obj, mess); items.push({ obj, home, arc: 110, ...opts }); };
+    const batGeo = P.batteryGeometry(), batMat = P.clay(0xd9a43a, { rough: 0.5 });
+    for (let i = 0; i < 3; i++) {
+      const [x, y] = spot(24);
+      const yaw = r() * TAU;
+      const [tx, ty] = tipFor(x, y, yaw, 46);
+      put(P.mesh(batGeo, batMat), lying([tx, ty, TOPZ + 7], yaw), pose([cs[0].x + (i - 1) * 16, cs[0].y, s.floor], [0, 0, r()]), { spins: 1 });
+    }
+    [C.ink, C.red, C.blue].forEach((col, i) => {
+      const [x, y] = spot(30);
+      put(P.mesh(P.rbox(16, 46, 8, 2), P.clay(col, { rough: 0.4 })), pose([x, y, TOPZ], [0, 0, r() * TAU]), pose([cs[1].x - 20 + i * 20, cs[1].y, s.floor]), { spins: 1 });
+    });
+    const nutGeo = P.nutGeometry(9, 4, 3), nutMat = P.metal();
+    for (let i = 0; i < 6; i++) {
+      const [x, y] = spot(16);
+      put(P.mesh(nutGeo, nutMat), pose([x, y, TOPZ], [0, 0, r() * TAU]), pose([cs[2].x + ((i % 2) - 0.5) * 16, cs[2].y + (Math.floor(i / 2) - 1) * 16, s.floor], [0, 0, r() * 0.3]), { spins: 1 });
+    }
+    put(P.mesh(P.cyl(28, 28, 18, 32), P.clay(C.yellow, { rough: 0.6 })), pose([...spot(60), TOPZ]), pose([cs[4].x, cs[4].y, s.floor]));
+    put(P.mesh(P.rbox(58, 58, 30, 9), P.clay(C.accent, { rough: 0.5 })), pose([...spot(70), TOPZ], [0, 0, 0.5]), pose([cs[5].x, cs[5].y, s.floor]));
+    items.forEach((it, i) => { it.at = 0.45 + i * 0.08; });
+    register('drawer', g, items, { focusRadius: 240, focusElev: 0.72 });
   }
 
   // ---- Duvar rafı: Gridfinity kutular + alet kutusu + kitaplar + bitki ----
@@ -185,38 +315,47 @@ export async function buildScene({ scene, P, quality }) {
     const SX = 330, SY = 430 - 115, SZ = 1230;
     add(shelf, SX, SY, SZ, 0);
     const top = SZ + 26;
+    const r = P.rng(13);
 
-    // Gridfinity: 3×2 plaka + üstünde iki kutu
+    // Gridfinity: 3×2 plaka; kutular başta plakanın yanında, biri ötekinin üstüne yamuk konmuş
     const grid = new THREE.Group();
     const plate = TOOL.build({ ...TOOL.defaults, mode: 'plate', px: 3, py: 2, plateStyle: 'thin', _thumb: true });
     grid.add(P.mesh(toGeometry(plate.parts[0].result), printed(C.ink)));
     const b1 = presetModel('g4', { gx: 2, gy: 2, gz: 3, gcols: 2, grows: 2, showPlate: false });
-    b1.g.position.set(-21, 0, 0);
-    grid.add(b1.g);
     const b2 = presetModel('g1', { showPlate: false, color: C.accent });
-    b2.g.position.set(42, 21, 0);
-    grid.add(b2.g);
     const b3 = presetModel('g1', { showPlate: false, color: C.sand, gz: 2 });
-    b3.g.position.set(42, -21, 0);
-    grid.add(b3.g);
-    grid.children[1].add(P.scatter({ x: -20, y: -20, z: 7.2, w: 24, d: 24 }, [{ geo: P.nutGeometry(), mat: P.metal(C.brass), n: 7 }], { seed: 31 }));
+    b1.g.add(P.scatter({ x: -20, y: -20, z: 7.2, w: 24, d: 24 }, [{ geo: P.nutGeometry(), mat: P.metal(C.brass), n: 7 }], { seed: 31 }));
+    const h1 = new THREE.Box3().setFromObject(b1.g).max.z;
+    grid.add(b1.g, b2.g, b3.g);
+    setPose(b1.g, pose([128, 8, 0], [0, 0, 0.32]));
+    setPose(b2.g, pose([218, -48, 0], [0, 0, -0.5]));
+    setPose(b3.g, pose([120, 16, h1 + 0.5], [0.05, -0.04, 0.95]));
     add(grid, SX - 130, SY - 10, top, 0.05);
-    hotspots.push({ id: 'g4', preset: 'g4', object: grid });
+    register('g4', grid, [
+      { obj: b3.g, home: pose([42, -21, 0]), at: 0.45, arc: 60, dur: 0.75, bounce: 1.2 },
+      { obj: b1.g, home: pose([-21, 0, 0]), at: 0.85, arc: 45, dur: 0.75, bounce: 1.2 },
+      { obj: b2.g, home: pose([42, 21, 0]), at: 1.1, arc: 45, dur: 0.7, bounce: 1.2 },
+    ], { focusRadius: 170, focusElev: 0.6, extra: [] });
 
-    // Alet kutusu + tornavidalar
+    // Alet kutusu: tornavidalar başta rafta, kutunun sağında yan yatıyor
     const { g, s } = presetModel('tools', { w: 230, d: 95, h: 72 });
+    const TX = SX + 250, TY = SY - 5;
+    add(g, TX, TY, top, -0.04);
     const cs = cells(s);
-    [C.accent, C.blue, C.ink, C.yellow, C.accent].forEach((col, i) => {
+    const items = [C.accent, C.blue, C.ink, C.yellow, C.accent].map((col, i) => {
       // Tornavida ters durur: sap yukarıda, uç bölmenin tabanında.
       const len = 180 + (i % 2) * 25;
       const sd = P.screwdriver({ len, handle: col });
       const c = cs[Math.min(cs.length - 1, Math.floor(i / 2))];
-      sd.rotation.set(Math.PI, 0.08 * (i - 2), 0);
-      sd.position.set(c.x - 14 + (i % 2) * 26, c.y + 8, s.floor + len);
-      g.add(sd);
+      const yaw = (i % 2 ? Math.PI : 0) + (r() - 0.5) * 0.35; // sap-uç dönüşümlü, yan yana
+      const [tx, ty] = tipFor(TX + 150 + i * 22, TY + (r() - 0.5) * 24, yaw, len);
+      strew(sd, lying([tx, ty, top + 18], yaw, r() * TAU, 0.07));
+      return {
+        obj: sd, home: pose([c.x - 14 + (i % 2) * 26, c.y + 8, s.floor + len], [Math.PI, 0.08 * (i - 2), 0]),
+        at: 0.45 + i * 0.14, arc: 175, arrive: 0.68, dur: 1.05, bounce: 3,
+      };
     });
-    add(g, SX + 250, SY - 5, top, -0.04);
-    hotspots.push({ id: 'tools', preset: 'tools', object: g });
+    register('tools', g, items, { focusRadius: 235, focusElev: 0.45 });
 
     const bk = P.books({ count: 6, seed: 3 });
     add(bk, SX - 500, SY + 5, top, 0);
@@ -230,5 +369,14 @@ export async function buildScene({ scene, P, quality }) {
     },
     lights: { center: [-150, 50, 800], shadowSpan: 1700 },
     hotspots,
+    // Yakınlaşınca toparlama; toparlanmış şablona yeniden tıklanınca eşyalar yerinde kıpırdar.
+    onFocus(id, { reduced } = {}) {
+      const t = tidies[id];
+      if (t) tidy(t.g, t.items, { reduced, onDone: t.fit });
+    },
+    onPoke(id, { reduced } = {}) {
+      const t = tidies[id];
+      if (t) tidy(t.g, t.items, { reduced, onDone: t.fit });
+    },
   };
 }

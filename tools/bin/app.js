@@ -10,7 +10,7 @@ import { customBin, gridBin, baseplate, GF } from './geometry.js';
 const strings = {
   tr: {
     'bin.title': 'Kutu ve Organizer',
-    'bin.lede': 'Çekmece, masa ve rafa ölçüyle organizer. Bir şablon seç, ölçünü gir, indir ya da sipariş ver.',
+    'bin.lede': 'Çekmece, masa ve rafa ölçüyle organizer. Bir şablon seç, ölçünü gir, sipariş ver.',
     'mode.custom': 'Serbest kutu', 'mode.grid': 'Gridfinity kutu', 'mode.plate': 'Taban plakası',
     'sec.shape': 'Biçim', 'sec.size': 'Ölçü', 'sec.layout': 'Bölmeler', 'sec.walls': 'Duvar ve taban',
     'sec.features': 'Özellikler', 'sec.holes': 'Mıknatıs ve vida', 'sec.fit': 'Çekmeceye sığdır', 'sec.view': 'Görünüm',
@@ -48,7 +48,7 @@ const strings = {
   },
   en: {
     'bin.title': 'Bins & Organizers',
-    'bin.lede': 'Made-to-measure organizers for drawers, desks and shelves. Pick a preset, enter your size, download or order.',
+    'bin.lede': 'Made-to-measure organizers for drawers, desks and shelves. Pick a preset, enter your size, place an order.',
     'mode.custom': 'Custom bin', 'mode.grid': 'Gridfinity bin', 'mode.plate': 'Baseplate',
     'sec.shape': 'Shape', 'sec.size': 'Size', 'sec.layout': 'Compartments', 'sec.walls': 'Walls & floor',
     'sec.features': 'Features', 'sec.holes': 'Magnets & screws', 'sec.fit': 'Fit to drawer', 'sec.view': 'View',
