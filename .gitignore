@@ -1,0 +1,8 @@
+.env*
+*.stl
+*.3mf
+!presets/**/*.stl
+node_modules/
+.DS_Store
+Thumbs.db
+_silinecek/

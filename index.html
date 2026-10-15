@@ -1,0 +1,78 @@
+<!doctype html>
+<html lang="tr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Oktos Workshop</title>
+<meta name="description" content="Tarayıcıda çalışan parametrik 3B baskı atölyesi: organizer, vazo, clicker, yazı ve daha fazlası.">
+<link rel="icon" href="core/icon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="core/style.css">
+</head>
+<body>
+<header class="topbar">
+  <a class="brand" href="index.html"><img src="core/icon.svg" alt="" width="26" height="26"><span data-i18n="app.name">Oktos Workshop</span></a>
+  <span class="spacer"></span>
+  <div class="lang" role="group" aria-label="Dil / Language"><button type="button" data-lang="tr">TR</button><button type="button" data-lang="en">EN</button></div>
+</header>
+<main class="home">
+  <h1 data-i18n="home.h1">Ölçünü gir, atölye bassın.</h1>
+  <p class="intro" data-i18n="home.intro">Organizer, vazo, kalemlik, clicker. Tarayıcıda tasarla, önizle, STL indir ya da Oktos'a bastır. Kurulum yok, üyelik yok.</p>
+  <nav class="toolgrid" id="tools" aria-label="Araçlar"></nav>
+</main>
+<script type="module">
+  import { t, addStrings, applyI18n, setLang, getLang, onLang } from './core/i18n.js';
+  addStrings({
+    tr: {
+      'home.h1': 'Ölçünü gir, atölye bassın.',
+      'home.intro': 'Organizer, vazo, kalemlik, clicker. Tarayıcıda tasarla, önizle, STL indir ya da Oktos\'a bastır. Kurulum yok, üyelik yok.',
+      't.bin': 'Kutu ve Organizer', 't.bin.d': 'Bölmeli tepsi, kalemlik, Gridfinity kutu ve taban plakası.',
+      't.vase': 'Vazo Üreteci', 't.vase.d': 'Köşe sayısı, siluet, burgu ve dokuyla vazo ve saksı.',
+      't.clicker': 'Fidget Clicker', 't.clicker.d': 'Her modelin içine mavi anahtarlı tıklama mekanizması.',
+      't.text': '3D Yazı', 't.text.d': 'İsimlik, tabela, anahtarlık; yazı tipi ve kaide seçimi.',
+      't.flip': 'Text Flip', 't.flip.d': 'Bir yandan bir kelime, öbür yandan başka bir kelime.',
+      't.qr': '3D QR Kod', 't.qr.d': 'Link, Wi-Fi ya da telefon için iki renkli QR karo.',
+      't.painter': 'Filament Painter', 't.painter.d': 'Fotoğrafı renk katmanlı kabartmaya çevir.',
+      't.puzzle': 'Puzzle Maker', 't.puzzle.d': 'Herhangi bir modeli yapboz parçalarına böl.',
+    },
+    en: {
+      'home.h1': 'Enter your size. The workshop prints it.',
+      'home.intro': 'Organizers, vases, pen cups, clickers. Design in your browser, preview, download an STL or have Oktos print it. No install, no sign-up.',
+      't.bin': 'Bins & Organizers', 't.bin.d': 'Split trays, pen cups, Gridfinity bins and baseplates.',
+      't.vase': 'Vase Generator', 't.vase.d': 'Vases and planters by side count, silhouette, twist and texture.',
+      't.clicker': 'Fidget Clicker', 't.clicker.d': 'A blue-switch click mechanism inside any model.',
+      't.text': '3D Text', 't.text.d': 'Name plates, signs and keychains with font and base options.',
+      't.flip': 'Text Flip', 't.flip.d': 'One word from one side, another from the other.',
+      't.qr': '3D QR Code', 't.qr.d': 'Two-colour QR tiles for links, Wi-Fi or phone numbers.',
+      't.painter': 'Filament Painter', 't.painter.d': 'Turn a photo into a colour-layered relief.',
+      't.puzzle': 'Puzzle Maker', 't.puzzle.d': 'Cut any model into jigsaw pieces.',
+    },
+  });
+  const I = {
+    bin: '<path d="M4 9h24v15a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2z"/><path d="M12 9v17M20 9v17M4 17h24"/>',
+    vase: '<path d="M12 4h8M13 4c0 4-6 6-6 13 0 5 4 10 9 10s9-5 9-10c0-7-6-9-6-13"/>',
+    clicker: '<rect x="6" y="14" width="20" height="12" rx="2"/><rect x="11" y="7" width="10" height="7" rx="1.5"/><path d="M16 4v3"/>',
+    text: '<path d="M6 8V6h20v2M16 6v20M12 26h8"/>',
+    flip: '<path d="M6 8h9v16H6zM17 8h9v16h-9z"/><path d="M15 16h2"/>',
+    qr: '<rect x="5" y="5" width="9" height="9" rx="1"/><rect x="18" y="5" width="9" height="9" rx="1"/><rect x="5" y="18" width="9" height="9" rx="1"/><path d="M18 18h3v3M24 18h3M18 24v3h3M24 24h3v3"/>',
+    painter: '<rect x="4" y="6" width="24" height="20" rx="2"/><path d="m4 21 7-7 5 5 4-4 8 8"/><circle cx="21" cy="11" r="2"/>',
+    puzzle: '<path d="M6 6h8v3a2 2 0 1 0 4 0V6h8v8h-3a2 2 0 1 0 0 4h3v8h-8v-3a2 2 0 1 0-4 0v3H6v-8h3a2 2 0 1 0 0-4H6z"/>',
+  };
+  const tools = [
+    ['bin', 'tools/bin/index.html', true], ['vase', '#', false], ['clicker', '#', false], ['text', '#', false],
+    ['flip', '#', false], ['qr', '#', false], ['painter', '#', false], ['puzzle', '#', false],
+  ];
+  const render = () => {
+    document.getElementById('tools').innerHTML = tools.map(([id, href, live]) => `
+      <a class="toolrow ${live ? '' : 'soon'}" href="${href}" ${live ? '' : 'aria-disabled="true" tabindex="-1"'}>
+        <span class="ic"><svg viewBox="0 0 32 32">${I[id]}</svg></span>
+        <span><h3>${t('t.' + id)}</h3><p>${t('t.' + id + '.d')}</p><span class="st ${live ? 'live' : ''}">${t(live ? 'status.live' : 'status.soon')}</span></span>
+      </a>`).join('');
+    applyI18n();
+    document.querySelectorAll('.lang button').forEach((b) => b.classList.toggle('on', b.dataset.lang === getLang()));
+  };
+  document.querySelectorAll('.lang button').forEach((b) => b.addEventListener('click', () => setLang(b.dataset.lang)));
+  onLang(render);
+  render();
+</script>
+</body>
+</html>
