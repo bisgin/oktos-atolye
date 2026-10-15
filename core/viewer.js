@@ -56,6 +56,13 @@ export class Viewer {
     this.renderer.setSize(w, h, false);
     this.camera.aspect = w / h;
     this.camera.updateProjectionMatrix();
+    this.renderNow();
+  }
+
+  // Animasyon döngüsü duraklasa da (arka plandaki sekme) görüntü güncel kalsın.
+  renderNow() {
+    this.controls?.update();
+    this.renderer.render(this.scene, this.camera);
   }
 
   setColor(hex) {
@@ -99,6 +106,7 @@ export class Viewer {
       this.fit(bb);
     }
     if (size) this.lastSize = size;
+    this.renderNow();
   }
 
   toggleEdges(on) {
@@ -113,12 +121,15 @@ export class Viewer {
     }
     const center = bb.getCenter(new THREE.Vector3());
     const r = bb.getSize(new THREE.Vector3()).length() / 2;
-    const dist = r / Math.sin((this.camera.fov * Math.PI) / 360) * 1.05;
+    // Üstte ölçü kutusu için pay: model biraz aşağıda ve uzakta durur.
+    const dist = r / Math.sin((this.camera.fov * Math.PI) / 360) * 1.12;
     const dir = new THREE.Vector3(0.62, -0.78, 0.55).normalize();
+    center.z += r * 0.08;
     this.controls.target.copy(center);
     this.camera.position.copy(center).addScaledVector(dir, dist);
     const g = Math.max(100, Math.ceil((r * 3) / 50) * 50);
     this.grid.scale.setScalar(g / 400);
+    this.renderNow();
   }
 
   view(name) {
@@ -127,6 +138,7 @@ export class Viewer {
     const dirs = { iso: [0.62, -0.78, 0.55], top: [0, -0.001, 1], front: [0, -1, 0.001], right: [1, 0, 0.001] };
     const v = new THREE.Vector3(...dirs[name]).normalize();
     this.camera.position.copy(t).addScaledVector(v, d);
+    this.renderNow();
   }
 
   snapshot() {

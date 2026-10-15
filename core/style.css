@@ -136,6 +136,7 @@ button { font: inherit; color: inherit; cursor: pointer; }
 .num input:hover { border-color: var(--line); }
 .num input:focus { border-color: var(--accent); background: var(--panel); outline: none; }
 .num input::-webkit-inner-spin-button { -webkit-appearance: none; }
+.num output { min-width: 68px; text-align: right; font: 500 13px var(--mono); color: var(--ink); padding: 3px 6px; }
 .num em { font: 12px var(--mono); color: var(--ink-3); font-style: normal; min-width: 18px; }
 input[type=range] { width: 100%; height: 22px; margin: 0; background: transparent; -webkit-appearance: none; appearance: none; }
 input[type=range]::-webkit-slider-runnable-track { height: 4px; border-radius: 4px; background: var(--line); }
@@ -198,6 +199,8 @@ select:hover { border-color: var(--line); }
   .topbar { padding: 0 16px; gap: 12px; }
   .crumb { display: none; }
   .stage .hud { font-size: 11px; gap: 3px 10px; padding: 5px 8px; left: 10px; top: 8px; max-width: calc(100% - 20px); }
+  .stage .hud .minor { display: none; }
+  .ctl, .panel-section { scroll-margin-top: 56vh; }
   .viewbar { left: 10px; bottom: 8px; }
   .preset-grid { grid-template-columns: repeat(3, 1fr); }
 }

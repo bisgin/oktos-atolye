@@ -8,7 +8,7 @@ her şey kullanıcının tarayıcısında hesaplanır, STL / 3MF olarak indirili
 | Araç | Durum |
 |---|---|
 | Kutu, Bölmeli Tepsi ve Taban Plakası (Gridfinity uyumlu) | İlk sürüm |
-| Vazo Üreteci | Planlandı |
+| Vazo Üreteci (köşe sayısı 3 → ∞, yükseklik bantlı efektler) | İlk sürüm |
 | Fidget Clicker (Outemu / MX anahtarlı) | Planlandı |
 | 3D Yazı, Text Flip, 3D QR | Planlandı |
 | Filament Painter | Planlandı |
@@ -20,7 +20,8 @@ her şey kullanıcının tarayıcısında hesaplanır, STL / 3MF olarak indirili
 ./scripts/serve.ps1
 ```
 
-Sonra tarayıcıda `http://localhost:8080` adresini aç. (Python 3 gerekir.)
+Sonra tarayıcıda `http://localhost:8080` adresini aç. (Python 3 gerekir; sunucu önbelleksizdir,
+değişiklikler yenilemede hemen görünür.)
 Dosyaları doğrudan çift tıklayarak açmak çalışmaz: ES modülleri bir sunucu ister.
 
 ## Yapı

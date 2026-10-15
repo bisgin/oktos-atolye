@@ -92,7 +92,13 @@ export function hullPts(points) {
   return T(W.Manifold.hull(points));
 }
 
-export const move = (m, x = 0, y = 0, z = 0) => T(m.translate([x, y, z]));
+// Doğrudan üretilmiş üçgen ağından Manifold. Ağ kapalı değilse manifold hata fırlatır (doğrulama da budur).
+export function fromMesh(positions, indices) {
+  const mesh = new W.Mesh({ numProp: 3, vertProperties: positions, triVerts: indices });
+  return T(new W.Manifold(mesh));
+}
+
+export const move =(m, x = 0, y = 0, z = 0) => T(m.translate([x, y, z]));
 export const rot = (m, x = 0, y = 0, z = 0) => T(m.rotate([x, y, z]));
 export const add = (a, b) => T(a.add(b));
 export const sub = (a, b) => T(a.subtract(b));

@@ -1,0 +1,64 @@
+<!doctype html>
+<html lang="tr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Vazo Üreteci · Oktos Workshop</title>
+<meta name="description" content="Köşe sayısı, siluet, burgu, kaburga ve dokuyla vazo ve saksı tasarla. Efektleri istediğin yükseklik aralığına uygula, STL/3MF indir.">
+<link rel="icon" href="../../core/icon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../../core/style.css">
+<script type="importmap">
+{ "imports": {
+  "three": "https://cdn.jsdelivr.net/npm/three@0.162.0/build/three.module.js",
+  "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.162.0/examples/jsm/",
+  "manifold-3d": "https://cdn.jsdelivr.net/npm/manifold-3d@2.5.1/manifold.js"
+} }
+</script>
+</head>
+<body>
+<header class="topbar">
+  <a class="brand" href="../../index.html"><img src="../../core/icon.svg" alt="" width="26" height="26"><span data-i18n="app.name">Oktos Workshop</span></a>
+  <span class="crumb">/ <b data-i18n="vase.title">Vazo Üreteci</b></span>
+  <span class="spacer"></span>
+  <div class="lang" role="group" aria-label="Dil / Language"><button type="button" data-lang="tr">TR</button><button type="button" data-lang="en">EN</button></div>
+</header>
+
+<main class="tool">
+  <div class="stage" id="stage">
+    <div class="hud" id="hud" aria-live="polite"></div>
+    <div class="busy" id="busy"></div>
+    <div class="err" id="err" hidden data-i18n="common.error"></div>
+    <div class="viewbar" id="viewbar">
+      <button type="button" data-view="iso" data-i18n="view.iso">İzometrik</button>
+      <button type="button" data-view="top" data-i18n="view.top">Üst</button>
+      <button type="button" data-view="front" data-i18n="view.front">Ön</button>
+      <button type="button" data-view="right" data-i18n="view.right">Sağ</button>
+      <span class="sep"></span>
+      <button type="button" data-view="fit" data-i18n="view.fit">Sığdır</button>
+    </div>
+  </div>
+
+  <aside class="side">
+    <div class="side-scroll">
+      <h2 data-i18n="vase.title">Vazo Üreteci</h2>
+      <p class="lede" data-i18n="vase.lede"></p>
+      <div class="modes" id="modes"></div>
+      <div id="presets"></div>
+      <div id="panel"></div>
+      <ul class="notes" id="notes"></ul>
+    </div>
+    <div class="actions">
+      <button type="button" class="btn primary wide" id="order" data-i18n="common.order">Sipariş ver</button>
+      <button type="button" class="btn" id="dl-stl" data-i18n="common.downloadSTL">STL indir</button>
+      <button type="button" class="btn" id="dl-3mf" data-i18n="common.download3MF">3MF indir</button>
+      <button type="button" class="btn ghost wide" id="share" data-i18n="common.share">Bağlantıyı kopyala</button>
+    </div>
+  </aside>
+</main>
+
+<script type="module">
+  import { start } from './app.js';
+  start().catch((e) => { console.error(e); document.getElementById('err').hidden = false; });
+</script>
+</body>
+</html>

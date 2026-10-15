@@ -39,6 +39,7 @@ export async function createTool(tool) {
   });
 
   const viewer = new Viewer(stage);
+  window.oktos = { viewer, state }; // konsoldan hata ayıklama için
   viewer.setColor(state.color);
   busy.textContent = t('common.loading');
   busy.classList.add('on');
@@ -144,14 +145,15 @@ export async function createTool(tool) {
     const pr = PRINTERS.find((p) => p[0] === state.printer) || PRINTERS[0];
     const fits = size[2] <= pr[2][2] && ((size[0] <= pr[2][0] && size[1] <= pr[2][1]) || (size[1] <= pr[2][0] && size[0] <= pr[2][1]));
     const f = (n) => n.toFixed(1).replace(/\.0$/, '');
+    // Üçüncü öğe true → ikincil bilgi, dar ekranda gizlenir.
     const rows = [
       [t('common.size'), `${f(size[0])} × ${f(size[1])} × ${f(size[2])} mm`],
-      [t('common.volume'), `${(vol / 1000).toFixed(1)} cm³`],
+      [t('common.volume'), `${(vol / 1000).toFixed(1)} cm³`, true],
       [t('common.weight'), `${Math.round((vol / 1000) * 1.24)} g`],
-      ...(out.info || []).map(([k, v]) => [t(k), v]),
-      [t('common.triangles'), tris.toLocaleString()],
+      ...(out.info || []).map(([k, v]) => [t(k), v, true]),
+      [t('common.triangles'), tris.toLocaleString(), true],
     ];
-    hud.innerHTML = rows.map(([k, v]) => `<span>${k} <b>${v}</b></span>`).join('') +
+    hud.innerHTML = rows.map(([k, v, minor]) => `<span${minor ? ' class="minor"' : ''}>${k} <b>${v}</b></span>`).join('') +
       `<span class="${fits ? 'good' : 'bad'}">${fits ? t('common.fits') : t('common.noFit')}: ${pr[1]}</span>`;
   }
 
@@ -205,13 +207,13 @@ export async function createTool(tool) {
     const v = new Viewer(box, { still: true });
     v.grid.visible = false;
     v.renderer.setClearColor(0x000000, 0);
-    v.toggleEdges(true);
+    v.toggleEdges(tool.defaults.edges !== false);
     // Önce açık modun şablonları çizilir, gerisi arkadan gelir.
     const order = [...tool.presets].sort((a, b) => (b.mode === state.mode) - (a.mode === state.mode));
     for (const p of order) {
       await new Promise((r) => setTimeout(r, 30));
       try {
-        const s = { ...tool.defaults, ...(p.mode ? { mode: p.mode } : {}), ...p.values };
+        const s = { ...tool.defaults, ...(p.mode ? { mode: p.mode } : {}), ...p.values, _thumb: true };
         tool.enforce(s);
         const out = tool.build(s);
         v.setColor(p.color || s.color);

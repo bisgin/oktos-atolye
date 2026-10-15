@@ -31,8 +31,10 @@ export function buildPanel(root, schema, state, onChange) {
     const rec = { item, el: row };
 
     if (item.type === 'range') {
-      row.innerHTML = `<label><span>${t(item.label)}</span><span class="num"><input type="number"><em>${item.unit ?? ''}</em></span></label><input type="range">`;
-      const [num, rng] = row.querySelectorAll('input');
+      // fmt(s) verilirse sayı kutusu yerine okunur metin gösterilir (örn. köşe sayısı 13 → ∞).
+      row.innerHTML = `<label><span>${t(item.label)}</span><span class="num">${item.fmt ? '<output></output>' : '<input type="number">'}<em>${item.unit ?? ''}</em></span></label><input type="range">`;
+      const rng = row.querySelector('input[type=range]');
+      const num = row.querySelector('input[type=number]') || row.querySelector('output');
       const set = (raw) => {
         const s = state;
         let v = Number(raw);
@@ -42,14 +44,15 @@ export function buildPanel(root, schema, state, onChange) {
         onChange(item.key);
       };
       rng.addEventListener('input', () => set(rng.value));
-      num.addEventListener('change', () => set(num.value));
+      if (!item.fmt) num.addEventListener('change', () => set(num.value));
       rec.sync = () => {
         const s = state;
-        for (const inp of [num, rng]) {
+        for (const inp of item.fmt ? [rng] : [num, rng]) {
           inp.min = val(item.min, s); inp.max = val(item.max, s); inp.step = item.step ?? 1;
         }
         rng.value = s[item.key];
-        if (document.activeElement !== num) num.value = round(s[item.key], item.step ?? 1);
+        if (item.fmt) num.textContent = item.fmt(s[item.key], s);
+        else if (document.activeElement !== num) num.value = round(s[item.key], item.step ?? 1);
       };
     } else if (item.type === 'select') {
       row.innerHTML = `<label><span>${t(item.label)}</span><select></select></label>`;

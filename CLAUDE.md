@@ -29,3 +29,7 @@ Her iş türünde ilgili skill'i çağır, önce Gotchas bölümünü oku.
 ## Gotchas
 - [2026-10-15] `bisgin/oktos-workshop` adı zaten Documents\Oktos çalışma alanı reposuna ait → Atölye sitesi oraya konmaz (o repo hiç açılmamalı) → Site ayrı repo adıyla açılır.
 - [2026-10-15] Bilgisayarda Node yok → Vite planı düştü → Derlemesiz ES modülü + importmap; yerel sunucu `scripts/serve.ps1` (Python).
+- [2026-10-15] `python -m http.server` modülleri önbelleğe aldırıyor, yeni export "bulunamadı" hatası veriyor → Önbellek başlığı yok → Her zaman `scripts/serve.py` (Cache-Control: no-store) kullan.
+- [2026-10-15] Uzun vazo "kesik" göründü → Model değil, dar ekranda iki satırlık ölçü kutusu tepeyi örtüyordu → Önce `window.oktos.viewer` ile NDC ölç, sonra düzelt. Telefonda ikincil ölçüler gizli (`.minor`).
+- [2026-10-15] Tarayıcı paneli arka plandayken requestAnimationFrame durur, ekran görüntüsü eski kare gösterir → Görüntüleyici her değişiklikte `renderNow()` çağırır.
+- [2026-10-15] Vazo ağı elle üretiliyor → `fromMesh` (manifold) ağ kapalı değilse hata fırlatır; bu doğrulamanın kendisidir. İç duvar 2B normal ofsetiyle üretilir; çok derin yıldız/dişli iç köşede kendini kesebilir (manifold bunu yakalamaz) → Derinlik üst sınırı 0.6.
