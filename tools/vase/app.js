@@ -20,14 +20,14 @@ const strings = {
     'p.round': 'Köşe yuvarlatma', 'p.depth': 'Derinlik', 'p.aspect': 'En / boy oranı', 'p.arm': 'Kol kalınlığı', 'p.rotate': 'Döndür',
     'p.blendTop': 'Üstte farklı kesit', 'p.blendTop.h': 'Alttaki kesit yukarı doğru buna dönüşür',
     'p.topKind': 'Üst kesit', 'p.topSides': 'Üst köşe sayısı',
-    'p.on': 'Açık', 'p.twist': 'Toplam açı', 'p.from': 'Başlangıç', 'p.to': 'Bitiş', 'p.fade': 'Yumuşak geçiş',
+    'p.on': 'Açık', 'p.twistOn': 'Burgu ekle', 'p.ribsOn': 'Kaburga ekle', 'p.waveOn': 'Dalga ekle', 'p.noiseOn': 'Organik doku ekle', 'sec.model': 'Model', 'p.twist': 'Toplam açı', 'p.from': 'Başlangıç', 'p.to': 'Bitiş', 'p.fade': 'Yumuşak geçiş',
     'p.ribCount': 'Kaburga sayısı', 'p.ribDepth': 'Derinlik', 'p.ribStyle': 'Profil', 'rs.v': 'Keskin', 'rs.round': 'Yuvarlak', 'rs.flat': 'Düz',
     'p.ribHelix': 'Sarmal tur',
     'p.waveAmp': 'Genlik', 'p.waveN': 'Dalga sayısı',
     'p.noiseAmp': 'Miktar', 'p.noiseScale': 'Ölçek', 'p.noiseSeed': 'Tohum',
     'p.flare': 'Ağız açılması', 'p.flareZone': 'Ağız bölgesi', 'p.ruffleN': 'Fırfır sayısı', 'p.ruffleDepth': 'Fırfır derinliği',
     'p.quality': 'Ağ çözünürlüğü', 'q.draft': 'Taslak', 'q.normal': 'Normal', 'q.fine': 'İnce',
-    'p.color': 'Önizleme rengi', 'p.printer': 'Yazıcı', 'p.edges': 'Kenar çizgileri',
+    'p.color': 'Renk', 'p.printer': 'Yazıcı', 'p.edges': 'Kenar çizgileri',
     'col.terra': 'Terrakota', 'col.sand': 'Kum', 'col.sage': 'Adaçayı', 'col.ink': 'Siyah', 'col.white': 'Beyaz', 'col.blue': 'Gece mavisi', 'col.gold': 'Altın', 'col.rose': 'Gül',
     'info.res': 'Çözünürlük',
     'n.vasemode': 'Vazo modu: dilimleyicide "spiral vazo" seçeneğini aç, duvarı nozul belirler.',
@@ -55,14 +55,14 @@ const strings = {
     'p.round': 'Corner rounding', 'p.depth': 'Depth', 'p.aspect': 'Aspect ratio', 'p.arm': 'Arm width', 'p.rotate': 'Rotate',
     'p.blendTop': 'Different top section', 'p.blendTop.h': 'The bottom section morphs into this one',
     'p.topKind': 'Top section', 'p.topSides': 'Top side count',
-    'p.on': 'On', 'p.twist': 'Total angle', 'p.from': 'Start', 'p.to': 'End', 'p.fade': 'Soft blend',
+    'p.on': 'On', 'p.twistOn': 'Add twist', 'p.ribsOn': 'Add ribs', 'p.waveOn': 'Add waves', 'p.noiseOn': 'Add organic texture', 'sec.model': 'Model', 'p.twist': 'Total angle', 'p.from': 'Start', 'p.to': 'End', 'p.fade': 'Soft blend',
     'p.ribCount': 'Rib count', 'p.ribDepth': 'Depth', 'p.ribStyle': 'Profile', 'rs.v': 'Sharp', 'rs.round': 'Round', 'rs.flat': 'Flat',
     'p.ribHelix': 'Helix turns',
     'p.waveAmp': 'Amplitude', 'p.waveN': 'Wave count',
     'p.noiseAmp': 'Amount', 'p.noiseScale': 'Scale', 'p.noiseSeed': 'Seed',
     'p.flare': 'Rim flare', 'p.flareZone': 'Rim zone', 'p.ruffleN': 'Ruffle count', 'p.ruffleDepth': 'Ruffle depth',
     'p.quality': 'Mesh resolution', 'q.draft': 'Draft', 'q.normal': 'Normal', 'q.fine': 'Fine',
-    'p.color': 'Preview colour', 'p.printer': 'Printer', 'p.edges': 'Edge lines',
+    'p.color': 'Colour', 'p.printer': 'Printer', 'p.edges': 'Edge lines',
     'col.terra': 'Terracotta', 'col.sand': 'Sand', 'col.sage': 'Sage', 'col.ink': 'Black', 'col.white': 'White', 'col.blue': 'Night blue', 'col.gold': 'Gold', 'col.rose': 'Rose',
     'info.res': 'Resolution',
     'n.vasemode': 'Vase mode: turn on "spiral vase" in your slicer; the nozzle sets the wall.',
@@ -130,9 +130,6 @@ function schema() {
     { type: 'range', key: 'height', label: 'p.height', min: 20, max: 500, step: 1, unit: 'mm' },
     { type: 'range', key: 'dBottom', label: 'p.dBottom', min: 10, max: 300, step: 1, unit: 'mm' },
     { type: 'range', key: 'dTop', label: 'p.dTop', min: 10, max: 300, step: 1, unit: 'mm' },
-    { type: 'segmented', key: 'style', label: 'p.style', options: [['hollow', 'st.hollow'], ['solid', 'st.solid']] },
-    { type: 'range', key: 'wall', label: 'p.wall', min: 0.8, max: 6, step: 0.1, unit: 'mm', show: (s) => s.style === 'hollow' },
-    { type: 'range', key: 'base', label: 'p.base', min: 0, max: 8, step: 0.5, unit: 'mm', show: (s) => s.style === 'hollow' },
 
     { type: 'section', label: 'sec.section' },
     { type: 'select', key: 'kind', label: 'p.kind', options: KINDS },
@@ -140,7 +137,8 @@ function schema() {
     { type: 'range', key: 'sides', label: 'p.points', min: 3, max: 24, step: 1, show: (s) => s.kind === 'star' },
     { type: 'range', key: 'sides', label: 'p.petals', min: 3, max: 24, step: 1, show: (s) => s.kind === 'flower' },
     { type: 'range', key: 'sides', label: 'p.teeth', min: 6, max: 60, step: 1, show: (s) => s.kind === 'gear' },
-    { type: 'range', key: 'round', label: 'p.round', min: 0, max: 1, step: 0.05, show: (s) => ['poly', 'star', 'gear'].includes(s.kind) && s.sides < SIDES_CIRCLE },
+    // Çember (∞) seçilince satır gizlenmez, pasifleşir: sürüklerken düzen zıplamasın.
+    { type: 'range', key: 'round', label: 'p.round', min: 0, max: 1, step: 0.05, show: (s) => ['poly', 'star', 'gear'].includes(s.kind), disabled: (s) => s.kind === 'poly' && s.sides >= SIDES_CIRCLE },
     { type: 'range', key: 'depth', label: 'p.depth', min: 0.02, max: 0.6, step: 0.01, show: (s) => ['star', 'flower', 'gear'].includes(s.kind) },
     { type: 'range', key: 'aspect', label: 'p.aspect', min: 0.3, max: 1, step: 0.01, show: (s) => s.kind === 'ellipse' || s.kind === 'squircle' },
     { type: 'range', key: 'aspect', label: 'p.arm', min: 0.15, max: 0.6, step: 0.01, show: (s) => s.kind === 'plus' },
@@ -155,12 +153,12 @@ function schema() {
     { type: 'range', key: 'waveCycles', label: 'p.waveCycles', min: 1, max: 8, step: 1, show: (s) => s.profile === 'wave' },
 
     { type: 'section', label: 'sec.twist' },
-    { type: 'toggle', key: 'twistOn', label: 'p.on' },
+    { type: 'toggle', key: 'twistOn', label: 'p.twistOn' },
     { type: 'range', key: 'twist', label: 'p.twist', min: -720, max: 720, step: 5, unit: '°', show: (s) => s.twistOn },
     ...bandItems('twistOn', 'twS', 'twE'),
 
     { type: 'section', label: 'sec.ribs' },
-    { type: 'toggle', key: 'ribsOn', label: 'p.on' },
+    { type: 'toggle', key: 'ribsOn', label: 'p.ribsOn' },
     { type: 'range', key: 'ribCount', label: 'p.ribCount', min: 2, max: 120, step: 1, show: (s) => s.ribsOn },
     { type: 'range', key: 'ribDepth', label: 'p.ribDepth', min: 0.2, max: 8, step: 0.1, unit: 'mm', show: (s) => s.ribsOn },
     { type: 'segmented', key: 'ribStyle', label: 'p.ribStyle', options: [['v', 'rs.v'], ['round', 'rs.round'], ['flat', 'rs.flat']], show: (s) => s.ribsOn },
@@ -168,13 +166,13 @@ function schema() {
     ...bandItems('ribsOn', 'ribS', 'ribE', 'ribF'),
 
     { type: 'section', label: 'sec.wave' },
-    { type: 'toggle', key: 'waveOn', label: 'p.on' },
+    { type: 'toggle', key: 'waveOn', label: 'p.waveOn' },
     { type: 'range', key: 'waveAmp', label: 'p.waveAmp', min: 0.2, max: 8, step: 0.1, unit: 'mm', show: (s) => s.waveOn },
     { type: 'range', key: 'waveN', label: 'p.waveN', min: 1, max: 40, step: 1, show: (s) => s.waveOn },
     ...bandItems('waveOn', 'wvS', 'wvE', 'wvF'),
 
     { type: 'section', label: 'sec.noise' },
-    { type: 'toggle', key: 'noiseOn', label: 'p.on' },
+    { type: 'toggle', key: 'noiseOn', label: 'p.noiseOn' },
     { type: 'range', key: 'noiseAmp', label: 'p.noiseAmp', min: 0.2, max: 12, step: 0.1, unit: 'mm', show: (s) => s.noiseOn },
     { type: 'range', key: 'noiseScale', label: 'p.noiseScale', min: 0.5, max: 8, step: 0.1, show: (s) => s.noiseOn },
     { type: 'range', key: 'noiseSeed', label: 'p.noiseSeed', min: 1, max: 99, step: 1, show: (s) => s.noiseOn },
@@ -186,9 +184,16 @@ function schema() {
     { type: 'range', key: 'ruffleN', label: 'p.ruffleN', min: 0, max: 12, step: 1 },
     { type: 'range', key: 'ruffleDepth', label: 'p.ruffleDepth', min: 0, max: 30, step: 0.5, unit: 'mm', show: (s) => s.ruffleN > 0 },
 
+    { type: 'section', label: 'common.colorSw' },
+    { type: 'swatch', key: 'color', label: 'p.color', hideLabel: true, options: COLORS },
+
+    { type: 'advanced', label: 'common.advanced' },
+    { type: 'section', label: 'sec.model' },
+    { type: 'segmented', key: 'style', label: 'p.style', options: [['hollow', 'st.hollow'], ['solid', 'st.solid']] },
+    { type: 'range', key: 'wall', label: 'p.wall', min: 0.8, max: 6, step: 0.1, unit: 'mm', show: (s) => s.style === 'hollow' },
+    { type: 'range', key: 'base', label: 'p.base', min: 0, max: 8, step: 0.5, unit: 'mm', show: (s) => s.style === 'hollow' },
     { type: 'section', label: 'sec.view' },
     { type: 'segmented', key: 'quality', label: 'p.quality', options: [['draft', 'q.draft'], ['normal', 'q.normal'], ['fine', 'q.fine']] },
-    { type: 'select', key: 'color', label: 'p.color', options: COLORS },
     { type: 'select', key: 'printer', label: 'p.printer', options: PRINTERS.map(([id, name]) => [id, name]) },
     { type: 'toggle', key: 'edges', label: 'p.edges' },
   ];
@@ -215,11 +220,14 @@ function build(s) {
   const m = vaseMesh(s);
   const r = scope(() => fromMesh(m.positions, m.indices));
   const res = resolution(s);
-  return { parts: [{ result: r, name: 'vase' }], info: [['info.res', `${res.nT} × ${res.nZ}`]] };
+  return { parts: [{ result: r, name: 'vase', smooth: true }], info: [['info.res', `${res.nT} × ${res.nZ}`]] };
 }
 
 const fileName = (s) => `oktos_vazo_${s.kind}${s.kind === 'poly' ? (s.sides >= SIDES_CIRCLE ? 'cember' : s.sides) : ''}_${s.height}mm`;
 
+// Araç tanımı: atölye (createTool) ve hikâye sahnesi (scene.js) aynı tanımı kullanır.
+export const TOOL = { id: 'vase', strings, defaults, presets, schema, build, fileName, enforce };
+
 export function start() {
-  return createTool({ id: 'vase', strings, defaults, presets, schema, build, fileName, enforce });
+  return createTool(TOOL);
 }

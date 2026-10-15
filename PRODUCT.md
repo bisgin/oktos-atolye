@@ -8,12 +8,12 @@ QR, filament painter ve devamı. Sunucu yok, kurulum yok.
 
 ## Kim için
 - Türkiye'de 3B baskı müşterisi: kendi ölçüsünde organizer, kalemlik, vazo isteyen ama CAD bilmeyen kişi.
-- Kendi yazıcısı olan maker (STL/3MF indirir).
+- Kendi yazıcısı olan maker: tasarlar, fikir alır; dosya indirilmez, baskıyı Oktos yapar.
 - Oktos'un kendisi: ürün varyasyonlarını hızlı üretmek için.
 
 ## İş modeli
-Yerel sipariş: tasarla → Oktos basıp gönderir. İndirme şimdilik açık (varsayım: ileride ücretli
-ya da sipariş öncelikli olabilir).
+Yalnız yerel sipariş: tasarla → Oktos basıp gönderir. Müşteriye dosya indirme yok (2026-10-15 kararı).
+Sipariş WhatsApp'a hazır mesajla gider (ölçü, gram, renk, tasarım linki); fiyat ve süre ayarlanınca gösterilir.
 
 ## Öncelik
 1. Kullanım kolaylığı: CAD bilmeyen biri 1 dakikada anlamlı bir parça çıkarabilmeli.

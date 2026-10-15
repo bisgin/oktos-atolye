@@ -1,0 +1,86 @@
+<!doctype html>
+<html lang="tr" class="story-on">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Sahne Laboratuvarı · Oktos Workshop</title>
+<meta name="robots" content="noindex">
+<link rel="icon" href="../core/icon.svg" type="image/svg+xml">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Schibsted+Grotesk:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<link rel="stylesheet" href="../core/style.css">
+<link rel="stylesheet" href="../core/story.css">
+<script type="importmap">
+{ "imports": {
+  "three": "https://cdn.jsdelivr.net/npm/three@0.162.0/build/three.module.js",
+  "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.162.0/examples/jsm/",
+  "manifold-3d": "https://cdn.jsdelivr.net/npm/manifold-3d@2.5.1/manifold.js",
+  "gsap": "https://cdn.jsdelivr.net/npm/gsap@3.15.0/index.js",
+  "opentype": "https://cdn.jsdelivr.net/npm/opentype.js@1.3.4/dist/opentype.module.js"
+} }
+</script>
+<style>
+  /* Yalnız laboratuvar: sahneler arası geçiş çubuğu */
+  .labbar { display: flex; gap: 4px; align-items: center; overflow-x: auto; scrollbar-width: none; }
+  .labbar a { font-size: 13px; font-weight: 600; color: var(--ink-2); text-decoration: none; padding: 5px 9px; border-radius: 7px; white-space: nowrap; }
+  .labbar a.on { background: var(--ink); color: var(--panel); }
+  .labbar select { font-size: 12.5px; }
+</style>
+</head>
+<body>
+<header class="topbar">
+  <a class="brand" href="../index.html"><img src="../core/icon.svg" alt="" width="26" height="26"><span>Oktos Workshop</span></a>
+  <nav class="labbar" id="labbar" aria-label="Sahneler"></nav>
+  <span class="spacer"></span>
+  <select id="mode" aria-label="Akış modu"><option value="">otomatik</option><option value="full">full</option><option value="short">short</option><option value="still">still</option></select>
+  <div class="lang" role="group" aria-label="Dil / Language"><button type="button" data-lang="tr">TR</button><button type="button" data-lang="en">EN</button></div>
+</header>
+
+<section class="story" id="story" aria-labelledby="story-title">
+  <div class="story-canvas"></div>
+  <div class="story-pins"></div>
+  <div class="story-copy">
+    <h1 class="story-title" id="story-title"></h1>
+    <p class="story-lede"></p>
+    <div class="story-actions">
+      <button type="button" class="story-cta"></button>
+      <span class="story-hint"></span>
+    </div>
+  </div>
+  <nav class="story-strip"></nav>
+  <div class="story-veil"></div>
+  <p class="story-live" aria-live="polite"></p>
+</section>
+
+<script type="module">
+  import { mountStory } from '../core/story.js';
+  import { STORIES, STORY_ORDER } from '../core/story-data.js';
+  import { getLang, setLang } from '../core/i18n.js';
+
+  const params = new URLSearchParams(location.search);
+  const toolId = STORIES[params.get('arac')] ? params.get('arac') : 'bin';
+  const lang = getLang();
+  const modeSel = document.getElementById('mode');
+  modeSel.value = params.get('mod') || '';
+
+  document.getElementById('labbar').innerHTML = STORY_ORDER.map((id) =>
+    `<a href="?arac=${id}${modeSel.value ? '&mod=' + modeSel.value : ''}" class="${id === toolId ? 'on' : ''}">${STORIES[id].name[lang]}</a>`).join('');
+  modeSel.addEventListener('change', () => { params.set('mod', modeSel.value); location.search = params.toString(); });
+  document.querySelectorAll('.lang button').forEach((b) => {
+    b.classList.toggle('on', b.dataset.lang === lang);
+    b.addEventListener('click', () => { setLang(b.dataset.lang); location.reload(); });
+  });
+  document.title = `${STORIES[toolId].name[lang]} · Sahne`;
+
+  const t0 = performance.now();
+  window.story = await mountStory(document.getElementById('story'), {
+    toolId, lang,
+    ...(modeSel.value ? { mode: modeSel.value } : {}),
+    onPick: (preset) => { location.href = `../${STORIES[toolId].href}?sablon=${encodeURIComponent(preset)}`; },
+    onSkip: () => { location.href = `../${STORIES[toolId].href}`; },
+  });
+  window.storyReadyMs = Math.round(performance.now() - t0);
+</script>
+</body>
+</html>

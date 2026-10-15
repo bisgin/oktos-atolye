@@ -144,7 +144,7 @@ export function radiusFn(s) {
 }
 
 export function resolution(s) {
-  const q = s._thumb ? 'draft' : s.quality;
+  const q = s._thumb || s._drag ? 'draft' : s.quality; // sürüklerken taslak
   let nT = q === 'draft' ? 96 : q === 'fine' ? 320 : 192;
   if (s.ribsOn) nT = Math.max(nT, Math.min(480, s.ribCount * 8));
   if (s.kind !== 'poly' && s.kind !== 'ellipse') nT = Math.max(nT, Math.min(480, s.sides * 16));

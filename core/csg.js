@@ -61,6 +61,11 @@ export function poly2(points) {
   return T(new W.CrossSection([points], 'Positive'));
 }
 
+// Delikli çokgen kümesi (ör. yazı tipi harfleri): yön fark etmez, iç içe konturlar delik olur.
+export function polys2(polygons) {
+  return T(new W.CrossSection(polygons, 'EvenOdd'));
+}
+
 export function offset2(cs, delta, seg = SEG) {
   return T(cs.offset(delta, 'Round', 2, seg));
 }
@@ -86,6 +91,18 @@ export function loft(csA, zA, csB, zB) {
   const a = T(T(csA.extrude(eps)).translate([0, 0, zA]));
   const b = T(T(csB.extrude(eps)).translate([0, 0, zB - eps]));
   return T(W.Manifold.hull([a, b]));
+}
+
+export function sphere(r, seg = 48) {
+  return T(W.Manifold.sphere(r, seg));
+}
+
+export const scale = (m, v) => T(m.scale(v));
+// Düzlemle iki parçaya böler: [üst, alt] (normal yönündeki parça ilk).
+export function splitZ(m, z) {
+  const [above, below] = m.splitByPlane([0, 0, 1], z);
+  T(above); T(below);
+  return [above, below];
 }
 
 export function hullPts(points) {

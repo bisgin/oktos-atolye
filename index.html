@@ -6,6 +6,9 @@
 <title>Oktos Workshop</title>
 <meta name="description" content="Tarayıcıda çalışan parametrik 3B baskı atölyesi: organizer, vazo, clicker, yazı ve daha fazlası.">
 <link rel="icon" href="core/icon.svg" type="image/svg+xml">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Schibsted+Grotesk:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap">
 <link rel="stylesheet" href="core/style.css">
 </head>
 <body>
@@ -17,10 +20,11 @@
 <main class="home">
   <h1 data-i18n="home.h1">Ölçünü gir, atölye bassın.</h1>
   <p class="intro" data-i18n="home.intro">Organizer, vazo, kalemlik, clicker. Tarayıcıda tasarla, önizle, STL indir ya da Oktos'a bastır. Kurulum yok, üyelik yok.</p>
-  <nav class="toolgrid" id="tools" aria-label="Araçlar"></nav>
+  <nav class="toolgrid" id="tools" aria-label="Araçlar / Tools"></nav>
 </main>
 <script type="module">
   import { t, addStrings, applyI18n, setLang, getLang, onLang } from './core/i18n.js';
+  import { STORIES } from './core/story-data.js';
   addStrings({
     tr: {
       'home.h1': 'Ölçünü gir, atölye bassın.',
@@ -58,15 +62,17 @@
     puzzle: '<path d="M6 6h8v3a2 2 0 1 0 4 0V6h8v8h-3a2 2 0 1 0 0 4h3v8h-8v-3a2 2 0 1 0-4 0v3H6v-8h3a2 2 0 1 0 0-4H6z"/>',
   };
   const tools = [
-    ['bin', 'tools/bin/index.html', true], ['vase', 'tools/vase/index.html', true], ['clicker', '#', false], ['text', '#', false],
-    ['flip', '#', false], ['qr', '#', false], ['painter', '#', false], ['puzzle', '#', false],
+    ['bin', 'tools/bin/index.html', true], ['vase', 'tools/vase/index.html', true], ['clicker', 'tools/clicker/index.html', false], ['text', 'tools/text/index.html', false],
+    ['flip', 'tools/flip/index.html', false], ['qr', 'tools/qr/index.html', false], ['painter', 'tools/painter/index.html', false], ['puzzle', 'tools/puzzle/index.html', false],
   ];
+  // Her araç kendi sayfasına gider: hazır olanlar atölyeye, "Yakında" olanlar hikâye sahnesine.
   const render = () => {
-    document.getElementById('tools').innerHTML = tools.map(([id, href, live]) => `
-      <a class="toolrow ${live ? '' : 'soon'}" href="${href}" ${live ? '' : 'aria-disabled="true" tabindex="-1"'}>
-        <span class="ic"><svg viewBox="0 0 32 32">${I[id]}</svg></span>
-        <span><h3>${t('t.' + id)}</h3><p>${t('t.' + id + '.d')}</p><span class="st ${live ? 'live' : ''}">${t(live ? 'status.live' : 'status.soon')}</span></span>
-      </a>`).join('');
+    const lang = getLang();
+    document.getElementById('tools').innerHTML = tools.map(([id, href, live]) => {
+      const inner = `<span class="ic" aria-hidden="true"><svg viewBox="0 0 32 32">${I[id]}</svg></span>
+        <span><h2>${t('t.' + id)}</h2><p class="story-line">${STORIES[id].title[lang]}</p><p>${t('t.' + id + '.d')}</p><span class="st ${live ? 'live' : ''}">${t(live ? 'status.live' : 'status.soon')}</span></span>`;
+      return `<a class="toolrow${live ? '' : ' soon'}" href="${href}">${inner}</a>`;
+    }).join('');
     applyI18n();
     document.querySelectorAll('.lang button').forEach((b) => b.classList.toggle('on', b.dataset.lang === getLang()));
   };

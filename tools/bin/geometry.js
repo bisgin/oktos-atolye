@@ -101,11 +101,11 @@ export function customBin(s) {
     const foot = C.rrect(w - 2 * (wall + 0.3), d - 2 * (wall + 0.3), Math.max(0.3, r - wall - 0.3));
     cuts.push(C.extrude(C.sub(C.rrect(w + 2, d + 2, r + 1), foot), LH, -0.01));
   }
-  if (s.holes) cuts.push(...floorHoles(wi, di, cols, rows, div, -1, floor + 1));
+  if (s.holes && !s._thumb) cuts.push(...floorHoles(wi, di, cols, rows, div, -1, floor + 1)); // küçük resimde delik atlanır (pahalı)
   body = C.subAll(body, cuts);
 
   const inside = [...dividers(wi, di, cols, rows, div, floor - 0.01, h)];
-  if (s.label === 'shelf') inside.push(...labelShelves(wi, di, rows, div, h));
+  if (s.shelf) inside.push(...labelShelves(wi, di, rows, div, h));
   if (s.scoop) inside.push(...scoops(wi, di, rows, div, floor - 0.01, h - floor));
   if (inside.length) {
     // İç parçalar dış duvarı taşmasın diye iç alana kırpılır.
@@ -122,7 +122,7 @@ function roundBin(s) {
   const seg = 128;
   let body = C.extrude(C.circle2(R, seg), h);
   const cuts = [C.extrude(C.circle2(Ri, seg), h + 2, floor)];
-  if (s.holes) {
+  if (s.holes && !s._thumb) {
     for (let a = 0, n = 0; a < 6 && n < 300; a++) {
       const rr = (Ri - 4) * (a / 5);
       const k = a === 0 ? 1 : Math.floor((2 * Math.PI * rr) / 8);

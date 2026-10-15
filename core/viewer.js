@@ -69,8 +69,12 @@ export class Viewer {
     this.material.color.set(hex);
   }
 
-  // parts: [{ result (csg.scope çıktısı), color?, offset?: [x,y,z], ghost?: bool }]
+  // parts: [{ result (csg.scope çıktısı), color?, offset?: [x,y,z], ghost?: bool, smooth?: bool }]
+  // Geometri indeksli kalır; düz gölge malzemede (flatShading) yapılır. Kenar çizgisi yalnız
+  // açıkken hesaplanır (en pahalı adımdı); sonradan açılırsa toggleEdges üretir.
   show(parts, { refit = false } = {}) {
+    // Geometri atılır; malzeme ATILMAZ: atılırsa gölgelendirici programı silinir ve her güncellemede
+    // ~1 sn yeniden derlenir. Malzemeler renk + gölge türüne göre önbellekte yeniden kullanılır.
     for (const c of [...this.group.children]) {
       c.geometry?.dispose();
       this.group.remove(c);
@@ -79,27 +83,19 @@ export class Viewer {
     for (const p of parts) {
       const r = p.result;
       if (!r || r.empty) continue;
-      let geo = new THREE.BufferGeometry();
+      const geo = new THREE.BufferGeometry();
       const pos = r.numProp === 3 ? r.positions : stripProps(r.positions, r.numProp);
       geo.setAttribute('position', new THREE.BufferAttribute(pos, 3));
       geo.setIndex(new THREE.BufferAttribute(r.indices, 1));
-      const edges = new THREE.EdgesGeometry(geo, 25);
-      geo = geo.toNonIndexed();
-      geo.computeVertexNormals();
-      const mat = p.ghost
-        ? new THREE.MeshStandardMaterial({ color: 0xb8c0c8, roughness: 0.8, transparent: true, opacity: 0.45 })
-        : p.color ? this.material.clone() : this.material;
-      if (p.color && !p.ghost) mat.color.set(p.color);
+      if (p.smooth) geo.computeVertexNormals();
+      const mat = this.materialFor(p);
       const mesh = new THREE.Mesh(geo, mat);
-      const line = new THREE.LineSegments(edges, this.edgeMat);
-      line.visible = this.showEdges && !p.ghost;
-      line.userData.edge = true;
-      for (const o of [mesh, line]) {
-        if (p.offset) o.position.set(...p.offset);
-        this.group.add(o);
-      }
-      mesh.geometry.computeBoundingBox();
-      bb.union(mesh.geometry.boundingBox.clone().translate(mesh.position));
+      mesh.userData.ghost = !!p.ghost;
+      if (p.offset) mesh.position.set(...p.offset);
+      this.group.add(mesh);
+      if (this.showEdges && !p.ghost) this.addEdges(mesh);
+      geo.computeBoundingBox();
+      bb.union(geo.boundingBox.clone().translate(mesh.position));
     }
     const size = bb.isEmpty() ? null : bb.getSize(new THREE.Vector3());
     if (size && (refit || !this.lastSize || size.distanceTo(this.lastSize) > size.length() * 0.5)) {
@@ -109,9 +105,37 @@ export class Viewer {
     this.renderNow();
   }
 
+  materialFor(p) {
+    this.mats ||= new Map();
+    const key = p.ghost ? 'ghost' : `${p.smooth ? 's' : 'f'}|${p.color || ''}`;
+    if (!this.mats.has(key)) {
+      let m;
+      if (p.ghost) m = new THREE.MeshStandardMaterial({ color: 0xb8c0c8, roughness: 0.8, transparent: true, opacity: 0.45, flatShading: true });
+      else {
+        m = this.material.clone();
+        m.flatShading = !p.smooth;
+        if (p.color) m.color.set(p.color);
+      }
+      this.mats.set(key, m);
+    }
+    return this.mats.get(key);
+  }
+
+  addEdges(mesh) {
+    const line = new THREE.LineSegments(new THREE.EdgesGeometry(mesh.geometry, 25), this.edgeMat);
+    line.position.copy(mesh.position);
+    line.userData.edge = true;
+    this.group.add(line);
+  }
+
   toggleEdges(on) {
     this.showEdges = on;
-    for (const c of this.group.children) if (c.userData.edge) c.visible = on;
+    const lines = this.group.children.filter((c) => c.userData.edge);
+    if (on && !lines.length) {
+      for (const m of this.group.children.filter((c) => c.isMesh && !c.userData.ghost)) this.addEdges(m);
+    }
+    for (const c of lines) c.visible = on;
+    this.renderNow?.();
   }
 
   fit(bb) {

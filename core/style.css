@@ -1,5 +1,5 @@
 /* Oktos Workshop: ortak görünüm. Dünya: atölye zemini. Beton grisi, mürekkep, iş güvenliği turuncusu. */
-@import url('https://fonts.googleapis.com/css2?family=Schibsted+Grotesk:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap');
+/* Yazı tipleri HTML'de <link> ile yüklenir (CSS @import zinciri yavaşlatır). */
 
 :root {
   --paper: #eaedeb;
@@ -9,12 +9,14 @@
   --line-strong: #b5bcb7;
   --ink: #1d2126;
   --ink-2: #4f5660;
-  --ink-3: #7a8089;
+  --ink-3: #5d646d;
   --accent: #bf5519;
   --accent-ink: #94400f;
   --accent-wash: #f5e1d3;
-  --ok: #2f7a4f;
-  --warn: #a8641a;
+  --ok: #2b7048;
+  --warn: #8f5412;
+  --warn-wash: #f8ecdf;
+  --bad: #b3261e;
   --radius: 10px;
   --shadow: 0 1px 2px rgba(40, 30, 15, 0.06), 0 6px 18px rgba(40, 30, 15, 0.07);
   --sans: 'Schibsted Grotesk', system-ui, sans-serif;
@@ -73,7 +75,7 @@ button { font: inherit; color: inherit; cursor: pointer; }
   max-width: calc(100% - 32px);
 }
 .hud b { color: var(--ink); font-weight: 500; }
-.hud .bad { color: #b3261e; }
+.hud .bad { color: var(--bad); }
 .hud .good { color: var(--ok); }
 .viewbar {
   position: absolute; left: 16px; bottom: 14px;
@@ -103,12 +105,12 @@ button { font: inherit; color: inherit; cursor: pointer; }
   min-height: 0;
 }
 .side-scroll { flex: 1; overflow-y: auto; padding: 16px 18px 24px; scrollbar-width: thin; scrollbar-color: var(--line-strong) transparent; }
-.side h2 { font-size: 19px; letter-spacing: -0.015em; margin: 0 0 4px; }
+.side .tool-title { font-size: 19px; line-height: 1.25; letter-spacing: -0.015em; margin: 0 0 4px; }
 .side .lede { margin: 0 0 14px; color: var(--ink-2); font-size: 13.5px; }
 
 .modes { display: grid; grid-template-columns: repeat(3, 1fr); gap: 4px; background: var(--sunk); padding: 4px; border-radius: 10px; margin-bottom: 16px; }
 .modes button { border: 0; background: none; border-radius: 7px; padding: 8px 4px; font-size: 13px; font-weight: 600; color: var(--ink-2); line-height: 1.2; }
-.modes button.on { background: var(--panel); color: var(--ink); box-shadow: 0 1px 2px rgba(0,0,0,.08); }
+.modes button.on { background: var(--ink); color: var(--panel); box-shadow: 0 1px 2px rgba(0,0,0,.18); }
 
 .panel-section { border-top: 1px solid var(--line); padding: 14px 0 6px; }
 .panel-section h3 { margin: 0 0 10px; font-size: 13px; font-weight: 700; color: var(--ink); }
@@ -148,8 +150,8 @@ select:hover { border-color: var(--line); }
 .ctl-segmented .lbl { display: block; font-size: 13.5px; color: var(--ink-2); margin-bottom: 5px; }
 .seg { display: flex; gap: 3px; background: var(--sunk); padding: 3px; border-radius: 8px; }
 .seg button { flex: 1; border: 0; background: none; border-radius: 6px; padding: 5px 4px; font-size: 12.5px; font-weight: 600; color: var(--ink-2); }
-.seg button.on { background: var(--panel); color: var(--ink); box-shadow: 0 1px 2px rgba(0,0,0,.08); }
-.tgl { cursor: pointer; justify-content: flex-start !important; gap: 10px !important; }
+.seg button.on { background: var(--ink); color: var(--panel); box-shadow: 0 1px 2px rgba(0,0,0,.18); }
+.tgl { position: relative; cursor: pointer; justify-content: flex-start !important; gap: 10px !important; }
 .tgl input { position: absolute; opacity: 0; pointer-events: none; }
 .tgl .sw { flex: none; width: 32px; height: 18px; border-radius: 9px; background: var(--line-strong); position: relative; transition: background .15s; }
 .tgl .sw::after { content: ''; position: absolute; left: 2px; top: 2px; width: 14px; height: 14px; border-radius: 50%; background: #fff; transition: transform .15s; box-shadow: 0 1px 2px rgba(0,0,0,.2); }
@@ -159,10 +161,16 @@ select:hover { border-color: var(--line); }
 .tgl small { display: block; color: var(--ink-3); font-size: 12px; }
 
 .notes { margin: 6px 0 0; padding: 0; list-style: none; }
-.notes li { font-size: 12.5px; color: var(--warn); background: #f8ecdf; border-radius: 7px; padding: 6px 9px; margin-bottom: 5px; }
+.notes li { font-size: 12.5px; color: var(--warn); background: var(--warn-wash); border-radius: 7px; padding: 6px 9px; margin-bottom: 5px; }
 
 /* Alt eylem çubuğu */
-.actions { border-top: 1px solid var(--line); padding: 12px 18px 14px; display: grid; grid-template-columns: 1fr 1fr; gap: 8px; background: var(--panel); }
+.actions { border-top: 1px solid var(--line); padding: 12px 18px 14px; display: grid; grid-template-columns: 1fr auto; align-items: center; gap: 6px 10px; background: var(--panel); }
+.order-meta { grid-column: 1; margin: 0; font-size: 12.5px; color: var(--ink-2); }
+#share { grid-column: 2; padding: 6px 4px; font-size: 13px; }
+.share-fallback input { width: 100%; font: 12.5px var(--mono); padding: 6px 8px; border: 1px solid var(--line-strong); border-radius: 7px; background: var(--sunk); color: var(--ink); }
+.exports { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; padding-top: 6px; border-top: 1px dashed var(--line-strong); font-size: 12px; color: var(--ink-2); }
+.exports .btn { padding: 6px 10px; font-size: 12.5px; }
+.sr-only { position: absolute; top: 0; left: 0; width: 1px; height: 1px; margin: 0; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
 .btn { border: 1px solid var(--line-strong); background: var(--panel); border-radius: 8px; padding: 9px 10px; font-weight: 600; font-size: 13.5px; }
 .btn:hover { background: var(--sunk); }
 .btn.primary { background: var(--accent); border-color: var(--accent); color: #fff; }
@@ -177,17 +185,18 @@ select:hover { border-color: var(--line); }
 /* --- Ana sayfa --- */
 .home { max-width: 1120px; margin: 0 auto; padding: 56px 20px 80px; }
 .home h1 { font-size: clamp(32px, 5vw, 54px); line-height: 1.08; letter-spacing: -0.03em; margin: 0 0 14px; max-width: 14ch; }
-.home .intro { font-size: 17px; color: var(--ink-2); max-width: 58ch; margin: 0 0 40px; }
+.home .intro { font-size: 17px; line-height: 1.5; color: var(--ink-2); max-width: 58ch; margin: 0 0 40px; }
 .toolgrid { display: grid; grid-template-columns: repeat(auto-fill, minmax(250px, 1fr)); gap: 0; border-top: 1px solid var(--line-strong); }
 .toolrow { display: grid; grid-template-columns: 56px 1fr; gap: 14px; padding: 18px 16px 18px 0; border-bottom: 1px solid var(--line); text-decoration: none; color: inherit; }
-.toolrow:hover h3 { color: var(--accent-ink); }
+.toolrow:hover h2 { color: var(--accent-ink); }
 .toolrow .ic { width: 56px; height: 56px; border-radius: 12px; background: var(--sunk); display: grid; place-items: center; }
 .toolrow .ic svg { width: 30px; height: 30px; stroke: var(--ink); fill: none; stroke-width: 1.6; stroke-linecap: round; stroke-linejoin: round; }
-.toolrow h3 { margin: 2px 0 3px; font-size: 16px; line-height: 1.35; }
+.toolrow h2 { margin: 2px 0 3px; font-size: 16px; line-height: 1.35; }
+.toolrow .story-line { margin: 0 0 2px; font-size: 14px; font-weight: 600; color: var(--ink); }
 .toolrow p { margin: 0; font-size: 13.5px; color: var(--ink-2); }
 .toolrow .st { display: inline-block; font-size: 11.5px; font-weight: 600; color: var(--ink-3); margin-top: 6px; }
 .toolrow .st.live { color: var(--ok); }
-.toolrow.soon { pointer-events: none; }
+.toolrow.soon .st { color: var(--ink-2); }
 .toolrow.soon .ic { opacity: .55; }
 
 @media (max-width: 860px) {
@@ -198,6 +207,7 @@ select:hover { border-color: var(--line); }
   .actions { position: sticky; bottom: 0; }
   .topbar { padding: 0 16px; gap: 12px; }
   .crumb { display: none; }
+  .toplink { white-space: nowrap; }
   .stage .hud { font-size: 11px; gap: 3px 10px; padding: 5px 8px; left: 10px; top: 8px; max-width: calc(100% - 20px); }
   .stage .hud .minor { display: none; }
   .ctl, .panel-section { scroll-margin-top: 56vh; }
@@ -205,3 +215,69 @@ select:hover { border-color: var(--line); }
   .preset-grid { grid-template-columns: repeat(3, 1fr); }
 }
 @media (prefers-reduced-motion: reduce) { * { transition: none !important; animation: none !important; } }
+
+/* ---------- Renk kartelası ---------- */
+.swatches { display: flex; flex-wrap: wrap; gap: 8px; }
+.sw-btn {
+  width: 34px; height: 34px; border-radius: 50%;
+  border: 2px solid var(--panel);
+  background: var(--c);
+  box-shadow: 0 0 0 1px var(--line-strong), inset 0 -3px 6px rgba(0, 0, 0, 0.12);
+  transition: transform 0.15s cubic-bezier(0, 0, 0.2, 1), box-shadow 0.15s ease-out;
+}
+.sw-btn:hover { transform: scale(1.08); }
+.sw-btn.on { box-shadow: 0 0 0 2px var(--ink), inset 0 -3px 6px rgba(0, 0, 0, 0.12); }
+
+/* ---------- Atölye ayarları (katlanır) ---------- */
+.panel-adv { border-top: 1px solid var(--line); margin-top: 6px; }
+.panel-adv > summary {
+  list-style: none; cursor: pointer;
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 13px 0; font-size: 13px; font-weight: 700; color: var(--ink-2);
+}
+.panel-adv > summary::-webkit-details-marker { display: none; }
+.panel-adv > summary::after { content: ''; width: 8px; height: 8px; border-right: 2px solid var(--ink-2); border-bottom: 2px solid var(--ink-2); transform: rotate(45deg) translateY(-2px); transition: transform 0.18s ease-out; }
+.panel-adv[open] > summary::after { transform: rotate(225deg) translateY(-2px); }
+.panel-adv > summary:hover { color: var(--ink); }
+.panel-adv .panel-section:first-of-type { border-top: 0; padding-top: 0; }
+
+/* Pasif kontrol: gizlenmez, soluklaşır (düzen zıplamaz) */
+.ctl.is-disabled { opacity: 0.45; }
+.ctl.is-disabled input { cursor: not-allowed; }
+
+/* ---------- Alt eylem çubuğu: tek satır (sipariş + bağlantı) ---------- */
+.actions #order { grid-column: 1; }
+.actions #share { grid-column: 2; }
+.actions .order-meta { grid-column: 1 / -1; }
+.btn:disabled { opacity: 0.55; cursor: progress; }
+
+/* ---------- Dokunmatik: en az 44 px hedef ---------- */
+@media (pointer: coarse) {
+  .seg button, .modes button { min-height: 44px; }
+  select, .btn, .lang button, .viewbar button { min-height: 44px; }
+  .num input { height: 36px; width: 76px; font-size: 15px; }
+  input[type=range] { height: 40px; }
+  input[type=range]::-webkit-slider-thumb { width: 26px; height: 26px; margin-top: -11px; }
+  input[type=range]::-moz-range-thumb { width: 22px; height: 22px; }
+  .tgl { min-height: 44px; }
+  .sw-btn { width: 40px; height: 40px; }
+}
+
+/* ---------- Telefon: önizleme küçük kalır, odaklanan kontrol örtülmez ---------- */
+@media (max-width: 860px) {
+  html { scroll-padding-top: calc(42svh + 8px); scroll-padding-bottom: 96px; }
+  .stage { height: 42svh; }
+}
+/* Yatay telefon: yan yana, önizleme yapışkan değil */
+@media (max-width: 960px) and (max-height: 520px) and (orientation: landscape) {
+  .tool { grid-template-columns: 1fr 1fr; height: calc(100svh - 54px); }
+  .stage { position: relative; height: auto; }
+  .side-scroll { overflow-y: auto; }
+  .actions { position: static; }
+  html { scroll-padding-top: 0; }
+}
+
+/* Çok dar ekranda marka yalnız simge (üst çubuk iki satıra kırılmasın) */
+@media (max-width: 480px) {
+  .brand span { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+}
