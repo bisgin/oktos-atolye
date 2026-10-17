@@ -34,6 +34,8 @@
   <a class="brand" href="../index.html"><img src="../core/icon.svg" alt="" width="26" height="26"><span>Oktos Workshop</span></a>
   <nav class="labbar" aria-label="Laboratuvar">
     <a class="on" href="oda.html">Oda (gri kutu)</a>
+    <a href="oda.html?pilot=1">Pilot</a>
+    <a href="oda-pilot.html">Pilot ile gri kutu yan yana</a>
     <a href="oda-yan-yana.html">Kutu sahnesiyle yan yana</a>
     <a href="sahne.html?arac=bin">Kutu sahnesi</a>
   </nav>
@@ -88,6 +90,9 @@
   const reduce = matchMedia('(prefers-reduced-motion: reduce)').matches || params.get('mod') === 'still';
   const single = () => matchMedia('(pointer: coarse), (max-width: 720px)').matches; // telefon: tek ürün, döngü
 
+  // ?pilot=1: fotogerçekçi pilot (pişmiş oda kabuğu, güneş huzmeleri, saksıda toprak ve gerçek çiçek)
+  odaScene.options.pilot = params.has('pilot');
+  if (params.has('pilot')) document.querySelector('.labbar a.on').textContent = 'Oda (pilot)';
   // Yakın plan paneli: başlık, cümle, şablon seçici, toz yazısı (core/oda-panel.js)
   const panel = odaPanel(root, { lang, reduce });
   // Denetleyici kendi değişkeninde: kurulmadan önce window.story, id="story" bölümünün kendisidir

@@ -1,0 +1,39 @@
+<!doctype html>
+<html lang="tr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Oda Pilotu · Karşılaştırma</title>
+<meta name="robots" content="noindex">
+<link rel="icon" href="../core/icon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Schibsted+Grotesk:wght@400;500;600;700&display=swap">
+<link rel="stylesheet" href="../core/style.css">
+<style>
+  /* Yalnız laboratuvar: fotogerçekçi pilot ile gri kutu alt alta, aynı bölgede ve aynı en-boy oranında (16:10).
+     Alt alta: yan yana dar çerçevede oda telefon düzenine geçiyordu. ?bolge=cekmece ile başka bölge. */
+  body { margin: 0; background: var(--paper, #f3f4f3); }
+  .yy { display: grid; gap: 18px; padding: 16px; max-width: 1400px; margin: 0 auto; }
+  figure { margin: 0; display: grid; gap: 8px; }
+  figcaption { font-size: 14px; font-weight: 600; color: var(--ink-2); }
+  iframe { width: 100%; aspect-ratio: 16 / 10; border: 1px solid var(--line); border-radius: 10px; background: #e9ece9; }
+</style>
+</head>
+<body>
+<main class="yy">
+  <figure>
+    <figcaption>Pilot: fotogerçekçi (pişmiş ışık, güneş huzmeleri, toprak ve gerçek çiçek)</figcaption>
+    <iframe id="pilot" title="Oda sahnesi, fotogerçekçi pilot"></iframe>
+  </figure>
+  <figure>
+    <figcaption>Gri kutu (v1)</figcaption>
+    <iframe id="gri" title="Oda sahnesi, gri kutu"></iframe>
+  </figure>
+</main>
+<script>
+  const b = new URLSearchParams(location.search).get('bolge') ?? 'saksilar';
+  const q = b ? `?odak=${encodeURIComponent(b)}` : '?';
+  document.getElementById('pilot').src = `oda.html${q}&pilot=1`;
+  document.getElementById('gri').src = `oda.html${q}`;
+</script>
+</body>
+</html>

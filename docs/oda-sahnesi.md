@@ -2,7 +2,17 @@
 
 Taslak, 2026-10-17. **Durum:** hat C seçildi; Aşama 1 (gri kutu) onaylandı. Aşama 2 kuruldu, onay bekliyor:
 12 bölgenin hepsinde araçların gerçek şablonları, odakta şablon değiştirme, kenar paneli ve toz yazısı
-(`core/oda-panel.js`). Deneme `lab/oda.html`, yan yana `lab/oda-yan-yana.html`. Ana sayfanın tek sahnesi: ev ofisi ve açık balkon. Ürettiğimiz her şey kendi doğal yerinde
+(`core/oda-panel.js`). Deneme `lab/oda.html`, yan yana `lab/oda-yan-yana.html`.
+2026-10-17: v1 `oda-sahnesi` dalına commitlendi. Yön değişti: ürünlerimiz dışında her şey fotogerçekçi olacak
+(gerçek çiçek ve toprak, ışık huzmeleri, monitör, buzdolabı, cam bardak). Balkon kapısı sürgülü (iki kanat ortadan
+açılır, pencerelerin önünde durur). Önce tek bölgede pilot (pencere kenarı saksıları), gri kutuyla yan yana.
+Pilot (önizleme kalitesi) kuruldu: `lab/oda.html?pilot=1`, yan yana `lab/oda-pilot.html`. Oda kabuğu, mermer
+pervazlar, kasalar ve balkon Blender'da Poly Haven dokularıyla kurulup sabah güneşiyle pişirildi
+(`scripts/oda-blender.py`); balkonun ardında gerçek gökyüzü, ürünlerin yansıması odanın 360° görüntüsünden, kapı ve
+pencerelerden güneş huzmeleri, saksıda toprak (saksının kendi kesitinden) ve gerçek çiçek (Poly Haven cezayir
+menekşesi). Mobilya şimdilik gri kutu. Son kalite pişirme yapıldı (2048/1024 px, 1024 örnek, RTX 3060'ta 3 dk);
+sitenin indirdiği pilot dosyaları ~1 MB (+ Draco çözücüsü 0,25 MB). Sıradaki: mobilya ve eşyalar fotogerçekçi
+(monitör, mini buzdolabı ve pasta, cam bardak, masa, raflar), güller Sketchfab CC-BY ile. Ana sayfanın tek sahnesi: ev ofisi ve açık balkon. Ürettiğimiz her şey kendi doğal yerinde
 durur; ziyaretçi bakar, tıklar, şablonları değiştirir, araca geçer. Görsel referanslar: sade ev ofisi (yatay
 aynalanmış) ve açık balkon (ahşap zemin, bistro masa, büyük saksılar).
 

@@ -1,0 +1,20 @@
+// Oda sahnesinin ölçüleri ve güneşi: tarayıcı (core/oda-sahne.js) ve Blender (scripts/oda-blender.py) aynı dosyayı
+// okur, oda iki yerde ayrı tanımlanıp kaymaz. Aşağıdaki nesne geçerli JSON kalmalı (çift tırnaklı anahtar, içinde yorum
+// yok, sonda virgül yok): Blender betiği "export const OLCU = " ile ardından gelen ilk satır başı "};" arasını okur.
+// Birim mm, Z yukarı; arka duvarın iç yüzü y = ROOM.y1, balkon onun arkasında.
+// SUN: güneşin geldiği yön. azimuth: +y'den (balkon tarafı) +x'e doğru derece; elevation: ufuktan derece. Sabah güneşi
+// balkondan odaya, kameraya doğru girer: huzmeler kameradan görünür, saksılar arkadan ışık alır.
+export const OLCU = {
+  "ROOM": { "x0": -2100, "x1": 2100, "y0": -1800, "y1": 1800, "h": 2700, "wall": 120 },
+  "GLASS": { "x0": -150, "x1": 1750, "door0": 350, "door1": 1250, "sill": 850, "head": 2300 },
+  "BALCONY": { "x0": -150, "x1": 1950, "y1": 3420 },
+  "DESK": { "x0": -1570, "x1": -250, "y0": 1100, "y1": 1780, "top": 740, "t": 28 },
+  "SILL": { "over": 60, "depth": 220, "t": 40, "inset": 100 },
+  "SUN": { "azimuth": 25, "elevation": 42, "color": [1.0, 0.93, 0.84], "strength": 4.5 }
+};
+
+// Güneşe doğru birim vektör (ışık bunun tersi yönde ilerler)
+export function toSun({ azimuth, elevation } = OLCU.SUN) {
+  const a = (azimuth * Math.PI) / 180, e = (elevation * Math.PI) / 180;
+  return [Math.sin(a) * Math.cos(e), Math.cos(a) * Math.cos(e), Math.sin(e)];
+}

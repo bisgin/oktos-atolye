@@ -1,7 +1,10 @@
 // Oda sahnesi (docs/oda-sahnesi.md): ev ofisi ve açık balkon (şimdilik gri kutu: düz bloklar). Her bölgenin
 // ürünü bir yuvada durur; yuvadaki model araçların gerçek şablonu (core/oda-urunler.js). Yakın plandayken şablon
 // değişir (api.show): eski model küçülüp kaybolur, yenisi yerine oturur; saksıda bitki yerinde kalır, yeni saksının
-// ağzına iner. Yerler ve kamera core/oda-yerler.js'ten; ortam sonra Blender'dan GLB olarak gelecek.
+// ağzına iner. Yerler ve kamera core/oda-yerler.js'ten.
+// Pilot (options.pilot, lab: ?pilot=1): oda kabuğu, pervazlar, kasalar ve balkon Blender'da pişmiş GLB'den gelir
+// (core/oda-ortam.js, scripts/oda-blender.py); camlar gerçek cam, ışık sabah güneşi ve huzmeler, saksıda toprak ve
+// gerçek çiçek. Mobilya şimdilik gri kutu.
 // Davranış: çekmece üzerine gelince aralanır, yakınlaşınca açılır; buzdolabının kapağı yakınlaşınca açılır.
 import * as THREE from 'three';
 import { gsap } from 'gsap';
@@ -9,17 +12,42 @@ import { initCSG } from './csg.js';
 import { fonts, textSolid, standUp, solid, C } from './scene-kit.js';
 import { ZONES, A, SHOTS, LOOK, FOCUS, LIGHTS } from './oda-yerler.js';
 import { TEMPLATES, buildTemplate, binModel, vaseModel } from './oda-urunler.js';
+import { OLCU, toSun } from './oda-olcu.js';
 
 const TAU = Math.PI * 2;
-const ROOM = { x0: -2100, x1: 2100, y0: -1800, y1: 1800, h: 2700, wall: 120 };
-const GLASS = { x0: -150, x1: 1750, door0: 350, door1: 1250, sill: 850, head: 2300 }; // pencere | kapı | pencere
-const BALCONY = { x0: -150, x1: 1950, y1: 3420 };
+const { ROOM, GLASS, BALCONY, DESK, SILL } = OLCU; // GLASS: pencere | kapı | pencere
 const FRAME = { w: 680, h: 520 }; // sol duvardaki yatay çerçeveler
 const yieldMain = () => globalThis.scheduler?.yield?.() ?? new Promise((r) => setTimeout(r, 0));
+export const options = { pilot: false }; // sayfa sahne kurulmadan önce açar
+
+// Pilotun dosyaları (scripts/oda-blender.py çıktıları) ve ışık ayarı; yalnız pilot açıkken yüklenir
+async function pilotYukle() {
+  const O = await import('./oda-ortam.js');
+  const meta = await O.ortamMeta();
+  const [kabuk, pano, gok, cicek] = await Promise.all([O.odaKabugu(meta), O.panoDokusu(meta), O.gokKubbesi(meta), O.cicekler(meta)]);
+  const sun = toSun(meta.gunes), G = GLASS, yd = ROOM.y1 + ROOM.wall; // huzmeler duvarın dış yüzünden başlar
+  const huzme = O.huzmeler([
+    { x0: G.door0, x1: G.door1, z0: 0, z1: G.head, y: yd },
+    { x0: G.x0, x1: G.door0, z0: G.sill, z1: G.head, y: yd },
+    { x0: G.door1, x1: G.x1, z0: G.sill, z1: G.head, y: yd },
+  ], sun);
+  const c = LIGHTS.center, dist = 5000;
+  return {
+    meta, kabuk, pano, gok, cicek, huzme, golge: O.golgeYuzeyi,
+    saksi: { toprak: O.toprakMalzemesi(), malzeme: (renk) => P_.clay(renk, { rough: 0.36, env: 1 }) },
+    // Güneş: pişirmedekiyle aynı yön, renk ve güç (fiziksel birimler); ortam ışığı 360° görüntüden, diğer lambalar kapalı
+    isik: { ...LIGHTS, key: [c[0] + sun[0] * dist, c[1] + sun[1] * dist, c[2] + sun[2] * dist], keyIntensity: meta.gunes.strength, keyColor: meta.gunes.color,
+      hemi: 0, fillIntensity: 0, rimIntensity: 0, toneMapping: 'agx', exposure: 5.5 },
+  };
+}
+let P_ = null; // props.js (buildScene'e gelir; pilot malzemesi için)
 
 export async function buildScene({ scene, P, lang = 'tr' }) {
+  P_ = P;
   await initCSG();
   const fs = await fonts(700);
+  const pilot = options.pilot ? await pilotYukle() : null;
+  const kabuk = !pilot; // gri kutu oda kabuğu (pilotta GLB'den gelir)
   const tone = (c, rough = 0.85) => P.clay(c, { rough, env: 0.45 });
   const M = {
     wall: tone(0xdcd8d1), floor: tone(0xb9b3a9), deck: tone(0x9a8e7d), top: tone(0xebe8e2, 0.6),
@@ -29,6 +57,7 @@ export async function buildScene({ scene, P, lang = 'tr' }) {
     lav: tone(0x8f7fb8, 0.8), stem: tone(0x7f8c62, 0.9),
     glass: P.clay(0xbfd3dc, { rough: 0.08, env: 1, transparent: true, opacity: 0.2 }),
   };
+  if (pilot) M.glass = new THREE.MeshPhysicalMaterial({ color: 0xffffff, roughness: 0.02, metalness: 0, transmission: 1, thickness: 6, ior: 1.5, envMapIntensity: 1 });
   // Kutu (tabanı z'de, XY'de ortalı); parent yoksa sahneye eklenir
   const box = (w, d, h, x, y, z, mat, { r = 2, parent = scene, cast = true } = {}) => {
     const m = P.mesh(P.rbox(w, d, h, r), mat, { cast });
@@ -41,32 +70,45 @@ export async function buildScene({ scene, P, lang = 'tr' }) {
 
   // ---- oda kabuğu: duvarlar gölge düşürmez (ışık balkona da ulaşsın; gerçek ışık Blender'da pişirilecek) ----
   const W = ROOM.wall, by = ROOM.y1 + W / 2;
-  box(ROOM.x1 - ROOM.x0, ROOM.y1 - ROOM.y0, 20, 0, 0, -20, M.floor, { r: 0, cast: false });
-  box(W, ROOM.y1 - ROOM.y0, ROOM.h, ROOM.x0 - W / 2, 0, 0, M.wall, { r: 0, cast: false });
-  box(W, ROOM.y1 - ROOM.y0, ROOM.h, ROOM.x1 + W / 2, 0, 0, M.wall, { r: 0, cast: false });
-  { const [w, x] = span(ROOM.x0 - W, GLASS.x0); box(w, W, ROOM.h, x, by, 0, M.wall, { r: 0, cast: false }); }
-  { const [w, x] = span(GLASS.x1, ROOM.x1 + W); box(w, W, ROOM.h, x, by, 0, M.wall, { r: 0, cast: false }); }
-  { const [w, x] = span(GLASS.x0, GLASS.x1); box(w, W, ROOM.h - GLASS.head, x, by, GLASS.head, M.wall, { r: 0, cast: false }); }
+  if (kabuk) {
+    box(ROOM.x1 - ROOM.x0, ROOM.y1 - ROOM.y0, 20, 0, 0, -20, M.floor, { r: 0, cast: false });
+    box(W, ROOM.y1 - ROOM.y0, ROOM.h, ROOM.x0 - W / 2, 0, 0, M.wall, { r: 0, cast: false });
+    box(W, ROOM.y1 - ROOM.y0, ROOM.h, ROOM.x1 + W / 2, 0, 0, M.wall, { r: 0, cast: false });
+    { const [w, x] = span(ROOM.x0 - W, GLASS.x0); box(w, W, ROOM.h, x, by, 0, M.wall, { r: 0, cast: false }); }
+    { const [w, x] = span(GLASS.x1, ROOM.x1 + W); box(w, W, ROOM.h, x, by, 0, M.wall, { r: 0, cast: false }); }
+    { const [w, x] = span(GLASS.x0, GLASS.x1); box(w, W, ROOM.h - GLASS.head, x, by, GLASS.head, M.wall, { r: 0, cast: false }); }
+  }
   for (const [a, b] of [[GLASS.x0, GLASS.door0], [GLASS.door1, GLASS.x1]]) { // pencere: alt duvar, cam, içeri taşan pervaz
     const [w, x] = span(a, b);
-    box(w, W, GLASS.sill, x, by, 0, M.wall, { r: 0, cast: false });
     box(w, 8, GLASS.head - GLASS.sill, x, by, GLASS.sill, M.glass, { r: 1, cast: false });
-    box(w + 60, 220, 40, x, ROOM.y1 - 100, GLASS.sill - 40, M.top, { cast: false });
+    if (!kabuk) continue;
+    box(w, W, GLASS.sill, x, by, 0, M.wall, { r: 0, cast: false });
+    box(w + SILL.over, SILL.depth, SILL.t, x, ROOM.y1 - SILL.inset, GLASS.sill - SILL.t, M.top, { cast: false });
   }
-  box(40, W + 20, GLASS.head, GLASS.door0 + 20, by, 0, M.metal, { r: 1 });
-  box(40, W + 20, GLASS.head, GLASS.door1 - 20, by, 0, M.metal, { r: 1 });
-  box(GLASS.door1 - GLASS.door0, W + 20, 40, (GLASS.door0 + GLASS.door1) / 2, by, GLASS.head - 40, M.metal, { r: 1 });
+  if (kabuk) {
+    box(40, W + 20, GLASS.head, GLASS.door0 + 20, by, 0, M.metal, { r: 1 });
+    box(40, W + 20, GLASS.head, GLASS.door1 - 20, by, 0, M.metal, { r: 1 });
+    box(GLASS.door1 - GLASS.door0, W + 20, 40, (GLASS.door0 + GLASS.door1) / 2, by, GLASS.head - 40, M.metal, { r: 1 });
+  }
   {
-    const hinge = new THREE.Group(), leafW = GLASS.door1 - GLASS.door0 - 80, leafH = GLASS.head - 60;
-    box(leafW, 10, leafH, -leafW / 2, 15, 10, M.glass, { r: 1, parent: hinge, cast: false });
-    for (const [w, h, x, z] of [[leafW, 50, -leafW / 2, 10], [leafW, 50, -leafW / 2, leafH - 40], [40, leafH, -20, 10], [40, leafH, -leafW + 20, 10]]) {
-      box(w, 34, h, x, 15, z, M.metal, { r: 1, parent: hinge });
-    }
-    place(hinge, [GLASS.door1 - 40, ROOM.y1 + W, 0, -1.45]); // menteşe kapının sağında, kanat dışa açık
+    // Sürgülü kapı, ortadan açılır: iki kanat duvarın dış yüzündeki raylarda kayıp iki yandaki pencerelerin önünde
+    // durur. Açıkken balkona taşmaz (menteşeli kanat sandalyelere giriyordu).
+    const LW = (GLASS.door1 - GLASS.door0) / 2 + 20, LH = GLASS.head - 20, ty = ROOM.y1 + W + 26;
+    const leaf = (cx) => {
+      const g = place(new THREE.Group(), [cx, ty, 0]);
+      box(LW - 60, 8, LH - 70, 0, 0, 35, M.glass, { r: 1, parent: g, cast: false });
+      if (!kabuk) return; // kanat kasaları pilotta GLB'de
+      for (const [w, h, x, z] of [[LW, 40, 0, 0], [LW, 40, 0, LH - 40], [36, LH, -LW / 2 + 18, 0], [36, LH, LW / 2 - 18, 0]]) {
+        box(w, 30, h, x, 0, z, M.metal, { r: 1, parent: g });
+      }
+    };
+    leaf(GLASS.door0 - LW / 2 + 30); // sol kanat sol pencerenin önünde
+    leaf(GLASS.door1 + LW / 2 - 30); // sağ kanat sağ pencerenin önünde
+    if (kabuk) for (const z of [0, GLASS.head]) box(GLASS.x1 - GLASS.x0, 46, 14, (GLASS.x0 + GLASS.x1) / 2, ty, z, M.metal, { r: 1 }); // alt ve üst ray
   }
 
-  // ---- balkon: ahşap zemin, siyah korkuluk, sağda binanın duvarı, uzakta sisli şehir ----
-  {
+  // ---- balkon: ahşap zemin, siyah korkuluk, sağda binanın duvarı, uzakta sisli şehir (pilotta GLB ve gökyüzü) ----
+  if (kabuk) {
     const y0 = ROOM.y1 + W;
     const [bw, bcx] = span(BALCONY.x0, BALCONY.x1), [bd, bcy] = span(y0, BALCONY.y1);
     box(bw, bd, 60, bcx, bcy, -60, M.deck, { r: 0, cast: false });
@@ -92,7 +134,6 @@ export async function buildScene({ scene, P, lang = 'tr' }) {
   }
 
   // ---- çalışma köşesi (referans: sade ev ofisi, yatay aynalanmış) ----
-  const DESK = { x0: -1570, x1: -250, y0: 1100, y1: 1780, top: 740, t: 28 };
   {
     const [w, x] = span(DESK.x0, DESK.x1), [d, y] = span(DESK.y0, DESK.y1);
     box(w, d, DESK.t, x, y, DESK.top - DESK.t, M.top, { r: 4 });
@@ -108,12 +149,13 @@ export async function buildScene({ scene, P, lang = 'tr' }) {
 
   // ---- yuvalar: bölgenin ürünü burada; şablon değişince yalnız yuvadaki model değişir ----
   const slots = {};
+  const agiz = (m) => m.userData.soil ?? m.userData.h; // bitki toprağa (yoksa saksının ağzına) oturur
   const tag = (o, zone) => o.traverse((x) => { x.userData.hotspot = zone; });
   // Önbellekte üretimin sözü (promise) durur: önceden üretme ile gösterme yarışsa da aynı şablon iki kez üretilmez
   function model(zone, id) {
     const s = slots[zone];
     if (!s.cache.has(id)) {
-      const p = buildTemplate(zone, id, { lang }).then((m) => { tag(m, zone); return m; });
+      const p = buildTemplate(zone, id, { lang, saksi: pilot?.saksi }).then((m) => { tag(m, zone); return m; });
       p.catch(() => s.cache.delete(id)); // üretilemediyse sonraki istekte yeniden denenir
       s.cache.set(id, p);
     }
@@ -129,7 +171,7 @@ export async function buildScene({ scene, P, lang = 'tr' }) {
     const s = (slots[zone] = { host, plant, cache: new Map(), index: 0, model: null, busy: false });
     s.model = await model(zone, TEMPLATES[zone][0].id);
     host.add(s.model);
-    if (plant) plant.position.z = s.model.userData.h;
+    if (plant) plant.position.z = agiz(s.model);
     await yieldMain();
     return s;
   }
@@ -220,12 +262,13 @@ export async function buildScene({ scene, P, lang = 'tr' }) {
   };
   {
     const hero = place(new THREE.Group(), [A.sillL[0] - 115, A.sillL[1], A.sillL[2]], pots);
-    const plant = sprout();
+    const plant = pilot?.cicek.cicek_a ?? sprout();
     hero.add(plant);
     await slot('saksilar', hero, { plant });
-    for (const [id, at, k] of [['tulip', [A.sillL[0] + 115, A.sillL[1], A.sillL[2]], 0.8], ['ribbed', A.sillR, 0.6]]) {
-      const v = place(vaseModel(id), at, pots), s = sprout(k);
-      s.position.z = v.userData.h;
+    for (const [id, at, k, cicek] of [['tulip', [A.sillL[0] + 115, A.sillL[1], A.sillL[2]], 0.8, 'cicek_b'], ['ribbed', A.sillR, 0.6, null]]) {
+      const v = place(vaseModel(id, {}, pilot?.saksi), at, pots), s = (pilot && cicek ? pilot.cicek[cicek] : null) ?? (pilot ? null : sprout(k));
+      if (!s) continue;
+      s.position.z = agiz(v);
       v.add(s);
     }
     const olive = place(vaseModel('hex'), A.planterL, pots); // zeytin ağacı
@@ -300,6 +343,18 @@ export async function buildScene({ scene, P, lang = 'tr' }) {
   const spin = place(new THREE.Group(), [0, 0, 12], flipZone);
   await slot('flip', spin);
 
+  // ---- pilot: pişmiş kabuk, gökyüzü, yansıma, huzmeler, ürün gölgesinin pişmiş mermere düşmesi ----
+  if (pilot) {
+    scene.add(pilot.kabuk, pilot.gok, pilot.huzme);
+    scene.environment = pilot.pano;
+    scene.environmentRotation.set(Math.PI / 2, 0, 0); // Blender Z yukarı → three.js eşdikdörtgen Y yukarı
+    scene.fog = null;
+    for (const [a, b] of [[GLASS.x0, GLASS.door0], [GLASS.door1, GLASS.x1]]) {
+      const [w, x] = span(a, b);
+      scene.add(pilot.golge(w + SILL.over, SILL.depth, x, ROOM.y1 - SILL.inset, GLASS.sill + 0.4));
+    }
+  }
+
   // ---- davranış ----
   const openDrawer = (k, dur) => gsap.to(drawer.position, { y: DRAWER_Y - k, duration: dur, ease: 'power3.out', overwrite: true });
   const openDoor = (a, dur) => gsap.to(door.rotation, { z: a, duration: dur, ease: 'power3.out', overwrite: true });
@@ -338,7 +393,7 @@ export async function buildScene({ scene, P, lang = 'tr' }) {
         s.host.remove(old);
         next.scale.setScalar(1);
         next.position.z = 0;
-        if (s.plant) s.plant.position.z = next.userData.h;
+        if (s.plant) s.plant.position.z = agiz(next);
         measure(zone);
         api.onChange?.(zone, info(zone));
       } else {
@@ -348,7 +403,7 @@ export async function buildScene({ scene, P, lang = 'tr' }) {
         next.position.z = 24;
         gsap.to(next.scale, { x: 1, y: 1, z: 1, duration: 0.5, delay: 0.12, ease: 'back.out(1.7)' });
         gsap.to(next.position, { z: 0, duration: 0.5, delay: 0.12, ease: 'power3.out', onComplete: () => { if (s.model === next) measure(zone); } });
-        if (s.plant) gsap.to(s.plant.position, { z: next.userData.h, duration: 0.5, delay: 0.1, ease: 'power3.out', overwrite: true });
+        if (s.plant) gsap.to(s.plant.position, { z: agiz(next), duration: 0.5, delay: 0.1, ease: 'power3.out', overwrite: true });
         api.onChange?.(zone, info(zone));
         await new Promise((r) => gsap.delayedCall(0.22, r)); // eski model küçülene kadar kilit
       }
@@ -379,12 +434,14 @@ export async function buildScene({ scene, P, lang = 'tr' }) {
   };
   return {
     shots: SHOTS,
-    lights: LIGHTS,
+    lights: pilot ? pilot.isik : LIGHTS,
     look: LOOK,
     focusShots: FOCUS,
     focusShift: 0.16, // yatay ekranda yakın plandaki ürün sağa kayar: sol kenarda başlık paneli
     touchOrbit: false, // dokunmatikte yakın planda yana kaydırma şablon değiştirir (etrafa bakma yok)
     langGeometry: true,
+    update(t) { pilot?.huzme.userData.tick(t); },
+    outlineFocus: !pilot, // gerçekçi sahnede yakın plandaki ürünün çevresine çizgi çekilmez (yaprakları tek tek çiziyordu)
     hotspots: [
       hs('cekmece', drawer, { extra: [pedestal], noLift: true, focusCenter: [px, DRAWER_Y - 390, 560], focusRadius: 330, focusElev: 0.82, anchor: [px, DRAWER_Y - 200, 900] }),
       hs('kalemlik', penZone, { focusCenter: [A.pencup[0] - 50, A.pencup[1], 800], focusRadius: 200, focusElev: 0.5 }),

@@ -6,7 +6,7 @@ import * as THREE from 'three';
 import { toCreasedNormals } from 'three/addons/utils/BufferGeometryUtils.js';
 import * as P from './props.js';
 import { initCSG } from './csg.js';
-import { toGeometry } from './mesh3.js';
+import { toGeometry, positions3 } from './mesh3.js';
 import { solid, fonts, textSolid, standUp, plate, C } from './scene-kit.js';
 import { STORIES } from './story-data.js';
 import { TOOL as BIN } from '../tools/bin/app.js';
@@ -56,14 +56,56 @@ export function binModel(id, over = {}) {
   for (const part of BIN.build(s).parts) if (!part.ghost) g.add(P.mesh(toGeometry(part.result), P.clay(over.color ?? p.color, { rough: 0.55, env: 0.7 })));
   return g;
 }
-export function vaseModel(id, over = {}) {
+// toprak: verilirse (malzeme) saksı ağzın 12 mm altına kadar toprakla dolar; malzeme: renkten malzeme üreten işlev
+export function vaseModel(id, over = {}, { toprak = null, malzeme = null } = {}) {
   const p = VASE.presets.find((x) => x.id === id);
   const s = { ...VASE.defaults, ...p.values, ...over, _thumb: true };
   VASE.enforce(s);
-  const g = new THREE.Group();
-  g.add(P.mesh(toGeometry(VASE.build(s).parts[0].result, { flat: false }), P.clay(over.color ?? p.color, { rough: 0.42, env: 0.9 })));
+  const g = new THREE.Group(), res = VASE.build(s).parts[0].result, renk = over.color ?? p.color;
+  g.add(P.mesh(toGeometry(res, { flat: false }), malzeme ? malzeme(renk) : P.clay(renk, { rough: 0.42, env: 0.9 })));
   g.userData.h = s.height;
+  if (toprak) {
+    const z = s.height - 12, geo = toprakKapagi(res, z);
+    if (geo) {
+      const m = new THREE.Mesh(geo, toprak);
+      m.position.z = z;
+      m.receiveShadow = true;
+      g.add(m);
+      g.userData.soil = z;
+    }
+  }
   return g;
+}
+// Saksının kendi gövdesi z yüksekliğinde dilimlenir: içi boşsa kesitteki delik (iç kenar), doluysa dış kenarın 2,5 mm içi
+// toprağın biçimi olur. Her şablona (altıgen, kare, çiçek ...) kendiliğinden uyar. Doku koordinatı mm / 250.
+// res: aracın örgü verisi (scope() katıyı siler): dilim için katı yeniden kurulur, iş bitince elle silinir.
+const xy = (v) => (Array.isArray(v) ? v : [v.x ?? v[0], v.y ?? v[1]]);
+function toprakKapagi(res, z) {
+  const kati = C.fromMesh(positions3(res), res.indices);
+  let polys;
+  try {
+    const cs = kati.slice(z);
+    polys = cs.toPolygons().map((q) => q.map(xy)); // manifold noktaları {x, y} nesnesi olarak verir
+    cs.delete();
+  } finally {
+    kati.delete();
+  }
+  if (!polys.length) return null;
+  const alan = (q) => q.reduce((a, v, i) => { const w = q[(i + 1) % q.length]; return a + v[0] * w[1] - w[0] * v[1]; }, 0) / 2;
+  const delikler = polys.filter((q) => alan(q) < 0).sort((a, b) => alan(a) - alan(b));
+  let pts = delikler.length ? delikler[0].slice().reverse() : null;
+  if (!pts) {
+    const dis = polys.slice().sort((a, b) => alan(b) - alan(a))[0];
+    const a = C.poly2(dis), b = C.offset2(a, -2.5);
+    pts = b.toPolygons()[0]?.map(xy);
+    a.delete();
+    b.delete();
+    if (!pts) return null;
+  }
+  const geo = new THREE.ShapeGeometry(new THREE.Shape(pts.map(([x, y]) => new THREE.Vector2(x, y))), 1);
+  const pos = geo.attributes.position, uv = geo.attributes.uv;
+  for (let i = 0; i < uv.count; i++) uv.setXY(i, pos.getX(i) / 250, pos.getY(i) / 250);
+  return geo;
 }
 // Kalemliğin içinde dışa yaslı kalemler (içerik)
 function pencils(g, centers, r = 14) {
@@ -261,7 +303,8 @@ const FLIP = {
 const RELIEF = { mountain: ['mountain', 'sunset', 7], sea: ['sea', 'sea', 5], lake: ['lake', 'lake', 3] };
 
 // Bir bölgenin bir şablonunu üretir. lang: yazılı ürünler (plaka, pasta süsü, Flip, QR başlığı) için.
-export async function buildTemplate(zone, id, { lang = 'tr' } = {}) {
+// saksi: fotogerçekçi odada saksılara toprak ve baskı malzemesi ({ toprak, malzeme }, vaseModel'e gider).
+export async function buildTemplate(zone, id, { lang = 'tr', saksi = {} } = {}) {
   await initCSG();
   const fs = await fonts(700);
   switch (zone) {
@@ -304,7 +347,7 @@ export async function buildTemplate(zone, id, { lang = 'tr' } = {}) {
     }
     case 'puzzle3d': return puzzle3d(id);
     case 'tabela': return signModel(id, fs, SIGN[lang] || SIGN.tr);
-    case 'saksilar': return vaseModel(id);
+    case 'saksilar': return vaseModel(id, {}, saksi);
     case 'balkonMasa': {
       if (id === 'menu') return standing(await qrTile(SITE, { size: 74, color: K.accent, header: lang === 'en' ? 'Menu' : 'Menü', fs }), { baseW: 86, color: K.ink });
       const g = new THREE.Group(), aq = await qrTile(SITE, { size: 54, corner: 3, fs });

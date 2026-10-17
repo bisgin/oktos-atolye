@@ -9,3 +9,6 @@ _silinecek/
 
 # impeccable eleştiri raporları yerel kalır (yerel klasör yolları içerir)
 .impeccable/
+
+# Oda sahnesinin ham varlıkları (Poly Haven indirmeleri, Blender kaynak dosyası): büyük, yerelde kalır
+kaynak/

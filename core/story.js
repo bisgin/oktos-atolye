@@ -190,6 +190,14 @@ export async function mountStory(root, { toolId, lang = 'tr', mode = pickMode(to
   rim.position.set(...(lights.rim || [center.x + 400, center.y + 1800, center.z + 1600]));
   rim.target.position.copy(center);
   if (lights.keyIntensity) key.intensity = lights.keyIntensity;
+  // Fotogerçekçi sahne (oda pilotu): ışık pişmiş ortamla aynı fiziksel birimde; diğer lambalar kapatılabilir,
+  // ton eşleme ve pozlama sahneden gelir. Verilmezse araç sahnelerinin kil ışığı aynen kalır.
+  if (lights.keyColor) key.color.setRGB(...lights.keyColor);
+  if (lights.hemi !== undefined) hemi.intensity = lights.hemi;
+  if (lights.fillIntensity !== undefined) fill.intensity = lights.fillIntensity;
+  if (lights.rimIntensity !== undefined) rim.intensity = lights.rimIntensity;
+  if (renderer && lights.toneMapping === 'agx') renderer.toneMapping = THREE.AgXToneMapping;
+  if (renderer && lights.exposure) renderer.toneMappingExposure = lights.exposure;
 
   // Etkileşimli şablonlar. h.extra: şablona ait sayılan başka nesneler (ör. masadaki dağınık vidalar);
   // tıklanınca o şablona yakınlaşılır. h.focusRadius: yakın planda kadraja girecek yarıçap (mm).
@@ -404,7 +412,8 @@ export async function mountStory(root, { toolId, lang = 'tr', mode = pickMode(to
     // Yakın planda nesne yükselmez (düşen parçalar hedefini kaçırmasın). noLift: mobilya ve duvardaki
     // nesneler (dolap, buzdolabı, çerçeve) hiç yükselmez; sahne kendi davetini verir (çekmece aralanır).
     for (const x of hotspots) x.liftTarget = x === h && !focused && !x.noLift ? TUNE.hoverLift : 0;
-    if (outline) outline.selectedObjects = h ? [h.object] : focused ? [focused.object] : [];
+    // built.outlineFocus === false: yakın plandaki ürüne çizgi çekilmez (yalnız genel planda üzerine gelince)
+    if (outline) outline.selectedObjects = focused && built.outlineFocus === false ? [] : h ? [h.object] : focused ? [focused.object] : [];
     pinBtns.forEach((p, i) => p.classList.toggle('on', hotspots[i] === h));
     chipBtns.forEach((c, i) => c.classList.toggle('on', hotspots[i] === h));
     if (renderer) renderer.domElement.style.cursor = h ? 'pointer' : '';

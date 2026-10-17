@@ -1,0 +1,13 @@
+{
+  "aciklama": "Oda sahnesinin dış kaynaklı varlıkları. scripts/varlik-indir.py bu listeyi okur, ham dosyaları kaynak/ (depoya girmez) altına indirir ve KAYNAKLAR.md'yi yazar.",
+  "polyhaven": [
+    { "id": "qwantani_morning_puresky", "tur": "hdri", "cozunurluk": "2k", "not": "Pişirmede gökyüzü ve sabah güneşi" },
+    { "id": "farm_soil", "tur": "doku", "cozunurluk": "2k", "not": "Saksı toprağı" },
+    { "id": "beige_wall_001", "tur": "doku", "cozunurluk": "2k", "not": "Oda duvarı sıvası" },
+    { "id": "marble_01", "tur": "doku", "cozunurluk": "2k", "not": "Pencere pervazı" },
+    { "id": "wood_floor", "tur": "doku", "cozunurluk": "2k", "not": "Oda zemini" },
+    { "id": "flower_gazania", "tur": "model", "cozunurluk": "2k", "not": "Saksıdaki canlı çiçek" },
+    { "id": "anthurium_botany_01", "tur": "model", "cozunurluk": "2k", "not": "Saksıdaki canlı çiçek (antoryum)" },
+    { "id": "periwinkle_plant", "tur": "model", "cozunurluk": "2k", "not": "Saksıdaki canlı çiçek (cezayir menekşesi)" }
+  ]
+}
