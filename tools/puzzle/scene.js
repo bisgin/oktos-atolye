@@ -26,8 +26,8 @@ function edgePts(p0, p1, t) {
   return KP.map(([a, b]) => [p0[0] + a * dx + nx * b * L * t, p0[1] + a * dy + ny * b * L * t]);
 }
 
-// nx × ny hücreli yapboz; her hücre için kapalı çokgen döner (orijin: ızgaranın ortası).
-function jigsaw(nx, ny, cell, seed = 3) {
+// nx × ny hücreli yapboz; her hücre için kapalı çokgen döner (orijin: ızgaranın ortası). Oda sahnesi de kullanır.
+export function jigsaw(nx, ny, cell, seed = 3) {
   let s = seed;
   const rnd = () => ((s = (s * 9301 + 49297) % 233280) / 233280);
   const H = [...Array(ny + 1)].map((_, j) => [...Array(nx)].map(() => (j === 0 || j === ny ? 0 : rnd() < 0.5 ? 1 : -1)));

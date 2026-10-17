@@ -1,0 +1,252 @@
+/* Oda sahnesi (core/oda-sahne.js, docs/oda-sahnesi.md): story.css'in üstüne. Yakın plan paneli (core/oda-panel.js):
+   başlık eski vitrinin yazı stilinde, aracın renk tonunda ve harf hareketiyle (core/vitrin-titles.js playTitle),
+   şablon seçici, toz yazısı; kenara gelince bakış ipucu; telefonda kartlar arası döngü düğmesi. */
+
+/* Genel planda sahne kahramandır: odada başlığa yer kalacak boş duvar yok (raflar, çerçeveler). Başlık görünmez
+   ama sayfada kalır (ekran okuyucu, arama motoru); sol üstte yalnız kısa bir cümle hapı. İşaretçilerin yazısı
+   yalnız üzerine gelince açılır (11 bölgenin hepsi yazılı olunca oda kalabalıklaşıyordu). */
+.oda .story-copy { top: 16px; width: auto; max-width: min(520px, calc(100% - 40px)); }
+.oda .story-copy::before { display: none; }
+.oda .story-title { position: absolute; width: 1px; height: 1px; margin: -1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+.oda .story-lede {
+  display: inline-block;
+  margin: 0;
+  padding: 7px 13px;
+  border-radius: 999px;
+  background: rgba(250, 250, 248, 0.88);
+  font-size: 14px;
+  color: var(--ink-2);
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.06), 0 4px 14px rgba(30, 35, 40, 0.08);
+}
+.oda .story-actions { display: none; }
+.oda .pin:not(.on) .pin-label { opacity: 0; transform: translateX(-4px); pointer-events: none; }
+.oda .pin.left:not(.on) .pin-label { transform: translateX(4px); }
+
+/* ---- Yakın plan paneli ----
+   Yatay ekranda sol kenarda, sahnenin üstünde: kart zemini yok, okunurluğu soldan açılan perde verir (.oda-scrim) ve
+   sahne arkada sürer. Panelin üstü sabittir, aşağı doğru büyür: toz yazısı gelince üstteki satırlar kıpırdamaz.
+   Telefonda ve dikey ekranda kart alttan açılır (aşağıdaki @media). */
+.oda-scrim {
+  position: absolute;
+  inset: 0 auto 0 0;
+  width: min(68%, 880px);
+  /* Panelin sağ kenarına (~%58) kadar tok, sonra sahneye açılır */
+  background: linear-gradient(90deg, rgb(233 236 233 / 0.94) 0%, rgb(233 236 233 / 0.9) 58%, rgb(233 236 233 / 0) 100%);
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 420ms cubic-bezier(0.23, 1, 0.32, 1);
+}
+.oda.is-focused .oda-scrim { opacity: 1; }
+.oda .story-card {
+  --c: var(--ink);
+  left: clamp(24px, 4.5vw, 72px);
+  top: max(72px, calc(50% - 210px));
+  bottom: auto;
+  width: min(440px, 36vw);
+  padding: 0;
+  border-radius: 0;
+  background: none;
+  box-shadow: none;
+}
+.sc-kicker {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 0 0 8px;
+  font: 500 13px/1.3 var(--mono);
+  color: var(--ink-3);
+}
+.sc-kicker::before { content: ''; width: 9px; height: 9px; border-radius: 2px; background: var(--c); }
+.oda .sc-title {
+  margin-bottom: 12px;
+  font-family: 'Big Shoulders Display', var(--sans);
+  font-weight: 700;
+  font-size: clamp(46px, 5.2vw, 78px);
+  line-height: 0.92;
+  letter-spacing: 0.01em;
+  /* Aracın filament rengi koyu zemin içindi: açık zeminde büyük yazı için 3:1'i tutsun diye koyulaştırılır */
+  color: color-mix(in oklab, var(--c) 52%, #1d2023);
+  font-kerning: none;
+}
+.oda .sc-desc { max-width: 30ch; margin-bottom: 18px; font-size: 19px; line-height: 1.4; color: var(--ink); }
+.oda .sc-back { background: rgb(248 249 248 / 0.72); }
+/* Yakın planda işaretçiler susar (panel zaten bölgeyi söyler, noktalar ürünün üstüne biner); yalnız üzerine gelinen
+   başka bir bölgenin notu görünür */
+.oda.is-focused .pin:not(.on),
+.oda.is-focused .pin.is-cur { opacity: 0; pointer-events: none; }
+
+/* Şablon seçici: ‹ ad n/N › */
+.sc-tpl { display: flex; align-items: center; gap: 4px; margin: 0 0 18px; }
+.sc-tpl[hidden] { display: none; }
+.sc-tpl-name {
+  min-width: 0;
+  margin: 0;
+  padding: 0 10px;
+  overflow: hidden;
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--ink);
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+.sc-tpl-name small { margin-left: 4px; font: 500 12.5px var(--mono); color: var(--ink-3); }
+.sc-step {
+  display: grid;
+  place-items: center;
+  flex: none;
+  width: 40px;
+  height: 40px;
+  padding: 0;
+  border: 1px solid var(--line-strong);
+  border-radius: 999px;
+  background: rgb(248 249 248 / 0.72);
+  color: var(--ink);
+  transition: background-color 150ms ease, transform 120ms ease-out;
+}
+.sc-step:active { transform: scale(0.94); }
+.sc-step svg { width: 20px; height: 20px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+@media (hover: hover) and (pointer: fine) { .sc-step:hover { background: var(--panel); } }
+
+/* Toz yazısı: üç şablon değişiminden sonra ipucunun yerinde oluşur; kendisi bir düğmedir (aracı açar) */
+.oda-dust {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  margin-top: 16px;
+  padding: 0;
+  border: 0;
+  background: none;
+  font-family: 'Big Shoulders Display', var(--sans);
+  font-weight: 700;
+  font-size: clamp(26px, 2.4vw, 34px);
+  line-height: 1.1;
+  color: color-mix(in oklab, var(--c) 52%, #1d2023);
+  text-align: left;
+  white-space: nowrap;
+  cursor: pointer;
+}
+.oda-dust[hidden] { display: none; }
+.oda-dust svg {
+  width: 0.72em;
+  height: 0.72em;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 2.4;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  transition: transform 200ms cubic-bezier(0.23, 1, 0.32, 1);
+}
+@media (hover: hover) and (pointer: fine) {
+  .oda-dust:hover svg { transform: translateX(4px); }
+  .oda-dust:hover .dust-text { text-decoration: underline 2px; text-underline-offset: 0.14em; }
+}
+.oda-dust-fx { position: absolute; inset: 0; z-index: 2; width: 100%; height: 100%; pointer-events: none; }
+
+/* Harf hareketleri (playTitle): kelime bölünmez, harf dönüşebilsin diye satır içi blok */
+.oda .sc-title .v-wd { display: inline-block; white-space: nowrap; }
+.oda .sc-title .v-ch { display: inline-block; }
+/* 3D Yazı: derinlik katmanları (--dx, --dy hareketten) */
+.oda .sc-title[data-tool="text"] {
+  --dx: 0; --dy: 0;
+  --e1: color-mix(in oklab, var(--c) 60%, #000);
+  --e2: color-mix(in oklab, var(--c) 38%, #000);
+  text-shadow:
+    calc(var(--dx) * 0.018em) calc(var(--dy) * 0.018em) 0 var(--e1),
+    calc(var(--dx) * 0.036em) calc(var(--dy) * 0.036em) 0 var(--e1),
+    calc(var(--dx) * 0.054em) calc(var(--dy) * 0.054em) 0 var(--e2),
+    calc(var(--dx) * 0.072em) calc(var(--dy) * 0.072em) 0 var(--e2);
+}
+/* 3D QR Kod: harfin üstünde aynı harf, kare modül maskesiyle */
+.oda .sc-title[data-tool="qr"] .v-ch { position: relative; --px: 0; --cell: 1.1em; }
+.oda .sc-title[data-tool="qr"] .v-ch::after {
+  content: attr(data-ch);
+  position: absolute;
+  inset: 0;
+  opacity: var(--px);
+  -webkit-mask: var(--qr) 0 0 / var(--cell) var(--cell) repeat;
+  mask: var(--qr) 0 0 / var(--cell) var(--cell) repeat;
+  pointer-events: none;
+}
+/* Filament Painter: harflerin içinden renk katmanları akar */
+.oda .sc-title[data-tool="painter"] { --b2: var(--c); --b3: var(--c); --b4: var(--c); --bp: 0em; }
+.oda .sc-title[data-tool="painter"].is-painting .v-ch {
+  background: linear-gradient(to top, color-mix(in oklab, var(--c) 52%, #1d2023) 0 25%, var(--b2) 25% 50%, var(--b3) 50% 75%, var(--b4) 75% 100%)
+    0 calc(var(--bp) + var(--char, 0) * 0.09em) / 100% 2.4em repeat;
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+
+/* Kenardan bakma ipucu: fare kenar şeridindeyken o yanda hafif gölge ve ok (dönülebildiği sürece) */
+.oda-cue {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  z-index: 1;
+  width: 12%;
+  display: grid;
+  align-items: center;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 220ms ease;
+}
+.oda-cue.l { left: 0; justify-items: start; background: linear-gradient(90deg, rgba(25, 27, 30, 0.16), transparent); }
+.oda-cue.r { right: 0; justify-items: end; background: linear-gradient(270deg, rgba(25, 27, 30, 0.16), transparent); }
+.story[data-look="left"] .oda-cue.l,
+.story[data-look="right"] .oda-cue.r { opacity: 1; }
+.oda-cue svg {
+  width: 30px;
+  height: 30px;
+  margin: 0 18px;
+  fill: none;
+  stroke: #fff;
+  stroke-width: 2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  filter: drop-shadow(0 1px 2px rgba(0, 0, 0, 0.35));
+}
+
+/* Kart altta: telefon, dar pencere, dikey ekran. Kararı motor verir (core/story.js resize(): tuval oranı ve işaretçi
+   türü, data-panel="side|bottom"): kadraj da aynı karara göre kayar. Kart kendi zeminini alır, perde yok. */
+.oda[data-panel="bottom"] .oda-scrim { display: none; }
+.oda[data-panel="bottom"] .story-card {
+  top: auto;
+  bottom: 96px; /* şeridin üstünde; telefonda döngü düğmesinin üstünde (aşağıda) */
+  left: 12px;
+  right: 12px;
+  width: auto;
+  padding: 14px 16px;
+  border-radius: 14px;
+  background: var(--panel);
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.06), 0 14px 40px rgba(30, 35, 40, 0.16);
+}
+.oda[data-panel="bottom"] .sc-kicker { margin-bottom: 4px; font-size: 12px; }
+.oda[data-panel="bottom"] .sc-title { margin-bottom: 8px; font-size: clamp(34px, 9vw, 46px); }
+.oda[data-panel="bottom"] .sc-desc { margin-bottom: 12px; font-size: 15px; }
+.oda[data-panel="bottom"] .sc-tpl { margin-bottom: 12px; }
+.oda[data-panel="bottom"] .oda-dust { margin-top: 10px; font-size: 27px; }
+
+/* Telefonda döngü: tek ürün görünür, alttaki düğme sıradakine götürür (sondan başa döner); şerit gizlenir. */
+.oda-next { display: none; }
+@media (pointer: coarse), (max-width: 720px) {
+  .sc-step { width: 44px; height: 44px; }
+  .oda .story-strip { display: none; }
+  .oda-next {
+    display: grid;
+    place-items: center;
+    position: absolute;
+    z-index: 3;
+    left: 50%;
+    bottom: calc(16px + env(safe-area-inset-bottom));
+    translate: -50% 0;
+    width: 56px;
+    height: 56px;
+    border: 0;
+    border-radius: 999px;
+    background: var(--panel);
+    color: var(--ink);
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.12), 0 10px 26px rgba(30, 35, 40, 0.18);
+  }
+  .oda-next svg { width: 26px; height: 26px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+  .oda[data-panel="bottom"] .story-card { bottom: calc(86px + env(safe-area-inset-bottom)); }
+}

@@ -76,8 +76,10 @@ function splitWords(el, text) {
 }
 
 // ---------------------------------------------------------------------------------
-export async function mountStory(root, { toolId, lang = 'tr', mode = pickMode(toolId), onPick, onSkip, onReady, sceneModule, homeHref = 'index.html' } = {}) {
-  const story = STORIES[toolId];
+// Araç dışı sahne (oda): story metni (STORIES biçiminde) ve sceneModule dışarıdan verilir. onCard(h | null, card):
+// yakın plan kartı dolunca ve kapanınca (sayfa kart başlığını canlandırabilir).
+export async function mountStory(root, { toolId, lang = 'tr', mode = pickMode(toolId), onPick, onSkip, onReady, onCard, sceneModule, story: storyOverride, homeHref = 'index.html' } = {}) {
+  const story = storyOverride || STORIES[toolId];
   let ui = STORY_UI[lang] || STORY_UI.tr;
   const $ = (s) => root.querySelector(s);
   const canvasHost = $('.story-canvas');
@@ -242,6 +244,10 @@ export async function mountStory(root, { toolId, lang = 'tr', mode = pickMode(to
 
   // Yakın planda fare (ya da parmak) kamerayı nesnenin etrafında gezdirir: etrafa bakılabilsin.
   const orbit = { k: 0 };
+  // Kenardan bakma (sahne isterse: built.look = { min, max, edge, speed }): fare tuvalin sol ya da sağ kenar
+  // şeridindeyken kamera yerinde durup başını o yana çevirir; ortaya dönünce olduğu yerde kalır (ürünler imlecin
+  // altından kaymaz). Açı radyan, artı sola. Yakın planda etkisi söner; hareket azaltmada kapalı.
+  const look = built.look ? { yaw: 0, turn: 0, cue: '', edge: 0.2, speed: 0.8, ...built.look } : null;
   function applyCamera(t) {
     par.x += (par.tx - par.x) * TUNE.damping;
     par.y += (par.ty - par.y) * TUNE.damping;
@@ -259,6 +265,8 @@ export async function mountStory(root, { toolId, lang = 'tr', mode = pickMode(to
     tmpOff.applyQuaternion(q);
     camera.position.copy(rig.target).add(tmpOff);
     camera.lookAt(rig.target);
+    const yaw = look ? look.yaw * (1 - orbit.k) : 0;
+    if (yaw) camera.lookAt(tmpOff.copy(rig.target).sub(camera.position).applyAxisAngle(Z, yaw).add(camera.position));
   }
 
   function flyTo(shot, dur, ease = EASE_IN_OUT) {
@@ -273,28 +281,46 @@ export async function mountStory(root, { toolId, lang = 'tr', mode = pickMode(to
   // Bir şablona yakın plan: ana kameranın yönünden, nesneyi ve biraz çevresini kadraja alan mesafe.
   // Sahne isterse (focusShots) kendi açısını verir; h.focusElev bakışın en az ne kadar yukarıdan
   // olacağını söyler (0.42 ≈ 25°, 0.9 ≈ 64°: bölmelerin içi görünsün diye).
+  // Yatay ekranda kart sol kenardaysa (sahne built.focusShift verir: ekran genişliğinin kesri) nesne sağa kayar.
+  // Kartın yanda mı altta mı olduğu tek yerde, resize()'da karar verilir (sideCard, root.dataset.panel).
+  let sideCard = false;
   function focusShot(h) {
-    if (built.focusShots?.[h.id]) return built.focusShots[h.id];
-    const dir = new THREE.Vector3(...shots.main.pos).sub(new THREE.Vector3(...shots.main.target)).normalize();
-    const elev = h.focusElev ?? 0.42;
-    if (dir.z < elev) {
-      const flat = Math.hypot(dir.x, dir.y) || 1;
-      const k = Math.sqrt(1 - elev * elev) / flat;
-      dir.set(dir.x * k, dir.y * k, elev);
+    let pos, center;
+    const custom = built.focusShots?.[h.id];
+    if (custom) {
+      pos = new THREE.Vector3(...custom.pos);
+      center = new THREE.Vector3(...custom.target);
+    } else {
+      const dir = new THREE.Vector3(...shots.main.pos).sub(new THREE.Vector3(...shots.main.target)).normalize();
+      const elev = h.focusElev ?? 0.42;
+      if (dir.z < elev) {
+        const flat = Math.hypot(dir.x, dir.y) || 1;
+        const k = Math.sqrt(1 - elev * elev) / flat;
+        dir.set(dir.x * k, dir.y * k, elev);
+      }
+      dir.normalize();
+      const radius = h.focusRadius || Math.max(h.size.x, h.size.y, h.size.z) * 0.62 + 40;
+      const wide = camera.aspect < 0.9 ? 1.5 : 1.25; // dikey ekranda biraz daha geniş
+      const dist = (radius / Math.sin((camera.fov * Math.PI) / 360)) * wide;
+      // focusCenter: animasyonla büyüyen nesnede (çiçek açar) kadrajın ortası, büyümüş hâle göre verilir.
+      center = (h.focusCenter ? new THREE.Vector3(...h.focusCenter) : h.center).clone();
+      pos = center.clone().addScaledVector(dir, dist);
     }
-    dir.normalize();
-    const radius = h.focusRadius || Math.max(h.size.x, h.size.y, h.size.z) * 0.62 + 40;
-    const wide = camera.aspect < 0.9 ? 1.5 : 1.25; // dikey ekranda biraz daha geniş
-    const dist = (radius / Math.sin((camera.fov * Math.PI) / 360)) * wide;
-    // focusCenter: animasyonla büyüyen nesnede (çiçek açar) kadrajın ortası, büyümüş hâle göre verilir.
-    const center = (h.focusCenter ? new THREE.Vector3(...h.focusCenter) : h.center).clone();
-    const pos = center.clone().addScaledVector(dir, dist);
-    // Dikey ekranda kart alttan tam genişlik açılır: kadraj aşağı kayar, nesne kartın üstünde kalır.
-    if (camera.aspect < 0.9) {
+    const dir = pos.clone().sub(center), dist = dir.length();
+    dir.divideScalar(dist);
+    const halfH = dist * Math.tan((camera.fov * Math.PI) / 360);
+    if (camera.aspect < 0.9 || (built.focusShift && !sideCard)) {
+      // Kart alttan tam genişlik açılır (dikey ekran; yan panelli sahnede telefon ve dar pencere): kadraj aşağı kayar,
+      // nesne kartın üstünde kalır.
       const up = new THREE.Vector3(0, 0, 1).addScaledVector(dir, -dir.z).normalize();
-      const shift = -0.2 * 2 * dist * Math.tan((camera.fov * Math.PI) / 360);
-      center.addScaledVector(up, shift);
-      pos.addScaledVector(up, shift);
+      center.addScaledVector(up, -0.4 * halfH);
+      pos.addScaledVector(up, -0.4 * halfH);
+    } else if (built.focusShift) {
+      // Kamera ve hedef birlikte sola: nesne ekranda sağa kayar
+      const right = new THREE.Vector3().crossVectors(dir.clone().negate(), Z).normalize();
+      const shift = -built.focusShift * 2 * halfH * camera.aspect;
+      center.addScaledVector(right, shift);
+      pos.addScaledVector(right, shift);
     }
     return { pos: pos.toArray(), target: center.toArray() };
   }
@@ -330,6 +356,10 @@ export async function mountStory(root, { toolId, lang = 'tr', mode = pickMode(to
     scSoon.hidden = h.live;
     scBack.textContent = ui.back;
     scHint.textContent = coarse ? ui.lookAroundTouch : ui.lookAround;
+  }
+  // Sayfanın kart kancası (onCard) hata atarsa odak akışı yarıda kalmasın (sahne canlanması, kart açılışı)
+  function cardHook(h) {
+    try { onCard?.(h, card); } catch (e) { console.error('onCard', e); }
   }
   const pinBtns = [];
   const chipBtns = [];
@@ -371,8 +401,9 @@ export async function mountStory(root, { toolId, lang = 'tr', mode = pickMode(to
   function setHover(h, force = false) {
     if (hovered === h && !force) return;
     hovered = h;
-    // Yakın planda nesne yükselmez (düşen parçalar hedefini kaçırmasın).
-    for (const x of hotspots) x.liftTarget = x === h && !focused ? TUNE.hoverLift : 0;
+    // Yakın planda nesne yükselmez (düşen parçalar hedefini kaçırmasın). noLift: mobilya ve duvardaki
+    // nesneler (dolap, buzdolabı, çerçeve) hiç yükselmez; sahne kendi davetini verir (çekmece aralanır).
+    for (const x of hotspots) x.liftTarget = x === h && !focused && !x.noLift ? TUNE.hoverLift : 0;
     if (outline) outline.selectedObjects = h ? [h.object] : focused ? [focused.object] : [];
     pinBtns.forEach((p, i) => p.classList.toggle('on', hotspots[i] === h));
     chipBtns.forEach((c, i) => c.classList.toggle('on', hotspots[i] === h));
@@ -421,6 +452,7 @@ export async function mountStory(root, { toolId, lang = 'tr', mode = pickMode(to
     gsap.to(copyEls(), { autoAlpha: 0, y: -10, duration: mode === 'still' ? 0.1 : 0.3, ease: 'power2.in' });
     fillCard(h);
     card.hidden = false;
+    cardHook(h);
     const quick = mode === 'still' || fromKeyboard;
     gsap.fromTo(card, { autoAlpha: 0, y: 14 }, {
       autoAlpha: 1, y: 0, duration: mode === 'still' ? 0.1 : 0.45, ease: 'power3.out', delay: quick ? 0 : 0.35,
@@ -443,6 +475,7 @@ export async function mountStory(root, { toolId, lang = 'tr', mode = pickMode(to
     setHover(null, true);
     if (lastPointer === 'touch') { par.tx = 0; par.ty = 0; } // parmakla çevrilen bakış ana kadraja dönsün
     gsap.killTweensOf([card, ...copyEls()]);
+    cardHook(null);
     gsap.to(card, { autoAlpha: 0, y: 10, duration: 0.25, ease: 'power2.in', onComplete: () => { if (!focused) card.hidden = true; } });
     gsap.to(copyEls(), { autoAlpha: 1, y: 0, duration: 0.5, ease: 'power3.out', delay: 0.2 });
     flight?.kill();
@@ -471,7 +504,8 @@ export async function mountStory(root, { toolId, lang = 'tr', mode = pickMode(to
     markSeen(toolId);
     live.textContent = ui.goingTo.replace('{name}', h.name);
     const still = mode === 'still';
-    const tl = gsap.timeline({ onComplete: () => onPick?.(h.preset, h) });
+    const preset = h.preset; // uçuş sürerken şablon değişse de tıklanan şablon açılır
+    const tl = gsap.timeline({ onComplete: () => onPick?.(preset, h) });
     tl.to(copyEls(), { autoAlpha: 0, y: -14, duration: still ? 0.15 : 0.35, ease: 'power2.in', stagger: still ? 0 : 0.04, overwrite: 'auto' }, 0)
       .to([pinsEl, stripEl, card], { autoAlpha: 0, duration: 0.25, ease: 'power1.in' }, 0);
     // Yakın plandaysak kamera zaten orada: biraz daha sokulur; değilse nesneye uçar.
@@ -509,11 +543,13 @@ export async function mountStory(root, { toolId, lang = 'tr', mode = pickMode(to
   if (renderer) {
     const el = renderer.domElement;
     let downAt = null;
-    let drag = null; // dokunmatik: yakın planda parmakla etrafa bakma (sürükleme farkı kadar döner)
+    // Dokunmatik: yakın planda parmakla etrafa bakma (sürükleme farkı kadar döner). Sahne built.touchOrbit = false
+    // derse kapalı: kaydırma sayfanındır (oda: şablon değiştirir).
+    let drag = null;
     el.addEventListener('pointerdown', (e) => {
       lastPointer = e.pointerType;
       downAt = [e.clientX, e.clientY];
-      drag = e.pointerType === 'touch' && focused ? { x: e.clientX, y: e.clientY, tx: par.tx, ty: par.ty } : null;
+      drag = e.pointerType === 'touch' && focused && built.touchOrbit !== false ? { x: e.clientX, y: e.clientY, tx: par.tx, ty: par.ty } : null;
     });
     el.addEventListener('pointermove', (e) => {
       const r = el.getBoundingClientRect();
@@ -525,10 +561,14 @@ export async function mountStory(root, { toolId, lang = 'tr', mode = pickMode(to
       }
       par.tx = ((e.clientX - r.left) / r.width) * 2 - 1;
       par.ty = ((e.clientY - r.top) / r.height) * 2 - 1;
+      if (look) { // kenar şeridinde ne kadar derindeyse o kadar hızlı döner (0 ortada, 1 en kenarda)
+        const fx = (e.clientX - r.left) / r.width, ed = look.edge;
+        look.turn = fx < ed ? (ed - fx) / ed : fx > 1 - ed ? -(fx - (1 - ed)) / ed : 0;
+      }
       if ((state === 'main' || state === 'focus') && !busy) setHover(hitAt(e.clientX, e.clientY));
     });
     el.addEventListener('pointerleave', (e) => {
-      if (e.pointerType !== 'touch') { par.tx = 0; par.ty = 0; }
+      if (e.pointerType !== 'touch') { par.tx = 0; par.ty = 0; if (look) look.turn = 0; }
       setHover(null);
     });
     el.addEventListener('pointercancel', () => { drag = null; downAt = null; });
@@ -540,10 +580,11 @@ export async function mountStory(root, { toolId, lang = 'tr', mode = pickMode(to
       if (moved > 8) return;
       const h = hitAt(e.clientX, e.clientY);
       if (h) activate(h);
-      else if (focused) unfocus();
+      else if (focused) unfocus(card.contains(document.activeElement));
     });
   }
-  const onKey = (e) => { if (e.key === 'Escape' && !busy) unfocus(); }; // atölyeye geçerken yok sayılır
+  // Atölyeye geçerken yok sayılır. Odak karttaysa şeritteki düğmeye döner (gizlenen kartta kalmasın).
+  const onKey = (e) => { if (e.key === 'Escape' && !busy) unfocus(card.contains(document.activeElement)); };
   addEventListener('keydown', onKey);
 
   // ---- boyut ----
@@ -555,6 +596,8 @@ export async function mountStory(root, { toolId, lang = 'tr', mode = pickMode(to
     // Dar ekranda geniş sahne sığsın diye görüş açısını büyüt.
     camera.fov = w / h < 0.8 ? 46 : w / h < 1.2 ? 38 : 30;
     camera.updateProjectionMatrix();
+    sideCard = !!built.focusShift && w / h >= 0.9 && !matchMedia('(pointer: coarse), (max-width: 720px)').matches;
+    if (built.focusShift) root.dataset.panel = sideCard ? 'side' : 'bottom';
     if (!renderer) return;
     renderer.setSize(w, h, false);
     composer?.setSize(w, h);
@@ -579,6 +622,15 @@ export async function mountStory(root, { toolId, lang = 'tr', mode = pickMode(to
       h.object.position.z = h.base.z + h.settle + h.lift;
     }
     built.update?.(t, dt);
+    if (look) {
+      const canTurn = mode !== 'still' && !focused && state === 'main';
+      if (canTurn && look.turn) {
+        look.yaw = THREE.MathUtils.clamp(look.yaw + look.turn * Math.abs(look.turn) * look.speed * dt, look.min, look.max);
+      }
+      // Dönülebilecek yön sayfaya bildirilir (kenarda ipucu gösterebilir); sınıra gelince söner
+      const cue = !canTurn ? '' : look.turn > 0 && look.yaw < look.max ? 'left' : look.turn < 0 && look.yaw > look.min ? 'right' : '';
+      if (cue !== look.cue) { look.cue = cue; root.dataset.look = cue; }
+    }
     applyCamera(t);
     if (renderer) {
       if (composer) composer.render(dt); else renderer.render(scene, camera);
@@ -623,7 +675,7 @@ export async function mountStory(root, { toolId, lang = 'tr', mode = pickMode(to
   document.addEventListener('visibilitychange', onVis);
 
   // ---- giriş koreografisi ----
-  hotspots.forEach((h) => { h.settle = mode === 'full' ? TUNE.settleRise : 0; });
+  hotspots.forEach((h) => { h.settle = mode === 'full' && !h.noLift ? TUNE.settleRise : 0; });
   gsap.set('.story-copy > *', { autoAlpha: 1, y: 0 });
   gsap.set([pinsEl, stripEl], { autoAlpha: 0 });
   gsap.set(words, { yPercent: mode === 'full' ? 112 : 0 });
@@ -673,6 +725,7 @@ export async function mountStory(root, { toolId, lang = 'tr', mode = pickMode(to
       focused = null;
       state = 'main';
       gsap.killTweensOf(card);
+      cardHook(null);
       card.hidden = true;
       gsap.set(card, { clearProps: 'opacity,visibility,transform' });
       root.classList.remove('is-focused');
@@ -706,11 +759,30 @@ export async function mountStory(root, { toolId, lang = 'tr', mode = pickMode(to
         h.desc = story.hotspots?.[h.id]?.desc?.[l] || '';
         labelHotspot(h, pinBtns[i], chipBtns[i]);
       });
-      if (focused) fillCard(focused);
+      if (focused) { fillCard(focused); cardHook(focused); }
+    },
+    // Dışarıdan yakın plan (oda sahnesinde telefonun döngü düğmesi): o bölgeye uçar, kartı açar.
+    focus(id) { const h = hotspots.find((x) => x.id === id); if (h && !busy) activate(h); },
+    unfocus() { if (!busy) unfocus(); },
+    get focusedId() { return focused?.id ?? null; },
+    get busy() { return busy; }, // atölyeye geçiş sürüyor (sayfa girdileri beklesin)
+    // Sahnenin kendi denetimi (oda: yakın planda şablon değiştirme, built.api)
+    api: built.api || null,
+    // Yakın plandaki şablon değişince "Bu şablonla tasarla" yeni şablonu açar; şablonu olmayan bölgede atölye yakında.
+    setPreset(id, preset) {
+      const h = hotspots.find((x) => x.id === id);
+      if (!h) return;
+      h.preset = preset;
+      h.live = story.live && !!preset;
+      if (focused === h) {
+        scGo.hidden = !h.live;
+        scSoon.textContent = h.live ? '' : ui.soonCard;
+        scSoon.hidden = h.live;
+      }
     },
     // Konsoldan kadraj ayarı ve kare kare doğrulama: debug.seek(0.4) girişi %40'a sarar ve bir kare çizer.
     debug: {
-      rig, shots, flyTo, TUNE, intro,
+      rig, shots, flyTo, TUNE, intro, look,
       seek(p) { intro.pause(); intro.progress(p); for (const h of hotspots) h.lift = h.liftTarget; draw(0, intro.time()); },
     },
     destroy() {

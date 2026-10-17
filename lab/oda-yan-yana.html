@@ -1,0 +1,33 @@
+<!doctype html>
+<html lang="tr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Oda ve Kutu Sahnesi · Karşılaştırma</title>
+<meta name="robots" content="noindex">
+<link rel="icon" href="../core/icon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Schibsted+Grotesk:wght@400;500;600;700&display=swap">
+<link rel="stylesheet" href="../core/style.css">
+<style>
+  /* Yalnız laboratuvar: yeni oda ile bugünkü Kutu sahnesi yan yana, ikisi de aynı en-boy oranında (16:10) */
+  body { margin: 0; background: var(--paper, #f3f4f3); }
+  .yy { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; padding: 14px; min-height: 100vh; box-sizing: border-box; align-content: center; }
+  figure { margin: 0; display: grid; gap: 8px; }
+  figcaption { font-size: 14px; font-weight: 600; color: var(--ink-2); }
+  iframe { width: 100%; aspect-ratio: 16 / 10; border: 1px solid var(--line); border-radius: 10px; background: #e9ece9; }
+  @media (max-width: 900px) { .yy { grid-template-columns: 1fr; } }
+</style>
+</head>
+<body>
+<main class="yy">
+  <figure>
+    <figcaption>Oda, gri kutu (yeni)</figcaption>
+    <iframe src="oda.html" title="Oda sahnesi, gri kutu"></iframe>
+  </figure>
+  <figure>
+    <figcaption>Kutu ve Organizer sahnesi (bugünkü)</figcaption>
+    <iframe src="sahne.html?arac=bin" title="Kutu ve Organizer hikâye sahnesi"></iframe>
+  </figure>
+</main>
+</body>
+</html>

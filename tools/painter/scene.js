@@ -8,8 +8,8 @@ import { gsap } from 'gsap';
 const BACK = 400;
 const WIN = { x: 620, w: 900, z0: 900, z1: 2100 };
 
-// ---- prosedürel manzara (gri tonlu: 0 koyu, 1 açık) ----
-function landscape(kind, W, H, seed = 1) {
+// ---- prosedürel manzara (gri tonlu: 0 koyu, 1 açık). Oda sahnesi de kullanır. ----
+export function landscape(kind, W, H, seed = 1) {
   const c = document.createElement('canvas');
   c.width = W; c.height = H;
   const g = c.getContext('2d');
@@ -51,7 +51,7 @@ function landscape(kind, W, H, seed = 1) {
 }
 
 // Gri görüntü → katmanlı rölyef ağı (XY'de, +Z yüzeye bakar). Yükseklik katman adımına yuvarlanır.
-function reliefGeometry(img, w, h, { base = 0.8, top = 6, layers = 18, colors }) {
+export function reliefGeometry(img, w, h, { base = 0.8, top = 6, layers = 18, colors }) {
   const W = img.width, H = img.height;
   const pos = new Float32Array(W * H * 3);
   const col = new Float32Array(W * H * 3);
@@ -78,10 +78,11 @@ function reliefGeometry(img, w, h, { base = 0.8, top = 6, layers = 18, colors })
   geo.setAttribute('color', new THREE.BufferAttribute(col, 3));
   geo.setIndex(idx);
   geo.computeVertexNormals();
+  geo.userData.relief = { base, top, colors: cs, cols: W, rows: H }; // katman bilgisi (oda sahnesi rölyefi katman katman basabilir)
   return geo;
 }
 
-const FILAMENTS = {
+export const FILAMENTS = {
   sunset: [0x1f2a3a, 0x8c3b3b, 0xd8803a, 0xf4e3c3],
   lake: [0x18303a, 0x3f6f74, 0x9fc1b5, 0xf3efe2],
   sea: [0x1d2b46, 0x2f6aa0, 0x8cc3d8, 0xf6f1e4],

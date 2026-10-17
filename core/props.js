@@ -2,7 +2,7 @@
 // Birim mm, Z yukarı. Her eşya, tabanı z=0'da ve XY'de ortalanmış bir THREE.Group döndürür (aksi yazılmadıkça).
 import * as THREE from 'three';
 import { RoundedBoxGeometry } from 'three/addons/geometries/RoundedBoxGeometry.js';
-import { mergeGeometries } from 'three/addons/utils/BufferGeometryUtils.js';
+import { mergeGeometries, mergeVertices } from 'three/addons/utils/BufferGeometryUtils.js';
 
 export const PALETTE = {
   wall: 0xe2e5e1, wallAlt: 0xd5dad5, floor: 0xbfc0b9, baseboard: 0xb7bbb4,
@@ -652,6 +652,87 @@ export function keyboard({ w = 360, d = 120, keyColor = 0xe9e7e1, accent = PALET
   }
   g.add(im);
   g.add(at(mesh(rbox(16.5, 16.5, 7, 2.2, 2), clay(accent, { rough: 0.5 })), w / 2 - 22, -d / 2 + 18, 13));
+  return g;
+}
+
+// Mekanik klavye (65%, 68 tuş): alüminyum kasa, koyu plaka, yukarı daralan ve tepesi hafif çukur tuşlar.
+// Tuş genişlikleri gerçek (1u = 19,05 mm). skip: tuş konmayacak yerler (adlarıyla): oraya özel tuş takılır, altında
+// MX anahtarın gövdesi ve artı biçimli sapı görünür. Klavye düz, orijin kasanın alt ortası (eğimi sahne verir).
+// Dönüş: Group; userData.keys[ad] = { x, y, u }, userData.capZ = tuş tabanının yüksekliği.
+const KB_ROWS = [
+  [['esc', 1], ...[...'1234567890'].map((c) => [c, 1]), ['-', 1], ['=', 1], ['bksp', 2], ['del', 1]],
+  [['tab', 1.5], ...[...'qwertyuiop'].map((c) => [c, 1]), ['[', 1], [']', 1], ['\\', 1.5], ['pgup', 1]],
+  [['caps', 1.75], ...[...'asdfghjkl'].map((c) => [c, 1]), [';', 1], ["'", 1], ['enter', 2.25], ['pgdn', 1]],
+  [['lshift', 2.25], ...[...'zxcvbnm'].map((c) => [c, 1]), [',', 1], ['.', 1], ['/', 1], ['rshift', 1.75], ['up', 1], ['end', 1]],
+  [['lctrl', 1.25], ['win', 1.25], ['lalt', 1.25], ['space', 6.25], ['ralt', 1], ['fn', 1], ['rctrl', 1], ['left', 1], ['down', 1], ['right', 1]],
+];
+const KEY_U = 19.05;
+const capCache = new Map();
+function keycapGeometry(u) {
+  if (capCache.has(u)) return capCache.get(u);
+  const w = KEY_U * u - 1.25, d = KEY_U - 1.25, h = 8.2;
+  let g = new RoundedBoxGeometry(w, d, h, 3, 1.4);
+  g.deleteAttribute('normal');
+  g.deleteAttribute('uv');
+  g = mergeVertices(g);
+  const pos = g.attributes.position, td = (d - 4.6) / 2;
+  for (let i = 0; i < pos.count; i++) {
+    const x = pos.getX(i), y = pos.getY(i), z = pos.getZ(i);
+    const t = z / h + 0.5; // 0 taban, 1 tepe
+    const sx = 1 - (5.6 / w) * t, sy = 1 - (4.6 / d) * t; // tepe her yandan ~2,5 mm içeride
+    let zz = z + h / 2;
+    if (t > 0.999) zz -= 0.6 * Math.max(0, 1 - ((y * sy) / td) ** 2); // önden arkaya silindirik çukur
+    pos.setXYZ(i, x * sx, y * sy, zz);
+  }
+  g.computeVertexNormals();
+  capCache.set(u, g);
+  return g;
+}
+export function mechKeyboard({ alpha = 0xe9e3d3, mod = 0x9c978d, caseColor = 0xb8bdc4, skip = [] } = {}) {
+  const g = new THREE.Group();
+  const W = 16 * KEY_U, D = 5 * KEY_U, rim = 9, H = 20, plateZ = 13, capZ = 19.5;
+  const CW = W + 2 * rim, CD = D + 2 * rim, bar = rim + 0.5;
+  // Kasa tepsi biçiminde: taban + dört kenar duvarı (içi açık; plaka ve boş yuvadaki anahtar görünsün)
+  const cm = clay(caseColor, { rough: 0.38, metal: 0.55, env: 1 });
+  g.add(mesh(rbox(CW, CD, plateZ, 6, 3), cm));
+  for (const [w, d, x, y] of [[CW, bar, 0, (CD - bar) / 2], [CW, bar, 0, -(CD - bar) / 2], [bar, CD, (CW - bar) / 2, 0], [bar, CD, -(CW - bar) / 2, 0]]) {
+    g.add(at(mesh(rbox(w, d, H, 3, 3), cm), x, y, 0));
+  }
+  g.add(at(mesh(rbox(W + 1, D + 1, 1.5, 1, 1), clay(0x24272b, { rough: 0.5 }), { cast: false }), 0, 0, plateZ));
+  const MODS = new Set(['esc', 'bksp', 'del', 'tab', '\\', 'pgup', 'caps', 'enter', 'pgdn', 'lshift', 'rshift', 'up', 'end',
+    'lctrl', 'win', 'lalt', 'ralt', 'fn', 'rctrl', 'left', 'down', 'right']);
+  const groups = new Map(); // "u|renk" → konumlar
+  const keys = {};
+  KB_ROWS.forEach((row, j) => {
+    let x = -W / 2;
+    const y = (2 - j) * KEY_U; // ilk sıra (rakamlar) arkada
+    for (const [name, u] of row) {
+      const cx = x + (u * KEY_U) / 2;
+      keys[name] = { x: cx, y, u };
+      x += u * KEY_U;
+      if (skip.includes(name)) continue;
+      const k = `${u}|${MODS.has(name) ? 'm' : 'a'}`;
+      if (!groups.has(k)) groups.set(k, []);
+      groups.get(k).push([cx, y]);
+    }
+  });
+  const o = new THREE.Object3D();
+  for (const [k, list] of groups) {
+    const [u, c] = k.split('|');
+    const im = new THREE.InstancedMesh(keycapGeometry(+u), clay(c === 'm' ? mod : alpha, { rough: 0.62, env: 0.7 }), list.length);
+    im.castShadow = im.receiveShadow = true;
+    list.forEach(([x, y], i) => { o.position.set(x, y, capZ); o.updateMatrix(); im.setMatrixAt(i, o.matrix); });
+    g.add(im);
+  }
+  // Boş yuvalarda MX anahtar: gri gövde, kırmızı artı sap (özel tuş buna takılır)
+  for (const name of skip) {
+    const { x, y } = keys[name];
+    g.add(at(mesh(rbox(14, 14, capZ - plateZ - 1.5, 1.5, 1), clay(0x3a3f46, { rough: 0.45 })), x, y, plateZ + 1.5));
+    for (const [sw, sd] of [[4, 1.2], [1.2, 4]]) g.add(at(mesh(rbox(sw, sd, 3.6, 0.3, 1), clay(0xc8402f, { rough: 0.4 })), x, y, capZ - 0.5));
+  }
+  g.userData.keys = keys;
+  g.userData.capZ = capZ;
+  g.userData.size = { w: CW, d: CD, h: H };
   return g;
 }
 

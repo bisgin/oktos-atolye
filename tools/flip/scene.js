@@ -8,6 +8,53 @@ import { textPolys } from '../../core/font3d.js';
 
 const BACK = 400;
 
+// Harfi kendi kutusunda ortalanmış çokgen olarak döndürür (taban çizgisi y=0).
+function glyph(fs, ch, size) {
+  const t = textPolys(fs, ch, size);
+  const b = t.glyphs[0].box;
+  if (!b) return null;
+  const cx = (b.minX + b.maxX) / 2;
+  return { polys: t.polys.map((p) => p.map(([x, y]) => [x - cx, y])), w: b.maxX - b.minX, h: b.maxY };
+}
+
+// Heykelin yerleşimi: harf yuvaları köşegen boyunca (i·p, i·p), ortadaki yuva orijinde. Yalnız yazı tipi
+// hesabıdır (scope gerekmez). Oda sahnesi (core/oda-urunler.js) heykeli bu parçalardan kurar.
+export function flipLayout(fs, w1, w2, size) {
+  const n = Math.max(w1.length, w2.length);
+  const A = [...w1.padEnd(n)].map((c) => glyph(fs, c, size));
+  const B = [...w2.padEnd(n)].map((c) => glyph(fs, c, size));
+  const pitch = Math.max(...[...A, ...B].filter(Boolean).map((g) => g.w)) * 1.02;
+  return { n, A, B, pitch, depth: pitch * 1.6, mid: ((n - 1) * pitch) / 2 };
+}
+
+// i. yuvanın parçası, yuvanın ortasında; taban çizgisi z=0 (scope içinde). İki harf de yoksa null.
+// Ön kelime −Y'den, ikinci kelime +X'ten okunur.
+export function flipPiece(L, i) {
+  const a = L.A[i], b = L.B[i], d = L.depth;
+  const front = a ? C.move(C.rot(C.extrude(C.polys2(a.polys), d), 90, 0, 0), 0, d / 2, 0) : null;
+  let side = b ? C.move(C.rot(C.extrude(C.polys2(b.polys), d), 90, 0, 0), 0, d / 2, 0) : null;
+  if (side) side = C.rot(side, 0, 0, 90);
+  if (front && side) return C.inter(front, side);
+  return front || side; // kısa kelimede yuva tek harfle dolar
+}
+
+// Köşegen taban levhası, ortası orijinde (scope içinde).
+export function flipBase(L) {
+  const len = (L.n - 1) * L.pitch * Math.SQRT2 + L.pitch * 1.6;
+  return C.rot(plate(len, L.pitch * 0.9, 4, 3), 0, 0, 45);
+}
+
+// İki kelimeli heykel, tek katı (scope içinde çağrılır). Tabanın ortası orijinde.
+export function flipSolid(fs, w1, w2, size) {
+  const L = flipLayout(fs, w1, w2, size);
+  const pieces = [];
+  for (let i = 0; i < L.n; i++) {
+    const p = flipPiece(L, i);
+    if (p) pieces.push(C.move(p, i * L.pitch - L.mid, i * L.pitch - L.mid, 4));
+  }
+  return C.union([flipBase(L), ...pieces]);
+}
+
 export async function buildScene({ scene, P, lang }) {
   await initCSG();
   const fs = await fonts(700);
@@ -16,39 +63,6 @@ export async function buildScene({ scene, P, lang }) {
   const pairs = lang === 'en'
     ? { family: ['MOM', 'DAD'], us: ['YOU', 'ME'], sea: ['SEA', 'SUN'] }
     : { family: ['ANNE', 'BABA'], us: ['SEN', 'BEN'], sea: ['ADA', 'EGE'] };
-
-  // Harfi kendi kutusunda ortalanmış çokgen olarak döndürür (taban çizgisi y=0).
-  function glyph(ch, size) {
-    const t = textPolys(fs, ch, size);
-    const b = t.glyphs[0].box;
-    if (!b) return null;
-    const cx = (b.minX + b.maxX) / 2;
-    return { polys: t.polys.map((p) => p.map(([x, y]) => [x - cx, y])), w: b.maxX - b.minX, h: b.maxY };
-  }
-
-  // İki kelimeli heykel (scope içinde çağrılır). Harf yuvaları köşegen boyunca (i·p, i·p).
-  function flipSolid(w1, w2, size) {
-    const n = Math.max(w1.length, w2.length);
-    const A = [...w1.padEnd(n)].map((c) => glyph(c, size));
-    const B = [...w2.padEnd(n)].map((c) => glyph(c, size));
-    const pitch = Math.max(...[...A, ...B].filter(Boolean).map((g) => g.w)) * 1.02;
-    const depth = pitch * 1.6;
-    const pieces = [];
-    for (let i = 0; i < n; i++) {
-      const a = A[i], b = B[i];
-      const front = a ? C.move(C.rot(C.extrude(C.polys2(a.polys), depth), 90, 0, 0), 0, depth / 2, 0) : null;
-      let side = b ? C.move(C.rot(C.extrude(C.polys2(b.polys), depth), 90, 0, 0), 0, depth / 2, 0) : null;
-      if (side) side = C.rot(side, 0, 0, 90);
-      let piece;
-      if (front && side) piece = C.inter(front, side);
-      else piece = front || side; // kısa kelimede yuva tek harfle dolar
-      if (piece) pieces.push(C.move(piece, i * pitch, i * pitch, 4));
-    }
-    const len = (n - 1) * pitch * Math.SQRT2 + pitch * 1.6;
-    const base = C.move(C.rot(plate(len, pitch * 0.9, 4, 3), 0, 0, 45), ((n - 1) * pitch) / 2, ((n - 1) * pitch) / 2, 0);
-    // Tabanın ortası orijinde olsun.
-    return C.move(C.union([base, ...pieces]), -((n - 1) * pitch) / 2, -((n - 1) * pitch) / 2, 0);
-  }
 
   scene.add(P.room({ back: BACK, w: 7000, d: 5200 }));
   const put = (o, x, y, z = 0, rz = 0) => { o.position.set(x, y, z); o.rotation.z = rz; scene.add(o); return o; };
@@ -75,7 +89,7 @@ export async function buildScene({ scene, P, lang }) {
   const spin = tt.userData.spin;
   {
     const [w1, w2] = pairs.family;
-    const s = solid(() => flipSolid(w1, w2, 78), pla(K.accent));
+    const s = solid(() => flipSolid(fs, w1, w2, 78), pla(K.accent));
     s.position.z = 8;
     spin.add(s);
     hotspots.push({ id: 'family', preset: null, object: tt });
@@ -83,14 +97,14 @@ export async function buildScene({ scene, P, lang }) {
   {
     const [w1, w2] = pairs.us;
     const g = new THREE.Group();
-    g.add(solid(() => flipSolid(w1, w2, 46), pla(K.ink)));
+    g.add(solid(() => flipSolid(fs, w1, w2, 46), pla(K.ink)));
     put(g, CX - 380, CY + 20, CT, faceWord2);
     hotspots.push({ id: 'us', preset: null, object: g });
   }
   {
     const [w1, w2] = pairs.sea;
     const g = new THREE.Group();
-    g.add(solid(() => flipSolid(w1, w2, 46), pla(K.blue)));
+    g.add(solid(() => flipSolid(fs, w1, w2, 46), pla(K.blue)));
     put(g, CX + 390, CY + 10, CT, faceWord1);
     hotspots.push({ id: 'sea', preset: null, object: g });
   }
