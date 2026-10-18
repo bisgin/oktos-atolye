@@ -23,7 +23,10 @@ masa altında kasa, priz ve fiş, beyaz kablo kanalı, kablolu fare, keçe mouse
 'balcony' manzarası (ufuk 0,22 rad aşağı: görüntünün kendi korkuluğu döşemenin ardında); balkonda antoryum ve gazanya
 (gri top ağaç ve lavantanın yerine); balkon masası yakın planı kapı boşluğundan; rölyef küçük çerçeveyle monitörün sol
 üstünde; işaretçiler ürünün tepesinde, tek kelime; çekmece 10, kalemlik 8 şablon (ölçü farkı olanlar araçta birebir
-açılır: sablonDegeri). Bekleyen: yapbozda aile fotoğrafı (kaynak seçilecek), ekmek, son kalite pişirme. Ana sayfanın tek sahnesi: ev ofisi ve açık balkon. Ürettiğimiz her şey kendi doğal yerinde
+açılır: sablonDegeri). Buzdolabının üst rafında sırlı taş tabakta Türk somunu ve beyaz peynir (Blender'da kodla
+modellendi, procedural doku orada pişer; "Gluten yok" etiketi somuna batar); çay bardağı klasik ince belli ölçülerde
+(Ø 50 gövde, Ø 38 bel, Ø 56 ağız, boy 96). Son kalite pişirme yapıldı (süpürgelik, kilim, gölge vekilleriyle).
+Bekleyen: yapbozda aile fotoğrafı (Unsplash adayları kullanıcıda). Ana sayfanın tek sahnesi: ev ofisi ve açık balkon. Ürettiğimiz her şey kendi doğal yerinde
 durur; ziyaretçi bakar, tıklar, şablonları değiştirir, araca geçer. Görsel referanslar: sade ev ofisi (yatay
 aynalanmış) ve açık balkon (ahşap zemin, bistro masa, büyük saksılar).
 
