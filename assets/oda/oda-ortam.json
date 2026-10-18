@@ -23,9 +23,10 @@
   1350,
   1050
  ],
- "kalite": "final",
+ "kalite": "onizleme",
  "nesneler": [
   "zemin",
+  "tavan",
   "duvar_sol",
   "duvar_sag",
   "duvar_arka",
@@ -47,7 +48,7 @@
    "balkon_cicek"
   ]
  },
- "tarih": "2026-10-18 13:24",
+ "tarih": "2026-10-18 19:33",
  "kodlama": "sqrt-srgb",
  "esya": {
   "dosya": "oda-esya.glb",
@@ -55,8 +56,17 @@
    "monitor",
    "buzdolabi",
    "masa_alti",
-   "kahvalti"
-  ]
+   "kahvalti",
+   "perde"
+  ],
+  "perde": {
+   "y": 1774,
+   "dalga": 72,
+   "derin": 15,
+   "ust": 90,
+   "alt": 12,
+   "tasma": 100
+  }
  },
  "gokYukselt": 0.22,
  "gokYakin": {

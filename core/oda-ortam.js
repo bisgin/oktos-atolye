@@ -190,7 +190,14 @@ export async function cicekler(meta) {
   for (const ad of meta.bitki.cesitler) {
     const o = g.scene.getObjectByName(ad);
     if (!o) continue;
-    o.traverse((x) => { if (x.isMesh) { x.castShadow = true; x.receiveShadow = true; } });
+    o.traverse((x) => {
+      if (!x.isMesh) return;
+      x.castShadow = true;
+      x.receiveShadow = true;
+      // Yaprak saydamlığı karışım değil kesik: karışımlı malzeme derinlik yazmaz, sonra çizilen tül (önündeki
+      // çiçeğin arkasında durduğu hâlde) üstüne biniyordu
+      for (const m of [x.material].flat()) if (m.transparent && m.map) { m.transparent = false; m.alphaTest = 0.5; m.depthWrite = true; }
+    });
     out[ad] = o;
   }
   return out;
@@ -256,4 +263,36 @@ export function toprakMalzemesi() {
   };
   toprakMat = new THREE.MeshStandardMaterial({ map: t('toprak-renk.webp', true), normalMap: t('toprak-normal.webp'), roughnessMap: t('toprak-puruz.webp'), roughness: 1, envMapIntensity: 0.6 });
   return toprakMat;
+}
+
+// Tül perde (oda-esya.glb 'perde' kökü): yarı saydam, pencereden gelen ışıkla hafif parlar; eteği rüzgârla odaya doğru
+// salınır (üst kornişte sabit, aşağı indikçe artar). Işığın süzülmesi pişmiş dokuda durur; burada yalnız kumaş oynar.
+// zUst / zAlt: kornişin ve eteğin yüksekliği (mm); hareket azaltma tercihinde perde kıpırdamaz.
+export function perdeTul(kok, { zUst, zAlt }) {
+  const u = {
+    zaman: { value: 0 }, zUst: { value: zUst }, zAlt: { value: zAlt },
+    genlik: { value: matchMedia('(prefers-reduced-motion: reduce)').matches ? 0 : 16 }, // etekte en çok, mm
+  };
+  const mat = new THREE.MeshStandardMaterial({
+    color: 0xf2efe8, roughness: 0.92, transparent: true, opacity: 0.62, side: THREE.DoubleSide, depthWrite: false,
+    emissive: 0xfff3e2, emissiveIntensity: 0.1, envMapIntensity: 0.5,
+  });
+  mat.onBeforeCompile = (sh) => {
+    Object.assign(sh.uniforms, u);
+    sh.vertexShader = 'uniform float zaman; uniform float genlik; uniform float zUst; uniform float zAlt;\n' + sh.vertexShader.replace('#include <begin_vertex>', `#include <begin_vertex>
+      float etek = clamp((zUst - position.z) / (zUst - zAlt), 0.0, 1.0);
+      etek *= etek;
+      float esinti = (sin(zaman * 0.8 + position.x * 0.011) + 0.45 * sin(zaman * 1.9 + position.x * 0.029 + 1.3)) / 1.45;
+      transformed.y -= genlik * etek * (0.55 + 0.45 * esinti);   // pencereden esen rüzgâr eteği odaya iter
+      transformed.x += genlik * 0.2 * etek * sin(zaman * 0.6 + position.z * 0.004);`);
+  };
+  mat.customProgramCacheKey = () => 'oda-perde';
+  kok.traverse((o) => {
+    if (!o.isMesh) return;
+    o.castShadow = false;
+    o.receiveShadow = false;
+    if (o.name.startsWith('perde_')) { o.material = mat; o.renderOrder = 3; }
+  });
+  kok.userData.tick = (t) => { u.zaman.value = t; };
+  return kok;
 }

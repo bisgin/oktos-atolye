@@ -56,6 +56,7 @@
   import { ZONES } from '../core/oda-yerler.js';
   import * as odaScene from '../core/oda-sahne.js';
   import { odaPanel } from '../core/oda-panel.js';
+  import { odaTuru } from '../core/oda-tur.js';
   import { sablonDegeri } from '../core/oda-urunler.js';
   import { t, getLang, setLang } from '../core/i18n.js';
 
@@ -76,14 +77,14 @@
   nextBtn.setAttribute('aria-label', t('oda.next'));
   nextBtn.title = t('oda.next');
   const reduce = matchMedia('(prefers-reduced-motion: reduce)').matches || params.get('mod') === 'still';
-  const single = () => matchMedia('(pointer: coarse), (max-width: 720px)').matches; // telefon: tek ürün, döngü
 
   // Tek sahne: fotogerçekçi oda (pişmiş kabuk, gerçek eşyalar). Eski adreslerdeki ?pilot=1 zararsızca yok sayılır.
   odaScene.options.pilot = true;
   // Yakın plan paneli: başlık, cümle, şablon seçici, toz yazısı (core/oda-panel.js)
   const panel = odaPanel(root, { lang, reduce });
   // Denetleyici kendi değişkeninde: kurulmadan önce window.story, id="story" bölümünün kendisidir
-  let story = null, startAt = null;
+  // Kaydırmalı tur (core/oda-tur.js): ilk deneme üç durak, genel plan → çekmece → masa üstü (kalemlik)
+  let story = null, tur = null, hazir = false;
   story = window.story = await mountStory(root, {
     toolId: 'oda', lang, story: ODA_STORY, sceneModule: odaScene,
     ...(params.get('mod') ? { mode: params.get('mod') } : {}),
@@ -95,12 +96,18 @@
       location.href = `../tools/${h.tool}/index.html?${q}`;
     },
     onSkip: () => { location.href = '../index.html'; },
-    // Telefonda sahne ilk ürünle başlar (giriş bitince)
-    onReady: () => { if (single() && !params.get('odak')) { if (story) story.focus(ZONES[0].id); else startAt = ZONES[0].id; } },
+    // Giriş bitince kamerayı tur sürer; turdayken tıklama önce tura sorulur
+    onReady: () => { hazir = true; tur?.hazir(); },
+    onActivate: (h) => tur?.sec(h) ?? false,
     onCard: panel.onCard,
   });
   panel.attach(story);
-  if (startAt) story.focus(startAt);
+  tur = odaTuru(root, story, {
+    duraklar: [null, 'cekmece', 'kalemlik'],
+    metin: { baslik: t('oda.tur.baslik'), basla: t('oda.tur.basla') },
+    reduce, bekle: !!params.get('odak'),
+  });
+  if (hazir) tur.hazir();
   // Yalnız laboratuvar (çekim için): ?bak=0.4 kenar bakışını o açıya çevirir (radyan, artı sola),
   // ?odak=cekmece açılışta o bölgeye yakınlaşır
   if (params.get('bak') && story.debug.look) story.debug.look.yaw = Number(params.get('bak'));
@@ -110,10 +117,11 @@
     const z = story.focusedId;
     await story.api.show(z, story.api.current(z).index + 1, { reduced: true });
   }
-  // Döngü düğmesi: sıradaki bölgeye (sondan başa)
+  // Döngü düğmesi: turda sıradaki durağa (sondan başa); tur sürmüyorsa sıradaki bölgeye
   nextBtn.addEventListener('click', () => {
     const ids = ZONES.map((z) => z.id);
-    story.focus(ids[(ids.indexOf(story.focusedId) + 1) % ids.length]);
+    if (story.driven) tur.ileri();
+    else story.focus(ids[(ids.indexOf(story.focusedId) + 1) % ids.length]);
     if (!reduce) nextBtn.querySelector('svg').animate([{ transform: 'rotate(0deg)' }, { transform: 'rotate(360deg)' }], { duration: 520, easing: 'cubic-bezier(0.23, 1, 0.32, 1)' });
   });
 </script>

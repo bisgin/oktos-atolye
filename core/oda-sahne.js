@@ -32,9 +32,11 @@ async function pilotYukle() {
     { x0: G.x0, x1: G.door0, z0: G.sill, z1: G.head, y: yd },
     { x0: G.door1, x1: G.x1, z0: G.sill, z1: G.head, y: yd },
   ], sun, { yogunluk: 0.015 }); // havada hafif bir iz: oda ışığı ~0,03; daha güçlüsü sağ yarıyı sütlü bir perdeyle örtüyordu
-  const c = LIGHTS.center, dist = 5000;
+  const c = LIGHTS.center, dist = 5000, PD = meta.esya.perde ?? { ust: 90, alt: 12 };
+  // Tül perde iki yan pencerede: ışığın süzülmesi pişmiş dokuda, burada kumaş rüzgârla salınır
+  const perde = esya.perde ? O.perdeTul(esya.perde, { zUst: G.head + PD.ust, zAlt: G.sill + PD.alt }) : null;
   return {
-    meta, kabuk, pano, gok, cicek, esya, huzme, golge: O.golgeYuzeyi, cayTakimi: O.cayTakimi,
+    meta, kabuk, pano, gok, cicek, esya, huzme, perde, golge: O.golgeYuzeyi, cayTakimi: O.cayTakimi,
     saksi: { toprak: O.toprakMalzemesi(), malzeme: (renk) => P_.clay(renk, { rough: 0.36, env: 1 }) },
     // Güneş: pişirmedekiyle aynı yön, renk ve güç (fiziksel birimler); ortam ışığı 360° görüntüden, diğer lambalar kapalı
     isik: { ...LIGHTS, key: [c[0] + sun[0] * dist, c[1] + sun[1] * dist, c[2] + sun[2] * dist], keyIntensity: meta.gunes.strength, keyColor: meta.gunes.color,
@@ -366,6 +368,7 @@ export async function buildScene({ scene, P, lang = 'tr' }) {
   if (pilot) {
     place(pilot.esya.monitor, A.monitor);
     scene.add(pilot.esya.masa_alti);
+    if (pilot.perde) scene.add(pilot.perde);
   }
   const flipZone = place(new THREE.Group(), [A.fridge[0], A.fridge[1], F.h, -Math.PI / 2 + 0.5]);
   flipZone.add(P.mesh(P.cyl(90, 90, 12, 32), M.dark));
@@ -486,11 +489,16 @@ export async function buildScene({ scene, P, lang = 'tr' }) {
     focusShift: 0.16, // yatay ekranda yakın plandaki ürün sağa kayar: sol kenarda başlık paneli
     touchOrbit: false, // dokunmatikte yakın planda yana kaydırma şablon değiştirir (etrafa bakma yok)
     langGeometry: true,
+    update(t) { pilot?.perde?.userData.tick(t); },
+    // Telefonun dikey ekranı: genel motor kamerayı odanın dışına çekip tepeden gökyüzünü gösteriyordu; oda kendi
+    // kadrajını verir (içeriden, geniş açıyla: masa, raflar ve sol pencere)
+    portraitShot: SHOTS.portrait,
+    portraitFov: 58,
     outlineFocus: !pilot, // gerçekçi sahnede yakın plandaki ürünün çevresine çizgi çekilmez (yaprakları tek tek çiziyordu)
     hotspots: [
       hs('cekmece', drawer, { extra: [pedestal], noLift: true, focusCenter: [px, DRAWER_Y - 370, 620], focusRadius: 470, focusElev: 0.7, // uzaktan ve önden: içine düşmeden bölmeler görünür
         anchor: [px, DRAWER_Y - 190, PED.h + 50] }), // kapalı çekmecenin üstünde
-      hs('kalemlik', penZone, { focusCenter: [A.pencup[0] - 50, A.pencup[1], 800], focusRadius: 200, focusElev: 0.5 }),
+      hs('kalemlik', penZone, { focusCenter: [A.pencup[0] + 130, A.pencup[1] - 60, 790], focusRadius: 330, focusElev: 0.5 }), // masa üstü: kalemlik ve klavye birlikte
       hs('klavye', kbZone, { focusCenter: [A.clickers[0] - 60, A.clickers[1], 765], focusRadius: 150, focusElev: 0.55 }),
       hs('modem', modemZone, { focusRadius: 240 }),
       hs('puzzle3d', puzzleZone, { focusRadius: 170 }),

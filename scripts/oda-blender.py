@@ -291,7 +291,7 @@ def ortam_kur(sc, o):
     }
     P = {
         'zemin': Parca('zemin', M['zemin'], 1400, sil=('-z', '+x', '-x', '+y', '-y')),
-        'tavan': Parca('tavan', M['tavan'], 1500, disa=False),
+        'tavan': Parca('tavan', M['tavan'], 1500, cozunurluk='kucuk', sil=('+z',)),  # telefonun dikey kadrajında görünür
         'on_duvar': Parca('on_duvar', M['siva'], 1500, disa=False),
         'duvar_sol': Parca('duvar_sol', M['siva'], 1500, cozunurluk='kucuk', sil=('-x', '+z', '-z', '+y', '-y')),
         'duvar_sag': Parca('duvar_sag', M['siva'], 1500, cozunurluk='kucuk', sil=('+x', '+z', '-z', '+y', '-y')),
@@ -302,7 +302,7 @@ def ortam_kur(sc, o):
         'korkuluk': Parca('korkuluk', M['koyu'], 1000, cozunurluk='kucuk'),
         'balkon_duvar': Parca('balkon_duvar', M['siva'], 1500, cozunurluk='kucuk', sil=('+x', '+z', '-z')),
     }
-    # Oda kabuğu (ön duvar ve tavan yalnız pişirmede: ışığı kapatır, dışa aktarılmaz; kamera ön duvarın dışında durur)
+    # Oda kabuğu (ön duvar yalnız pişirmede: ışığı kapatır, dışa aktarılmaz; kamera ön duvarın dışında durur)
     P['zemin'].kutu(R['x1'] - R['x0'], R['y1'] - R['y0'], 20, 0, 0, -20)
     P['tavan'].kutu(R['x1'] - R['x0'] + 2 * W, R['y1'] - R['y0'] + 2 * W, 40, 0, 0, R['h'])
     P['on_duvar'].kutu(R['x1'] - R['x0'] + 2 * W, W, R['h'], 0, R['y0'] - W / 2, 0)
@@ -382,6 +382,7 @@ def ortam_kur(sc, o):
     nes = {ad: p.nesne(sc) for ad, p in P.items()}
     nes['kilim'] = kilim_kur(sc, o)
     P['kilim'] = Parca('kilim', None, disa=True, cozunurluk='buyuk')  # yalnız pişirme ayarı için (nesneyi kilim_kur kurdu)
+    perde_kur(o, isikli=True)  # tül ışığı süzer (dışa aktarılmaz, kendisi pişmez; tarayıcıya oda-esya.glb ile gider)
     return nes, P
 
 
@@ -1160,9 +1161,82 @@ def kahvalti_kur(sc):
     return kok
 
 
+# ---------------------------------------------------------------- perde (iki yan pencerede ince tül; kapı açık)
+PERDE = {'y': 1774, 'dalga': 72, 'derin': 15, 'ust': 90, 'alt': 12, 'tasma': 100}  # mm: duvar önü, pli aralığı ve derinliği,
+# kasanın üstünden kornişe, pervaza boşluk, pencerenin dış yanından taşma (kapı tarafında taşmaz)
+
+
+def perde_yerleri(o):
+    G = o['GLASS']
+    return [(G['x0'] - PERDE['tasma'], G['door0']), (G['door1'], G['x1'] + PERDE['tasma'])]
+
+
+def perde_malzemesi(isikli):
+    """Pişirme için: ışığın yarısından fazlası doğrudan geçer (Transparent: doğrudan ışık sayılır, temiz pişer),
+    kalanı tülde saçılır ve yansır. Dışa aktarma için sade beyaz (tarayıcı kendi tül gölgelendiricisini koyar)."""
+    if not isikli:
+        return malzeme('perde', (0.92, 0.9, 0.86), puruz=0.9)
+    m = bpy.data.materials.new('perde_tul')
+    m.use_nodes = True
+    nt = m.node_tree
+    nt.nodes.clear()
+    out = nt.nodes.new('ShaderNodeOutputMaterial')
+    gec = nt.nodes.new('ShaderNodeBsdfTransparent')
+    sac = nt.nodes.new('ShaderNodeBsdfTranslucent')
+    yan = nt.nodes.new('ShaderNodeBsdfDiffuse')
+    for n in (sac, yan):
+        n.inputs['Color'].default_value = (0.92, 0.9, 0.86, 1)
+    k1 = nt.nodes.new('ShaderNodeMixShader')
+    k1.inputs['Fac'].default_value = 0.5
+    nt.links.new(sac.outputs[0], k1.inputs[1])
+    nt.links.new(yan.outputs[0], k1.inputs[2])
+    k2 = nt.nodes.new('ShaderNodeMixShader')
+    k2.inputs['Fac'].default_value = 0.45  # 0,55 geçirgen
+    nt.links.new(gec.outputs[0], k2.inputs[1])
+    nt.links.new(k1.outputs[0], k2.inputs[2])
+    nt.links.new(k2.outputs[0], out.inputs['Surface'])
+    return m
+
+
+def perde_kur(o, isikli=False):
+    """Pilili tül panelleri ve kornişler (dünya koordinatı, kök orijinde). Köşe z'si kornişten aşağı: tarayıcı rüzgârı
+    buna göre verir (üst sabit, etek salınır)."""
+    G = o['GLASS']
+    m, koyu = perde_malzemesi(isikli), (bpy.data.materials.get('siyah_plastik') or malzeme('siyah_plastik', (0.018, 0.018, 0.02), puruz=0.42))
+    kok = bos('perde')
+    zt, zb = G['head'] + PERDE['ust'], G['sill'] + PERDE['alt']
+    for i, (xa, xb) in enumerate(perde_yerleri(o)):
+        nx, nz = int((xb - xa) / 9), 40
+        bm = bmesh.new()
+        sira = []
+        for j in range(nz + 1):
+            v = j / nz
+            satir = []
+            for k in range(nx + 1):
+                u = k / nx
+                x = xa + u * (xb - xa)
+                y = PERDE['y'] + PERDE['derin'] * math.sin(2 * math.pi * (x - xa) / PERDE['dalga']) * (1 + 0.3 * (1 - v))
+                satir.append(bm.verts.new((x, y, zb + v * (zt - zb))))
+            sira.append(satir)
+        for j in range(nz):
+            for k in range(nx):
+                bm.faces.new((sira[j][k], sira[j][k + 1], sira[j + 1][k + 1], sira[j + 1][k]))
+        me = bpy.data.meshes.new(f'perde_{i}')
+        bm.to_mesh(me)
+        bm.free()
+        for poly in me.polygons:
+            poly.use_smooth = True
+        me.materials.append(m)
+        ob = bpy.data.objects.new(f'perde_{i}', me)
+        bpy.context.scene.collection.objects.link(ob)
+        ob.parent = kok
+        silindir(f'kornis_{i}', 9, xb - xa + 40, (xa + xb) / 2, PERDE['y'] + 6, zt + 22, koyu, ust=kok, eksen='x', seg=16)
+    return kok
+
+
 def esya_yaz(o, hedef):
     bpy.ops.wm.read_factory_settings(use_empty=True)
-    kok = [monitor_kur(o), buzdolabi_kur(o), masa_alti_kur(o), kahvalti_kur(bpy.context.scene)]
+    kok = [monitor_kur(o), buzdolabi_kur(o), masa_alti_kur(o), kahvalti_kur(bpy.context.scene), perde_kur(o)]
     bpy.ops.object.select_all(action='DESELECT')
     for k in kok:
         k.select_set(True)
@@ -1249,7 +1323,7 @@ def main():
         doku_yaz()
     if 'esya' in parca:
         esya_yaz(o, yol(CIKTI, 'oda-esya.glb'))
-        meta['esya'] = {'dosya': 'oda-esya.glb', 'koklar': ['monitor', 'buzdolabi', 'masa_alti', 'kahvalti']}
+        meta['esya'] = {'dosya': 'oda-esya.glb', 'koklar': ['monitor', 'buzdolabi', 'masa_alti', 'kahvalti', 'perde'], 'perde': PERDE}
     if 'bitki' in parca:
         bitki_yaz(yol(CIKTI, 'oda-bitki.glb'))
         meta['bitki'] = {'dosya': 'oda-bitki.glb', 'cesitler': [b[3] for b in BITKILER]}

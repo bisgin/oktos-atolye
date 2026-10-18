@@ -251,3 +251,65 @@
   .oda-next svg { width: 26px; height: 26px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
   .oda[data-panel="bottom"] .story-card { bottom: calc(86px + env(safe-area-inset-bottom)); }
 }
+
+/* ---- Kaydırmalı tur (core/oda-tur.js) ----
+   Sahne sabit durur, sayfa görünmez bir alan boyunca kayar; üst çubuk yerinde kalır, kaydırma çubuğu gizli.
+   Genel planda altta tur başlığı, hemen üstünde "başla" düğmesi; kaydırma başlayınca ikisi de söner. */
+html.oda-tur-on { scrollbar-width: none; }
+html.oda-tur-on::-webkit-scrollbar { display: none; }
+.oda-tur-on .topbar { position: fixed; top: 0; left: 0; right: 0; z-index: 30; }
+.oda-tur-alan { pointer-events: none; }
+.oda[data-tur] .story-lede { display: none; }
+.oda[data-tur].is-focused .story-canvas canvas { touch-action: pan-y; } /* yakın planda da dikey kaydırma sayfanın */
+.oda-tur-giris {
+  position: absolute;
+  z-index: 3;
+  left: 50%;
+  bottom: 104px;
+  translate: -50% 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+  width: max-content;
+  max-width: calc(100% - 32px);
+  text-align: center;
+  pointer-events: none;
+  transition: opacity 450ms cubic-bezier(0.23, 1, 0.32, 1), translate 450ms cubic-bezier(0.23, 1, 0.32, 1);
+}
+.oda-tur-giris.gizli { opacity: 0; translate: -50% 12px; }
+.oda-tur-giris.gizli .ot-basla { pointer-events: none; }
+.ot-baslik {
+  margin: 0;
+  font-family: 'Big Shoulders Display', var(--sans);
+  font-weight: 700;
+  font-size: clamp(40px, 6vw, 76px);
+  line-height: 0.95;
+  letter-spacing: 0.01em;
+  color: #f6f2ea;
+  text-shadow: 0 2px 18px rgb(0 0 0 / 0.45);
+}
+.ot-basla {
+  pointer-events: auto;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 44px;
+  padding: 0 14px 0 18px;
+  border: 0;
+  border-radius: 999px;
+  background: rgb(250 250 248 / 0.92);
+  color: var(--ink);
+  font: 600 15px/1 var(--sans);
+  box-shadow: 0 1px 2px rgb(0 0 0 / 0.08), 0 6px 18px rgb(30 35 40 / 0.16);
+  cursor: pointer;
+  transition: background-color 160ms ease;
+}
+.ot-basla svg { width: 18px; height: 18px; fill: none; stroke: currentColor; stroke-width: 2.2; stroke-linecap: round; stroke-linejoin: round; animation: ot-in 1.8s ease-in-out infinite; }
+@keyframes ot-in { 0%, 100% { transform: translateY(-1px); } 50% { transform: translateY(3px); } }
+@media (hover: hover) and (pointer: fine) { .ot-basla:hover { background: #fff; } }
+@media (prefers-reduced-motion: reduce) { .ot-basla svg { animation: none; } .oda-tur-giris { transition: opacity 200ms ease; } }
+@media (pointer: coarse), (max-width: 720px) {
+  .oda-tur-giris { bottom: calc(92px + env(safe-area-inset-bottom)); }
+  .ot-baslik { font-size: clamp(34px, 10vw, 48px); }
+}

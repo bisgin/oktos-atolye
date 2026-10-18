@@ -32,7 +32,11 @@ kaldırıldı). Duvarlar canlı güneşte görünmez gölge vekiliyle kapandı (
 ışığına göre kısıldı ve durdu, oda içi 0,75 ile loşlaştı (balkon parlak kalır), pozlama 3,6. Manzara 4K
 HDRI'den: pencereden görünen yön aralığı tam çözünürlükte ayrı kesit (`oda-gok-yakin.webp`). Telefonda ekran
 çözünürlüğü 2. Çekmece yakın planı uzaktan ve önden; çekmece şablonları Kutu paletinden ayrı renklerde.
-Sırada (kullanıcı kararı bekliyor): perde ve süzülen ışık, kaydırmalı tur. Ana sayfanın tek sahnesi: ev ofisi ve açık balkon. Ürettiğimiz her şey kendi doğal yerinde
+Kaydırmalı tur ilk denemesi (`core/oda-tur.js`): genel plan → çekmece → masa üstü; genel planda altta "Odana dair
+her şey", üstünde "Çekmece organizeriyle başla" (üzerine gelince kamera biraz yaklaşır), durakta kart açılır ve
+3 şablon kendiliğinden döner; tıklama kısayol. Perde B yolu: iki yan pencerede pilili tül (Blender'da ışığı süzer,
+önizleme kalitesinde pişti; tarayıcıda etek rüzgârla odaya salınır), balkon kapısı açık; tavan da pişip dışa
+aktarıldı, telefonun dikey kadrajı odanın içinden. Ana sayfanın tek sahnesi: ev ofisi ve açık balkon. Ürettiğimiz her şey kendi doğal yerinde
 durur; ziyaretçi bakar, tıklar, şablonları değiştirir, araca geçer. Görsel referanslar: sade ev ofisi (yatay
 aynalanmış) ve açık balkon (ahşap zemin, bistro masa, büyük saksılar).
 

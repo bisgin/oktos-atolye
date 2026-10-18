@@ -37,8 +37,8 @@ export const A = {
   frameA: [-1440, 1785, 1390, 0],     // arka duvar, monitörün sol üstü: Painter rölyefi (küçük çerçeve, raf ucunun solunda)
   frameB: [-2095, 920, 1050, 0],      // sol duvar, yatay çerçeve: resimli yapboz
   sign: [800, 1800, 2320, 0],         // balkon kapısının üstü (duvar yüzü, plakanın alt kenarı)
-  sillL: [100, 1690, 850, 0],         // sol pencere kenarı
-  sillR: [1500, 1690, 850, 0],        // sağ pencere kenarı
+  sillL: [100, 1655, 850, 0],         // sol pencere kenarı (arkasında tül: saksı ona değmesin)
+  sillR: [1500, 1655, 850, 0],        // sağ pencere kenarı
   planterL: [120, 3180, 0, 0],        // balkon: korkuluk önü
   planterR: [1720, 3120, 0, 0],
   table: [900, 2650, 0, 0],           // bistro masa (üstü 722)
@@ -49,6 +49,7 @@ export const A = {
 export const SHOTS = {
   intro: { pos: [600, -3000, 2250], target: [-300, 1500, 1100] },
   main: { pos: [0, -1850, 1600], target: [-400, 1650, 1000] },
+  portrait: { pos: [-350, -1550, 1500], target: [-700, 1500, 1150] }, // telefon (dikey): odanın içinden
 };
 // Kenardan bakma sınırları (radyan, artı sola): solda dolap ve çerçeveler, sağda pencere ve buzdolabı
 export const LOOK = { min: -0.52, max: 0.46, edge: 0.2, speed: 0.75 };

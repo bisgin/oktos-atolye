@@ -78,7 +78,9 @@ function splitWords(el, text) {
 // ---------------------------------------------------------------------------------
 // Araç dışı sahne (oda): story metni (STORIES biçiminde) ve sceneModule dışarıdan verilir. onCard(h | null, card):
 // yakın plan kartı dolunca ve kapanınca (sayfa kart başlığını canlandırabilir).
-export async function mountStory(root, { toolId, lang = 'tr', mode = pickMode(toolId), onPick, onSkip, onReady, onCard, sceneModule, story: storyOverride, homeHref = 'index.html' } = {}) {
+// onActivate(h): sayfa kamerayı kendisi sürerken (drive) tıklanan bölge ya da geri isteği (h = null) önce sayfaya
+// sorulur; true dönerse motor yakınlaşmaz (oda: kaydırmalı tur o durağa kayar).
+export async function mountStory(root, { toolId, lang = 'tr', mode = pickMode(toolId), onPick, onSkip, onReady, onCard, onActivate, sceneModule, story: storyOverride, homeHref = 'index.html' } = {}) {
   const story = storyOverride || STORIES[toolId];
   let ui = STORY_UI[lang] || STORY_UI.tr;
   const $ = (s) => root.querySelector(s);
@@ -224,7 +226,8 @@ export async function mountStory(root, { toolId, lang = 'tr', mode = pickMode(to
   {
     const w = canvasHost.clientWidth || innerWidth, h = canvasHost.clientHeight || innerHeight;
     const aspect = w / h;
-    if (aspect < 0.9 && hotspots.length) {
+    if (aspect < 0.9 && built.portraitShot) shots.main = { pos: [...built.portraitShot.pos], target: [...built.portraitShot.target] };
+    else if (aspect < 0.9 && hotspots.length) {
       const k = aspect < 0.65 ? 1 : 0.6;
       const c = new THREE.Vector3();
       hotspots.forEach((x) => c.add(x.center));
@@ -400,12 +403,13 @@ export async function mountStory(root, { toolId, lang = 'tr', mode = pickMode(to
     }
   }
   scGo.addEventListener('click', () => { if (focused && !busy) pick(focused); });
-  scBack.addEventListener('click', () => { if (!busy) unfocus(true); });
+  scBack.addEventListener('click', () => { if (busy) return; if (driven && onActivate?.(null)) return; unfocus(true); });
 
   // ---- vurgulama ----
   let hovered = null;
   let focused = null; // yakın plandaki şablon
   let flight = null;  // süren kamera uçuşu (yenisi başlarken durdurulur)
+  let driven = false; // kamera sayfanın elinde (kaydırmalı tur): yakın plan uçuşsuz, tıklamalar önce sayfaya
   // force: yakın plandan çıkarken hover zaten boş olsa da vurgu ve sahne canlandırması sıfırlansın.
   function setHover(h, force = false) {
     if (hovered === h && !force) return;
@@ -432,12 +436,13 @@ export async function mountStory(root, { toolId, lang = 'tr', mode = pickMode(to
   // Atölyeye geçiş karttaki "Bu şablonla tasarla" düğmesiyle.
   function activate(h, fromKeyboard = false) {
     if (busy) return;
+    if (driven && onActivate?.(h)) return;
     // Yakın plandayken yeniden tıklama: küçük bir tepki (hareket azaltma tercihinde yok)
     if (focused === h) { built.onPoke?.(h.id, { reduced: mode === 'still' }); return; }
     focusOn(h, fromKeyboard);
   }
 
-  function focusOn(h, fromKeyboard = false) {
+  function focusOn(h, fromKeyboard = false, fly = true) {
     if (intro.progress() < 1) intro.progress(1); // giriş bitmeden seçildiyse girişi tamamla
     const prev = focused;
     focused = h;
@@ -454,7 +459,7 @@ export async function mountStory(root, { toolId, lang = 'tr', mode = pickMode(to
     hovered = null;
     setHover(h);
     flight?.kill();
-    flight = flyTo(focusShot(h), mode === 'still' ? 0.001 : TUNE.focusDur, 'power3.inOut');
+    if (fly) flight = flyTo(focusShot(h), mode === 'still' ? 0.001 : TUNE.focusDur, 'power3.inOut');
     chipBtns.forEach((c, i) => c.classList.toggle('focused', hotspots[i] === h));
     root.classList.add('is-focused');
     // Önceki açılış/kapanış akışları (gecikmeli olanlar dahil) öldürülür: yarışıp kartı gizlemesinler.
@@ -474,7 +479,7 @@ export async function mountStory(root, { toolId, lang = 'tr', mode = pickMode(to
     built.onFocus?.(h.id, { reduced: mode === 'still' });
   }
 
-  function unfocus(fromCard = false) {
+  function unfocus(fromCard = false, fly = true) {
     if (!focused) return;
     const h = focused;
     focused = null;
@@ -489,7 +494,7 @@ export async function mountStory(root, { toolId, lang = 'tr', mode = pickMode(to
     gsap.to(card, { autoAlpha: 0, y: 10, duration: 0.25, ease: 'power2.in', onComplete: () => { if (!focused) card.hidden = true; } });
     gsap.to(copyEls(), { autoAlpha: 1, y: 0, duration: 0.5, ease: 'power3.out', delay: 0.2 });
     flight?.kill();
-    flight = flyTo(shots.main, mode === 'still' ? 0.001 : TUNE.focusDur, 'power2.inOut');
+    if (fly) flight = flyTo(shots.main, mode === 'still' ? 0.001 : TUNE.focusDur, 'power2.inOut');
     built.onUnfocus?.(h.id);
     if (fromCard) chipBtns[h.index]?.focus({ preventScroll: true });
   }
@@ -590,11 +595,15 @@ export async function mountStory(root, { toolId, lang = 'tr', mode = pickMode(to
       if (moved > 8) return;
       const h = hitAt(e.clientX, e.clientY);
       if (h) activate(h);
-      else if (focused) unfocus(card.contains(document.activeElement));
+      else if (focused && !driven) unfocus(card.contains(document.activeElement));
     });
   }
   // Atölyeye geçerken yok sayılır. Odak karttaysa şeritteki düğmeye döner (gizlenen kartta kalmasın).
-  const onKey = (e) => { if (e.key === 'Escape' && !busy) unfocus(card.contains(document.activeElement)); };
+  const onKey = (e) => {
+    if (e.key !== 'Escape' || busy) return;
+    if (driven && onActivate?.(null)) return;
+    unfocus(card.contains(document.activeElement));
+  };
   addEventListener('keydown', onKey);
 
   // ---- boyut ----
@@ -604,7 +613,7 @@ export async function mountStory(root, { toolId, lang = 'tr', mode = pickMode(to
     viewW = w; viewH = h;
     camera.aspect = w / h;
     // Dar ekranda geniş sahne sığsın diye görüş açısını büyüt.
-    camera.fov = w / h < 0.8 ? 46 : w / h < 1.2 ? 38 : 30;
+    camera.fov = w / h < 0.8 ? (built.portraitFov || 46) : w / h < 1.2 ? 38 : 30;
     camera.updateProjectionMatrix();
     sideCard = !!built.focusShift && w / h >= 0.9 && !matchMedia('(pointer: coarse), (max-width: 720px)').matches;
     if (built.focusShift) root.dataset.panel = sideCard ? 'side' : 'bottom';
@@ -775,6 +784,16 @@ export async function mountStory(root, { toolId, lang = 'tr', mode = pickMode(to
     focus(id) { const h = hotspots.find((x) => x.id === id); if (h && !busy) activate(h); },
     unfocus() { if (!busy) unfocus(); },
     get focusedId() { return focused?.id ?? null; },
+    // Sayfanın sürdüğü kamera (kaydırmalı tur). drive(true): uçuşlar durur, kamerayı setView verir; focusTo/blur kartı
+    // ve sahne canlanmasını uçuşsuz açıp kapar; shotOf(id) o bölgenin yakın plan kadrajı (id yoksa genel plan).
+    drive(on) { driven = !!on; if (driven) { flight?.kill(); if (intro.progress() < 1) intro.progress(1); } root.toggleAttribute('data-driven', driven); },
+    get driven() { return driven; },
+    shotOf(id) { const h = id && hotspots.find((x) => x.id === id); return h ? focusShot(h) : { pos: [...shots.main.pos], target: [...shots.main.target] }; },
+    view() { return { pos: rig.pos.toArray(), target: rig.target.toArray() }; },
+    setView(pos, target) { rig.pos.set(...pos); rig.target.set(...target); },
+    focusTo(id) { const h = hotspots.find((x) => x.id === id); if (h && focused !== h && !busy) focusOn(h, false, false); },
+    blur() { if (focused && !busy) unfocus(false, false); },
+    get ready() { return intro.progress() >= 1; },
     get busy() { return busy; }, // atölyeye geçiş sürüyor (sayfa girdileri beklesin)
     // Sahnenin kendi denetimi (oda: yakın planda şablon değiştirme, built.api)
     api: built.api || null,
