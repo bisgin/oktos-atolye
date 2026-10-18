@@ -5,12 +5,13 @@ korkuluk). Işık ve gölge Cycles ile önceden hesaplanıp dokuya yazılır ("p
 Ürünlerimiz bu dosyada yok: tarayıcıda canlı ışıkta durur. Cam, Blender'da açıklık olarak kalır (güneş geçsin);
 tarayıcıda gerçek cam malzemesiyle çizilir.
 Girdi:  core/oda-olcu.js (ölçüler ve güneş; tarayıcıyla ortak), kaynak/ (Poly Haven dokuları, gökyüzü ve çiçekler;
-        scripts/varlik-indir.py)
+        scripts/varlik-indir.py), kaynak/ekran/kutu.png (monitör ekranı: Kutu aracının sayfası, scripts/sayfa-cek.py ile)
 Çıktı:  assets/oda/oda-ortam.glb   pişmiş, ışıksız malzemeli oda kabuğu (Draco + WebP)
         assets/oda/oda-pano.webp   ürünlerin yansıması için odanın 360° görüntüsü
         assets/oda/oda-gok.webp    balkonun ardındaki gökyüzü
         assets/oda/oda-bitki.glb   saksılardaki çiçekler (ışıklı malzeme, 2K doku)
         assets/oda/toprak-*.webp   saksı toprağı (renk, normal, pürüzlülük; 1K)
+        assets/oda/oda-esya.glb    canlı ışıkta duran eşyalar: monitör, mini buzdolabı (kapağı ayrı düğüm, menteşede)
         assets/oda/oda-ortam.json  tarayıcının okuyacağı ayarlar (doku ölçeği, gök dönüşü, kalite)
         kaynak/oda.blend           düzenlenebilir sahne (pişirmeden önceki hâli; depoya girmez)
 Kullanım:
@@ -44,13 +45,16 @@ KALITE = {
     'final': {'ornek': 1024, 'buyuk': 2048, 'kucuk': 1024, 'pano': (1024, 512), 'pano_ornek': 512},
 }
 PANO_YERI = (100, 1350, 1050)  # yansıma görüntüsünün çekildiği nokta (pilot: pencere kenarı saksıları)
+# Balkonun ardındaki manzara (yalnız görünüm): Poly Haven 'balcony'. u: görüntünün kameranın baktığı +y yönüne gelecek
+# yatay konumu (0..1); 0,10 tarlalar ve ağaçlar (ev ve yakın balkon arkada kalır)
+MANZARA = {'id': 'balcony', 'u': 0.03, 'yukselt': 0.22}  # yukselt (radyan): görüntünün kendi korkuluğu ufkun altına insin
 
 
 def secenekler():
     argv = sys.argv[sys.argv.index('--') + 1:] if '--' in sys.argv else []
     ap = argparse.ArgumentParser(prog='oda-blender')
     ap.add_argument('--final', action='store_true')
-    ap.add_argument('--parca', default='ortam,gok,bitki,doku')
+    ap.add_argument('--parca', default='ortam,gok,bitki,doku,esya')
     ap.add_argument('--dry-run', action='store_true')
     return ap.parse_args(argv)
 
@@ -337,7 +341,117 @@ def ortam_kur(sc, o):
         kk.kutu(18, 18, 910, B['x0'] + 20, yy, 100)
         yy += 120
     P['balkon_duvar'].kutu(W, bd, R['h'], B['x1'] + W / 2, bcy, 0)
-    return {ad: p.nesne(sc) for ad, p in P.items()}, P
+    # Süpürgelik: duvar diplerinde ahşap (kapı boşluğunda kesilir; ön duvar görünmez)
+    SK = o['SKIRTING']
+    sk = P['supurgelik'] = Parca('supurgelik', pbr('supurgelik', 'wood_floor', ton=(0.8, 0.74, 0.68)), 600, pah=1.0, cozunurluk='kucuk', sil=('-z',))
+    sk.kutu(SK['t'], R['y1'] - R['y0'], SK['h'], R['x0'] + SK['t'] / 2, 0, 0)
+    sk.kutu(SK['t'], R['y1'] - R['y0'], SK['h'], R['x1'] - SK['t'] / 2, 0, 0)
+    for a0, a1 in ((R['x0'], G['door0']), (G['door1'], R['x1'])):
+        w, x = sp(a0, a1)
+        sk.kutu(w, SK['t'], SK['h'], x, R['y1'] - SK['t'] / 2, 0)
+    # Gölge vekilleri: tarayıcıda gri kutu ya da canlı ışıklı eşya olan mobilya; pişirmede zemine ve duvara temas
+    # gölgesi ve yansıyan ışık versin diye kaba kutular (dışa aktarılmaz, kendileri pişmez)
+    V = {'beyaz': Parca('vekil_beyaz', boya('vekil_beyaz', (0.75, 0.75, 0.73), 0.5), disa=False),
+         'koyu': Parca('vekil_koyu', boya('vekil_koyu', (0.05, 0.05, 0.055), 0.5), disa=False),
+         'gri': Parca('vekil_gri', boya('vekil_gri', (0.45, 0.44, 0.42), 0.6), disa=False)}
+    D, PE, F, SH, MO = o['DESK'], o['PEDESTAL'], o['FRIDGE'], o['SHELF'], o['MONITOR']
+    w, x = sp(D['x0'], D['x1']); d, y = sp(D['y0'], D['y1'])
+    V['beyaz'].kutu(w, d, D['t'], x, y, D['top'] - D['t'])
+    for lx in (D['x0'] + 20, D['x1'] - 20):
+        for ly in (D['y0'] + 20, D['y1'] - 20):
+            V['koyu'].kutu(28, 28, D['top'] - D['t'], lx, ly, 0)
+    V['gri'].kutu(PE['w'], PE['d'], PE['h'], PE['x'], PE['y'], 0)
+    V['beyaz'].kutu(F['d'], F['w'], F['h'] - 20, F['x'], F['y'], 20)
+    for z in SH['z']:
+        V['koyu'].kutu(SH['w'], SH['d'], SH['t'], SH['x'], SH['y'], z)
+    V['koyu'].kutu(240, 170, 110, -480, 1700, SH['z'][1] + SH['t'])          # üst raftaki kutu
+    V['koyu'].kutu(MO['w'], 30, MO['h'], MO['x'], MO['y'] + 10, D['top'] + MO['lift'])  # monitör
+    V['koyu'].kutu(230, 170, 8, MO['x'], MO['y'] + 20, D['top'])
+    PC = o['PC']
+    V['koyu'].kutu(PC['w'], PC['d'], PC['h'], PC['x'], PC['y'], 0)  # masa altındaki kasa
+    for ad, p in V.items():
+        P['vekil_' + ad] = p
+    nes = {ad: p.nesne(sc) for ad, p in P.items()}
+    nes['kilim'] = kilim_kur(sc, o)
+    P['kilim'] = Parca('kilim', None, disa=True, cozunurluk='buyuk')  # yalnız pişirme ayarı için (nesneyi kilim_kur kurdu)
+    return nes, P
+
+
+# ---------------------------------------------------------------- kilim: deseni koddan (lisans derdi yok)
+def kilim_deseni(w, h, tohum=7):
+    """Dokuma kilim deseni (RGB doğrusal, h × w): kökboya kırmızısı zemin, abraş (renk dalgası), bordürde zikzak,
+    ortada basamaklı göl motifleri. Kilim dokunduğu için kenarlar basamaklı: hesap 'ilmek' hücrelerinde yapılır."""
+    rng = np.random.default_rng(tohum)
+    hucre = 6
+    gw, gh = -(-w // hucre), -(-h // hucre)  # yukarı yuvarla: büyütülüp kırpılınca tam w × h kalsın
+    yy, xx = np.mgrid[0:gh, 0:gw].astype(np.float32)
+    u, v = (xx + 0.5) / gw, (yy + 0.5) / gh
+    lin = lambda c: np.array([(x / 255) ** 2.2 for x in c], np.float32)
+    KIR, LAC, KREM, HAR, YES, KOY = lin((150, 38, 28)), lin((28, 36, 64)), lin((232, 216, 184)), lin((204, 146, 54)), lin((74, 98, 72)), lin((60, 22, 20))
+    img = np.empty((gh, gw, 3), np.float32)
+    img[:] = KIR
+    img *= (0.92 + 0.08 * np.sin(v[..., None] * 37 + rng.random() * 6)) * (0.97 + 0.03 * rng.random((gh, 1, 1)))  # abraş
+    kx, ky = np.minimum(u, 1 - u) * gw, np.minimum(v, 1 - v) * gh   # kenara uzaklık (hücre)
+    kenar = np.minimum(kx, ky)
+    B1, B2, B3 = 4, 14, 17
+    img[kenar < B3] = HAR
+    bant = (kenar >= B1) & (kenar < B2)
+    img[bant] = LAC
+    yol = np.where(kx < ky, yy, xx) % 12                        # bordürde zikzak (koşan köpek)
+    zig = np.abs(yol - 6) + B1 + 1
+    img[bant & (kenar < zig) & (kenar > zig - 3)] = KREM
+    img[kenar < B1] = KOY
+    # Ortada üç göl (basamaklı iç içe baklavalar), aralarda küçük göz motifleri
+    cx = gw / 2
+    for i, cy in enumerate((gh * 0.25, gh * 0.5, gh * 0.75)):
+        d = np.abs(xx - cx) / (gw * 0.30) + np.abs(yy - cy) / (gh * 0.115)
+        for r, renk in ((1.0, LAC), (0.82, KREM), (0.66, HAR if i % 2 else YES), (0.48, KIR), (0.32, LAC), (0.16, KREM)):
+            img[(d < r) & (kenar >= B3 + 2)] = renk
+        for dx in (-1, 1):
+            g2 = np.abs(xx - (cx + dx * gw * 0.36)) + np.abs(yy - cy)
+            img[(g2 < 4) & (kenar >= B3 + 2)] = KREM
+            img[(g2 < 2) & (kenar >= B3 + 2)] = LAC
+    img = np.repeat(np.repeat(img, hucre, axis=0), hucre, axis=1)[:h, :w]
+    # Atkı ve çözgü dokusu: ince çizgiler
+    ty, tx = np.mgrid[0:img.shape[0], 0:img.shape[1]]
+    img *= (0.93 + 0.07 * (np.sin(ty * np.pi / 3) * 0.5 + 0.5))[..., None]
+    img *= (0.97 + 0.03 * (np.sin(tx * np.pi / 2) * 0.5 + 0.5))[..., None]
+    return img
+
+
+def kilim_kur(sc, o):
+    RG = o['RUG']
+    w, d = RG['w'], RG['d']
+    px_w, px_h = 1024, int(1024 * d / w)
+    dz = kilim_deseni(px_w, px_h)
+    img = bpy.data.images.new('kilim_deseni', px_w, px_h, alpha=False, float_buffer=True)
+    rgba = np.concatenate([dz[::-1], np.ones((px_h, px_w, 1), np.float32)], axis=2)  # Blender pikselleri alttan
+    img.pixels.foreach_set(rgba.ravel())
+    m = bpy.data.materials.new('kilim')
+    m.use_nodes = True
+    nt = m.node_tree
+    b = next(n for n in nt.nodes if n.type == 'BSDF_PRINCIPLED')
+    t = nt.nodes.new('ShaderNodeTexImage')
+    t.image = img
+    nt.links.new(t.outputs['Color'], b.inputs['Base Color'])
+    b.inputs['Roughness'].default_value = 0.95
+    bm = bmesh.new()
+    bmesh.ops.create_cube(bm, size=1.0)
+    for vv in bm.verts:
+        vv.co = Vector((RG['x'] + vv.co.x * w, RG['y'] + vv.co.y * d, 3 + vv.co.z * 6))
+    me = bpy.data.meshes.new('kilim')
+    bm.to_mesh(me)
+    bm.free()
+    ob = bpy.data.objects.new('kilim', me)
+    sc.collection.objects.link(ob)
+    me.materials.append(m)
+    uv = me.uv_layers.new(name='UVMap')
+    for poly in me.polygons:  # üst yüz 0..1 (desen), diğerleri kenarın rengini alır
+        for li in poly.loop_indices:
+            co = me.vertices[me.loops[li].vertex_index].co
+            uv.data[li].uv = ((co.x - RG['x']) / w + 0.5, (co.y - RG['y']) / d + 0.5)
+    me.uv_layers.new(name='BakeUV')
+    return ob
 
 
 # ---------------------------------------------------------------- pişirme
@@ -401,6 +515,7 @@ def pano_cek(sc, q, hedef):
     cam = bpy.data.cameras.new('pano')
     cam.type = 'PANO'
     cam.panorama_type = 'EQUIRECTANGULAR'
+    cam.clip_start, cam.clip_end = 5, 100000  # sahne mm: varsayılan 100 birim kırpma kameraya 10 cm ötesini göstermiyordu
     ob = bpy.data.objects.new('pano', cam)
     sc.collection.objects.link(ob)
     ob.location = PANO_YERI
@@ -450,18 +565,21 @@ def gok_yaz(img, hedef):
 
 
 # ---------------------------------------------------------------- çiçekler
-BITKILER = [  # (kaynak, nesne, yeni ad): saksılarımıza dikilecek çeşitler, tabanı orijinde, mm
-    ('periwinkle_plant', 'periwinkle_plant_03_LOD0', 'cicek_a'),
-    ('periwinkle_plant', 'periwinkle_plant_04_LOD0', 'cicek_b'),
+BITKILER = [  # (kaynak, çözünürlük, nesne, yeni ad): ürünlerimizin içine konanlar (çiçek, yiyecek); tabanı orijinde, mm
+    ('periwinkle_plant', '2k', 'periwinkle_plant_03_LOD0', 'cicek_a'),
+    ('periwinkle_plant', '2k', 'periwinkle_plant_04_LOD0', 'cicek_b'),
+    ('strawberry_chocolate_cake', '1k', 'strawberry_chocolate_cake', 'pasta'),  # pasta süsümüz üstüne batar
+    ('anthurium_botany_01', '2k', 'anthurium_botany_01_b', 'balkon_bitki'),    # balkondaki büyük saksı
+    ('flower_gazania', '2k', 'flower_gazania_h_LOD0', 'balkon_cicek'),         # balkondaki kase saksı
 ]
 
 
 def bitki_yaz(hedef):
     bpy.ops.wm.read_factory_settings(use_empty=True)
     tut = []
-    for kay in sorted({b[0] for b in BITKILER}):
-        bpy.ops.import_scene.gltf(filepath=yol(KAYNAK, kay, f'{kay}_2k.gltf'))
-    for kay, ad, yeni in BITKILER:
+    for kay, res in sorted({(b[0], b[1]) for b in BITKILER}):
+        bpy.ops.import_scene.gltf(filepath=yol(KAYNAK, kay, f'{kay}_{res}.gltf'))
+    for kay, _, ad, yeni in BITKILER:
         ob = bpy.data.objects[ad]
         ob.matrix_world = Matrix.Scale(1000, 4) @ ob.matrix_world  # metre → mm
         bpy.context.view_layer.update()
@@ -473,7 +591,286 @@ def bitki_yaz(hedef):
     for ob in list(bpy.context.scene.objects):
         if ob not in tut:
             bpy.data.objects.remove(ob, do_unlink=True)
+    # Uzaktan görünen balkon bitkilerinde 1K doku yeter (dosya küçülür); yakından bakılan çiçek ve pasta olduğu gibi
+    for ob in tut:
+        if not ob.name.startswith('balkon_'):
+            continue
+        for m in ob.data.materials:
+            for n in m.node_tree.nodes:
+                if n.type == 'TEX_IMAGE' and n.image and n.image.size[0] > 1024:
+                    n.image.scale(1024, 1024)
     disa_aktar(tut, hedef, isikli=True)
+
+
+# ---------------------------------------------------------------- eşyalar: canlı ışıkta (yansıma ister, kapağı hareket eder)
+def malzeme(ad, renk, puruz=0.5, metal=0.0, kaplama=0.0, kaplama_puruz=0.08, isik=None, isik_guc=0.0, isik_doku=None, cam=False):
+    m = bpy.data.materials.new(ad)
+    m.use_nodes = True
+    nt = m.node_tree
+    b = next(n for n in nt.nodes if n.type == 'BSDF_PRINCIPLED')
+    b.inputs['Base Color'].default_value = (*renk, 1)
+    b.inputs['Roughness'].default_value = puruz
+    b.inputs['Metallic'].default_value = metal
+    if kaplama:
+        b.inputs['Coat Weight'].default_value = kaplama
+        b.inputs['Coat Roughness'].default_value = kaplama_puruz
+    if cam:
+        b.inputs['Transmission Weight'].default_value = 1.0
+        b.inputs['IOR'].default_value = 1.5
+    if isik_doku:
+        t = nt.nodes.new('ShaderNodeTexImage')
+        t.image = bpy.data.images.load(isik_doku)
+        nt.links.new(t.outputs['Color'], b.inputs['Emission Color'])
+        b.inputs['Emission Strength'].default_value = isik_guc
+    elif isik:
+        b.inputs['Emission Color'].default_value = (*isik, 1)
+        b.inputs['Emission Strength'].default_value = isik_guc
+    return m
+
+
+def yk(ad, w, d, h, x, y, z, malz, pah=3.0, seg=3, ust=None):
+    """Yuvarlatılmış kutu (tabanı z, XY ortalı): pah kenarı yumuşatır, düz yüzler düz kalır."""
+    bm = bmesh.new()
+    bmesh.ops.create_cube(bm, size=1.0)
+    for v in bm.verts:
+        v.co = Vector((x + v.co.x * w, y + v.co.y * d, z + h / 2 + v.co.z * h))
+    me = bpy.data.meshes.new(ad)
+    bm.to_mesh(me)
+    bm.free()
+    ob = bpy.data.objects.new(ad, me)
+    bpy.context.scene.collection.objects.link(ob)
+    me.materials.append(malz)
+    if pah:
+        bv = ob.modifiers.new('pah', 'BEVEL')
+        bv.width = pah
+        bv.segments = seg
+        bv.limit_method = 'ANGLE'
+        bv.harden_normals = True
+        for poly in me.polygons:
+            poly.use_smooth = True
+    if ust:
+        ob.parent = ust
+    return ob
+
+
+def silindir(ad, r, h, x, y, z, malz, ust=None, seg=32, eksen='z'):
+    """eksen 'z': tabanı z'de, yukarı h; 'y' ya da 'x': merkezi (x, y, z), o eksen boyunca h (düğme, fiş, tekerlek).
+    Nesnenin orijini dünya merkezinde kalır: döndürmek için nesneyi değil köşeleri çevir."""
+    bm = bmesh.new()
+    bmesh.ops.create_cone(bm, cap_ends=True, segments=seg, radius1=r, radius2=r, depth=h)
+    for v in bm.verts:
+        a, b, c = v.co.x, v.co.y, v.co.z
+        if eksen == 'z':
+            v.co = Vector((x + a, y + b, z + h / 2 + c))
+        elif eksen == 'y':
+            v.co = Vector((x + a, y + c, z + b))
+        else:
+            v.co = Vector((x + c, y + b, z + a))
+    me = bpy.data.meshes.new(ad)
+    bm.to_mesh(me)
+    bm.free()
+    for poly in me.polygons:
+        poly.use_smooth = True
+    ob = bpy.data.objects.new(ad, me)
+    bpy.context.scene.collection.objects.link(ob)
+    me.materials.append(malz)
+    if ust:
+        ob.parent = ust
+    return ob
+
+
+def bos(ad, yer=(0, 0, 0), ust=None):
+    ob = bpy.data.objects.new(ad, None)
+    bpy.context.scene.collection.objects.link(ob)
+    ob.location = yer
+    if ust:
+        ob.parent = ust
+    return ob
+
+
+def ekran_yuzu(ad, w, h, x, y, z, malz, ust):
+    """Ön yüzü −y'ye bakan dikdörtgen (doku koordinatı 0..1): monitör ekranı."""
+    me = bpy.data.meshes.new(ad)
+    v = [(x - w / 2, y, z), (x + w / 2, y, z), (x + w / 2, y, z + h), (x - w / 2, y, z + h)]
+    me.from_pydata(v, [], [(0, 1, 2, 3)])
+    uv = me.uv_layers.new(name='UVMap')
+    for li, c in zip(me.polygons[0].loop_indices, ((0, 0), (1, 0), (1, 1), (0, 1))):
+        uv.data[li].uv = c
+    me.materials.append(malz)
+    ob = bpy.data.objects.new(ad, me)
+    bpy.context.scene.collection.objects.link(ob)
+    ob.parent = ust
+    return ob
+
+
+def monitor_kur(o):
+    """24" monitör: ince siyah çerçeve, alüminyum ayak; ekranda Kutu aracının sayfası. Orijin ayağın altı, ekran −y."""
+    MO = o['MONITOR']
+    alu = malzeme('alu', (0.78, 0.79, 0.8), puruz=0.32, metal=1.0)
+    siyah = malzeme('siyah_plastik', (0.018, 0.018, 0.02), puruz=0.42)
+    ekran = malzeme('ekran', (0.005, 0.005, 0.006), puruz=0.08, kaplama=1.0, kaplama_puruz=0.03,
+                    isik_doku=yol(KAYNAK, 'ekran', 'kutu.png'), isik_guc=0.35)
+    kok = bos('monitor')
+    yk('monitor_ayak', 230, 170, 8, 0, 20, 0, alu, pah=3, ust=kok)
+    yk('monitor_boyun', 52, 16, 300, 0, 46, 8, alu, pah=4, ust=kok)
+    z0 = MO['lift']
+    yk('monitor_govde', MO['w'] - 25, 26, MO['h'] - 40, 0, 26, z0 + 20, siyah, pah=10, ust=kok)
+    yk('monitor_cerceve', MO['w'], 9, MO['h'], 0, 4, z0, siyah, pah=2, ust=kok)
+    ekran_yuzu('monitor_ekran', MO['w'] - 8, MO['h'] - 22, 0, -0.6, z0 + 16, ekran, kok)
+    return kok
+
+
+def buzdolabi_kur(o):
+    """Mini buzdolabı (yer ve ölçü oda-olcu FRIDGE): yuvalar gri kutudakiyle aynı yükseklikte (raf, taban).
+    Orijin gövdenin alt ortası, ön yüzü −x; kapak ayrı düğüm, orijini menteşede (tarayıcı döndürür)."""
+    F = o['FRIDGE']
+    d, w, h = F['d'], F['w'], F['h']
+    govde_m = malzeme('buzdolabi_boya', (0.86, 0.86, 0.84), puruz=0.28, kaplama=0.6, kaplama_puruz=0.12)
+    ic_m = malzeme('buzdolabi_ic', (0.93, 0.93, 0.92), puruz=0.38)
+    conta = malzeme('conta', (0.32, 0.32, 0.33), puruz=0.7)
+    cam = malzeme('raf_cami', (0.95, 0.97, 0.97), puruz=0.04, cam=True)
+    alu = bpy.data.materials.get('alu') or malzeme('alu', (0.78, 0.79, 0.8), puruz=0.32, metal=1.0)
+    siyah = bpy.data.materials.get('siyah_plastik') or malzeme('siyah_plastik', (0.018, 0.018, 0.02), puruz=0.42)
+    lamba = malzeme('ic_lamba', (0.9, 0.9, 0.9), puruz=0.3, isik=(1.0, 0.97, 0.92), isik_guc=4.0)
+    kok = bos('buzdolabi')
+    # Gövde: kabuk, ön yüzü açık (iç oyuk kesilir; kesik yüzler iç kaplama malzemesini alır)
+    g = yk('buzdolabi_govde', d, w, h - 20, 0, 0, 20, govde_m, pah=0, ust=kok)
+    oy = yk('_oyuk', d - 20 + 2, w - 40, h - 20 - F['floor'] - 35, -11 - 1, 0, F['floor'], ic_m, pah=0)
+    bo = g.modifiers.new('oyuk', 'BOOLEAN')
+    bo.operation = 'DIFFERENCE'
+    bo.object = oy
+    bo.solver = 'EXACT'
+    try:
+        bo.material_mode = 'TRANSFER'
+    except Exception:
+        pass
+    bpy.context.view_layer.objects.active = g
+    bpy.ops.object.modifier_apply(modifier='oyuk')
+    bpy.data.objects.remove(oy, do_unlink=True)
+    bv = g.modifiers.new('pah', 'BEVEL')
+    bv.width, bv.segments, bv.limit_method, bv.harden_normals = 8.0, 3, 'ANGLE', True
+    for poly in g.data.polygons:
+        poly.use_smooth = True
+    # Cam raf (üstü raf yuvasının yüksekliğinde) ve ön çıtası, iç lamba, termostat düğmesi, ayaklar
+    yk('buzdolabi_raf', d - 60, w - 44, 6, -15, 0, F['shelf'] - 6, cam, pah=1, ust=kok)
+    yk('buzdolabi_raf_cita', 10, w - 44, 14, -d / 2 + 22, 0, F['shelf'] - 10, ic_m, pah=2, ust=kok)
+    yk('buzdolabi_lamba', 60, 70, 8, 40, w / 2 - 70, h - 66, lamba, pah=2, ust=kok)
+    silindir('buzdolabi_dugme', 17, 14, 120, -w / 2 + 34, h - 74, ic_m, ust=kok)
+    for sx in (-1, 1):
+        for sy in (-1, 1):
+            silindir('buzdolabi_ayak', 14, 20, sx * (d / 2 - 40), sy * (w / 2 - 40), 0, siyah, ust=kok)
+    # Kapak: menteşe arka köşede (gri kutudaki gibi -d/2, +w/2); dış panel, iç kaplama, conta, iki kapak rafı, kulp
+    kp = bos('buzdolabi_kapak', (-d / 2, w / 2, 0), ust=kok)
+    yk('kapak_panel', 26, w, h - 24, -13, -w / 2, 22, govde_m, pah=6, ust=kp)
+    yk('kapak_ic', 10, w - 60, h - 110, 5, -w / 2, 60, ic_m, pah=4, ust=kp)
+    for fw, fd, fh, fx, fy, fz in ((8, w - 20, 14, 2, -w / 2, 30), (8, w - 20, 14, 2, -w / 2, h - 34), (8, 14, h - 60, 2, -17, 34), (8, 14, h - 60, 2, -w + 17, 34)):
+        yk('kapak_conta', fw, fd, fh, fx, fy, fz, conta, pah=2, ust=kp)
+    for z in (280, 560):
+        yk('kapak_rafi', 8, w - 110, 56, 52, -w / 2, z, ic_m, pah=2, ust=kp)
+        yk('kapak_rafi_taban', 50, w - 110, 5, 28, -w / 2, z, ic_m, pah=1.5, ust=kp)
+    yk('kapak_kulp', 14, 20, 320, -40, -w + 36, 360, alu, pah=3, ust=kp)
+    for z in (372, 668):
+        yk('kapak_kulp_ayak', 14, 16, 12, -30, -w + 36, z, alu, pah=2, ust=kp)
+    return kok
+
+
+def kablo(ad, noktalar, r, malz, ust):
+    """Noktalardan geçen yumuşak kablo (Bezier eğrisi, kesit yarıçapı r) → örgü."""
+    cu = bpy.data.curves.new(ad, 'CURVE')
+    cu.dimensions = '3D'
+    cu.bevel_depth = r
+    cu.bevel_resolution = 3
+    cu.resolution_u = 10
+    sp_ = cu.splines.new('BEZIER')
+    sp_.bezier_points.add(len(noktalar) - 1)
+    for bp, co in zip(sp_.bezier_points, noktalar):
+        bp.co = co
+        bp.handle_left_type = bp.handle_right_type = 'AUTO'
+    ob = bpy.data.objects.new(ad, cu)
+    bpy.context.scene.collection.objects.link(ob)
+    cu.materials.append(malz)
+    bpy.ops.object.select_all(action='DESELECT')
+    ob.select_set(True)
+    bpy.context.view_layer.objects.active = ob
+    bpy.ops.object.convert(target='MESH')
+    ob = bpy.context.view_layer.objects.active
+    ob.parent = ust
+    return ob
+
+
+def masa_alti_kur(o):
+    """Dünya koordinatında (kök orijinde): kasa, priz ve fiş, kablo kanalı, kablolar, fare, mousepad."""
+    D, PC, MT, MS, RW, SO, MO, R = o['DESK'], o['PC'], o['MAT'], o['MOUSE'], o['RACEWAY'], o['SOCKET'], o['MONITOR'], o['ROOM']
+    yw = R['y1']  # arka duvarın iç yüzü
+    siyah = bpy.data.materials.get('siyah_plastik') or malzeme('siyah_plastik', (0.018, 0.018, 0.02), puruz=0.42)
+    kasa_m = malzeme('kasa_metal', (0.025, 0.025, 0.028), puruz=0.5, metal=0.4)
+    on_m = malzeme('kasa_on', (0.012, 0.012, 0.014), puruz=0.3)
+    beyaz = malzeme('beyaz_plastik', (0.86, 0.86, 0.84), puruz=0.42)
+    kablo_m = malzeme('kablo', (0.02, 0.02, 0.022), puruz=0.6)
+    kece = malzeme('kece', (0.06, 0.062, 0.066), puruz=0.95)
+    led = malzeme('led', (0.9, 0.95, 1.0), puruz=0.3, isik=(0.75, 0.88, 1.0), isik_guc=3.0)
+    kok = bos('masa_alti')
+    # Kasa: gövde, ön panel, havalandırma yarıkları, güç düğmesi (ışıklı halka), ayaklar
+    yk('kasa_govde', PC['w'], PC['d'], PC['h'] - 12, PC['x'], PC['y'], 12, kasa_m, pah=4, ust=kok)
+    fy = PC['y'] - PC['d'] / 2
+    yk('kasa_on', PC['w'] - 10, 6, PC['h'] - 24, PC['x'], fy - 2, 18, on_m, pah=2, ust=kok)
+    for i in range(9):
+        yk('kasa_yarik', PC['w'] - 70, 3, 5, PC['x'], fy - 5.5, 60 + i * 16, siyah, pah=1, ust=kok)
+    silindir('kasa_dugme', 9, 4, PC['x'], fy - 6, PC['h'] - 50, siyah, ust=kok, eksen='y')
+    silindir('kasa_led', 10.5, 1.5, PC['x'], fy - 4.5, PC['h'] - 50, led, ust=kok, eksen='y')
+    for sx in (-1, 1):
+        for sy in (-1, 1):
+            yk('kasa_ayak', 30, 30, 12, PC['x'] + sx * (PC['w'] / 2 - 25), PC['y'] + sy * (PC['d'] / 2 - 30), 0, siyah, pah=3, ust=kok)
+    # Priz (Schuko) ve fiş; güç kablosu kasanın arkasından prize
+    yk('priz', 82, 10, 82, SO['x'], yw - 5, SO['z'] - 41, beyaz, pah=4, ust=kok)
+    silindir('fis', 20, 26, SO['x'], yw - 23, SO['z'], beyaz, ust=kok, eksen='y')
+    by = PC['y'] + PC['d'] / 2
+    kablo('guc_kablosu', [(PC['x'] + 50, by + 5, 140), (PC['x'] - 20, by + 60, 30), (SO['x'] - 10, yw - 60, 120), (SO['x'], yw - 36, SO['z'])], 3.5, kablo_m, kok)
+    # Kablo kanalı: monitörün arkasından yere kadar beyaz şerit (masanın arkasındaki boşluktan geçer)
+    yk('kablo_kanali', 24, 14, RW['z1'] - RW['z0'], RW['x'], yw - 7, RW['z0'], beyaz, pah=2, ust=kok)
+    yk('kanal_kapak_ust', 26, 16, 8, RW['x'], yw - 8, RW['z1'] - 4, beyaz, pah=2, ust=kok)
+    yk('kanal_kapak_alt', 26, 16, 8, RW['x'], yw - 8, RW['z0'] - 4, beyaz, pah=2, ust=kok)
+    mz = D['top'] + MO['lift'] + 120
+    kablo('monitor_kablosu', [(MO['x'] + 30, MO['y'] + 40, mz), (MO['x'] + 110, MO['y'] + 120, mz - 40), (RW['x'] - 4, yw - 20, RW['z1'] - 30), (RW['x'], yw - 9, RW['z1'] - 10)], 3.0, kablo_m, kok)
+    kablo('kasa_kablolari', [(RW['x'], yw - 9, RW['z0'] + 10), (RW['x'] + 40, yw - 40, 40), (PC['x'] - 60, by + 40, 90), (PC['x'] - 40, by + 2, PC['h'] - 90)], 4.0, kablo_m, kok)
+    # Mousepad (klavye ve farenin altında) ve kablolu fare; kablo masanın arkasından kanala girer
+    yk('mousepad', MT['w'], MT['d'], MT['t'], MT['x'], MT['y'], D['top'], kece, pah=1.2, ust=kok)
+    zt = D['top'] + MT['t']
+    bm = bmesh.new()
+    bmesh.ops.create_uvsphere(bm, u_segments=32, v_segments=16, radius=1.0)
+    for vv in bm.verts:
+        z = max(vv.co.z, -0.55)
+        vv.co = Vector((MS['x'] + vv.co.x * 31, MS['y'] + vv.co.y * 57, zt + (z + 0.55) * 22))
+    me = bpy.data.meshes.new('fare')
+    bm.to_mesh(me)
+    bm.free()
+    for poly in me.polygons:
+        poly.use_smooth = True
+    me.materials.append(malzeme('fare', (0.03, 0.03, 0.034), puruz=0.38, kaplama=0.4, kaplama_puruz=0.2))
+    fo = bpy.data.objects.new('fare', me)
+    bpy.context.scene.collection.objects.link(fo)
+    fo.parent = kok
+    silindir('fare_tekerlek', 4, 7, MS['x'], MS['y'] + 26, zt + 28, siyah, ust=kok, eksen='x')
+    kablo('fare_kablosu', [(MS['x'], MS['y'] + 56, zt + 6), (MS['x'] - 10, MS['y'] + 160, zt + 2), (RW['x'] + 60, yw - 60, zt + 2), (RW['x'] + 12, yw - 8, zt - 10)], 1.6, kablo_m, kok)
+    return kok
+
+
+def esya_yaz(o, hedef):
+    bpy.ops.wm.read_factory_settings(use_empty=True)
+    kok = [monitor_kur(o), buzdolabi_kur(o), masa_alti_kur(o)]
+    bpy.ops.object.select_all(action='DESELECT')
+    for k in kok:
+        k.select_set(True)
+        for c in k.children_recursive:
+            c.select_set(True)
+    bpy.context.view_layer.objects.active = kok[0]
+    bpy.ops.export_scene.gltf(
+        filepath=hedef, export_format='GLB', use_selection=True, export_yup=False, export_apply=True,
+        export_normals=True, export_texcoords=True, export_materials='EXPORT', export_extras=True,
+        export_image_format='WEBP', export_image_quality=85,
+        export_draco_mesh_compression_enable=True, export_draco_mesh_compression_level=6, export_cameras=False, export_lights=False,
+    )
+    log(f'yazıldı {os.path.relpath(hedef, ROOT)} {os.path.getsize(hedef) / 1e6:.2f} MB')
 
 
 # ---------------------------------------------------------------- tarayıcıda canlı ışıkta kullanılan dokular
@@ -506,7 +903,7 @@ def main():
     q, o = KALITE[kal], olcu_oku()
     parca = set(a.parca.split(','))
     cikti = {'ortam': ['oda-ortam.glb', 'oda-pano.webp', 'oda-ortam.json', '../../kaynak/oda.blend'], 'gok': ['oda-gok.webp'], 'bitki': ['oda-bitki.glb'],
-             'doku': [f'{o}-{h}.webp' for _, o, _ in DOKULAR for h in ('renk', 'normal', 'puruz')]}
+             'doku': [f'{o}-{h}.webp' for _, o, _ in DOKULAR for h in ('renk', 'normal', 'puruz')], 'esya': ['oda-esya.glb']}
     log(f'kalite {kal}: {q}')
     for p in sorted(parca):
         log(f'parça {p} → ' + ', '.join(os.path.normpath(yol('assets/oda', f)) for f in cikti[p]))
@@ -519,10 +916,13 @@ def main():
     if parca & {'ortam', 'gok'}:
         sc = sahne_kur(q)
         gok_img, rho = dunya_kur(sc, o)
-        meta.update({'olcek': OLCEK, 'kodlama': 'sqrt-srgb', 'gokDonus': rho, 'gunes': o['SUN']})
-        if 'gok' in parca:
-            gok_yaz(gok_img, yol(CIKTI, 'oda-gok.webp'))
+        meta.update({'olcek': OLCEK, 'kodlama': 'sqrt-srgb', 'gunes': o['SUN']})
+        if 'gok' in parca:  # manzara ayrı görüntüden; pişirmenin ışığı sabah gökyüzünde kalır
+            m_img = bpy.data.images.load(yol(KAYNAK, MANZARA['id'], f"{MANZARA['id']}_2k.hdr"))
+            gok_yaz(m_img, yol(CIKTI, 'oda-gok.webp'))
             meta['gok'] = 'oda-gok.webp'
+            meta['gokDonus'] = (0.5 - MANZARA['u']) * 2 * math.pi - math.pi / 2  # +y yönüne u gelsin (deneyle ölçülen düzen)
+            meta['gokYukselt'] = MANZARA['yukselt']
         if 'ortam' in parca:
             nes, P = ortam_kur(sc, o)
             for ob in nes.values():
@@ -533,17 +933,18 @@ def main():
                 ob.data.uv_layers.active = ob.data.uv_layers['BakeUV']
                 img = pisir(ob, q[P[ob.name].coz], q)
                 isiksiz(ob, img)
-            for ad in ('tavan', 'on_duvar'):  # pişirmede ışığı kapattılar; tarayıcıya gitmez
-                nes[ad].hide_render = True
             disa_aktar(disa, yol(CIKTI, 'oda-ortam.glb'))
             pano_cek(sc, q, yol(CIKTI, 'oda-pano.webp'))
             meta.update({'ortam': 'oda-ortam.glb', 'pano': 'oda-pano.webp', 'panoYeri': list(PANO_YERI), 'kalite': kal,
                          'nesneler': [ob.name for ob in disa]})
     if 'doku' in parca:
         doku_yaz()
+    if 'esya' in parca:
+        esya_yaz(o, yol(CIKTI, 'oda-esya.glb'))
+        meta['esya'] = {'dosya': 'oda-esya.glb', 'koklar': ['monitor', 'buzdolabi', 'masa_alti']}
     if 'bitki' in parca:
         bitki_yaz(yol(CIKTI, 'oda-bitki.glb'))
-        meta['bitki'] = {'dosya': 'oda-bitki.glb', 'cesitler': [b[2] for b in BITKILER]}
+        meta['bitki'] = {'dosya': 'oda-bitki.glb', 'cesitler': [b[3] for b in BITKILER]}
     meta['tarih'] = time.strftime('%Y-%m-%d %H:%M')
     json.dump(meta, open(meta_yol, 'w', encoding='utf-8'), indent=1, ensure_ascii=False)
     log('bitti')

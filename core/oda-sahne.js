@@ -15,8 +15,9 @@ import { TEMPLATES, buildTemplate, binModel, vaseModel } from './oda-urunler.js'
 import { OLCU, toSun } from './oda-olcu.js';
 
 const TAU = Math.PI * 2;
-const { ROOM, GLASS, BALCONY, DESK, SILL } = OLCU; // GLASS: pencere | kapı | pencere
-const FRAME = { w: 680, h: 520 }; // sol duvardaki yatay çerçeveler
+const { ROOM, GLASS, BALCONY, DESK, SILL, SHELF, PEDESTAL, FRIDGE } = OLCU; // GLASS: pencere | kapı | pencere
+const FRAME = { w: 680, h: 520 };      // sol duvardaki yapboz çerçevesi
+const FRAME_K = { w: 320, h: 250 };    // monitörün sol üstündeki rölyef çerçevesi
 const yieldMain = () => globalThis.scheduler?.yield?.() ?? new Promise((r) => setTimeout(r, 0));
 export const options = { pilot: false }; // sayfa sahne kurulmadan önce açar
 
@@ -24,7 +25,7 @@ export const options = { pilot: false }; // sayfa sahne kurulmadan önce açar
 async function pilotYukle() {
   const O = await import('./oda-ortam.js');
   const meta = await O.ortamMeta();
-  const [kabuk, pano, gok, cicek] = await Promise.all([O.odaKabugu(meta), O.panoDokusu(meta), O.gokKubbesi(meta), O.cicekler(meta)]);
+  const [kabuk, pano, gok, cicek, esya] = await Promise.all([O.odaKabugu(meta), O.panoDokusu(meta), O.gokKubbesi(meta), O.cicekler(meta), O.esyalar(meta)]);
   const sun = toSun(meta.gunes), G = GLASS, yd = ROOM.y1 + ROOM.wall; // huzmeler duvarın dış yüzünden başlar
   const huzme = O.huzmeler([
     { x0: G.door0, x1: G.door1, z0: 0, z1: G.head, y: yd },
@@ -33,7 +34,7 @@ async function pilotYukle() {
   ], sun);
   const c = LIGHTS.center, dist = 5000;
   return {
-    meta, kabuk, pano, gok, cicek, huzme, golge: O.golgeYuzeyi,
+    meta, kabuk, pano, gok, cicek, esya, huzme, golge: O.golgeYuzeyi, cayTakimi: O.cayTakimi,
     saksi: { toprak: O.toprakMalzemesi(), malzeme: (renk) => P_.clay(renk, { rough: 0.36, env: 1 }) },
     // Güneş: pişirmedekiyle aynı yön, renk ve güç (fiziksel birimler); ortam ışığı 360° görüntüden, diğer lambalar kapalı
     isik: { ...LIGHTS, key: [c[0] + sun[0] * dist, c[1] + sun[1] * dist, c[2] + sun[2] * dist], keyIntensity: meta.gunes.strength, keyColor: meta.gunes.color,
@@ -140,9 +141,9 @@ export async function buildScene({ scene, P, lang = 'tr' }) {
     for (const lx of [DESK.x0 + 20, DESK.x1 - 20]) for (const ly of [DESK.y0 + 20, DESK.y1 - 20]) box(28, 28, DESK.top - DESK.t, lx, ly, 0, M.metal, { r: 1 });
     box(w - 40, 24, 40, x, DESK.y1 - 20, DESK.top - DESK.t - 40, M.metal, { r: 1 });
   }
-  for (const z of [1300, 1690]) { // iki duvar rafı masanın sağ yarısında, ince siyah konsollarla
-    box(1000, 240, 28, -760, 1680, z, M.shelf, { r: 3 });
-    for (const x of [-1220, -300]) box(14, 200, 110, x, 1690, z - 110, M.metal, { r: 1 });
+  for (const z of SHELF.z) { // iki duvar rafı masanın sağ yarısında, ince siyah konsollarla
+    box(SHELF.w, SHELF.d, SHELF.t, SHELF.x, SHELF.y, z, M.shelf, { r: 3 });
+    for (const x of SHELF.brackets) box(14, 200, 110, x, SHELF.y + 10, z - 110, M.metal, { r: 1 });
   }
   box(240, 170, 110, -480, 1700, 1718, M.dark, { r: 4 }); // üst rafta kutu (dekor)
   place(P.lamp({ l1: 300, l2: 260 }), [-1520, 1660, DESK.top, 0.7]);
@@ -155,7 +156,7 @@ export async function buildScene({ scene, P, lang = 'tr' }) {
   function model(zone, id) {
     const s = slots[zone];
     if (!s.cache.has(id)) {
-      const p = buildTemplate(zone, id, { lang, saksi: pilot?.saksi }).then((m) => { tag(m, zone); return m; });
+      const p = buildTemplate(zone, id, { lang, saksi: pilot?.saksi, pasta: pilot?.cicek.pasta }).then((m) => { tag(m, zone); return m; });
       p.catch(() => s.cache.delete(id)); // üretilemediyse sonraki istekte yeniden denenir
       s.cache.set(id, p);
     }
@@ -177,7 +178,7 @@ export async function buildScene({ scene, P, lang = 'tr' }) {
   }
 
   // ---- çekmeceli dolap; üst çekmece raylı, −y yönünde açılır; içinde Kutu aracının çekmeceye uyan şablonları ----
-  const PED = { w: 440, d: 600, h: 740 };
+  const PED = PEDESTAL;
   const [px, py] = A.pedestal;
   const pedestal = new THREE.Group();
   box(PED.w, PED.d, 470, 0, 0, 0, M.ped, { parent: pedestal, r: 3 });
@@ -217,6 +218,7 @@ export async function buildScene({ scene, P, lang = 'tr' }) {
   scene.add(kbZone);
   {
     const kbHost = place(new THREE.Group(), A.keyboard, kbZone), kb = P.mechKeyboard();
+    if (pilot) kbHost.position.z += OLCU.MAT.t; // pilotta mousepad'in üstünde
     kb.rotation.x = 0.1;
     kb.position.z = (kb.userData.size.d / 2) * Math.sin(0.1);
     kbHost.add(kb);
@@ -241,15 +243,17 @@ export async function buildScene({ scene, P, lang = 'tr' }) {
   await slot('tabela', sign);
 
   // ---- sol duvarda iki yatay çerçeve: Painter rölyefi ve resimli yapboz ----
-  const frameOf = (at) => {
+  const frameOf = (at, F2, rz) => {
     const f = place(new THREE.Group(), at);
-    box(FRAME.w, 30, FRAME.h, 0, 0, 0, M.dark, { parent: f, r: 4 });
-    box(FRAME.w - 60, 6, FRAME.h - 60, 0, -16, 30, tone(0xefe9df, 0.8), { parent: f, r: 2 });
-    f.rotation.z = Math.PI / 2; // ön yüzü odaya (+x)
+    box(F2.w, 30, F2.h, 0, 0, 0, M.dark, { parent: f, r: 4 });
+    box(F2.w - 40, 6, F2.h - 40, 0, -16, 20, tone(0xefe9df, 0.8), { parent: f, r: 2 });
+    f.rotation.z = rz; // ön yüzü odaya
     return f;
   };
-  const frameA = frameOf(A.frameA), frameB = frameOf(A.frameB);
-  await slot('cerceve', place(new THREE.Group(), [0, -20, FRAME.h / 2], frameA));
+  const frameA = frameOf(A.frameA, FRAME_K, 0), frameB = frameOf(A.frameB, FRAME, Math.PI / 2);
+  const rolyef = place(new THREE.Group(), [0, -20, FRAME_K.h / 2], frameA);
+  rolyef.scale.setScalar(0.46); // 560 × 392 rölyef küçük çerçeveye
+  await slot('cerceve', rolyef);
   await slot('yapboz', place(new THREE.Group(), [0, -20, FRAME.h / 2], frameB));
 
   // ---- saksılar: soldaki pervaz saksısı yuva (bitki yerinde kalır), diğerleri sabit; balkonda büyük saksılar ----
@@ -271,15 +275,21 @@ export async function buildScene({ scene, P, lang = 'tr' }) {
       s.position.z = agiz(v);
       v.add(s);
     }
-    const olive = place(vaseModel('hex'), A.planterL, pots); // zeytin ağacı
+    const olive = place(vaseModel('hex', {}, pilot?.saksi), A.planterL, pots); // büyük saksı (bizim baskımız)
     olive.scale.setScalar(2.8);
+    const bowl = place(vaseModel('flower', {}, pilot?.saksi), A.planterR, pots); // kase saksı
+    bowl.scale.setScalar(2.4);
+    if (pilot) { // gerçek bitkiler (Poly Haven CC0): antoryum ve gazanya, toprağa oturur
+      place(pilot.cicek.balkon_bitki, [A.planterL[0], A.planterL[1], agiz(olive) * 2.8 - 6], pots);
+      place(pilot.cicek.balkon_cicek, [A.planterR[0], A.planterR[1], agiz(bowl) * 2.4 - 4], pots);
+    }
+  }
+  if (!pilot) { // gri kutu: top yapraklı zeytin ve çubuk lavanta
     const tree = place(new THREE.Group(), [A.planterL[0], A.planterL[1], 300], pots);
     tree.add(P.mesh(P.cyl(12, 20, 950, 10), M.trunk));
     [[0, 0, 1180, 230], [-120, 40, 1050, 170], [130, -30, 1080, 180], [30, 90, 1320, 160]].forEach(([x, y, z, rr]) => {
       tree.add(P.mesh(new THREE.SphereGeometry(rr, 14, 10), M.leaf).translateX(x).translateY(y).translateZ(z));
     });
-    const bowl = place(vaseModel('flower'), A.planterR, pots); // lavanta
-    bowl.scale.setScalar(2.4);
     const lav = place(new THREE.Group(), [A.planterR[0], A.planterR[1], 200], pots);
     const r = P.rng(8);
     for (let i = 0; i < 22; i++) {
@@ -307,7 +317,8 @@ export async function buildScene({ scene, P, lang = 'tr' }) {
       box(440, 40, 420, 0, -200, 470, M.rattan, { parent: ch, r: 10 });
       for (const lx of [-200, 200]) for (const ly of [-200, 200]) box(22, 22, 430, lx, ly, 0, M.metal, { parent: ch, r: 2 });
     }
-    place(P.mug({ color: 0xe8e2d6 }), [A.table[0] - 120, A.table[1] - 60, 722], tableDecor);
+    // Pilotta kupanın yerine cam çay bardağı (gerçek cam, demli çay, porselen tabak)
+    place(pilot ? pilot.cayTakimi() : P.mug({ color: 0xe8e2d6 }), [A.table[0] - 120, A.table[1] - 60, 722], tableDecor);
   }
   const tableItems = new THREE.Group();
   scene.add(tableItems);
@@ -315,14 +326,17 @@ export async function buildScene({ scene, P, lang = 'tr' }) {
 
   // ---- mini buzdolabı (sağ duvar, ön yüzü −x): alt rafta pasta süsü yuvası, üst rafta "Gluten yok" etiketli ekmek;
   // üstünde döner tablada Text Flip yuvası ----
-  const F = { d: 550, w: 500, h: 850 };
+  const F = FRIDGE;
   const fridge = place(new THREE.Group(), A.fridge);
-  box(20, F.w, F.h, F.d / 2 - 10, 0, 0, M.fridge, { parent: fridge, r: 4 });
-  for (const sy of [-1, 1]) box(F.d, 20, F.h, 0, sy * (F.w / 2 - 10), 0, M.fridge, { parent: fridge, r: 4 });
-  box(F.d, F.w, 20, 0, 0, F.h - 20, M.fridge, { parent: fridge, r: 4 });
-  box(F.d, F.w, 60, 0, 0, 0, M.fridge, { parent: fridge, r: 4 });
-  box(F.d - 50, F.w - 50, 10, 10, 0, 430, M.inner, { parent: fridge, r: 2 });
-  box(F.d - 40, F.w - 40, 8, 10, 0, 60, M.inner, { parent: fridge, r: 2 });
+  if (pilot) fridge.add(pilot.esya.buzdolabi); // gerçekçi model (raf ve taban yuvaların yüksekliğinde)
+  else {
+    box(20, F.w, F.h, F.d / 2 - 10, 0, 0, M.fridge, { parent: fridge, r: 4 });
+    for (const sy of [-1, 1]) box(F.d, 20, F.h, 0, sy * (F.w / 2 - 10), 0, M.fridge, { parent: fridge, r: 4 });
+    box(F.d, F.w, 20, 0, 0, F.h - 20, M.fridge, { parent: fridge, r: 4 });
+    box(F.d, F.w, 60, 0, 0, 0, M.fridge, { parent: fridge, r: 4 });
+    box(F.d - 50, F.w - 50, 10, 10, 0, F.shelf - 10, M.inner, { parent: fridge, r: 2 });
+    box(F.d - 40, F.w - 40, 8, 10, 0, F.floor - 8, M.inner, { parent: fridge, r: 2 });
+  }
   {
     // Ekmek ve üstüne batırılmış etiket: "Gluten yok" (3D Yazı)
     const bread = place(new THREE.Group(), [-40, 0, 440, -Math.PI / 2], fridge);
@@ -334,10 +348,22 @@ export async function buildScene({ scene, P, lang = 'tr' }) {
       return C.move(C.union([card, C.move(standUp(t.solid, 2), 0, -2, -t.cap / 2), C.box(2.4, 2.4, 44, -1.2, -1.2, -44 - (t.cap + 14) / 2)]), 20, -20, 132);
     }, P.clay(0xe6b33a, { rough: 0.5 })));
   }
-  await slot('buzdolabi', place(new THREE.Group(), [-40, 0, 68, -Math.PI / 2], fridge));
-  const door = place(new THREE.Group(), [-F.d / 2, F.w / 2, 0], fridge); // menteşe arka köşede
-  box(24, F.w, F.h - 10, -12, -F.w / 2, 5, M.fridge, { parent: door, r: 6 });
-  box(16, 20, 220, -30, -F.w + 40, 380, M.metal, { parent: door, r: 6 });
+  await slot('buzdolabi', place(new THREE.Group(), [-40, 0, F.floor, -Math.PI / 2], fridge));
+  let door; // menteşe arka köşede; yakın planda açılır
+  if (pilot) door = pilot.esya.buzdolabi.getObjectByName('buzdolabi_kapak');
+  else {
+    door = place(new THREE.Group(), [-F.d / 2, F.w / 2, 0], fridge);
+    box(24, F.w, F.h - 10, -12, -F.w / 2, 5, M.fridge, { parent: door, r: 6 });
+    box(16, 20, 220, -30, -F.w + 40, 380, M.metal, { parent: door, r: 6 });
+  }
+  // Kapak açılınca iç ışık yanar (pilot). Sahne mm: nokta ışığın gücü bu yüzden büyük (ışık mesafenin karesiyle söner).
+  const icIsik = pilot ? place(new THREE.PointLight(0xfff3e4, 0, 700, 2), [-60, 0, F.h - 120], fridge) : null;
+  // Monitör klavyenin arkasında (pilot): ekranında Kutu aracının sayfası; masa altı (kasa, priz, kablo kanalı, fare,
+  // mousepad) dünya koordinatında gelir
+  if (pilot) {
+    place(pilot.esya.monitor, A.monitor);
+    scene.add(pilot.esya.masa_alti);
+  }
   const flipZone = place(new THREE.Group(), [A.fridge[0], A.fridge[1], F.h, -Math.PI / 2 + 0.5]);
   flipZone.add(P.mesh(P.cyl(90, 90, 12, 32), M.dark));
   const spin = place(new THREE.Group(), [0, 0, 12], flipZone);
@@ -416,6 +442,7 @@ export async function buildScene({ scene, P, lang = 'tr' }) {
 
   // İşaretçinin yeri ürünün tepesi (sahne yer vermediyse): şablon değişince yeniden ölçülür, kısa şablonda havada
   // kalmasın. Motor Vector3 olarak verilen yeri kendisi kopyalamaz, her karede okur.
+  // İşaretçi ürünün kendisinin (yuvadaki modelin) tepesinde; yuvası olmayan bölgede bölgenin tepesinde
   const anchors = {}, box3 = new THREE.Box3(), mid = new THREE.Vector3();
   function measure(zone) {
     const a = anchors[zone];
@@ -426,7 +453,7 @@ export async function buildScene({ scene, P, lang = 'tr' }) {
   const Z = Object.fromEntries(ZONES.map((z) => [z.id, z]));
   const hs = (id, object, opts = {}) => {
     if (!opts.anchor) {
-      anchors[id] = { v: new THREE.Vector3(), object };
+      anchors[id] = { v: new THREE.Vector3(), object: slots[id]?.host ?? object };
       measure(id);
       opts = { ...opts, anchor: anchors[id].v };
     }
@@ -443,15 +470,15 @@ export async function buildScene({ scene, P, lang = 'tr' }) {
     update(t) { pilot?.huzme.userData.tick(t); },
     outlineFocus: !pilot, // gerçekçi sahnede yakın plandaki ürünün çevresine çizgi çekilmez (yaprakları tek tek çiziyordu)
     hotspots: [
-      hs('cekmece', drawer, { extra: [pedestal], noLift: true, focusCenter: [px, DRAWER_Y - 390, 560], focusRadius: 330, focusElev: 0.82, anchor: [px, DRAWER_Y - 200, 900] }),
+      hs('cekmece', drawer, { extra: [pedestal], noLift: true, focusCenter: [px, DRAWER_Y - 390, 560], focusRadius: 330, focusElev: 0.82, anchor: [px, DRAWER_Y - 190, PED.h + 50] }), // kapalı çekmecenin üstünde
       hs('kalemlik', penZone, { focusCenter: [A.pencup[0] - 50, A.pencup[1], 800], focusRadius: 200, focusElev: 0.5 }),
       hs('klavye', kbZone, { focusCenter: [A.clickers[0] - 60, A.clickers[1], 765], focusRadius: 150, focusElev: 0.55 }),
       hs('modem', modemZone, { focusRadius: 240 }),
       hs('puzzle3d', puzzleZone, { focusRadius: 170 }),
       hs('tabela', sign, { noLift: true, focusRadius: 480 }),
-      hs('saksilar', pots, { noLift: true, anchor: [A.sillL[0], A.sillL[1], 1180] }),
+      hs('saksilar', pots, { noLift: true }),
       hs('balkonMasa', tableItems, { extra: [tableDecor], focusRadius: 340, focusElev: 0.55 }),
-      hs('buzdolabi', fridge, { noLift: true }),
+      hs('buzdolabi', fridge, { noLift: true, anchor: [A.fridge[0] - F.d / 2 - 30, A.fridge[1] - 60, F.h - 140] }), // kapağın önünde (pasta içeride)
       hs('flip', flipZone, { focusRadius: 200 }),
       hs('cerceve', frameA, { noLift: true }),
       hs('yapboz', frameB, { noLift: true }),
@@ -464,15 +491,23 @@ export async function buildScene({ scene, P, lang = 'tr' }) {
     onHover(id) { if (focusedId !== 'cekmece') openDrawer(id === 'cekmece' ? 60 : 0, 0.35); },
     onFocus(id, { reduced } = {}) {
       focusedId = id;
+      pilot?.huzme.userData.guc(0.25, reduced ? 0.01 : 0.8, gsap); // yakın planda huzme kısılır (pus ürünü örtmesin)
       gsap.delayedCall(reduced ? 0.1 : 1.3, () => { if (focusedId === id) prefetch(id); }); // kamera uçuşu bitince
       if (id === 'cekmece') openDrawer(380, reduced ? 0.01 : 0.8);
-      if (id === 'buzdolabi') openDoor(-1.75, reduced ? 0.01 : 0.9);
+      if (id === 'buzdolabi') {
+        openDoor(-1.75, reduced ? 0.01 : 0.9);
+        if (icIsik) gsap.to(icIsik, { intensity: 14000, duration: reduced ? 0.01 : 0.4, delay: reduced ? 0 : 0.15, overwrite: true });
+      }
       if (id === 'flip' && !reduced) turn(-Math.PI / 2, 1.1); // ikinci kelime kameraya döner
     },
     onUnfocus(id) {
       if (focusedId === id) focusedId = null;
+      if (!focusedId) pilot?.huzme.userData.guc(1, 0.8, gsap);
       if (id === 'cekmece') openDrawer(0, 0.5);
-      if (id === 'buzdolabi') openDoor(0, 0.6);
+      if (id === 'buzdolabi') {
+        openDoor(0, 0.6);
+        if (icIsik) gsap.to(icIsik, { intensity: 0, duration: 0.3, overwrite: true });
+      }
       if (id === 'flip') turn(0, 0.8);
     },
   };

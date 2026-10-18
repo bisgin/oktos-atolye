@@ -31,10 +31,32 @@ function recenter(m) {
 const binName = (id) => ({ tr: BIN.strings.tr['pr.' + id], en: BIN.strings.en['pr.' + id] });
 const vaseName = (id) => ({ tr: VASE.strings.tr['pr.' + id], en: VASE.strings.en['pr.' + id] });
 const storyName = (tool, id) => ({ tr: STORIES[tool].hotspots[id].tr, en: STORIES[tool].hotspots[id].en });
-const T = (id, name, preset = null) => ({ id, name, preset });
+// over: aracın şablonu üstüne ölçü farkı (varsa "Bu şablonla tasarla" ölçüleri adrese yazar, bkz. sablonDegeri)
+const T = (id, name, preset = null, over = null, renk = null) => ({ id, name, preset, over, renk });
+const n2 = (tr, en) => ({ tr, en });
 export const TEMPLATES = {
-  cekmece: ['drawer', 'screws', 'g4'].map((id) => T(id, binName(id), id)),
-  kalemlik: ['pencup', 'pencup3'].map((id) => T(id, binName(id), id)),
+  cekmece: [
+    T('drawer', binName('drawer'), 'drawer'),
+    T('screws', binName('screws'), 'screws'),
+    T('g4', binName('g4'), 'g4'),
+    T('karma', n2('Gridfinity karışık', 'Gridfinity mix'), 'g3'),
+    T('tools', n2('Alet bölmeleri', 'Tool caddies'), 'tools'),
+    T('cards', n2('Kart kutuları', 'Card boxes'), 'cards'),
+    T('uzun', n2('Uzun bölmeler', 'Long compartments'), 'drawer', { w: 360, d: 480, h: 50, cols: 4, rows: 1, holes: false }, '#ece9e2'),
+    T('desk', n2('Masa düzenleyiciler', 'Desk organizers'), 'desk'),
+    T('tray', n2('Küçük tepsiler', 'Small trays'), 'tray'),
+    T('roundtray', n2('Yuvarlak tepsiler', 'Round trays'), 'roundtray'),
+  ],
+  kalemlik: [
+    T('pencup', binName('pencup'), 'pencup'),
+    T('pencup3', binName('pencup3'), 'pencup3'),
+    T('uzun', n2('İnce uzun kalemlik', 'Tall slim cup'), 'pencup', { w: 66, h: 125 }, '#2b3036'),
+    T('ikili', n2('İki bölmeli', 'Two-way cup'), 'pencup3', { cols: 2, w: 90, h: 100 }, '#d4621f'),
+    T('dortlu', n2('Dört bölmeli', 'Four-way cup'), 'pencup3', { cols: 4, w: 110, h: 100 }, '#3f6fb0'),
+    T('halka', n2('Halkalı kalemlik', 'Ring cup'), 'pencup3', { cols: 6, rows: 2, w: 112, h: 90 }, '#c9b596'),
+    T('kare', n2('Kare kalemlik', 'Square cup'), 'tray', { w: 90, d: 90, h: 105, cols: 2, rows: 2, r: 10 }, '#ece9e2'),
+    T('ikiz', n2('Yan yana kalemlik', 'Twin cup'), 'tray', { w: 130, d: 72, h: 100, cols: 2, rows: 1, r: 12 }, '#8fa58a'),
+  ],
   klavye: [T('cat', storyName('clicker', 'cat')), T('heart', { tr: 'Kalp clicker', en: 'Heart clicker' }), T('star', { tr: 'Yıldız clicker', en: 'Star clicker' })],
   modem: ['wifi', 'card', 'key'].map((id) => T(id, storyName('qr', id))),
   puzzle3d: [T('sphere', storyName('puzzle', 'sphere')), T('cube', storyName('puzzle', 'cube')), T('egg', { tr: 'Yumurta yapboz', en: 'Egg puzzle' }), T('heart', { tr: 'Kalp yapboz', en: 'Heart puzzle' })],
@@ -46,6 +68,15 @@ export const TEMPLATES = {
   cerceve: [T('mountain', { tr: 'Gün batımı', en: 'Sunset' }), T('sea', { tr: 'Deniz', en: 'Sea' }), T('lake', { tr: 'Göl', en: 'Lake' })],
   yapboz: [T('picture', { tr: 'Resimli yapboz', en: 'Picture puzzle' })],
 };
+
+// Ölçü farkı olan şablonun araçta birebir açılması için tam durum (mode + şablon değerleri + fark); yoksa null.
+// ?sablon= ölçüleri şablonunkine sıfırlar: bu şablonlarda sayfa bunun yerine bu değerleri adrese yazar.
+export function sablonDegeri(zone, id) {
+  const t = TEMPLATES[zone]?.find((x) => x.id === id);
+  if (!t?.over || !t.preset) return null;
+  const p = BIN.presets.find((x) => x.id === t.preset);
+  return { ...(p.mode ? { mode: p.mode } : {}), ...p.values, ...t.over };
+}
 
 // ---- Kutu ve Vazo: araçların kendi üreticileri ----
 export function binModel(id, over = {}) {
@@ -106,6 +137,19 @@ function toprakKapagi(res, z) {
   const pos = geo.attributes.position, uv = geo.attributes.uv;
   for (let i = 0; i < uv.count; i++) uv.setXY(i, pos.getX(i) / 250, pos.getY(i) / 250);
   return geo;
+}
+// Kutunun bölme merkezleri (kalem dizmek için): yuvarlakta dilimler (rows 2: ortada halka), köşelide ızgara
+function bolmeMerkezleri(v) {
+  if (v.shape === 'round') {
+    const R = v.w / 2, out = v.rows > 1 ? [[0, 0]] : [];
+    if (v.cols <= 1) return [[0, 0]];
+    const r = v.rows > 1 ? R * 0.68 : R * 0.48;
+    for (let i = 0; i < v.cols; i++) { const a = ((i + 0.5) / v.cols) * TAU; out.push([Math.cos(a) * r, Math.sin(a) * r]); }
+    return out;
+  }
+  const out = [];
+  for (let i = 0; i < v.cols; i++) for (let j = 0; j < (v.rows || 1); j++) out.push([((i + 0.5) / v.cols - 0.5) * v.w, ((j + 0.5) / (v.rows || 1) - 0.5) * v.d]);
+  return out;
 }
 // Kalemliğin içinde dışa yaslı kalemler (içerik)
 function pencils(g, centers, r = 14) {
@@ -304,24 +348,49 @@ const RELIEF = { mountain: ['mountain', 'sunset', 7], sea: ['sea', 'sea', 5], la
 
 // Bir bölgenin bir şablonunu üretir. lang: yazılı ürünler (plaka, pasta süsü, Flip, QR başlığı) için.
 // saksi: fotogerçekçi odada saksılara toprak ve baskı malzemesi ({ toprak, malzeme }, vaseModel'e gider).
-export async function buildTemplate(zone, id, { lang = 'tr', saksi = {} } = {}) {
+// pasta: fotogerçekçi odada gerçek pasta modeli (kopyalanır); pasta süsümüz onun üstüne batar.
+export async function buildTemplate(zone, id, { lang = 'tr', saksi = {}, pasta = null } = {}) {
   await initCSG();
   const fs = await fonts(700);
   switch (zone) {
     case 'cekmece': {
+      // Çekmecenin içi ~400 × 560 mm: tek parça ya da birkaç kutunun dizilişi
       if (id === 'drawer') return binModel('drawer', { w: 370, d: 500, h: 45, cols: 4, rows: 4 });
       if (id === 'screws') return binModel('screws', { w: 320, d: 320, h: 32 });
-      const g = new THREE.Group(), bin = binModel('g4', { magnets: 'none', screws: 'none' });
-      for (const [x, y] of [[-64, -92], [64, -92], [-64, 0], [64, 0], [-64, 92], [64, 92]]) {
-        const c = bin.clone();
-        c.position.set(x, y, 0);
+      if (id === 'uzun') return binModel('drawer', { w: 360, d: 480, h: 50, cols: 4, rows: 1, holes: false, color: '#ece9e2' });
+      const G0 = { magnets: 'none', screws: 'none' }; // Gridfinity: mıknatıs ve vida deliği yok (hızlı)
+      const dizi = (bin, yerler, g = new THREE.Group()) => {
+        for (const [x, y, rz = 0] of yerler) {
+          const c = bin.clone();
+          c.position.set(x, y, 0);
+          c.rotation.z = rz;
+          g.add(c);
+        }
+        return g;
+      };
+      if (id === 'g4') return dizi(binModel('g4', G0), [[-64, -92], [64, -92], [-64, 0], [64, 0], [-64, 92], [64, 92]]);
+      if (id === 'tools') return dizi(binModel('tray'), [[-55, 150], [55, 150]], dizi(binModel('tools'), [[-48, -125, Math.PI / 2], [48, -125, Math.PI / 2]]));
+      if (id === 'cards') return dizi(binModel('cards'), [-108, 0, 108].flatMap((x) => [-84, 0, 84].map((y) => [x, y])));
+      if (id === 'desk') return dizi(binModel('desk'), [[0, -70], [0, 60]]);
+      if (id === 'tray') return dizi(binModel('tray'), [[-55, -45], [55, -45], [-55, 45], [55, 45]]);
+      if (id === 'roundtray') return dizi(binModel('roundtray'), [[0, -90], [0, 90]]);
+      // Gridfinity karışık: 42 mm ızgarada 8 × 6 hücre (yüksek kutu, vida kutusu, etiketli, tekli, alçak tepsi)
+      const kutu = {}, g = new THREE.Group(), U = 42;
+      const yerlesim = [['g3', 0, 0, 2, 2], ['g5', 2, 0, 2, 2], ['g2', 4, 0, 2, 1], ['g2', 4, 1, 2, 1], ['g1', 6, 0], ['g1', 7, 0], ['g1', 6, 1], ['g1', 7, 1],
+        ['g6', 0, 2, 4, 2], ['g2', 4, 2, 2, 1], ['g2', 4, 3, 2, 1], ['g1', 6, 2], ['g1', 7, 2], ['g1', 6, 3], ['g1', 7, 3], ['g6', 0, 4, 4, 2], ['g5', 4, 4, 2, 2], ['g3', 6, 4, 2, 2]];
+      for (const [b, cx, cy, w = 1, h = 1] of yerlesim) {
+        kutu[b] ||= binModel(b, G0);
+        const c = kutu[b].clone();
+        c.position.set((cx + w / 2 - 4) * U, (cy + h / 2 - 3) * U, 0);
         g.add(c);
       }
       return g;
     }
     case 'kalemlik': {
-      const g = binModel(id);
-      pencils(g, id === 'pencup3' ? [[0, 24], [-21, -12], [21, -12]] : [[0, 0]], id === 'pencup3' ? 8 : 18);
+      const t = TEMPLATES.kalemlik.find((x) => x.id === id), p = BIN.presets.find((x) => x.id === t.preset);
+      const v = { ...p.values, ...(t.over || {}) };
+      const g = binModel(t.preset, { ...(t.over || {}), ...(t.renk ? { color: t.renk } : {}) });
+      pencils(g, bolmeMerkezleri(v), v.cols * (v.rows || 1) > 1 ? 7 : 16);
       return g;
     }
     case 'klavye': return keychain(id);
@@ -359,9 +428,14 @@ export async function buildTemplate(zone, id, { lang = 'tr', saksi = {} } = {}) 
     }
     case 'buzdolabi': {
       const g = new THREE.Group();
-      g.add(P.mesh(P.cyl(100, 100, 70, 40), P.clay(0xf3e6d6, { rough: 0.7 })));
+      let ust = 70; // pastanın üst yüzü (krema)
+      if (pasta) {
+        const p = pasta.clone();
+        g.add(p);
+        ust = new THREE.Box3().setFromObject(p).max.z - 16; // çileklerin altı
+      } else g.add(P.mesh(P.cyl(100, 100, 70, 40), P.clay(0xf3e6d6, { rough: 0.7 })));
       const top = cakeTopper(fs, TOPPER[id][lang] || TOPPER[id].tr);
-      top.position.z = 70 - 26;
+      top.position.z = ust - 26; // çubuklar 26 mm pastaya girer
       g.add(top);
       return g;
     }

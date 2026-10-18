@@ -83,15 +83,16 @@ export async function gokKubbesi(meta, r = 25000) {
   const tex = await new THREE.TextureLoader().loadAsync(new URL(meta.gok, KOK).href);
   tex.colorSpace = THREE.SRGBColorSpace;
   const mat = new THREE.ShaderMaterial({
-    uniforms: { map: { value: tex }, rho: { value: meta.gokDonus }, k: { value: 1 / meta.olcek.gok } },
+    uniforms: { map: { value: tex }, rho: { value: meta.gokDonus }, k: { value: 1 / meta.olcek.gok }, lift: { value: meta.gokYukselt ?? 0 } },
     vertexShader: `varying vec3 vDir;
       void main() { vDir = position; gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0); }`,
-    fragmentShader: `uniform sampler2D map; uniform float rho; uniform float k; varying vec3 vDir;
+    fragmentShader: `uniform sampler2D map; uniform float rho; uniform float k; uniform float lift; varying vec3 vDir;
       void main() {
         vec3 d = normalize(vDir);
         float c = cos(rho), s = sin(rho);
         d = vec3(c * d.x - s * d.y, s * d.x + c * d.y, d.z);  // Rz(rho): Blender'daki dünya dönüşü
-        vec2 uv = vec2(0.5 - atan(d.y, d.x) / 6.2831853, 0.5 + asin(clamp(d.z, -1.0, 1.0)) / 3.1415927);
+        // lift: manzaranın ufku biraz aşağı kayar; görüntünün kendi yakın korkuluğu bizim döşemenin ardında kalır
+        vec2 uv = vec2(0.5 - atan(d.y, d.x) / 6.2831853, clamp(0.5 + (asin(clamp(d.z, -1.0, 1.0)) + lift) / 3.1415927, 0.0, 1.0));
         vec3 e = texture2D(map, uv).rgb;
         gl_FragColor = vec4(e * e * k, 1.0);
         #include <tonemapping_fragment>
@@ -110,7 +111,7 @@ export async function gokKubbesi(meta, r = 25000) {
 // gölgelendiricisi bakış ışınının bu eğik kutudaki yolunu hesaplar: kalın yerde yoğun, kenarda yumuşak, zeminin altında
 // yok; içinde ağır kıpırdayan toz. Gerçek hacimsel ışık değil (çok ağır): film setlerindeki gibi bir ışık hilesi.
 const HUZME_VS = `varying vec3 vW; void main() { vec4 w = modelMatrix * vec4(position, 1.0); vW = w.xyz; gl_Position = projectionMatrix * viewMatrix * w; }`;
-const HUZME_FS = `uniform mat3 inv; uniform vec3 org; uniform vec3 renk; uniform float yog; uniform float zaman; uniform float boy;
+const HUZME_FS = `uniform mat3 inv; uniform vec3 org; uniform vec3 renk; uniform float yog; uniform float zaman; uniform float boy; uniform float guc;
   varying vec3 vW;
   float gurultu(vec3 p) { return sin(p.x * 0.011 + zaman * 0.21) * sin(p.y * 0.013 - zaman * 0.17) * sin(p.z * 0.009 + zaman * 0.13); }
   void main() {
@@ -128,9 +129,11 @@ const HUZME_FS = `uniform mat3 inv; uniform vec3 org; uniform vec3 renk; uniform
     vec3 pw = ro + rd * (0.5 * (a + b));
     float toz = 0.82 + 0.18 * gurultu(pw);
     float kal = (b - a) / boy;                          // yol uzunluğu (huzme boyuna göre)
-    gl_FragColor = vec4(renk * yog * kal * kenar * uzak * toz, 1.0);
+    // Kameranın yakınındaki pus söner: önünden geçen huzme görüntüyü sütlü bir perdeyle kapatmasın
+    float yakin = smoothstep(600.0, 2200.0, distance(cameraPosition, pw));
+    gl_FragColor = vec4(renk * yog * guc * kal * kenar * uzak * toz * yakin, 1.0);
   }`;
-export function huzmeler(acikliklar, gunese, { renk = [1, 0.9, 0.78], yogunluk = 0.6, boy = 4200 } = {}) {
+export function huzmeler(acikliklar, gunese, { renk = [1, 0.9, 0.78], yogunluk = 0.4, boy = 4200 } = {}) {
   const g = new THREE.Group(), L = new THREE.Vector3(...gunese).multiplyScalar(-1).normalize(), mats = [];
   for (const { x0, x1, z0, z1, y } of acikliklar) {
     const org = new THREE.Vector3(x0, y, z0), ax = new THREE.Vector3(x1 - x0, 0, 0), ay = new THREE.Vector3(0, 0, z1 - z0), az = L.clone().multiplyScalar(boy);
@@ -139,7 +142,7 @@ export function huzmeler(acikliklar, gunese, { renk = [1, 0.9, 0.78], yogunluk =
     const m4 = new THREE.Matrix4().set(ax.x, ay.x, az.x, org.x, ax.y, ay.y, az.y, org.y, ax.z, ay.z, az.z, org.z, 0, 0, 0, 1);
     geo.applyMatrix4(m4);
     const mat = new THREE.ShaderMaterial({
-      uniforms: { inv: { value: M.clone().invert() }, org: { value: org }, renk: { value: new THREE.Color(...renk) }, yog: { value: yogunluk }, zaman: { value: 0 }, boy: { value: boy } },
+      uniforms: { inv: { value: M.clone().invert() }, org: { value: org }, renk: { value: new THREE.Color(...renk) }, yog: { value: yogunluk }, zaman: { value: 0 }, boy: { value: boy }, guc: { value: 1 } },
       vertexShader: HUZME_VS, fragmentShader: HUZME_FS,
       side: THREE.BackSide, transparent: true, depthWrite: false, blending: THREE.AdditiveBlending,
     });
@@ -150,6 +153,9 @@ export function huzmeler(acikliklar, gunese, { renk = [1, 0.9, 0.78], yogunluk =
     g.add(mesh);
   }
   g.userData.tick = (t) => { for (const m of mats) m.uniforms.zaman.value = t; };
+  // Genel güç (0..1): sahne yakın plana geçince kısar (huzmeler genel planın havasıdır)
+  const guc = { v: 1 };
+  g.userData.guc = (v, sure, gsap) => gsap.to(guc, { v, duration: sure, ease: 'power2.out', overwrite: true, onUpdate: () => { for (const m of mats) m.uniforms.guc.value = guc.v; } });
   return g;
 }
 
@@ -173,6 +179,45 @@ export async function cicekler(meta) {
     out[ad] = o;
   }
   return out;
+}
+
+// Canlı ışıkta duran eşyalar (monitör, mini buzdolabı): kök düğümler, adları Blender'dakiyle aynı. Buzdolabının kapağı
+// 'buzdolabi_kapak' düğümü, orijini menteşede (sahne döndürür).
+export async function esyalar(meta) {
+  const g = await gltf().loadAsync(new URL(meta.esya.dosya, KOK).href);
+  const out = {};
+  for (const ad of meta.esya.koklar) {
+    const o = g.scene.getObjectByName(ad);
+    if (!o) continue;
+    o.traverse((x) => { if (x.isMesh) { x.castShadow = true; x.receiveShadow = true; } });
+    out[ad] = o;
+  }
+  return out;
+}
+
+// Çay takımı (balkon masasındaki kupanın yerine): ince belli cam çay bardağı, içinde demli çay, porselen tabak.
+// Dönme gövdeleri kodla kurulur (profil mm: [yarıçap, yükseklik]); cam gerçek kırılma ve yansımayla çizilir.
+function donme(profil, seg = 64) {
+  const g = new THREE.LatheGeometry(profil.map(([r, z]) => new THREE.Vector2(r, z)), seg);
+  g.rotateX(Math.PI / 2); // three.js Y ekseninde döndürür; sahne Z yukarı
+  return g;
+}
+export function cayTakimi() {
+  const g = new THREE.Group();
+  const cam = new THREE.MeshPhysicalMaterial({ color: 0xffffff, roughness: 0.02, metalness: 0, transmission: 1, thickness: 1.6, ior: 1.5, envMapIntensity: 1.3 });
+  // Çay opak: three.js'te geçirgen bardağın ardındaki ikinci geçirgen nesne (çay) çizilmez; demli çay zaten koyu
+  const cay = new THREE.MeshPhysicalMaterial({ color: 0x5c1606, roughness: 0.06, clearcoat: 1, clearcoatRoughness: 0.02, envMapIntensity: 1 });
+  const porselen = new THREE.MeshPhysicalMaterial({ color: 0xf3f1ec, roughness: 0.18, clearcoat: 1, clearcoatRoughness: 0.06 });
+  const tabak = new THREE.Mesh(donme([[0, 0], [30, 0], [32, 1.5], [40, 3], [48, 6], [54, 10], [56, 12], [55.4, 13], [53, 11.6], [46, 8.6], [36, 6], [26, 4.5], [24, 4], [0, 4]]), porselen);
+  // Bardak: dış profil yukarı, ağızdan iç profil aşağı (1,3 mm et), kalın taban
+  const bardak = new THREE.Mesh(donme([[0, 0], [22, 0], [23.5, 2], [23, 10], [21, 25], [18.5, 38], [19.5, 50], [23, 68], [26.5, 85], [27.5, 95],
+    [27.1, 95.6], [26.2, 95], [25.2, 85], [21.7, 68], [18.2, 50], [17.2, 38], [19.7, 25], [21.7, 10], [21.5, 6], [0, 6]]), cam);
+  const sivi = new THREE.Mesh(donme([[0, 6.2], [21.3, 6.2], [21.5, 10], [19.5, 25], [17, 38], [18, 50], [21.5, 68], [24, 80], [0, 80]]), cay);
+  bardak.position.z = sivi.position.z = 4; // tabağın çukuruna oturur
+  tabak.castShadow = tabak.receiveShadow = true;
+  sivi.castShadow = true;
+  g.add(tabak, sivi, bardak);
+  return g;
 }
 
 // Saksı toprağı malzemesi (Poly Haven farm_soil, 1K WebP)

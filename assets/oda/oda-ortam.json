@@ -4,7 +4,7 @@
   "gok": 0.16666666666666666,
   "pano": 0.16666666666666666
  },
- "gokDonus": -1.7649301228514231,
+ "gokDonus": 1.3823007675795087,
  "gunes": {
   "azimuth": 25,
   "elevation": 42,
@@ -23,7 +23,7 @@
   1350,
   1050
  ],
- "kalite": "final",
+ "kalite": "onizleme",
  "nesneler": [
   "zemin",
   "duvar_sol",
@@ -33,15 +33,29 @@
   "kasa",
   "balkon_zemin",
   "korkuluk",
-  "balkon_duvar"
+  "balkon_duvar",
+  "supurgelik",
+  "kilim"
  ],
  "bitki": {
   "dosya": "oda-bitki.glb",
   "cesitler": [
    "cicek_a",
-   "cicek_b"
+   "cicek_b",
+   "pasta",
+   "balkon_bitki",
+   "balkon_cicek"
   ]
  },
- "tarih": "2026-10-17 13:49",
- "kodlama": "sqrt-srgb"
+ "tarih": "2026-10-18 02:55",
+ "kodlama": "sqrt-srgb",
+ "esya": {
+  "dosya": "oda-esya.glb",
+  "koklar": [
+   "monitor",
+   "buzdolabi",
+   "masa_alti"
+  ]
+ },
+ "gokYukselt": 0.22
 }

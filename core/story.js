@@ -335,7 +335,8 @@ export async function mountStory(root, { toolId, lang = 'tr', mode = pickMode(to
 
   // ---- DOM: işaretçiler, şablon şeridi ve yakın plan kartı ----
   function labelHotspot(h, pin, chip) {
-    pin.innerHTML = `<span class="pin-dot"></span><span class="pin-label"><b>${h.name}</b><i>${ui.look}</i></span>`;
+    const kisa = story.hotspots?.[h.id]?.pin?.[lang] || h.name; // sahne kısa ad verdiyse işaretçide o
+    pin.innerHTML = `<span class="pin-dot"></span><span class="pin-label"><b>${kisa}</b><i>${ui.look}</i></span>`;
     pin._lw = 0; // not genişliği yeniden ölçülsün (üst üste binme denetimi)
     chip.innerHTML = `<span class="chip-name">${h.name}</span><span class="chip-act">${h.live ? ui.look : ui.soon}</span>`;
     chip.setAttribute('aria-label', `${h.name}, ${ui.look}`);

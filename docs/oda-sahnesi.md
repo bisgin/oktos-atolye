@@ -12,7 +12,18 @@ pervazlar, kasalar ve balkon Blender'da Poly Haven dokularıyla kurulup sabah g�
 pencerelerden güneş huzmeleri, saksıda toprak (saksının kendi kesitinden) ve gerçek çiçek (Poly Haven cezayir
 menekşesi). Mobilya şimdilik gri kutu. Son kalite pişirme yapıldı (2048/1024 px, 1024 örnek, RTX 3060'ta 3 dk);
 sitenin indirdiği pilot dosyaları ~1 MB (+ Draco çözücüsü 0,25 MB). Sıradaki: mobilya ve eşyalar fotogerçekçi
-(monitör, mini buzdolabı ve pasta, cam bardak, masa, raflar), güller Sketchfab CC-BY ile. Ana sayfanın tek sahnesi: ev ofisi ve açık balkon. Ürettiğimiz her şey kendi doğal yerinde
+(monitör, mini buzdolabı ve pasta, cam bardak, masa, raflar), güller Sketchfab CC-BY ile.
+Eşyalar başladı: klavyenin arkasında 24" monitör (ekranında Kutu aracının sayfası), gerçekçi mini buzdolabı (kapak
+menteşede açılır, içte ışık yanar, cam raf, kapak rafları) ve içinde Poly Haven CC0 çilekli pasta (süsümüz üstüne
+batar). Gri kutu mobilya pişirmeye gölge vekili olarak girdi (zemin ve duvarda temas gölgesi), son kalite pişti.
+Balkon masasında kupanın yerine cam Türk çay bardağı, demli çay ve porselen tabak (kodla, gerçek cam malzemesi).
+Ekmek için Poly Haven'da somun yok: hamburger ekmeği (CC0) ya da Sketchfab'dan somun seçilecek.
+2026-10-18 geri bildirim turu: ahşap süpürgelik ve kilim (desen koddan: basamaklı göller, zikzak bordür) pişirmede;
+masa altında kasa, priz ve fiş, beyaz kablo kanalı, kablolu fare, keçe mousepad; balkonun ardında Poly Haven
+'balcony' manzarası (ufuk 0,22 rad aşağı: görüntünün kendi korkuluğu döşemenin ardında); balkonda antoryum ve gazanya
+(gri top ağaç ve lavantanın yerine); balkon masası yakın planı kapı boşluğundan; rölyef küçük çerçeveyle monitörün sol
+üstünde; işaretçiler ürünün tepesinde, tek kelime; çekmece 10, kalemlik 8 şablon (ölçü farkı olanlar araçta birebir
+açılır: sablonDegeri). Bekleyen: yapbozda aile fotoğrafı (kaynak seçilecek), ekmek, son kalite pişirme. Ana sayfanın tek sahnesi: ev ofisi ve açık balkon. Ürettiğimiz her şey kendi doğal yerinde
 durur; ziyaretçi bakar, tıklar, şablonları değiştirir, araca geçer. Görsel referanslar: sade ev ofisi (yatay
 aynalanmış) ve açık balkon (ahşap zemin, bistro masa, büyük saksılar).
 

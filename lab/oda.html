@@ -69,6 +69,7 @@
   import { ZONES } from '../core/oda-yerler.js';
   import * as odaScene from '../core/oda-sahne.js';
   import { odaPanel } from '../core/oda-panel.js';
+  import { sablonDegeri } from '../core/oda-urunler.js';
   import { t, getLang, setLang } from '../core/i18n.js';
 
   const params = new URLSearchParams(location.search);
@@ -100,7 +101,13 @@
   story = window.story = await mountStory(root, {
     toolId: 'oda', lang, story: ODA_STORY, sceneModule: odaScene,
     ...(params.get('mod') ? { mode: params.get('mod') } : {}),
-    onPick: (preset, h) => { location.href = `../tools/${h.tool}/index.html?sablon=${encodeURIComponent(preset)}`; },
+    // Ölçü farkı olan şablon (ör. ince uzun kalemlik) araçta birebir açılsın: ölçüler adrese yazılır; diğerleri ?sablon=
+    onPick: (preset, h) => {
+      const cur = story.api?.current(h.id), v = cur && sablonDegeri(h.id, cur.id);
+      const q = v ? new URLSearchParams(Object.entries(v).map(([k, x]) => [k, typeof x === 'object' ? JSON.stringify(x) : String(x)])).toString()
+        : `sablon=${encodeURIComponent(preset)}`;
+      location.href = `../tools/${h.tool}/index.html?${q}`;
+    },
     onSkip: () => { location.href = '../index.html'; },
     // Telefonda sahne ilk ürünle başlar (giriş bitince)
     onReady: () => { if (single() && !params.get('odak')) { if (story) story.focus(ZONES[0].id); else startAt = ZONES[0].id; } },

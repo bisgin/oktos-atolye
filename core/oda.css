@@ -21,6 +21,7 @@
 .oda .story-actions { display: none; }
 .oda .pin:not(.on) .pin-label { opacity: 0; transform: translateX(-4px); pointer-events: none; }
 .oda .pin.left:not(.on) .pin-label { transform: translateX(4px); }
+.oda .pin-label i { display: none; } /* işaretçide yalnız ürünün kısa adı */
 
 /* ---- Yakın plan paneli ----
    Yatay ekranda sol kenarda, sahnenin üstünde: kart zemini yok, okunurluğu soldan açılan perde verir (.oda-scrim) ve

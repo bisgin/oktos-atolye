@@ -219,7 +219,8 @@ export const STORY_ORDER = ['bin', 'vase', 'clicker', 'text', 'flip', 'qr', 'pai
 // Ana sayfanın oda sahnesi (gri kutu aşaması, docs/oda-sahnesi.md). Bölge adı şeritte ve işaretçide; kartın büyük
 // başlığı aracın adı (sayfa koyar); desc kartta başlığın altındaki kısa hikâye cümlesi. "taslak" yorumlu cümleler
 // kullanıcı onayı bekliyor.
-const zone = (tr, en, dtr, den) => ({ tr, en, desc: { tr: dtr, en: den } });
+// pin: işaretçide görünen kısa ad (ürün); tr/en: şerit ve kart üstündeki bölge adı
+const zone = (tr, en, dtr, den, pin = null) => ({ tr, en, desc: { tr: dtr, en: den }, ...(pin ? { pin: { tr: pin[0], en: pin[1] } } : {}) });
 export const ODA_STORY = {
   live: true,
   href: 'index.html',
@@ -230,17 +231,17 @@ export const ODA_STORY = {
     en: 'Everything we make is in this room. Click one for a closer look.',
   },
   hotspots: {
-    cekmece: zone('Çekmece', 'Drawer', 'Atölye için organizerler.', 'Organizers for the workshop.'),
-    kalemlik: zone('Kalemlik', 'Pen cup', 'Kalemler yerini bilsin.', 'Every pen knows its place.'), // taslak (kullanıcının cümlesi yarım kaldı)
-    klavye: zone("Klavye ve fidget'lar", 'Keyboard & fidgets', STORIES.clicker.title.tr, STORIES.clicker.title.en),
-    modem: zone('Modem', 'Router', STORIES.qr.title.tr, STORIES.qr.title.en),
-    puzzle3d: zone('3B yapboz', '3D puzzle', STORIES.puzzle.title.tr, STORIES.puzzle.title.en),
-    tabela: zone('Kapı plakası', 'Door sign', STORIES.text.title.tr, STORIES.text.title.en),
-    saksilar: zone('Saksılar', 'Planters', 'Her bitkinize şık bir kıyafet.', 'A stylish outfit for every plant.'),
-    balkonMasa: zone('Balkon masası', 'Balcony table', 'Menü bir okutma uzağında.', 'The menu is one scan away.'), // taslak
-    buzdolabi: zone('Buzdolabı', 'Fridge', 'Pastaya, ekmeğe, kapağa: ne yazmak istersen.', 'On the cake, the bread, the lid: whatever you want to say.'), // taslak
-    flip: zone('Flip heykeli', 'Flip sculpture', STORIES.flip.title.tr, STORIES.flip.title.en),
-    cerceve: zone('Rölyef çerçeve', 'Relief frame', STORIES.painter.title.tr, STORIES.painter.title.en),
-    yapboz: zone('Yapboz çerçevesi', 'Puzzle frame', 'Resmin parça parça yerine otursun.', 'Your picture, piece by piece.'), // taslak
+    cekmece: zone('Çekmece', 'Drawer', 'Atölye için organizerler.', 'Organizers for the workshop.', ['Organizer', 'Organizer']),
+    kalemlik: zone('Kalemlik', 'Pen cup', 'Kalemler yerini bilsin.', 'Every pen knows its place.', ['Kalemlik', 'Pen cup']), // taslak (kullanıcının cümlesi yarım kaldı)
+    klavye: zone("Klavye ve fidget'lar", 'Keyboard & fidgets', STORIES.clicker.title.tr, STORIES.clicker.title.en, ['Clicker', 'Clicker']),
+    modem: zone('Modem', 'Router', STORIES.qr.title.tr, STORIES.qr.title.en, ['QR kod', 'QR code']),
+    puzzle3d: zone('3B yapboz', '3D puzzle', STORIES.puzzle.title.tr, STORIES.puzzle.title.en, ['3B yapboz', '3D puzzle']),
+    tabela: zone('Kapı plakası', 'Door sign', STORIES.text.title.tr, STORIES.text.title.en, ['3D yazı', '3D text']),
+    saksilar: zone('Saksılar', 'Planters', 'Her bitkinize şık bir kıyafet.', 'A stylish outfit for every plant.', ['Saksı', 'Planter']),
+    balkonMasa: zone('Balkon masası', 'Balcony table', 'Menü bir okutma uzağında.', 'The menu is one scan away.', ['QR menü', 'QR menu']), // taslak
+    buzdolabi: zone('Buzdolabı', 'Fridge', 'Pastaya, ekmeğe, kapağa: ne yazmak istersen.', 'On the cake, the bread, the lid: whatever you want to say.', ['Pasta süsü', 'Cake topper']), // taslak
+    flip: zone('Flip heykeli', 'Flip sculpture', STORIES.flip.title.tr, STORIES.flip.title.en, ['Text Flip', 'Text Flip']),
+    cerceve: zone('Rölyef çerçeve', 'Relief frame', STORIES.painter.title.tr, STORIES.painter.title.en, ['Rölyef', 'Relief']),
+    yapboz: zone('Yapboz çerçevesi', 'Puzzle frame', 'Resmin parça parça yerine otursun.', 'Your picture, piece by piece.', ['Yapboz', 'Puzzle']), // taslak
   },
 };
