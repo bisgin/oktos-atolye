@@ -11,7 +11,8 @@ Girdi:  core/oda-olcu.js (ölçüler ve güneş; tarayıcıyla ortak), kaynak/ (
         assets/oda/oda-gok.webp    balkonun ardındaki gökyüzü
         assets/oda/oda-bitki.glb   saksılardaki çiçekler (ışıklı malzeme, 2K doku)
         assets/oda/toprak-*.webp   saksı toprağı (renk, normal, pürüzlülük; 1K)
-        assets/oda/oda-esya.glb    canlı ışıkta duran eşyalar: monitör, mini buzdolabı (kapağı ayrı düğüm, menteşede)
+        assets/oda/oda-esya.glb    canlı ışıkta duran eşyalar: monitör, mini buzdolabı (kapağı ayrı düğüm, menteşede),
+                                   masa altı, buzdolabındaki tabak (somun, beyaz peynir; procedural doku burada pişer)
         assets/oda/oda-ortam.json  tarayıcının okuyacağı ayarlar (doku ölçeği, gök dönüşü, kalite)
         kaynak/oda.blend           düzenlenebilir sahne (pişirmeden önceki hâli; depoya girmez)
 Kullanım:
@@ -107,6 +108,11 @@ def sahne_kur(q):
     sc.render.engine = 'CYCLES'
     sc.cycles.samples = q['ornek']
     sc.view_settings.view_transform = 'AgX'  # yalnız Blender'da bakarken; pişen dokuya dönüşüm uygulanmaz
+    aygit(sc)
+    return sc
+
+
+def aygit(sc):
     try:
         pr = bpy.context.preferences.addons['cycles'].preferences
         pr.compute_device_type = 'OPTIX'
@@ -118,7 +124,6 @@ def sahne_kur(q):
     except Exception as e:  # GPU yoksa işlemci (yavaş ama çalışır)
         sc.cycles.device = 'CPU'
         log('aygıt: CPU', e)
-    return sc
 
 
 def gok_donusu(hdr):
@@ -855,9 +860,286 @@ def masa_alti_kur(o):
     return kok
 
 
+# ---------------------------------------------------------------- kahvaltı tabağı (buzdolabının üst rafı): somun, beyaz peynir
+def soket(dugum, kimlik, cikis=False):
+    return next(s for s in (dugum.outputs if cikis else dugum.inputs) if s.identifier == kimlik)
+
+
+class Agac:
+    """Procedural doku ağacını kısa yazmak için düğüm kurucu. Koordinat nesne uzayı (mm): ölçek 1/mm."""
+
+    def __init__(self, nt):
+        self.nt = nt
+        self.tc = nt.nodes.new('ShaderNodeTexCoord').outputs['Object']
+
+    def bagla(self, kaynak, hedef):
+        if isinstance(kaynak, (int, float)):
+            hedef.default_value = kaynak
+        elif isinstance(kaynak, tuple):
+            hedef.default_value = (*kaynak, 1)
+        else:
+            self.nt.links.new(kaynak, hedef)
+
+    def gurultu(self, olcek, detay=4.0, puruz=0.55):
+        n = self.nt.nodes.new('ShaderNodeTexNoise')
+        self.bagla(self.tc, n.inputs['Vector'])
+        n.inputs['Scale'].default_value, n.inputs['Detail'].default_value, n.inputs['Roughness'].default_value = olcek, detay, puruz
+        return n.outputs['Fac']
+
+    def hucre(self, olcek, rastgele=1.0):
+        n = self.nt.nodes.new('ShaderNodeTexVoronoi')
+        self.bagla(self.tc, n.inputs['Vector'])
+        n.inputs['Scale'].default_value, n.inputs['Randomness'].default_value = olcek, rastgele
+        return n.outputs['Distance']
+
+    def aralik(self, deger, a, b, c=0.0, d=1.0):
+        n = self.nt.nodes.new('ShaderNodeMapRange')
+        self.bagla(deger, n.inputs['Value'])
+        for ad, v in (('From Min', a), ('From Max', b), ('To Min', c), ('To Max', d)):
+            n.inputs[ad].default_value = v
+        return n.outputs['Result']
+
+    def islem(self, tur, a, b=0.0):
+        n = self.nt.nodes.new('ShaderNodeMath')
+        n.operation = tur
+        self.bagla(a, n.inputs[0])
+        self.bagla(b, n.inputs[1])
+        return n.outputs[0]
+
+    def rampa(self, deger, duraklar):
+        """duraklar: [(konum, (r, g, b)), ...] artan sırada; ilk ve son uçlara, aradakiler yeni durak."""
+        n = self.nt.nodes.new('ShaderNodeValToRGB')
+        self.bagla(deger, n.inputs['Fac'])
+        el = n.color_ramp.elements
+        (p0, c0), (p1, c1) = duraklar[0], duraklar[-1]
+        el[0].position, el[0].color = p0, (*c0, 1)
+        el[1].position, el[1].color = p1, (*c1, 1)
+        for p, c in duraklar[1:-1]:
+            el.new(p).color = (*c, 1)
+        return n.outputs['Color']
+
+    def karis(self, f, a, b, tur='MIX'):
+        n = self.nt.nodes.new('ShaderNodeMix')
+        n.data_type, n.blend_type = 'RGBA', tur
+        for kimlik, x in (('Factor_Float', f), ('A_Color', a), ('B_Color', b)):
+            self.bagla(x, soket(n, kimlik))
+        return soket(n, 'Result_Color', cikis=True)
+
+    def nitelik(self, ad):
+        n = self.nt.nodes.new('ShaderNodeAttribute')
+        n.attribute_name = ad
+        return n.outputs['Fac']
+
+
+def ekmek_agaci(A):
+    """Somun kabuğu: tabanda soluk, yanlarda altın, tepede koyu; yarıkta açık renkli yırtık iç; altta un serpintisi."""
+    ust, yarik = A.nitelik('ust'), A.nitelik('yarik')
+    kat = A.rampa(ust, [(0.0, (0.66, 0.49, 0.29)), (0.16, (0.57, 0.32, 0.11)), (0.55, (0.40, 0.19, 0.055)), (1.0, (0.27, 0.115, 0.032))])
+    benek = A.aralik(A.gurultu(0.055, 6.0, 0.62), 0.3, 0.72, 0.8, 1.16)
+    kabuk = A.karis(1.0, kat, A.karis(1.0, (1, 1, 1), benek, 'MULTIPLY'), 'MULTIPLY')
+    ic = A.rampa(A.gurultu(0.16, 5.0), [(0.3, (0.70, 0.50, 0.26)), (0.7, (0.84, 0.67, 0.42))])
+    yf = A.aralik(A.islem('ADD', yarik, A.aralik(A.gurultu(0.09, 3.0), 0.3, 0.7, -0.25, 0.25)), 0.32, 0.62)
+    renk = A.karis(yf, kabuk, ic)
+    un_bolge = A.aralik(ust, 0.05, 0.45, 0.75, 0.0)
+    un = A.islem('MULTIPLY', A.aralik(A.gurultu(0.035, 3.0), 0.5, 0.68), un_bolge)
+    un = A.islem('MAXIMUM', un, A.islem('MULTIPLY', A.aralik(A.hucre(0.45), 0.0, 0.09, 0.9, 0.0), un_bolge))
+    renk = A.karis(un, renk, (0.90, 0.85, 0.76))
+    # Kabartı: ince kabarcıklar (hücre) ve gözenek; yarıkta daha pürüzlü yırtık
+    yuk = A.islem('ADD', A.gurultu(0.22, 8.0, 0.6), A.islem('MULTIPLY', A.hucre(0.09, 0.9), 0.55))
+    yuk = A.islem('ADD', yuk, A.islem('MULTIPLY', A.gurultu(0.6, 6.0, 0.7), yf))
+    return renk, yuk, 1.1
+
+
+def peynir_agaci(A):
+    """Beyaz peynir: kırık beyaz, hafif sarımsı lekeler, küçük düzensiz gözenekler (koyu, çukur)."""
+    ton = A.rampa(A.gurultu(0.07, 4.0), [(0.35, (0.79, 0.77, 0.67)), (0.7, (0.92, 0.905, 0.84))])
+    goz = A.islem('MULTIPLY', A.aralik(A.hucre(0.28, 1.0), 0.0, 0.14, 1.0, 0.0), A.aralik(A.gurultu(0.05, 2.0), 0.38, 0.55))
+    renk = A.karis(A.islem('MULTIPLY', goz, 0.85), ton, (0.55, 0.53, 0.46))
+    yuk = A.islem('SUBTRACT', A.islem('MULTIPLY', A.gurultu(0.5, 5.0, 0.6), 0.35), goz)
+    return renk, yuk, 0.8
+
+
+def pisir_doku(sc, ob, boyut, kurucu, ad, puruz, kaplama=0.0):
+    """Procedural renk ve kabartıyı dokuya pişirir (renk: EMIT, kabartı: teğet uzayı NORMAL) ve nesneye bu dokularla
+    sade bir PBR malzeme verir (glTF: baseColor + normal; tarayıcıda canlı ışıkta)."""
+    sec(ob)
+    bpy.ops.object.mode_set(mode='EDIT')
+    bpy.ops.mesh.select_all(action='SELECT')
+    bpy.ops.uv.smart_project(angle_limit=math.radians(60), island_margin=0.01, correct_aspect=True)
+    bpy.ops.object.mode_set(mode='OBJECT')
+    m = bpy.data.materials.new('_pis_' + ad)
+    m.use_nodes = True
+    nt = m.node_tree
+    A = Agac(nt)
+    renk, yuk, mesafe = kurucu(A)
+    b = next(n for n in nt.nodes if n.type == 'BSDF_PRINCIPLED')
+    A.bagla(renk, b.inputs['Emission Color'])
+    b.inputs['Emission Strength'].default_value = 1.0
+    bu = nt.nodes.new('ShaderNodeBump')
+    bu.inputs['Distance'].default_value = mesafe
+    A.bagla(yuk, bu.inputs['Height'])
+    A.bagla(bu.outputs['Normal'], b.inputs['Normal'])
+    ob.data.materials.clear()
+    ob.data.materials.append(m)
+    gor = {}
+    for tur, renkli in (('EMIT', True), ('NORMAL', False)):
+        img = bpy.data.images.new(f'{ad}_{"renk" if renkli else "normal"}', boyut, boyut, alpha=False)
+        img.colorspace_settings.name = 'sRGB' if renkli else 'Non-Color'
+        tx = nt.nodes.new('ShaderNodeTexImage')
+        tx.image = img
+        nt.nodes.active = tx
+        sc.render.bake.normal_space = 'TANGENT'
+        bpy.ops.object.bake(type=tur, margin=8, margin_type='EXTEND', use_clear=True, target='IMAGE_TEXTURES')
+        img.pack()
+        gor[tur] = img
+    # Dışa aktarılacak malzeme: pişmiş renk + normal haritası, sabit pürüzlülük
+    s = bpy.data.materials.new(ad)
+    s.use_nodes = True
+    nt = s.node_tree
+    b = next(n for n in nt.nodes if n.type == 'BSDF_PRINCIPLED')
+    tr = nt.nodes.new('ShaderNodeTexImage')
+    tr.image = gor['EMIT']
+    nt.links.new(tr.outputs['Color'], b.inputs['Base Color'])
+    tn = nt.nodes.new('ShaderNodeTexImage')
+    tn.image = gor['NORMAL']
+    nm = nt.nodes.new('ShaderNodeNormalMap')
+    nt.links.new(tn.outputs['Color'], nm.inputs['Color'])
+    nt.links.new(nm.outputs['Normal'], b.inputs['Normal'])
+    b.inputs['Roughness'].default_value = puruz
+    if kaplama:
+        b.inputs['Coat Weight'].default_value = kaplama
+        b.inputs['Coat Roughness'].default_value = 0.3
+    ob.data.materials.clear()
+    ob.data.materials.append(s)
+    for nit in [a.name for a in ob.data.color_attributes]:
+        ob.data.color_attributes.remove(ob.data.color_attributes[nit])
+
+
+def yumusak(a, b, x):
+    t = max(0.0, min(1.0, (x - a) / (b - a)))
+    return t * t * (3 - 2 * t)
+
+
+def somun_kur(ad, L, W, Ht, Hb, yer, aci, ust):
+    """Türk somunu: oval gövde, tepesinde boylamasına açılmış yarık ("kulaklı"), altı düz ve soluk.
+    Köşe nitelikleri (doku pişirmesi için): ust 0 taban → 1 tepe, yarik 1 yarığın içi. Etiket yeri döner."""
+    from mathutils import noise
+    bm = bmesh.new()
+    bmesh.ops.create_uvsphere(bm, u_segments=112, v_segments=64, radius=1.0)
+    sb = lambda t, p: math.copysign(abs(t) ** p, t)
+    ca, sa = math.cos(aci), math.sin(aci)
+    ust_l, yarik_l, etiket = [], [], None
+    bm.verts.index_update()
+    for v in bm.verts:
+        sx, sy, sz = v.co  # küre kutupları ±z: ekmeğin uçları (+x / −x)
+        x, y = sb(sz, 0.9) * L / 2, sb(sx, 0.8) * W / 2
+        z = Hb + sb(sy, 0.8) * (Ht if sy > 0 else Hb)
+        t = abs(x) / (L / 2)
+        pen = yumusak(0.84, 0.5, t) * yumusak(0.35, 0.75, sy)  # yarık yalnız tepede ve uçlara varmadan
+        yc = 2.5 * noise.noise(Vector((x * 0.02, 3.1, 0.7)))
+        g = math.exp(-((y - yc) / 8.0) ** 2) * pen
+        z += -14.0 * g + 4.5 * math.exp(-((abs(y - yc) - 15.0) / 6.5) ** 2) * pen
+        nv = Vector((x / (L / 2) ** 2, y / (W / 2) ** 2, (z - Hb) / (Ht if z > Hb else Hb) ** 2))
+        p = Vector((x, y, z)) + nv.normalized() * 2.4 * noise.noise(Vector((x, y, z)) * 0.017)
+        if sy < -0.2:
+            p.z = max(p.z, 0.0)  # taban rafa otursun
+        ust_l.append(yumusak(0.08, 0.95, p.z / (Ht + Hb)))
+        yarik_l.append(math.exp(-((y - yc) / 11.0) ** 2) * pen)
+        if sy > 0.8 and (etiket is None or (x - 60) ** 2 + (y + 17) ** 2 < etiket[0]):
+            etiket = ((x - 60) ** 2 + (y + 17) ** 2, p.copy())
+        v.co = Vector((yer[0] + ca * p.x - sa * p.y, yer[1] + sa * p.x + ca * p.y, yer[2] + p.z))
+    me = bpy.data.meshes.new(ad)
+    bm.to_mesh(me)
+    bm.free()
+    for poly in me.polygons:
+        poly.use_smooth = True
+    for nad, deger in (('ust', ust_l), ('yarik', yarik_l)):
+        ca_ = me.color_attributes.new(nad, 'FLOAT_COLOR', 'POINT')
+        for i, d in enumerate(deger):
+            ca_.data[i].color = (d, d, d, 1)
+    ob = bpy.data.objects.new(ad, me)
+    bpy.context.scene.collection.objects.link(ob)
+    ob.parent = ust
+    e = etiket[1]
+    return ob, (yer[0] + ca * e.x - sa * e.y, yer[1] + sa * e.x + ca * e.y, yer[2] + e.z)
+
+
+def peynir_kur(ad, w, d, h, yer, aci, ust, r=3.0, tohum=0.0):
+    """Beyaz peynir kalıbı: kenarları yumuşak, yüzeyi hafif ufalanmış (gürültüyle) kutu."""
+    from mathutils import noise
+    bm = bmesh.new()
+    bmesh.ops.create_cube(bm, size=1.0)
+    bmesh.ops.subdivide_edges(bm, edges=bm.edges[:], cuts=18, use_grid_fill=True)
+    hx, hy, hz = w / 2, d / 2, h / 2
+    ca, sa = math.cos(aci), math.sin(aci)
+    for v in bm.verts:
+        p = Vector((v.co.x * w, v.co.y * d, v.co.z * h))
+        q = Vector((max(-hx + r, min(hx - r, p.x)), max(-hy + r, min(hy - r, p.y)), max(-hz + r, min(hz - r, p.z))))
+        dv = p - q
+        n = dv.normalized() if dv.length > 1e-6 else Vector((0, 0, 1))
+        p = q + n * r if dv.length > 1e-6 else p
+        p += n * 1.2 * noise.noise((p + Vector((tohum, tohum, tohum))) * 0.1)
+        p.z = max(p.z + hz, 0.0)
+        v.co = Vector((yer[0] + ca * p.x - sa * p.y, yer[1] + sa * p.x + ca * p.y, yer[2] + p.z))
+    me = bpy.data.meshes.new(ad)
+    bm.to_mesh(me)
+    bm.free()
+    for poly in me.polygons:
+        poly.use_smooth = True
+    ob = bpy.data.objects.new(ad, me)
+    bpy.context.scene.collection.objects.link(ob)
+    ob.parent = ust
+    return ob
+
+
+def tabak_kur(ad, profil, malz, ust, adim=128):
+    """Dönme gövdesi (profil: [(yarıçap, z), ...] mm, eksenden eksene kapalı yol)."""
+    bm = bmesh.new()
+    vs = [bm.verts.new((r, 0, z)) for r, z in profil]
+    es = [bm.edges.new((a, b)) for a, b in zip(vs, vs[1:])]
+    bmesh.ops.spin(bm, geom=vs + es, cent=(0, 0, 0), axis=(0, 0, 1), angle=math.tau, steps=adim, use_merge=True)
+    bmesh.ops.remove_doubles(bm, verts=bm.verts[:], dist=0.01)
+    bmesh.ops.recalc_face_normals(bm, faces=bm.faces[:])
+    me = bpy.data.meshes.new(ad)
+    bm.to_mesh(me)
+    bm.free()
+    for poly in me.polygons:
+        poly.use_smooth = True
+    me.materials.append(malz)
+    ob = bpy.data.objects.new(ad, me)
+    bpy.context.scene.collection.objects.link(ob)
+    ob.parent = ust
+    return ob
+
+
+TABAK = [(0, 6.0), (95, 6.0), (108, 6.8), (120, 9.2), (132, 13.0), (142, 17.0), (148, 19.4), (150.5, 20.2), (152, 19.6),
+         (152.4, 18.4), (151.2, 17.2), (146, 15.6), (134, 11.4), (120, 7.4), (106, 4.6), (92, 3.4), (86, 3.2), (84, 1.2),
+         (82, 0.0), (74, 0.0), (72, 1.2), (70, 3.0), (0, 3.0)]  # Ø 305 mm sırlı taş tabak: düz orta, yükselen kenar, taban halkası
+
+
+def kahvalti_kur(sc):
+    """Buzdolabının üst rafındaki tabak (orijin tabağın alt ortası; ön yüzü −y, tarayıcı rafın yönüne çevirir):
+    somun ve beyaz peynir. Dokular procedural, buradaki Cycles ile pişer. Kökün 'etiket' özelliği (glTF extras →
+    three.js userData): "Gluten yok" etiketinin ekmeğe batacağı nokta."""
+    kok = bos('kahvalti')
+    tabak_kur('tabak', TABAK, malzeme('tabak_sir', (0.075, 0.12, 0.17), puruz=0.25, kaplama=0.8, kaplama_puruz=0.05), kok)
+    somun, et = somun_kur('somun', 226, 106, 70, 12, (0, 24, 6), 0.12, kok)
+    p1 = peynir_kur('peynir', 80, 54, 36, (-14, -66, 6), -0.22, kok, r=1.8, tohum=1.7)
+    p2 = peynir_kur('peynir_dilim', 52, 36, 13, (54, -54, 6), 0.48, kok, r=1.5, tohum=5.3)
+    sc.render.engine = 'CYCLES'
+    sc.cycles.samples = 16
+    aygit(sc)
+    pisir_doku(sc, somun, 1024, ekmek_agaci, 'somun_kabuk', 0.62)
+    for p in (p1, p2):
+        pisir_doku(sc, p, 512, peynir_agaci, p.name + '_doku', 0.42, kaplama=0.25)
+    kok['etiket'] = [round(c, 1) for c in et]
+    log(f'kahvaltı tabağı: etiket yeri {list(kok["etiket"])}')
+    return kok
+
+
 def esya_yaz(o, hedef):
     bpy.ops.wm.read_factory_settings(use_empty=True)
-    kok = [monitor_kur(o), buzdolabi_kur(o), masa_alti_kur(o)]
+    kok = [monitor_kur(o), buzdolabi_kur(o), masa_alti_kur(o), kahvalti_kur(bpy.context.scene)]
     bpy.ops.object.select_all(action='DESELECT')
     for k in kok:
         k.select_set(True)
@@ -941,7 +1223,7 @@ def main():
         doku_yaz()
     if 'esya' in parca:
         esya_yaz(o, yol(CIKTI, 'oda-esya.glb'))
-        meta['esya'] = {'dosya': 'oda-esya.glb', 'koklar': ['monitor', 'buzdolabi', 'masa_alti']}
+        meta['esya'] = {'dosya': 'oda-esya.glb', 'koklar': ['monitor', 'buzdolabi', 'masa_alti', 'kahvalti']}
     if 'bitki' in parca:
         bitki_yaz(yol(CIKTI, 'oda-bitki.glb'))
         meta['bitki'] = {'dosya': 'oda-bitki.glb', 'cesitler': [b[3] for b in BITKILER]}

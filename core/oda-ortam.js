@@ -206,14 +206,23 @@ export function cayTakimi() {
   const g = new THREE.Group();
   const cam = new THREE.MeshPhysicalMaterial({ color: 0xffffff, roughness: 0.02, metalness: 0, transmission: 1, thickness: 1.6, ior: 1.5, envMapIntensity: 1.3 });
   // Çay opak: three.js'te geçirgen bardağın ardındaki ikinci geçirgen nesne (çay) çizilmez; demli çay zaten koyu
-  const cay = new THREE.MeshPhysicalMaterial({ color: 0x5c1606, roughness: 0.06, clearcoat: 1, clearcoatRoughness: 0.02, envMapIntensity: 1 });
+  const cay = new THREE.MeshPhysicalMaterial({ color: 0x6a1a07, roughness: 0.12, envMapIntensity: 0.6 });
+  // Üst yüz ayrı: gerçek çayda ışık içeri girer, yüzey koyu bir ayna gibi durur (aynı renkte güneşte pembe görünüyordu)
+  const cayUst = new THREE.MeshPhysicalMaterial({ color: 0x3a0a04, roughness: 0.03, envMapIntensity: 0.45 });
   const porselen = new THREE.MeshPhysicalMaterial({ color: 0xf3f1ec, roughness: 0.18, clearcoat: 1, clearcoatRoughness: 0.06 });
   const tabak = new THREE.Mesh(donme([[0, 0], [30, 0], [32, 1.5], [40, 3], [48, 6], [54, 10], [56, 12], [55.4, 13], [53, 11.6], [46, 8.6], [36, 6], [26, 4.5], [24, 4], [0, 4]]), porselen);
-  // Bardak: dış profil yukarı, ağızdan iç profil aşağı (1,3 mm et), kalın taban
-  const bardak = new THREE.Mesh(donme([[0, 0], [22, 0], [23.5, 2], [23, 10], [21, 25], [18.5, 38], [19.5, 50], [23, 68], [26.5, 85], [27.5, 95],
-    [27.1, 95.6], [26.2, 95], [25.2, 85], [21.7, 68], [18.2, 50], [17.2, 38], [19.7, 25], [21.7, 10], [21.5, 6], [0, 6]]), cam);
-  const sivi = new THREE.Mesh(donme([[0, 6.2], [21.3, 6.2], [21.5, 10], [19.5, 25], [17, 38], [18, 50], [21.5, 68], [24, 80], [0, 80]]), cay);
+  // Bardak (klasik ince belli, ~100 ml): yuvarlak alt gövde Ø 50, bel Ø 38, lale gibi açılan ağız Ø 56, boy 96.
+  // Dış profil yukarı, ağızdan iç profil aşağı (~1,3 mm et), 7 mm kalın taban
+  const bardak = new THREE.Mesh(donme([[0, 0], [20, 0], [21.2, 0.8], [21.6, 2.5], [22.5, 6], [24.5, 13], [25.2, 20], [24.6, 27], [22.4, 34],
+    [20, 41], [19, 48], [19.2, 54], [20.5, 62], [22.8, 72], [25.4, 83], [27.4, 92], [28, 96], [27.6, 96.6], [26.8, 96],
+    [26.2, 92], [24.2, 83], [21.6, 72], [19.3, 62], [18, 54], [17.8, 48], [18.8, 41], [21.2, 34], [23.4, 27], [24, 20], [23.3, 13],
+    [21.4, 8], [19, 7], [0, 7]], 96), cam);
+  const sivi = new THREE.Mesh(donme([[0, 7.2], [18.8, 7.2], [21.2, 8.2], [23.1, 13], [23.8, 20], [23.2, 27], [21, 34], [18.6, 41], [17.6, 48],
+    [17.8, 54], [19.1, 62], [21.4, 72], [23.3, 80], [23.8, 82.5]], 96), cay);
+  const yuzey = new THREE.Mesh(new THREE.CircleGeometry(23.8, 96), cayUst);
+  yuzey.position.z = 82.5;
   bardak.position.z = sivi.position.z = 4; // tabağın çukuruna oturur
+  sivi.add(yuzey);
   tabak.castShadow = tabak.receiveShadow = true;
   sivi.castShadow = true;
   g.add(tabak, sivi, bardak);

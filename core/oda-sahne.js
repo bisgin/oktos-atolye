@@ -338,14 +338,17 @@ export async function buildScene({ scene, P, lang = 'tr' }) {
     box(F.d - 40, F.w - 40, 8, 10, 0, F.floor - 8, M.inner, { parent: fridge, r: 2 });
   }
   {
-    // Ekmek ve üstüne batırılmış etiket: "Gluten yok" (3D Yazı)
-    const bread = place(new THREE.Group(), [-40, 0, 440, -Math.PI / 2], fridge);
-    box(220, 110, 90, 0, 0, 0, tone(0xd9b77e, 0.9), { parent: bread, r: 30 });
+    // Ekmek ve üstüne batırılmış etiket: "Gluten yok" (3D Yazı). Pilotta tabakta somun ve beyaz peynir (Blender);
+    // etiketin battığı nokta modelin userData.etiket'inde [x, y, z]
+    const bread = place(pilot ? pilot.esya.kahvalti : new THREE.Group(), [-40, 0, F.shelf, -Math.PI / 2], fridge);
+    if (!pilot) box(220, 110, 90, 0, 0, 0, tone(0xd9b77e, 0.9), { parent: bread, r: 30 });
+    const at = pilot ? bread.userData.etiket : null;
     const label = lang === 'en' ? 'Gluten free' : 'Gluten yok';
     bread.add(solid(() => {
       const t = textSolid(fs, label, 19, 2, { spacing: 0.4 });
       const card = standUp(C.extrude(C.rrect(t.width + 14, t.cap + 14, 3), 2), 2);
-      return C.move(C.union([card, C.move(standUp(t.solid, 2), 0, -2, -t.cap / 2), C.box(2.4, 2.4, 44, -1.2, -1.2, -44 - (t.cap + 14) / 2)]), 20, -20, 132);
+      const [x, y, z] = at ? [at[0], at[1], at[2] + 22 + (t.cap + 14) / 2] : [20, -20, 132]; // çubuk ekmeğe ~22 mm batar
+      return C.move(C.union([card, C.move(standUp(t.solid, 2), 0, -2, -t.cap / 2), C.box(2.4, 2.4, 44, -1.2, -1.2, -44 - (t.cap + 14) / 2)]), x, y, z);
     }, P.clay(0xe6b33a, { rough: 0.5 })));
   }
   await slot('buzdolabi', place(new THREE.Group(), [-40, 0, F.floor, -Math.PI / 2], fridge));

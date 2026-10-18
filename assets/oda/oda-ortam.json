@@ -23,7 +23,7 @@
   1350,
   1050
  ],
- "kalite": "onizleme",
+ "kalite": "final",
  "nesneler": [
   "zemin",
   "duvar_sol",
@@ -47,14 +47,15 @@
    "balkon_cicek"
   ]
  },
- "tarih": "2026-10-18 02:55",
+ "tarih": "2026-10-18 12:20",
  "kodlama": "sqrt-srgb",
  "esya": {
   "dosya": "oda-esya.glb",
   "koklar": [
    "monitor",
    "buzdolabi",
-   "masa_alti"
+   "masa_alti",
+   "kahvalti"
   ]
  },
  "gokYukselt": 0.22
