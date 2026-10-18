@@ -147,6 +147,8 @@ const HUZME_FS = `uniform mat3 inv; uniform vec3 org; uniform vec3 renk; uniform
     // Kameranın yakınındaki pus söner: önünden geçen huzme görüntüyü sütlü bir perdeyle kapatmasın
     float yakin = smoothstep(600.0, 2200.0, distance(cameraPosition, pw));
     gl_FragColor = vec4(renk * yog * guc * kal * kenar * uzak * toz * yakin, 1.0);
+    #include <tonemapping_fragment>
+    #include <colorspace_fragment>
   }`;
 export function huzmeler(acikliklar, gunese, { renk = [1, 0.9, 0.78], yogunluk = 0.4, boy = 4200 } = {}) {
   const g = new THREE.Group(), L = new THREE.Vector3(...gunese).multiplyScalar(-1).normalize(), mats = [];

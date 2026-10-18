@@ -90,7 +90,7 @@
   white-space: nowrap;
   text-overflow: ellipsis;
 }
-.sc-tpl-name small { margin-left: 4px; font: 500 12.5px var(--mono); color: var(--ink-3); }
+.sc-tpl-name small { margin-left: 4px; font: 500 13px var(--mono); color: var(--ink-3); }
 .sc-step {
   display: grid;
   place-items: center;
@@ -221,7 +221,7 @@
   background: var(--panel);
   box-shadow: 0 1px 2px rgba(0, 0, 0, 0.06), 0 14px 40px rgba(30, 35, 40, 0.16);
 }
-.oda[data-panel="bottom"] .sc-kicker { margin-bottom: 4px; font-size: 12px; }
+.oda[data-panel="bottom"] .sc-kicker { margin-bottom: 4px; font-size: 13px; }
 .oda[data-panel="bottom"] .sc-title { margin-bottom: 8px; font-size: clamp(34px, 9vw, 46px); }
 .oda[data-panel="bottom"] .sc-desc { margin-bottom: 12px; font-size: 15px; }
 .oda[data-panel="bottom"] .sc-tpl { margin-bottom: 12px; }
@@ -277,8 +277,9 @@ html.oda-tur-on::-webkit-scrollbar { display: none; }
   pointer-events: none;
   transition: opacity 450ms cubic-bezier(0.23, 1, 0.32, 1), translate 450ms cubic-bezier(0.23, 1, 0.32, 1);
 }
-.oda-tur-giris.gizli { opacity: 0; translate: -50% 12px; }
-.oda-tur-giris.gizli .ot-basla { pointer-events: none; }
+/* kaydırınca ve her yakın planda (turda olmayan ürüne dokunulunca da) söner: kartın üstünde kalmasın */
+.oda-tur-giris.gizli, .oda.is-focused .oda-tur-giris { opacity: 0; translate: -50% 12px; }
+.oda-tur-giris.gizli .ot-basla, .oda.is-focused .ot-basla { pointer-events: none; }
 .ot-baslik {
   margin: 0;
   font-family: 'Big Shoulders Display', var(--sans);
@@ -312,4 +313,26 @@ html.oda-tur-on::-webkit-scrollbar { display: none; }
 @media (pointer: coarse), (max-width: 720px) {
   .oda-tur-giris { bottom: calc(92px + env(safe-area-inset-bottom)); }
   .ot-baslik { font-size: clamp(34px, 10vw, 48px); }
+}
+
+/* ---- Dokunma hedefleri: üst çubukta logo ve dil düğmeleri en az 44 px ---- */
+html.oda-tur-on .topbar .brand { min-height: 44px; min-width: 44px; }
+html.oda-tur-on .lang button { min-width: 44px; }
+
+/* ---- Yatay telefon (kısa yatay ekran): kart yandan açılır (story.js resize: en/boy ≥ 1,4 ve boy ≤ 560 px), üst çubuk
+   incelir, kart sıkışır (ipucu ve toz yazısı yok), döngü düğmesi sağ alta, tur yazısı alta iner ---- */
+@media (orientation: landscape) and (max-height: 560px) {
+  html.oda-tur-on .topbar { height: 44px; }
+  .story.oda { top: 44px; }
+  .oda-scrim { width: min(66%, 640px); }
+  .oda .story-card { top: 12px; left: max(16px, env(safe-area-inset-left)); width: min(340px, 46vw); }
+  .oda .sc-kicker { margin-bottom: 4px; }
+  .oda .sc-title { margin-bottom: 6px; font-size: clamp(28px, 8.5vh, 40px); }
+  .oda .sc-desc { margin-bottom: 8px; font-size: 14px; }
+  .oda .sc-tpl { margin-bottom: 8px; }
+  .oda .sc-hint, .oda .oda-dust { display: none; }
+  .oda-next { left: auto; right: max(16px, env(safe-area-inset-right)); translate: none; bottom: 12px; width: 48px; height: 48px; }
+  .oda-tur-giris { bottom: 12px; gap: 8px; }
+  .ot-baslik { font-size: clamp(26px, 8.5vh, 38px); }
+  .ot-basla { font-size: 14px; }
 }

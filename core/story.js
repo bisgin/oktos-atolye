@@ -181,6 +181,9 @@ export async function mountStory(root, { toolId, lang = 'tr', mode = pickMode(to
   const built = await mod.buildScene({ THREE, scene, P, quality, lang, story });
   const shots = built.shots;
   const lights = built.lights || {};
+  // Telefonda ve zayıf cihazda (düşük kalite) sahne vurgu çizgisini kullanmıyorsa (outlineFocus: false; dokunmatikte
+  // üzerine gelme de yok) ara görüntü geçişleri atlanır: tuval doğrudan çizilir, kenar yumuşatma tuvalin kendisinden
+  if (composer && quality === 'low' && built.outlineFocus === false) { composer.dispose?.(); composer = null; outline = null; }
   const center = new THREE.Vector3(...(lights.center || shots.main.target));
   key.position.set(...(lights.key || [center.x - 1400, center.y - 900, center.z + 2200]));
   key.target.position.copy(center);
@@ -615,7 +618,9 @@ export async function mountStory(root, { toolId, lang = 'tr', mode = pickMode(to
     // Dar ekranda geniş sahne sığsın diye görüş açısını büyüt.
     camera.fov = w / h < 0.8 ? (built.portraitFov || 46) : w / h < 1.2 ? 38 : 30;
     camera.updateProjectionMatrix();
-    sideCard = !!built.focusShift && w / h >= 0.9 && !matchMedia('(pointer: coarse), (max-width: 720px)').matches;
+    // Yatay telefonda (kısa ve geniş ekran) alttan açılan kart ekranı kaplıyordu: dokunmatikte de kart yanda
+    const kisaYatay = w / h >= 1.4 && h <= 560;
+    sideCard = !!built.focusShift && w / h >= 0.9 && (kisaYatay || !matchMedia('(pointer: coarse), (max-width: 720px)').matches);
     if (built.focusShift) root.dataset.panel = sideCard ? 'side' : 'bottom';
     if (!renderer) return;
     renderer.setSize(w, h, false);
