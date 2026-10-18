@@ -233,7 +233,7 @@ export const ODA_STORY = {
   hotspots: {
     cekmece: zone('Çekmece', 'Drawer', 'Atölye için organizerler.', 'Organizers for the workshop.', ['Organizer', 'Organizer']),
     kalemlik: zone('Kalemlik', 'Pen cup', 'Kalemler yerini bilsin.', 'Every pen knows its place.', ['Kalemlik', 'Pen cup']), // taslak (kullanıcının cümlesi yarım kaldı)
-    klavye: zone("Klavye ve fidget'lar", 'Keyboard & fidgets', STORIES.clicker.title.tr, STORIES.clicker.title.en, ['Clicker', 'Clicker']),
+    klavye: zone("Klavye ve fidget'lar", 'Keyboard & fidgets', 'Klavyene kendi tuşunu tak, aynısı anahtarlıkta tıklasın.', 'Fit your own keycaps; the same design clicks on your keyring.', ['Tuş başlığı', 'Keycaps']),
     modem: zone('Modem', 'Router', STORIES.qr.title.tr, STORIES.qr.title.en, ['QR kod', 'QR code']),
     puzzle3d: zone('3B yapboz', '3D puzzle', STORIES.puzzle.title.tr, STORIES.puzzle.title.en, ['3B yapboz', '3D puzzle']),
     tabela: zone('Kapı plakası', 'Door sign', STORIES.text.title.tr, STORIES.text.title.en, ['3D yazı', '3D text']),

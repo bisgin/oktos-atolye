@@ -11,7 +11,7 @@ import { gsap } from 'gsap';
 import { initCSG } from './csg.js';
 import { fonts, textSolid, standUp, solid, C } from './scene-kit.js';
 import { ZONES, A, SHOTS, LOOK, FOCUS, LIGHTS } from './oda-yerler.js';
-import { TEMPLATES, buildTemplate, binModel, vaseModel } from './oda-urunler.js';
+import { TEMPLATES, buildTemplate, binModel, vaseModel, OZEL_TUSLAR } from './oda-urunler.js';
 import { OLCU, toSun } from './oda-olcu.js';
 
 const TAU = Math.PI * 2;
@@ -153,13 +153,14 @@ export async function buildScene({ scene, P, lang = 'tr' }) {
 
   // ---- yuvalar: bölgenin ürünü burada; şablon değişince yalnız yuvadaki model değişir ----
   const slots = {};
+  let klavyeBilgi = null; // klavye kurulunca: tuş yerleri ve anahtarlığın yeri (klavye şablonları için)
   const agiz = (m) => m.userData.soil ?? m.userData.h; // bitki toprağa (yoksa saksının ağzına) oturur
   const tag = (o, zone) => o.traverse((x) => { x.userData.hotspot = zone; });
   // Önbellekte üretimin sözü (promise) durur: önceden üretme ile gösterme yarışsa da aynı şablon iki kez üretilmez
   function model(zone, id) {
     const s = slots[zone];
     if (!s.cache.has(id)) {
-      const p = buildTemplate(zone, id, { lang, saksi: pilot?.saksi, pasta: pilot?.cicek.pasta }).then((m) => { tag(m, zone); return m; });
+      const p = buildTemplate(zone, id, { lang, saksi: pilot?.saksi, pasta: pilot?.cicek.pasta, klavye: klavyeBilgi }).then((m) => { tag(m, zone); return m; });
       p.catch(() => s.cache.delete(id)); // üretilemediyse sonraki istekte yeniden denenir
       s.cache.set(id, p);
     }
@@ -208,18 +209,23 @@ export async function buildScene({ scene, P, lang = 'tr' }) {
   scene.add(penZone);
   await slot('kalemlik', place(new THREE.Group(), A.pencup, penZone));
 
-  // ---- klavye (dekor, hafif eğik, arkası ayaklı) ve sağında anahtarlık fidget yuvası ----
+  // ---- klavye (hafif eğik, arkası ayaklı): Esc, Enter ve yukarı ok boş (MX anahtarı); yuvası klavyenin kendisi,
+  // şablon o tuşlara başlık takar ve klavyenin sağına aynı tasarımın anahtarlığını koyar ----
   const kbZone = new THREE.Group();
   scene.add(kbZone);
-  {
-    const kbHost = place(new THREE.Group(), A.keyboard, kbZone), kb = P.mechKeyboard();
-    if (pilot) kbHost.position.z += OLCU.MAT.t; // pilotta mousepad'in üstünde
-    kb.rotation.x = 0.1;
-    kb.position.z = (kb.userData.size.d / 2) * Math.sin(0.1);
-    kbHost.add(kb);
-    for (const sx of [-1, 1]) box(26, 10, 11, sx * (kb.userData.size.w / 2 - 32), 50, 0, P.clay(0x2a2c30, { rough: 0.7 }), { parent: kbHost });
-  }
-  await slot('klavye', place(new THREE.Group(), A.clickers, kbZone));
+  const kbHost = place(new THREE.Group(), A.keyboard, kbZone), kb = P.mechKeyboard({ skip: OZEL_TUSLAR });
+  if (pilot) kbHost.position.z += OLCU.MAT.t; // pilotta mousepad'in üstünde
+  kb.rotation.x = 0.1;
+  kb.position.z = (kb.userData.size.d / 2) * Math.sin(0.1);
+  kbHost.add(kb);
+  for (const sx of [-1, 1]) box(26, 10, 11, sx * (kb.userData.size.w / 2 - 32), 50, 0, P.clay(0x2a2c30, { rough: 0.7 }), { parent: kbHost });
+  kbZone.updateMatrixWorld(true);
+  klavyeBilgi = {
+    keys: kb.userData.keys, capZ: kb.userData.capZ,
+    yer: kb.matrixWorld.clone().invert().multiply(new THREE.Matrix4().compose(new THREE.Vector3(A.clickers[0], A.clickers[1], A.clickers[2]),
+      new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(0, 0, 1), A.clickers[3]), new THREE.Vector3(1, 1, 1))),
+  };
+  await slot('klavye', kb);
 
   // ---- rafta modem (dekor) ve QR yuvası: Wi-Fi standı modemin üstünde, kartvizit sağında, anahtarlık en sağda ----
   const modemZone = new THREE.Group();
@@ -424,23 +430,25 @@ export async function buildScene({ scene, P, lang = 'tr' }) {
     s.busy = true;
     try {
       const next = await model(zone, list[i].id), old = s.model;
+      // Parçalı şablon (klavyedeki tuş başlıkları): her parça kendi yerinde küçülür/büyür, grup merkezine kaymaz
+      const olcek = (m) => (m.userData.parcali ? m.children.map((c) => c.scale) : [m.scale]);
       s.index = i;
       s.model = next;
-      gsap.killTweensOf([next.scale, next.position]);
+      gsap.killTweensOf([...olcek(next), next.position]);
       s.host.add(next);
       if (reduced) {
         s.host.remove(old);
-        next.scale.setScalar(1);
+        olcek(next).forEach((x) => x.setScalar(1));
         next.position.z = 0;
         if (s.plant) s.plant.position.z = agiz(next);
         measure(zone);
         api.onChange?.(zone, info(zone));
       } else {
-        gsap.killTweensOf(old.scale);
-        gsap.to(old.scale, { x: 0.001, y: 0.001, z: 0.001, duration: 0.2, ease: 'power2.in', onComplete: () => { if (s.model !== old) s.host.remove(old); old.scale.setScalar(1); } });
-        next.scale.setScalar(0.55);
+        gsap.killTweensOf(olcek(old));
+        gsap.to(olcek(old), { x: 0.001, y: 0.001, z: 0.001, duration: 0.2, ease: 'power2.in', onComplete: () => { if (s.model !== old) s.host.remove(old); olcek(old).forEach((x) => x.setScalar(1)); } });
+        olcek(next).forEach((x) => x.setScalar(0.55));
         next.position.z = 24;
-        gsap.to(next.scale, { x: 1, y: 1, z: 1, duration: 0.5, delay: 0.12, ease: 'back.out(1.7)' });
+        gsap.to(olcek(next), { x: 1, y: 1, z: 1, duration: 0.5, delay: 0.12, ease: 'back.out(1.7)' });
         gsap.to(next.position, { z: 0, duration: 0.5, delay: 0.12, ease: 'power3.out', onComplete: () => { if (s.model === next) measure(zone); } });
         if (s.plant) gsap.to(s.plant.position, { z: agiz(next), duration: 0.5, delay: 0.1, ease: 'power3.out', overwrite: true });
         api.onChange?.(zone, info(zone));

@@ -668,7 +668,7 @@ const KB_ROWS = [
 ];
 const KEY_U = 19.05;
 const capCache = new Map();
-function keycapGeometry(u) {
+export function keycapGeometry(u) {
   if (capCache.has(u)) return capCache.get(u);
   const w = KEY_U * u - 1.25, d = KEY_U - 1.25, h = 8.2;
   let g = new RoundedBoxGeometry(w, d, h, 3, 1.4);

@@ -44,7 +44,9 @@ aktarıldı, telefonun dikey kadrajı odanın içinden. Mobil uyarlama: yatay te
 kalemlik monitörün soluna, lamba köşede dolabın üstünde uzun spot, dolap masanın önüyle hizalı; modemde şablona göre
 yer; buzdolabı kapalı başlar; odadaki saksı hep içi boş ve topraklı; monitör titremesi giderildi. Sırada: çekmeceyi
 dolduran organizerler, klavyede tuş başlıkları, buzdolabı mıknatısları ve içecekler, oyuncu koltuğu, balkonun
-karşısında bina. Ana sayfanın tek sahnesi: ev ofisi ve açık balkon. Ürettiğimiz her şey kendi doğal yerinde
+karşısında bina.
+2026-10-19: çekmeceyi dolduran 6 organizer (tablaya sığan modüller, tam açılan çekmece); klavyede tuş başlığı
+setleri (Esc, Enter, yukarı ok: kedi, kalp, yıldız, harf) ve önünde aynı tasarımın anahtarlık clicker'ı. Ana sayfanın tek sahnesi: ev ofisi ve açık balkon. Ürettiğimiz her şey kendi doğal yerinde
 durur; ziyaretçi bakar, tıklar, şablonları değiştirir, araca geçer. Görsel referanslar: sade ev ofisi (yatay
 aynalanmış) ve açık balkon (ahşap zemin, bistro masa, büyük saksılar).
 

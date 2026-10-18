@@ -29,7 +29,7 @@ export const A = {
   pencup: [-1400, 1520, 740, 0],      // monitörün solunda (önceki yerde kalemler monitörün içine giriyordu)
   keyboard: [-930, 1330, 740, 0.02],
   monitor: [MONITOR.x, MONITOR.y, 740, 0], // klavyenin arkasında (pilotta gerçekçi monitör)
-  clickers: [-470, 1340, 740, -0.2],  // klavyenin ve farenin sağında anahtarlık fidget'lar
+  clickers: [-700, 1238, 743, -0.35], // anahtarlık clicker: klavyenin önünde, mousepad'in üstünde (tuş setiyle aynı tasarım)
   modem: [-1110, 1690, 1328, 0.05],   // alt rafın solu (raflar masanın sağ yarısında: sol üst duvar başlığa kalır)
   qrHolder: [-950, 1700, 1328, -0.1],
   frameA: [-1440, 1785, 1390, 0],     // arka duvar, monitörün sol üstü: Painter rölyefi (küçük çerçeve, raf ucunun solunda)
@@ -57,7 +57,7 @@ export const LOOK = { min: -0.52, max: 0.46, edge: 0.2, speed: 0.75 };
 export const FOCUS = {
   cekmece: { pos: [-930, -220, 1900], target: [-1790, 860, 560] },  // tam açık çekmece (590 mm dışarıda)
   kalemlik: { pos: [-950, 640, 1180], target: [-1290, 1500, 830] },   // masa üstü: kalemlik, monitörün solu
-  klavye: { pos: [-520, 720, 1140], target: [-640, 1370, 770] },     // klavye ve yanındaki fidget'lar
+  klavye: { pos: [-800, 640, 1190], target: [-925, 1305, 760] },    // klavyenin tamamı (Esc'ten oka) ve önündeki anahtarlık
   modem: { pos: [-830, 760, 1520], target: [-850, 1690, 1370] },     // alt raf: modem ve QR'lar
   tabela: { pos: [800, 560, 1650], target: [800, 1790, 2370] },      // kapının üstündeki plaka (odanın içinden, aşağıdan)
   saksilar: { pos: [-380, 330, 1260], target: [-30, 1650, 1070] },   // pervazdaki saksılar ve çiçekleri, arkada tül

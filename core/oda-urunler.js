@@ -55,7 +55,8 @@ export const TEMPLATES = {
     T('kare', n2('Kare kalemlik', 'Square cup'), 'tray', { w: 90, d: 90, h: 105, cols: 2, rows: 2, r: 10 }, '#ece9e2'),
     T('ikiz', n2('Yan yana kalemlik', 'Twin cup'), 'tray', { w: 130, d: 72, h: 100, cols: 2, rows: 1, r: 12 }, '#8fa58a'),
   ],
-  klavye: [T('cat', storyName('clicker', 'cat')), T('heart', { tr: 'Kalp clicker', en: 'Heart clicker' }), T('star', { tr: 'Yıldız clicker', en: 'Star clicker' })],
+  // Klavye: tuş başlığı setleri (Esc, Enter, yukarı ok) ve yanında aynı tasarımın anahtarlık clicker'ı
+  klavye: [T('kedi', n2('Kedi seti', 'Cat set')), T('kalp', n2('Kalp seti', 'Heart set')), T('yildiz', n2('Yıldız seti', 'Star set')), T('harf', n2('Harf seti', 'Letter set'))],
   modem: ['wifi', 'card', 'key'].map((id) => T(id, storyName('qr', id))),
   puzzle3d: [T('sphere', storyName('puzzle', 'sphere')), T('cube', storyName('puzzle', 'cube')), T('egg', { tr: 'Yumurta yapboz', en: 'Egg puzzle' }), T('heart', { tr: 'Kalp yapboz', en: 'Heart puzzle' })],
   tabela: [T('plate', { tr: 'Plakalı', en: 'On a plate' }), T('letters', { tr: 'Harf harf', en: 'Letter by letter' }), T('round', { tr: 'Yuvarlak plaka', en: 'Rounded plate' })],
@@ -198,6 +199,60 @@ function keychain(id) {
     : [starPts(30, 13), [0, 33], K.blue, K.yellow, [0, 42, -0.2]];
   g.add(smooth(solid(() => C.union([C.extrude(C.poly2(pts), 11), ringTab(...tabAt)]), pla(body))));
   g.add(smooth(solid(() => C.move(C.extrude(C.offset2(C.poly2(pts), -1.2), 7), 0, 0, 11.6), pla(cap))), keyRing(...ringAt));
+  return g;
+}
+
+// ---- Klavye: Fidget Clicker'ın tuş başlıkları mekanik klavyede ve yanında aynı tasarımın anahtarlık clicker'ı ----
+// Klavye bu tuşları boş (MX anahtarı görünür) kurar; set onlara takılır. Başlık klavyenin kendi tuş biçimi
+// (props keycapGeometry), üstünde tasarımın kabartması. Şablon parçalı: değişimde her başlık kendi yerinde küçülür.
+export const OZEL_TUSLAR = ['esc', 'enter', 'up'];
+const TUS_SETI = {
+  kedi: { govde: 0xd4621f, motif: 0xf3efe6, anahtarlik: 'cat' },
+  kalp: { govde: 0xe9b8b8, motif: 0xb8372f, anahtarlik: 'heart' },
+  yildiz: { govde: 0x3f6fb0, motif: K.yellow, anahtarlik: 'star' },
+  harf: { govde: 0x2b3036, motif: 0xece9e2, anahtarlik: null },
+};
+// Motif: tabanı z = 0'da, başlığın ortasında (x, y ortalı)
+function tusMotifi(id, ad, fs, renk) {
+  const m = pla(renk), g = new THREE.Group();
+  if (id === 'kedi' && ad !== 'enter') { // küçük kedi başı ve gözleri
+    g.add(smooth(solid(() => C.move(C.scale(catHead(), 0.3), 0, 0, 3.4), m)));
+    for (const sx of [-1, 1]) g.add(P.mesh(new THREE.SphereGeometry(0.8, 10, 8), P.clay(K.ink, { rough: 0.3 })).translateX(sx * 2.4).translateY(-6.2).translateZ(4.6));
+  } else if (id === 'kedi') { // pati izi
+    const top = (r, x, y, sz = 0.5) => { const s = P.mesh(new THREE.SphereGeometry(r, 16, 10), m); s.scale.z = sz; s.position.set(x, y, 0.4); g.add(s); };
+    top(4.4, 0, -1.6, 0.45);
+    for (const [x, y] of [[-4.6, 3.2], [-1.6, 5.2], [1.6, 5.2], [4.6, 3.2]]) top(1.8, x, y);
+  } else if (id === 'kalp') {
+    g.add(smooth(solid(() => C.move(C.extrude(C.poly2(heartPts(ad === 'enter' ? 0.42 : 0.36)), 2.4), 0, -0.6, 0), m)));
+  } else if (id === 'yildiz') {
+    g.add(smooth(solid(() => C.extrude(C.poly2(starPts(ad === 'enter' ? 7.2 : 6.4, 2.8)), 2.4), m)));
+  } else if (ad === 'up') { // harf setinde ok
+    g.add(solid(() => C.extrude(C.poly2([[0, 4.6], [-4.6, -3], [4.6, -3]]), 1.8), m));
+  } else {
+    const t = textSolid(fs, ad === 'enter' ? 'OKTOS' : 'O', ad === 'enter' ? 6 : 9, 1.6, { spacing: 0.3 });
+    g.add(solid(() => C.move(t.solid, 0, -t.cap / 2, 0), m));
+  }
+  return g;
+}
+// kb: klavyeden { keys, capZ, yer } (yer: anahtarlığın klavyeye göre yeri, Matrix4)
+function tusSeti(id, kb, fs) {
+  const t = TUS_SETI[id] || TUS_SETI.kedi, g = new THREE.Group();
+  g.userData.parcali = true;
+  for (const ad of OZEL_TUSLAR) {
+    const k = kb.keys[ad], cap = new THREE.Group();
+    cap.add(P.mesh(P.keycapGeometry(k.u), pla(t.govde)));
+    const motif = tusMotifi(id, ad, fs, t.motif);
+    motif.position.z = 7.6; // başlığın tepesine biraz gömülü
+    cap.add(motif);
+    cap.position.set(k.x, k.y, kb.capZ);
+    g.add(cap);
+  }
+  if (t.anahtarlik && kb.yer) {
+    const a = new THREE.Group();
+    a.add(keychain(t.anahtarlik));
+    kb.yer.decompose(a.position, a.quaternion, a.scale);
+    g.add(a);
+  }
   return g;
 }
 
@@ -348,7 +403,7 @@ const RELIEF = { mountain: ['mountain', 'sunset', 7], sea: ['sea', 'sea', 5], la
 // Bir bölgenin bir şablonunu üretir. lang: yazılı ürünler (plaka, pasta süsü, Flip, QR başlığı) için.
 // saksi: fotogerçekçi odada saksılara toprak ve baskı malzemesi ({ toprak, malzeme }, vaseModel'e gider).
 // pasta: fotogerçekçi odada gerçek pasta modeli (kopyalanır); pasta süsümüz onun üstüne batar.
-export async function buildTemplate(zone, id, { lang = 'tr', saksi = {}, pasta = null } = {}) {
+export async function buildTemplate(zone, id, { lang = 'tr', saksi = {}, pasta = null, klavye = null } = {}) {
   await initCSG();
   const fs = await fonts(700);
   switch (zone) {
@@ -407,7 +462,7 @@ export async function buildTemplate(zone, id, { lang = 'tr', saksi = {}, pasta =
       pencils(g, bolmeMerkezleri(v), v.cols * (v.rows || 1) > 1 ? 7 : 16);
       return g;
     }
-    case 'klavye': return keychain(id);
+    case 'klavye': return klavye ? tusSeti(id, klavye, fs) : keychain(TUS_SETI[id]?.anahtarlik || 'cat');
     case 'modem': {
       // Yer şablona göre (yuva modemin sağında, kartvizitin yeri): Wi-Fi standı modemin üstünde, anahtarlık rafın sağında
       const yer = (m, x, y = 0, z = 0) => { const g = new THREE.Group(); m.position.set(x, y, z); g.add(m); return g; };
