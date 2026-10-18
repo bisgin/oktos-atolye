@@ -33,13 +33,16 @@ function pismis(mat, olcek) {
   return mat;
 }
 
-// Oda kabuğu: ışıksız (KHR_materials_unlit → MeshBasicMaterial) pişmiş nesneler; adları Blender'dakiyle aynı
+// Oda kabuğu: ışıksız (KHR_materials_unlit → MeshBasicMaterial) pişmiş nesneler; adları Blender'dakiyle aynı.
+// ic: odanın içi bu kadar kısılır (loş oda), balkon ve korkuluk olduğu gibi kalır: dışarısı içeriden parlak görünür
+export const IC = 0.75;
 export async function odaKabugu(meta) {
   const g = await gltf().loadAsync(new URL(meta.ortam, KOK).href);
   const kok = g.scene;
   kok.traverse((o) => {
     if (!o.isMesh) return;
-    pismis(o.material, meta.olcek.ortam);
+    const dis = /^(balkon|korkuluk)/.test(o.name) || /^(balkon|korkuluk)/.test(o.parent?.name ?? '');
+    pismis(o.material, meta.olcek.ortam / (dis ? 1 : IC));
     o.castShadow = false;
     o.receiveShadow = false;
   });
@@ -55,7 +58,7 @@ export async function panoDokusu(meta) {
   cv.height = h;
   const c2 = cv.getContext('2d', { willReadFrequently: true });
   c2.drawImage(img, 0, 0);
-  const src = c2.getImageData(0, 0, w, h).data, out = new Float32Array(w * h * 4), k = 1 / meta.olcek.pano;
+  const src = c2.getImageData(0, 0, w, h).data, out = new Float32Array(w * h * 4), k = IC / meta.olcek.pano;
   const lut = new Float32Array(256);
   for (let i = 0; i < 256; i++) {
     const s = i / 255, lin = s <= 0.04045 ? s / 12.92 : ((s + 0.055) / 1.055) ** 2.4;
@@ -78,15 +81,24 @@ export async function panoDokusu(meta) {
   return t;
 }
 
-// Gökyüzü kubbesi: Blender'ın eşdikdörtgen düzeni ve dünya dönüşü (gokDonus) ile birebir aynı yön
+// Gökyüzü kubbesi: Blender'ın eşdikdörtgen düzeni ve dünya dönüşü (gokDonus) ile birebir aynı yön. Pencereden görünen
+// yön aralığı manzaranın tam çözünürlüklü kesitinden (meta.gokYakin: dokudaki yeri u0, du, v0, v1), kalanı küçük tam
+// görüntüden okunur
 export async function gokKubbesi(meta, r = 25000) {
-  const tex = await new THREE.TextureLoader().loadAsync(new URL(meta.gok, KOK).href);
+  const tl = new THREE.TextureLoader(), yk = meta.gokYakin;
+  const [tex, yakin] = await Promise.all([tl.loadAsync(new URL(meta.gok, KOK).href), yk ? tl.loadAsync(new URL(yk.dosya, KOK).href) : null]);
   tex.colorSpace = THREE.SRGBColorSpace;
+  if (yakin) { // ekranda hep büyütülerek görünür: mip gerekmez (kesit kenarında türev sıçraması da olmaz)
+    yakin.colorSpace = THREE.SRGBColorSpace;
+    yakin.generateMipmaps = false;
+    yakin.minFilter = THREE.LinearFilter;
+  }
+  const kirp = yk ? new THREE.Vector4(yk.u0, yk.du, yk.v0, yk.v1) : new THREE.Vector4(0, 0, 0, 0);
   const mat = new THREE.ShaderMaterial({
-    uniforms: { map: { value: tex }, rho: { value: meta.gokDonus }, k: { value: 1 / meta.olcek.gok }, lift: { value: meta.gokYukselt ?? 0 } },
+    uniforms: { map: { value: tex }, yakin: { value: yakin ?? tex }, kirp: { value: kirp }, rho: { value: meta.gokDonus }, k: { value: 1 / meta.olcek.gok }, lift: { value: meta.gokYukselt ?? 0 } },
     vertexShader: `varying vec3 vDir;
       void main() { vDir = position; gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0); }`,
-    fragmentShader: `uniform sampler2D map; uniform float rho; uniform float k; uniform float lift; varying vec3 vDir;
+    fragmentShader: `uniform sampler2D map; uniform sampler2D yakin; uniform vec4 kirp; uniform float rho; uniform float k; uniform float lift; varying vec3 vDir;
       void main() {
         vec3 d = normalize(vDir);
         float c = cos(rho), s = sin(rho);
@@ -94,6 +106,9 @@ export async function gokKubbesi(meta, r = 25000) {
         // lift: manzaranın ufku biraz aşağı kayar; görüntünün kendi yakın korkuluğu bizim döşemenin ardında kalır
         vec2 uv = vec2(0.5 - atan(d.y, d.x) / 6.2831853, clamp(0.5 + (asin(clamp(d.z, -1.0, 1.0)) + lift) / 3.1415927, 0.0, 1.0));
         vec3 e = texture2D(map, uv).rgb;
+        float cu = fract(uv.x - kirp.x) / max(kirp.y, 1e-5), cv = (uv.y - kirp.z) / max(kirp.w - kirp.z, 1e-5);
+        float ic = step(0.0001, kirp.y) * step(cu, 1.0) * step(0.0, cv) * step(cv, 1.0);
+        e = mix(e, texture2D(yakin, vec2(cu, cv)).rgb, ic);
         gl_FragColor = vec4(e * e * k, 1.0);
         #include <tonemapping_fragment>
         #include <colorspace_fragment>

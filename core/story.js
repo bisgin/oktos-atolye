@@ -32,7 +32,7 @@ export const TUNE = {
   wordStagger: 0.045,   // başlık kelimeleri arası gecikme, sn
   outline: 0xd4621f,    // vurgu çizgisi rengi (atölye turuncusu)
   dprMax: 2,
-  dprLow: 1.5,
+  dprLow: 2,            // telefon (2026-10-18: 1,5 bulanıktı; çözünürlük adım adım artırılıyor)
 };
 
 const EASE_IN_OUT = 'power3.inOut';

@@ -35,17 +35,18 @@ const storyName = (tool, id) => ({ tr: STORIES[tool].hotspots[id].tr, en: STORIE
 const T = (id, name, preset = null, over = null, renk = null) => ({ id, name, preset, over, renk });
 const n2 = (tr, en) => ({ tr, en });
 export const TEMPLATES = {
+  // Çekmece şablonları Kutu aracının paletinden ayrı renklerde: değişim çekmecenin beyaz içinde fark edilsin
   cekmece: [
-    T('drawer', binName('drawer'), 'drawer'),
-    T('screws', binName('screws'), 'screws'),
-    T('g4', binName('g4'), 'g4'),
-    T('karma', n2('Gridfinity karışık', 'Gridfinity mix'), 'g3'),
-    T('tools', n2('Alet bölmeleri', 'Tool caddies'), 'tools'),
-    T('cards', n2('Kart kutuları', 'Card boxes'), 'cards'),
+    T('drawer', binName('drawer'), 'drawer', null, '#d4621f'),
+    T('screws', binName('screws'), 'screws', null, '#3f6fb0'),
+    T('g4', binName('g4'), 'g4', null, '#8fa58a'),
+    T('karma', n2('Gridfinity karışık', 'Gridfinity mix'), 'g3', null, '#b8372f'),
+    T('tools', n2('Alet bölmeleri', 'Tool caddies'), 'tools', null, '#2b3036'),
+    T('cards', n2('Kart kutuları', 'Card boxes'), 'cards', null, '#d4621f'),
     T('uzun', n2('Uzun bölmeler', 'Long compartments'), 'drawer', { w: 360, d: 480, h: 50, cols: 4, rows: 1, holes: false }, '#ece9e2'),
-    T('desk', n2('Masa düzenleyiciler', 'Desk organizers'), 'desk'),
-    T('tray', n2('Küçük tepsiler', 'Small trays'), 'tray'),
-    T('roundtray', n2('Yuvarlak tepsiler', 'Round trays'), 'roundtray'),
+    T('desk', n2('Masa düzenleyiciler', 'Desk organizers'), 'desk', null, '#3f6fb0'),
+    T('tray', n2('Küçük tepsiler', 'Small trays'), 'tray', null, '#8fa58a'),
+    T('roundtray', n2('Yuvarlak tepsiler', 'Round trays'), 'roundtray', null, '#b8372f'),
   ],
   kalemlik: [
     T('pencup', binName('pencup'), 'pencup'),
@@ -73,9 +74,10 @@ export const TEMPLATES = {
 // ?sablon= ölçüleri şablonunkine sıfırlar: bu şablonlarda sayfa bunun yerine bu değerleri adrese yazar.
 export function sablonDegeri(zone, id) {
   const t = TEMPLATES[zone]?.find((x) => x.id === id);
-  if (!t?.over || !t.preset) return null;
+  if (!(t?.over || t?.renk) || !t.preset) return null;
   const p = BIN.presets.find((x) => x.id === t.preset);
-  return { ...(p.mode ? { mode: p.mode } : {}), ...p.values, ...t.over };
+  if (!p) return null;
+  return { ...(p.mode ? { mode: p.mode } : {}), ...p.values, ...(t.over || {}), ...(t.renk ? { color: t.renk } : {}) };
 }
 
 // ---- Kutu ve Vazo: araçların kendi üreticileri ----
@@ -354,11 +356,12 @@ export async function buildTemplate(zone, id, { lang = 'tr', saksi = {}, pasta =
   const fs = await fonts(700);
   switch (zone) {
     case 'cekmece': {
-      // Çekmecenin içi ~400 × 560 mm: tek parça ya da birkaç kutunun dizilişi
-      if (id === 'drawer') return binModel('drawer', { w: 370, d: 500, h: 45, cols: 4, rows: 4 });
-      if (id === 'screws') return binModel('screws', { w: 320, d: 320, h: 32 });
-      if (id === 'uzun') return binModel('drawer', { w: 360, d: 480, h: 50, cols: 4, rows: 1, holes: false, color: '#ece9e2' });
-      const G0 = { magnets: 'none', screws: 'none' }; // Gridfinity: mıknatıs ve vida deliği yok (hızlı)
+      // Çekmecenin içi ~400 × 560 mm: tek parça ya da birkaç kutunun dizilişi; renk şablon listesinden
+      const color = TEMPLATES.cekmece.find((x) => x.id === id)?.renk, R = color ? { color } : {};
+      if (id === 'drawer') return binModel('drawer', { w: 370, d: 500, h: 45, cols: 4, rows: 4, ...R });
+      if (id === 'screws') return binModel('screws', { w: 320, d: 320, h: 32, ...R });
+      if (id === 'uzun') return binModel('drawer', { w: 360, d: 480, h: 50, cols: 4, rows: 1, holes: false, ...R });
+      const G0 = { magnets: 'none', screws: 'none', ...R }; // Gridfinity: mıknatıs ve vida deliği yok (hızlı)
       const dizi = (bin, yerler, g = new THREE.Group()) => {
         for (const [x, y, rz = 0] of yerler) {
           const c = bin.clone();
@@ -369,11 +372,11 @@ export async function buildTemplate(zone, id, { lang = 'tr', saksi = {}, pasta =
         return g;
       };
       if (id === 'g4') return dizi(binModel('g4', G0), [[-64, -92], [64, -92], [-64, 0], [64, 0], [-64, 92], [64, 92]]);
-      if (id === 'tools') return dizi(binModel('tray'), [[-55, 150], [55, 150]], dizi(binModel('tools'), [[-48, -125, Math.PI / 2], [48, -125, Math.PI / 2]]));
-      if (id === 'cards') return dizi(binModel('cards'), [-108, 0, 108].flatMap((x) => [-84, 0, 84].map((y) => [x, y])));
-      if (id === 'desk') return dizi(binModel('desk'), [[0, -70], [0, 60]]);
-      if (id === 'tray') return dizi(binModel('tray'), [[-55, -45], [55, -45], [-55, 45], [55, 45]]);
-      if (id === 'roundtray') return dizi(binModel('roundtray'), [[0, -90], [0, 90]]);
+      if (id === 'tools') return dizi(binModel('tray', R), [[-55, 150], [55, 150]], dizi(binModel('tools', R), [[-48, -125, Math.PI / 2], [48, -125, Math.PI / 2]]));
+      if (id === 'cards') return dizi(binModel('cards', R), [-108, 0, 108].flatMap((x) => [-84, 0, 84].map((y) => [x, y])));
+      if (id === 'desk') return dizi(binModel('desk', R), [[0, -70], [0, 60]]);
+      if (id === 'tray') return dizi(binModel('tray', R), [[-55, -45], [55, -45], [-55, 45], [55, 45]]);
+      if (id === 'roundtray') return dizi(binModel('roundtray', R), [[0, -90], [0, 90]]);
       // Gridfinity karışık: 42 mm ızgarada 8 × 6 hücre (yüksek kutu, vida kutusu, etiketli, tekli, alçak tepsi)
       const kutu = {}, g = new THREE.Group(), U = 42;
       const yerlesim = [['g3', 0, 0, 2, 2], ['g5', 2, 0, 2, 2], ['g2', 4, 0, 2, 1], ['g2', 4, 1, 2, 1], ['g1', 6, 0], ['g1', 7, 0], ['g1', 6, 1], ['g1', 7, 1],

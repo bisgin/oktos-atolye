@@ -48,7 +48,10 @@ KALITE = {
 PANO_YERI = (100, 1350, 1050)  # yansıma görüntüsünün çekildiği nokta (pilot: pencere kenarı saksıları)
 # Balkonun ardındaki manzara (yalnız görünüm): Poly Haven 'balcony'. u: görüntünün kameranın baktığı +y yönüne gelecek
 # yatay konumu (0..1); 0,10 tarlalar ve ağaçlar (ev ve yakın balkon arkada kalır)
-MANZARA = {'id': 'balcony', 'u': 0.03, 'yukselt': 0.22}  # yukselt (radyan): görüntünün kendi korkuluğu ufkun altına insin
+MANZARA = {'id': 'balcony', 'coz': '4k', 'u': 0.03, 'yukselt': 0.22}  # yukselt (radyan): görüntünün kendi korkuluğu ufkun altına insin
+# Pencere ve kapıdan görünen yön aralığı (sahne azimutu atan2(y, x) ve yükseklik, derece): bu kısım manzaranın tam
+# çözünürlüğünde ayrı dokuya kesilir (oda-gok-yakin.webp); kalanı küçük tam görüntüden (oda-gok.webp)
+GOK_YAKIN = {'azimut': (15, 165), 'yukseklik': (-50, 50)}
 
 
 def secenekler():
@@ -567,6 +570,26 @@ def gok_yaz(img, hedef):
     p[:, :3] = np.minimum(p[:, :3], GOK_SINIR)
     kodla_kaydet(p.ravel(), w, h, hedef, OLCEK['gok'], 'WEBP', 86)
     log(f'gök {w}x{h} yazıldı')
+
+
+def gok_kirp(img, hedef, rho, lift):
+    """Görünen yön aralığını (GOK_YAKIN) kaynak çözünürlüğünde keser. Tarayıcı kubbesi aynı eşlemeyi kullanır:
+    u = 0,5 − (φ + rho)/2π (mod 1), v = 0,5 + (θ + lift)/π. Döner: kesitin dokudaki yeri (u0, du, v0, v1)."""
+    w, h = img.size
+    p = np.empty(w * h * 4, np.float32)
+    img.pixels.foreach_get(p)
+    p = p.reshape(h, w, 4)  # Blender: satır 0 alttadır (v = 0)
+    p[..., :3] = np.minimum(p[..., :3], GOK_SINIR)
+    f0, f1 = (math.radians(a) for a in GOK_YAKIN['azimut'])
+    t0, t1 = (math.radians(a) for a in GOK_YAKIN['yukseklik'])
+    u0 = (0.5 - (f1 + rho) / (2 * math.pi)) % 1.0
+    c0, cw = int(round(u0 * w)), int(round((f1 - f0) / (2 * math.pi) * w))
+    r0 = int(round(min(max(0.5 + (t0 + lift) / math.pi, 0.0), 1.0) * h))
+    r1 = int(round(min(max(0.5 + (t1 + lift) / math.pi, 0.0), 1.0) * h))
+    k = np.ascontiguousarray(p[r0:r1][:, np.arange(c0, c0 + cw) % w])
+    kodla_kaydet(k.ravel(), cw, r1 - r0, hedef, OLCEK['gok'], 'WEBP', 86)
+    log(f'gök yakın kesit {cw}x{r1 - r0} ({w}x{h} kaynaktan)')
+    return {'u0': c0 / w, 'du': cw / w, 'v0': r0 / h, 'v1': r1 / h}
 
 
 # ---------------------------------------------------------------- çiçekler
@@ -1184,7 +1207,7 @@ def main():
     kal = 'final' if a.final else 'onizleme'
     q, o = KALITE[kal], olcu_oku()
     parca = set(a.parca.split(','))
-    cikti = {'ortam': ['oda-ortam.glb', 'oda-pano.webp', 'oda-ortam.json', '../../kaynak/oda.blend'], 'gok': ['oda-gok.webp'], 'bitki': ['oda-bitki.glb'],
+    cikti = {'ortam': ['oda-ortam.glb', 'oda-pano.webp', 'oda-ortam.json', '../../kaynak/oda.blend'], 'gok': ['oda-gok.webp', 'oda-gok-yakin.webp'], 'bitki': ['oda-bitki.glb'],
              'doku': [f'{o}-{h}.webp' for _, o, _ in DOKULAR for h in ('renk', 'normal', 'puruz')], 'esya': ['oda-esya.glb']}
     log(f'kalite {kal}: {q}')
     for p in sorted(parca):
@@ -1200,11 +1223,14 @@ def main():
         gok_img, rho = dunya_kur(sc, o)
         meta.update({'olcek': OLCEK, 'kodlama': 'sqrt-srgb', 'gunes': o['SUN']})
         if 'gok' in parca:  # manzara ayrı görüntüden; pişirmenin ışığı sabah gökyüzünde kalır
-            m_img = bpy.data.images.load(yol(KAYNAK, MANZARA['id'], f"{MANZARA['id']}_2k.hdr"))
-            gok_yaz(m_img, yol(CIKTI, 'oda-gok.webp'))
-            meta['gok'] = 'oda-gok.webp'
+            m_img = bpy.data.images.load(yol(KAYNAK, MANZARA['id'], f"{MANZARA['id']}_{MANZARA['coz']}.hdr"))
             meta['gokDonus'] = (0.5 - MANZARA['u']) * 2 * math.pi - math.pi / 2  # +y yönüne u gelsin (deneyle ölçülen düzen)
             meta['gokYukselt'] = MANZARA['yukselt']
+            meta['gokYakin'] = {'dosya': 'oda-gok-yakin.webp', **gok_kirp(m_img, yol(CIKTI, 'oda-gok-yakin.webp'), meta['gokDonus'], MANZARA['yukselt'])}
+            if m_img.size[0] > 2048:
+                m_img.scale(2048, 1024)  # tam görüntü yalnız kesitin dışı için: 2K yeter
+            gok_yaz(m_img, yol(CIKTI, 'oda-gok.webp'))
+            meta['gok'] = 'oda-gok.webp'
         if 'ortam' in parca:
             nes, P = ortam_kur(sc, o)
             for ob in nes.values():

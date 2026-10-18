@@ -47,7 +47,7 @@
    "balkon_cicek"
   ]
  },
- "tarih": "2026-10-18 12:20",
+ "tarih": "2026-10-18 13:24",
  "kodlama": "sqrt-srgb",
  "esya": {
   "dosya": "oda-esya.glb",
@@ -58,5 +58,12 @@
    "kahvalti"
   ]
  },
- "gokYukselt": 0.22
+ "gokYukselt": 0.22,
+ "gokYakin": {
+  "dosya": "oda-gok-yakin.webp",
+  "u0": 0.82177734375,
+  "du": 0.416748046875,
+  "v0": 0.29248046875,
+  "v1": 0.84765625
+ }
 }

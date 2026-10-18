@@ -2,7 +2,7 @@
 
 Taslak, 2026-10-17. **Durum:** hat C seçildi; Aşama 1 (gri kutu) onaylandı. Aşama 2 kuruldu, onay bekliyor:
 12 bölgenin hepsinde araçların gerçek şablonları, odakta şablon değiştirme, kenar paneli ve toz yazısı
-(`core/oda-panel.js`). Deneme `lab/oda.html`, yan yana `lab/oda-yan-yana.html`.
+(`core/oda-panel.js`). Deneme `lab/oda.html`.
 2026-10-17: v1 `oda-sahnesi` dalına commitlendi. Yön değişti: ürünlerimiz dışında her şey fotogerçekçi olacak
 (gerçek çiçek ve toprak, ışık huzmeleri, monitör, buzdolabı, cam bardak). Balkon kapısı sürgülü (iki kanat ortadan
 açılır, pencerelerin önünde durur). Önce tek bölgede pilot (pencere kenarı saksıları), gri kutuyla yan yana.
@@ -26,7 +26,13 @@ masa altında kasa, priz ve fiş, beyaz kablo kanalı, kablolu fare, keçe mouse
 açılır: sablonDegeri). Buzdolabının üst rafında sırlı taş tabakta Türk somunu ve beyaz peynir (Blender'da kodla
 modellendi, procedural doku orada pişer; "Gluten yok" etiketi somuna batar); çay bardağı klasik ince belli ölçülerde
 (Ø 50 gövde, Ø 38 bel, Ø 56 ağız, boy 96). Son kalite pişirme yapıldı (süpürgelik, kilim, gölge vekilleriyle).
-Bekleyen: yapbozda aile fotoğrafı (Unsplash adayları kullanıcıda). Ana sayfanın tek sahnesi: ev ofisi ve açık balkon. Ürettiğimiz her şey kendi doğal yerinde
+Bekleyen: yapbozda aile fotoğrafı (Unsplash adayları kullanıcıda).
+2026-10-18 ikinci tur: tek sahne ve tek sayfa (`lab/oda.html`, pilot varsayılan; gri kutu ve yan yana sayfalar
+kaldırıldı). Duvarlar canlı güneşte görünmez gölge vekiliyle kapandı (kasa ve monitöre güneş vurmuyor), huzme oda
+ışığına göre kısıldı ve durdu, oda içi 0,75 ile loşlaştı (balkon parlak kalır), pozlama 3,6. Manzara 4K
+HDRI'den: pencereden görünen yön aralığı tam çözünürlükte ayrı kesit (`oda-gok-yakin.webp`). Telefonda ekran
+çözünürlüğü 2. Çekmece yakın planı uzaktan ve önden; çekmece şablonları Kutu paletinden ayrı renklerde.
+Sırada (kullanıcı kararı bekliyor): perde ve süzülen ışık, kaydırmalı tur. Ana sayfanın tek sahnesi: ev ofisi ve açık balkon. Ürettiğimiz her şey kendi doğal yerinde
 durur; ziyaretçi bakar, tıklar, şablonları değiştirir, araca geçer. Görsel referanslar: sade ev ofisi (yatay
 aynalanmış) ve açık balkon (ahşap zemin, bistro masa, büyük saksılar).
 

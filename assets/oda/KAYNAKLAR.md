@@ -14,4 +14,4 @@ Ham dosyalar `kaynak/` altında durur (depoya girmez); sitede yalnız sıkışt�
 | `kaynak/anthurium_botany_01/` (model, 2k) | https://polyhaven.com/a/anthurium_botany_01 | Rob Tuytel, Rico Cilliers | Saksıdaki canlı çiçek (antoryum) |
 | `kaynak/periwinkle_plant/` (model, 2k) | https://polyhaven.com/a/periwinkle_plant | Amal Kumar | Saksıdaki canlı çiçek (cezayir menekşesi) |
 | `kaynak/strawberry_chocolate_cake/` (model, 1k) | https://polyhaven.com/a/strawberry_chocolate_cake | Kuutti Siitonen | Buzdolabındaki pasta (üstüne bizim 3D Yazı pasta süsümüz) |
-| `kaynak/balcony/` (hdri, 2k) | https://polyhaven.com/a/balcony | Greg Zaal | Balkonun ardındaki manzara (yalnız görünüm; odanın ışığı sabah gökyüzünden) |
+| `kaynak/balcony/` (hdri, 4k) | https://polyhaven.com/a/balcony | Greg Zaal | Balkonun ardındaki manzara (yalnız görünüm; odanın ışığı sabah gökyüzünden) |

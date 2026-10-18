@@ -22,23 +22,10 @@
   "opentype": "https://cdn.jsdelivr.net/npm/opentype.js@1.3.4/dist/opentype.module.js"
 } }
 </script>
-<style>
-  /* Yalnız laboratuvar: üst çubuktaki bağlantılar */
-  .labbar { display: flex; gap: 4px; align-items: center; }
-  .labbar a { font-size: 13px; font-weight: 600; color: var(--ink-2); text-decoration: none; padding: 5px 9px; border-radius: 7px; white-space: nowrap; }
-  .labbar a.on { background: var(--ink); color: var(--panel); }
-</style>
 </head>
 <body>
 <header class="topbar">
   <a class="brand" href="../index.html"><img src="../core/icon.svg" alt="" width="26" height="26"><span>Oktos Workshop</span></a>
-  <nav class="labbar" aria-label="Laboratuvar">
-    <a class="on" href="oda.html">Oda (gri kutu)</a>
-    <a href="oda.html?pilot=1">Pilot</a>
-    <a href="oda-pilot.html">Pilot ile gri kutu yan yana</a>
-    <a href="oda-yan-yana.html">Kutu sahnesiyle yan yana</a>
-    <a href="sahne.html?arac=bin">Kutu sahnesi</a>
-  </nav>
   <span class="spacer"></span>
   <div class="lang" role="group" aria-label="Dil / Language"><button type="button" data-lang="tr">TR</button><button type="button" data-lang="en">EN</button></div>
 </header>
@@ -91,9 +78,8 @@
   const reduce = matchMedia('(prefers-reduced-motion: reduce)').matches || params.get('mod') === 'still';
   const single = () => matchMedia('(pointer: coarse), (max-width: 720px)').matches; // telefon: tek ürün, döngü
 
-  // ?pilot=1: fotogerçekçi pilot (pişmiş oda kabuğu, güneş huzmeleri, saksıda toprak ve gerçek çiçek)
-  odaScene.options.pilot = params.has('pilot');
-  if (params.has('pilot')) document.querySelector('.labbar a.on').textContent = 'Oda (pilot)';
+  // Tek sahne: fotogerçekçi oda (pişmiş kabuk, gerçek eşyalar). Eski adreslerdeki ?pilot=1 zararsızca yok sayılır.
+  odaScene.options.pilot = true;
   // Yakın plan paneli: başlık, cümle, şablon seçici, toz yazısı (core/oda-panel.js)
   const panel = odaPanel(root, { lang, reduce });
   // Denetleyici kendi değişkeninde: kurulmadan önce window.story, id="story" bölümünün kendisidir

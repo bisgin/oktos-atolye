@@ -31,14 +31,14 @@ async function pilotYukle() {
     { x0: G.door0, x1: G.door1, z0: 0, z1: G.head, y: yd },
     { x0: G.x0, x1: G.door0, z0: G.sill, z1: G.head, y: yd },
     { x0: G.door1, x1: G.x1, z0: G.sill, z1: G.head, y: yd },
-  ], sun);
+  ], sun, { yogunluk: 0.015 }); // havada hafif bir iz: oda ışığı ~0,03; daha güçlüsü sağ yarıyı sütlü bir perdeyle örtüyordu
   const c = LIGHTS.center, dist = 5000;
   return {
     meta, kabuk, pano, gok, cicek, esya, huzme, golge: O.golgeYuzeyi, cayTakimi: O.cayTakimi,
     saksi: { toprak: O.toprakMalzemesi(), malzeme: (renk) => P_.clay(renk, { rough: 0.36, env: 1 }) },
     // Güneş: pişirmedekiyle aynı yön, renk ve güç (fiziksel birimler); ortam ışığı 360° görüntüden, diğer lambalar kapalı
     isik: { ...LIGHTS, key: [c[0] + sun[0] * dist, c[1] + sun[1] * dist, c[2] + sun[2] * dist], keyIntensity: meta.gunes.strength, keyColor: meta.gunes.color,
-      hemi: 0, fillIntensity: 0, rimIntensity: 0, toneMapping: 'agx', exposure: 5.5 },
+      hemi: 0, fillIntensity: 0, rimIntensity: 0, toneMapping: 'agx', exposure: 3.6 }, // loş oda: güneş lekesi parlak, köşeler karanlık
   };
 }
 let P_ = null; // props.js (buildScene'e gelir; pilot malzemesi için)
@@ -378,6 +378,22 @@ export async function buildScene({ scene, P, lang = 'tr' }) {
     scene.environment = pilot.pano;
     scene.environmentRotation.set(Math.PI / 2, 0, 0); // Blender Z yukarı → three.js eşdikdörtgen Y yukarı
     scene.fog = null;
+    // Duvar gölge vekilleri: pişmiş kabuk canlı güneşte gölge düşürmez; güneş eşyalara (kasa, monitör, buzdolabı)
+    // duvarın içinden vurmasın diye arka duvar açıklıkların dışında, sağ duvar ve tavan görünmez kutularla kapanır
+    const vekil = new THREE.MeshBasicMaterial({ colorWrite: false, depthWrite: false });
+    const duvar = (w, d, h, x, y, z) => {
+      const m = new THREE.Mesh(new THREE.BoxGeometry(w, d, h), vekil);
+      m.position.set(x, y, z + h / 2);
+      m.castShadow = true;
+      scene.add(m);
+    };
+    const yw = ROOM.y1 + W / 2, top = ROOM.h + W;
+    { const [w, x] = span(ROOM.x0 - W - 600, GLASS.x0); duvar(w, W, top, x, yw, 0); }
+    { const [w, x] = span(GLASS.x1, ROOM.x1 + W + 600); duvar(w, W, top, x, yw, 0); }
+    { const [w, x] = span(GLASS.x0, GLASS.x1); duvar(w, W, top - GLASS.head, x, yw, GLASS.head); }
+    for (const [a, b] of [[GLASS.x0, GLASS.door0], [GLASS.door1, GLASS.x1]]) { const [w, x] = span(a, b); duvar(w, W, GLASS.sill, x, yw, 0); }
+    duvar(W, ROOM.y1 - ROOM.y0 + 2 * W, top, ROOM.x1 + W / 2, (ROOM.y0 + ROOM.y1) / 2, 0); // sağ duvar (güneş +x yanından)
+    duvar(ROOM.x1 - ROOM.x0 + 2 * W, ROOM.y1 - ROOM.y0 + 2 * W, W, 0, (ROOM.y0 + ROOM.y1) / 2, ROOM.h); // tavan
     for (const [a, b] of [[GLASS.x0, GLASS.door0], [GLASS.door1, GLASS.x1]]) {
       const [w, x] = span(a, b);
       scene.add(pilot.golge(w + SILL.over, SILL.depth, x, ROOM.y1 - SILL.inset, GLASS.sill + 0.4));
@@ -470,10 +486,10 @@ export async function buildScene({ scene, P, lang = 'tr' }) {
     focusShift: 0.16, // yatay ekranda yakın plandaki ürün sağa kayar: sol kenarda başlık paneli
     touchOrbit: false, // dokunmatikte yakın planda yana kaydırma şablon değiştirir (etrafa bakma yok)
     langGeometry: true,
-    update(t) { pilot?.huzme.userData.tick(t); },
     outlineFocus: !pilot, // gerçekçi sahnede yakın plandaki ürünün çevresine çizgi çekilmez (yaprakları tek tek çiziyordu)
     hotspots: [
-      hs('cekmece', drawer, { extra: [pedestal], noLift: true, focusCenter: [px, DRAWER_Y - 390, 560], focusRadius: 330, focusElev: 0.82, anchor: [px, DRAWER_Y - 190, PED.h + 50] }), // kapalı çekmecenin üstünde
+      hs('cekmece', drawer, { extra: [pedestal], noLift: true, focusCenter: [px, DRAWER_Y - 370, 620], focusRadius: 470, focusElev: 0.7, // uzaktan ve önden: içine düşmeden bölmeler görünür
+        anchor: [px, DRAWER_Y - 190, PED.h + 50] }), // kapalı çekmecenin üstünde
       hs('kalemlik', penZone, { focusCenter: [A.pencup[0] - 50, A.pencup[1], 800], focusRadius: 200, focusElev: 0.5 }),
       hs('klavye', kbZone, { focusCenter: [A.clickers[0] - 60, A.clickers[1], 765], focusRadius: 150, focusElev: 0.55 }),
       hs('modem', modemZone, { focusRadius: 240 }),
