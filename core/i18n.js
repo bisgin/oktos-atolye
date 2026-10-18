@@ -63,6 +63,8 @@ const dict = {
     'oda.dust.kalemlik': 'Sana özel kalemliği tasarla!',
     'oda.tur.baslik': 'Odana dair her şey',
     'oda.tur.basla': 'Çekmece organizeriyle başla',
+    'oda.aracta': '{a} aracında açılır',
+    'oda.aracYakinda': '{a} aracı yakında',
   },
   en: {
     'app.name': 'Oktos Workshop',
@@ -127,6 +129,8 @@ const dict = {
     'oda.dust.kalemlik': 'Design your own pen cup!',
     'oda.tur.baslik': 'Everything for your room',
     'oda.tur.basla': 'Start with the drawer organizer',
+    'oda.aracta': 'Opens in {a}',
+    'oda.aracYakinda': '{a} is coming soon',
   },
 };
 

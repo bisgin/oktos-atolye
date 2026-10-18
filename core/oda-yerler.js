@@ -6,34 +6,32 @@
 import { OLCU } from './oda-olcu.js';
 const { PEDESTAL, FRIDGE, MONITOR } = OLCU;
 
-// Bölgeler. Telefondaki döngü bu sırayla gezer: çekmeceden başlar, odayı dolaşır, çerçevelerden çekmeceye döner.
-// preset: "Bu şablonla tasarla" ile açılacak şablon (yalnız atölyesi hazır araçlarda).
+// Bölgeler. Kaydırmalı tur ve telefondaki döngü bu sırayla gezer: çekmeceden başlar, masa ve duvarlar, kapı ve
+// pencere, balkon, buzdolabı. preset: "Bu şablonla tasarla" ile açılacak şablon (yalnız atölyesi hazır araçlarda).
+// 3B yapboz 2026-10-18'de rafa kalktı (kullanıcı kararı).
 export const ZONES = [
   { id: 'cekmece', tool: 'bin', preset: 'drawer' },
   { id: 'kalemlik', tool: 'bin', preset: 'pencup' },
   { id: 'klavye', tool: 'clicker' },
   { id: 'modem', tool: 'qr' },
-  { id: 'puzzle3d', tool: 'puzzle' },
+  { id: 'cerceve', tool: 'painter' },
+  { id: 'yapboz', tool: 'puzzle' },
   { id: 'tabela', tool: 'text' },
   { id: 'saksilar', tool: 'vase', preset: 'hex' },
   { id: 'balkonMasa', tool: 'qr' },
   { id: 'buzdolabi', tool: 'text' },
   { id: 'flip', tool: 'flip' },
-  { id: 'cerceve', tool: 'painter' },
-  { id: 'yapboz', tool: 'puzzle' },
 ];
 
 // Ürün yerleri: [x, y, z(taban), dönüş z]
 export const A = {
   pedestal: [PEDESTAL.x, PEDESTAL.y, 0, 0], // çekmeceli dolap (üst çekmece −y yönünde açılır)
-  pencup: [-1180, 1600, 740, 0],      // lambadan uzakta: yakın planda lambanın kolu kalemliği örtmesin
-  tray: [-1400, 1560, 740, 0],        // yuvarlak tepsi: içinde yapboz parçaları
+  pencup: [-1400, 1520, 740, 0],      // monitörün solunda (önceki yerde kalemler monitörün içine giriyordu)
   keyboard: [-930, 1330, 740, 0.02],
   monitor: [MONITOR.x, MONITOR.y, 740, 0], // klavyenin arkasında (pilotta gerçekçi monitör)
   clickers: [-470, 1340, 740, -0.2],  // klavyenin ve farenin sağında anahtarlık fidget'lar
   modem: [-1110, 1690, 1328, 0.05],   // alt rafın solu (raflar masanın sağ yarısında: sol üst duvar başlığa kalır)
   qrHolder: [-950, 1700, 1328, -0.1],
-  puzzle3d: [-420, 1690, 1328, 0],    // alt rafın sağı
   frameA: [-1440, 1785, 1390, 0],     // arka duvar, monitörün sol üstü: Painter rölyefi (küçük çerçeve, raf ucunun solunda)
   frameB: [-2095, 920, 1050, 0],      // sol duvar, yatay çerçeve: resimli yapboz
   sign: [800, 1800, 2320, 0],         // balkon kapısının üstü (duvar yüzü, plakanın alt kenarı)
@@ -54,12 +52,18 @@ export const SHOTS = {
 // Kenardan bakma sınırları (radyan, artı sola): solda dolap ve çerçeveler, sağda pencere ve buzdolabı
 export const LOOK = { min: -0.52, max: 0.46, edge: 0.2, speed: 0.75 };
 
-// Kendi açısını isteyen yakın planlar (geri kalanı genel planın yönünden hesaplanır)
+// Yakın planlar: her durağın kendi açısı (kaydırmalı turun durakları). Yatay ekranda motor kadrajı kartın tersine,
+// dikey ekranda yukarı kaydırır. Çekmece açık hâliyle: içi çapraz yukarıdan, organizer ortada.
 export const FOCUS = {
-  saksilar: { pos: [-180, 760, 1330], target: [30, 1690, 960] },    // sol pencere kenarı: değişen saksı ortada
+  cekmece: { pos: [-930, -20, 1900], target: [-1790, 1060, 560] },
+  kalemlik: { pos: [-950, 640, 1180], target: [-1290, 1500, 830] },   // masa üstü: kalemlik, monitörün solu
+  klavye: { pos: [-520, 720, 1140], target: [-640, 1370, 770] },     // klavye ve yanındaki fidget'lar
+  modem: { pos: [-830, 760, 1520], target: [-850, 1690, 1370] },     // alt raf: modem ve QR'lar
+  tabela: { pos: [800, 560, 1650], target: [800, 1790, 2370] },      // kapının üstündeki plaka (odanın içinden, aşağıdan)
+  saksilar: { pos: [-380, 330, 1260], target: [-30, 1650, 1070] },   // pervazdaki saksılar ve çiçekleri, arkada tül
   buzdolabi: { pos: [380, 260, 1020], target: [1660, 860, 300] },   // ön yüzüne karşıdan; ortada alt raftaki pasta
   cerceve: { pos: [-1440, 1080, 1520], target: [-1440, 1785, 1515] }, // monitörün sol üstündeki çerçeveye karşıdan
-  yapboz: { pos: [-1000, 920, 1330], target: [-2090, 920, 1310] },
+  yapboz: { pos: [-860, 900, 1320], target: [-2090, 920, 1300] },
   flip: { pos: [1355, 592, 1041], target: [1825, 850, 880] },      // heykele önden, alçaktan: ilk kelime okunur
   balkonMasa: { pos: [760, 1640, 1460], target: [900, 2620, 760] }, // odanın içinden, kapı boşluğundan masaya (kasaya çarpmaz)
 };

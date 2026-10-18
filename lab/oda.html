@@ -83,7 +83,7 @@
   // Yakın plan paneli: başlık, cümle, şablon seçici, toz yazısı (core/oda-panel.js)
   const panel = odaPanel(root, { lang, reduce });
   // Denetleyici kendi değişkeninde: kurulmadan önce window.story, id="story" bölümünün kendisidir
-  // Kaydırmalı tur (core/oda-tur.js): ilk deneme üç durak, genel plan → çekmece → masa üstü (kalemlik)
+  // Kaydırmalı tur (core/oda-tur.js): genel plan, sonra bütün bölgeler ZONES sırasıyla
   let story = null, tur = null, hazir = false;
   story = window.story = await mountStory(root, {
     toolId: 'oda', lang, story: ODA_STORY, sceneModule: odaScene,
@@ -103,7 +103,7 @@
   });
   panel.attach(story);
   tur = odaTuru(root, story, {
-    duraklar: [null, 'cekmece', 'kalemlik'],
+    duraklar: [null, ...ZONES.map((z) => z.id)],
     metin: { baslik: t('oda.tur.baslik'), basla: t('oda.tur.basla') },
     reduce, bekle: !!params.get('odak'),
   });

@@ -92,7 +92,7 @@ export function binModel(id, over = {}) {
 // toprak: verilirse (malzeme) saksı ağzın 12 mm altına kadar toprakla dolar; malzeme: renkten malzeme üreten işlev
 export function vaseModel(id, over = {}, { toprak = null, malzeme = null } = {}) {
   const p = VASE.presets.find((x) => x.id === id);
-  const s = { ...VASE.defaults, ...p.values, ...over, _thumb: true };
+  const s = { ...VASE.defaults, ...p.values, ...over, ...(toprak ? { style: 'hollow' } : {}), _thumb: true };
   VASE.enforce(s);
   const g = new THREE.Group(), res = VASE.build(s).parts[0].result, renk = over.color ?? p.color;
   g.add(P.mesh(toGeometry(res, { flat: false }), malzeme ? malzeme(renk) : P.clay(renk, { rough: 0.42, env: 0.9 })));
@@ -398,7 +398,9 @@ export async function buildTemplate(zone, id, { lang = 'tr', saksi = {}, pasta =
     }
     case 'klavye': return keychain(id);
     case 'modem': {
-      if (id === 'wifi') return standing(await qrTile('WIFI:T:WPA;S:Oktos Misafir;P:ornek-sifre;;', { size: 70, header: 'Wi-Fi', fs }), { baseW: 82 });
+      // Yer şablona göre (yuva modemin sağında, kartvizitin yeri): Wi-Fi standı modemin üstünde, anahtarlık rafın sağında
+      const yer = (m, x, y = 0, z = 0) => { const g = new THREE.Group(); m.position.set(x, y, z); g.add(m); return g; };
+      if (id === 'wifi') return yer(standing(await qrTile('WIFI:T:WPA;S:Oktos Misafir;P:ornek-sifre;;', { size: 70, header: 'Wi-Fi', fs }), { baseW: 82 }), -160, -15, 36);
       if (id === 'card') {
         const card = new THREE.Group(), cq = await qrTile(SITE, { size: 40, corner: 2, fs });
         card.add(P.mesh(P.rbox(85, 55, 1.2, 3, 1), P.clay(0xf6f3ec, { rough: 0.7 })).translateY(27.5));
@@ -415,7 +417,7 @@ export async function buildTemplate(zone, id, { lang = 'tr', saksi = {}, pasta =
       key.rotation.z = 0.9;
       tag.add(key);
       tag.rotation.z = 0.35;
-      return tag;
+      return yer(tag, 380, -20);
     }
     case 'puzzle3d': return puzzle3d(id);
     case 'tabela': return signModel(id, fs, SIGN[lang] || SIGN.tr);

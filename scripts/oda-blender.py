@@ -745,7 +745,8 @@ def monitor_kur(o):
     z0 = MO['lift']
     yk('monitor_govde', MO['w'] - 25, 26, MO['h'] - 40, 0, 26, z0 + 20, siyah, pah=10, ust=kok)
     yk('monitor_cerceve', MO['w'], 9, MO['h'], 0, 4, z0, siyah, pah=2, ust=kok)
-    ekran_yuzu('monitor_ekran', MO['w'] - 8, MO['h'] - 22, 0, -0.6, z0 + 16, ekran, kok)
+    # Ekran çerçevenin ön yüzünden (y = −0,5) 2 mm önde: 0,1 mm'de uzaktan derinlik ayrımı yetmiyor, çerçeve ekranı titretiyordu
+    ekran_yuzu('monitor_ekran', MO['w'] - 8, MO['h'] - 22, 0, -2.5, z0 + 16, ekran, kok)
     return kok
 
 

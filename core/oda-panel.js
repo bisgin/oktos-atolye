@@ -1,10 +1,10 @@
 // Oda sahnesinin yakın plan paneli (lab/oda.html; ana sayfaya taşınınca da aynı). Motor kartı açınca (onCard) kartı
-// doldurur: üstte bölgenin adı, büyük başlıkta aracın adı (aracın renginde, harf hareketiyle bir tur), hikâye cümlesi,
-// şablon seçici (‹ ad n/N ›). Şablon klavye oklarıyla, dokunmatikte yana kaydırarak ya da ürüne yeniden tıklayarak
+// doldurur: büyük başlıkta görünen ürünün adı (aracın renginde, harf hareketiyle bir tur), hikâye cümlesi, şablon
+// seçici (‹ ad n/N ›), altta hangi araçta açılacağı. Şablon klavye oklarıyla, dokunmatikte yana kaydırarak ya da ürüne yeniden tıklayarak
 // değişir. Atölyesi hazır bölgelerde (Kutu, Vazo) üç değişimden sonra ipucu satırının yerinde tozdan bir çağrı yazısı
 // oluşur ("Sana özel saksıyı tasarla!") ve gerçek bir düğme olarak kalır.
 import { gsap } from 'gsap';
-import { STORIES } from './story-data.js';
+import { STORIES, ODA_STORY } from './story-data.js';
 import { playTitle } from './vitrin-titles.js';
 import { t } from './i18n.js';
 
@@ -22,12 +22,9 @@ export function odaPanel(root, { lang = 'tr', reduce = false } = {}) {
   // Atölyesi hazır bölge: şablonlarından biri aracı açabiliyor (düğmeyle aynı kaynak: şablonun preset'i)
   const dusty = (z) => story.api.templates(z).some((x) => x.preset);
 
-  // Kartın motorun kurduğu iskeletine eklenenler: bölge adı, şablon seçici, toz düğmesi
+  // Kartın motorun kurduğu iskeletine eklenenler: şablon seçici, araç satırı, toz düğmesi
   function build(c) {
     card = c;
-    const kicker = document.createElement('p');
-    kicker.className = 'sc-kicker';
-    card.prepend(kicker);
     const tpl = document.createElement('div');
     tpl.className = 'sc-tpl';
     tpl.setAttribute('role', 'group');
@@ -41,6 +38,9 @@ export function odaPanel(root, { lang = 'tr', reduce = false } = {}) {
     prev.addEventListener('click', () => step(-1));
     next.addEventListener('click', () => step(1));
     card.querySelector('.sc-desc').after(tpl);
+    const arac = document.createElement('p');
+    arac.className = 'sc-arac';
+    card.querySelector('.sc-actions').after(arac);
     const dust = document.createElement('button');
     dust.type = 'button';
     dust.className = 'oda-dust';
@@ -49,7 +49,7 @@ export function odaPanel(root, { lang = 'tr', reduce = false } = {}) {
     dust.addEventListener('click', () => { if (zone) story.pick(zone); });
     card.append(dust);
     els = {
-      kicker, tpl, name: tpl.querySelector('.sc-tpl-name span'), n: tpl.querySelector('.sc-tpl-name small'),
+      arac, tpl, name: tpl.querySelector('.sc-tpl-name span'), n: tpl.querySelector('.sc-tpl-name small'),
       title: card.querySelector('.sc-title'), hint: card.querySelector('.sc-hint'), dust, dustText: dust.querySelector('.dust-text'),
     };
   }
@@ -76,8 +76,9 @@ export function odaPanel(root, { lang = 'tr', reduce = false } = {}) {
     tool = h.tool;
     const tone = TOOL_TONE[tool];
     card.style.setProperty('--c', tone);
-    els.kicker.textContent = h.name;
-    els.title.textContent = STORIES[tool].name[lang];
+    // Başlık görünen ürün (işaretçideki kısa ad); araç adı altta, hangi araçta açılacağıyla
+    els.title.textContent = ODA_STORY.hotspots?.[zone]?.pin?.[lang] || h.name;
+    els.arac.textContent = t(h.live ? 'oda.aracta' : 'oda.aracYakinda').replace('{a}', STORIES[tool].name[lang]);
     els.title.dataset.tool = tool;
     if (!reduce) titleFx = playTitle(els.title, tool, { cycles: 1, color: tone });
     const cur = story.api.current(zone);
@@ -167,7 +168,7 @@ export function odaPanel(root, { lang = 'tr', reduce = false } = {}) {
         ac.abort();
         if (story.api.onChange === changed) story.api.onChange = null;
         onCard(null);
-        els?.kicker.remove();
+        els?.arac.remove();
         els?.tpl.remove();
         els?.dust.remove();
         els = null;

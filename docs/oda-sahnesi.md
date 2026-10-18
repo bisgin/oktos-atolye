@@ -38,7 +38,13 @@ her şey", üstünde "Çekmece organizeriyle başla" (üzerine gelince kamera bi
 önizleme kalitesinde pişti; tarayıcıda etek rüzgârla odaya salınır), balkon kapısı açık; tavan da pişip dışa
 aktarıldı, telefonun dikey kadrajı odanın içinden. Mobil uyarlama: yatay telefonda kart yanda ve sıkışık (üst çubuk
 44 px, döngü düğmesi sağ altta), dokunma hedefleri 44 px, telefonda ara görüntü geçişleri yok (tuval doğrudan
-çizilir), yakın planda tur yazısı söner. Ana sayfanın tek sahnesi: ev ofisi ve açık balkon. Ürettiğimiz her şey kendi doğal yerinde
+çizilir), yakın planda tur yazısı söner.
+2026-10-18 baştan tur: tur bütün bölgeleri gezer (3B yapboz ve yapboz tepsisi kalktı), her durağın kendi kadrajı
+(FOCUS; çekmece açık hâliyle çapraz yukarıdan), kart koyu (beyaz perde yok), başlık ürünün adı, araç adı altta;
+kalemlik monitörün soluna, lamba köşede dolabın üstünde uzun spot, dolap masanın önüyle hizalı; modemde şablona göre
+yer; buzdolabı kapalı başlar; odadaki saksı hep içi boş ve topraklı; monitör titremesi giderildi. Sırada: çekmeceyi
+dolduran organizerler, klavyede tuş başlıkları, buzdolabı mıknatısları ve içecekler, oyuncu koltuğu, balkonun
+karşısında bina. Ana sayfanın tek sahnesi: ev ofisi ve açık balkon. Ürettiğimiz her şey kendi doğal yerinde
 durur; ziyaretçi bakar, tıklar, şablonları değiştirir, araca geçer. Görsel referanslar: sade ev ofisi (yatay
 aynalanmış) ve açık balkon (ahşap zemin, bistro masa, büyük saksılar).
 

@@ -11,7 +11,7 @@ gsap.registerPlugin(ScrollTrigger);
 ScrollTrigger.config({ ignoreMobileResize: true }); // telefonda adres çubuğu açılıp kapanınca zıplamasın
 
 const AYAR = {
-  durakBoyu: 0.9,       // duraklar arası kaydırma, ekran yüksekliği kesri
+  durakBoyu: 0.75,      // duraklar arası kaydırma, ekran yüksekliği kesri (11 durak: ~8 ekran)
   yumusak: 0.7,         // kameranın kaydırmaya yetişme süresi, sn
   gir: 0.08, cik: 0.2,  // durağa bu yakınlıkta girilir (kart açılır), bu uzaklıkta çıkılır (durak aralığı kesri)
   bakis: 0.14,          // "başla" düğmesinin üzerine gelince kameranın ilk durağa yaklaşma payı

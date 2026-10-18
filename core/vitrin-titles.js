@@ -125,7 +125,11 @@ export function playTitle(el, id, { cycles = 1, color = '' } = {}) {
       gsap.killTweensOf([el, ...split.chars]);
       el.classList.remove('is-painting');
       ['--dx', '--dy', '--b2', '--b3', '--b4', '--bp', '--qr'].forEach((k) => el.style.removeProperty(k));
-      if (el.contains(split.chars[0])) split.revert(); // metin bu arada değiştiyse eskisini geri yazma
+      // Bölme her zaman geri alınır: alınmazsa aynı öğedeki sonraki SplitText.create onu kendisi geri alıp ESKİ metni
+      // yazıyordu (her durakta ilk başlık kalıyordu). Metin bu arada değiştiyse yenisi geri konur.
+      const yeni = el.contains(split.chars[0]) ? null : el.textContent;
+      split.revert();
+      if (yeni !== null) el.textContent = yeni;
     },
   };
 }
