@@ -55,7 +55,7 @@ export const LOOK = { min: -0.52, max: 0.46, edge: 0.2, speed: 0.75 };
 // Yakın planlar: her durağın kendi açısı (kaydırmalı turun durakları). Yatay ekranda motor kadrajı kartın tersine,
 // dikey ekranda yukarı kaydırır. Çekmece açık hâliyle: içi çapraz yukarıdan, organizer ortada.
 export const FOCUS = {
-  cekmece: { pos: [-930, -20, 1900], target: [-1790, 1060, 560] },
+  cekmece: { pos: [-930, -220, 1900], target: [-1790, 860, 560] },  // tam açık çekmece (590 mm dışarıda)
   kalemlik: { pos: [-950, 640, 1180], target: [-1290, 1500, 830] },   // masa üstü: kalemlik, monitörün solu
   klavye: { pos: [-520, 720, 1140], target: [-640, 1370, 770] },     // klavye ve yanındaki fidget'lar
   modem: { pos: [-830, 760, 1520], target: [-850, 1690, 1370] },     // alt raf: modem ve QR'lar

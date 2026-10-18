@@ -35,18 +35,15 @@ const storyName = (tool, id) => ({ tr: STORIES[tool].hotspots[id].tr, en: STORIE
 const T = (id, name, preset = null, over = null, renk = null) => ({ id, name, preset, over, renk });
 const n2 = (tr, en) => ({ tr, en });
 export const TEMPLATES = {
-  // Çekmece şablonları Kutu aracının paletinden ayrı renklerde: değişim çekmecenin beyaz içinde fark edilsin
+  // Çekmece şablonları çekmeceyi doldurur (iç ölçü ~380 × 630 mm). Her parça yazıcı tablasına (256 mm) sığar: şablon
+  // parçaların dizilişidir; araçta (over) temsilci parça açılır. Renkler Kutu aracının paletinden, her şablon ayrı.
   cekmece: [
-    T('drawer', binName('drawer'), 'drawer', null, '#d4621f'),
-    T('screws', binName('screws'), 'screws', null, '#3f6fb0'),
-    T('g4', binName('g4'), 'g4', null, '#8fa58a'),
-    T('karma', n2('Gridfinity karışık', 'Gridfinity mix'), 'g3', null, '#b8372f'),
-    T('tools', n2('Alet bölmeleri', 'Tool caddies'), 'tools', null, '#2b3036'),
-    T('cards', n2('Kart kutuları', 'Card boxes'), 'cards', null, '#d4621f'),
-    T('uzun', n2('Uzun bölmeler', 'Long compartments'), 'drawer', { w: 360, d: 480, h: 50, cols: 4, rows: 1, holes: false }, '#ece9e2'),
-    T('desk', n2('Masa düzenleyiciler', 'Desk organizers'), 'desk', null, '#3f6fb0'),
-    T('tray', n2('Küçük tepsiler', 'Small trays'), 'tray', null, '#8fa58a'),
-    T('roundtray', n2('Yuvarlak tepsiler', 'Round trays'), 'roundtray', null, '#b8372f'),
+    T('drawer', n2('Çekmece içi · 6 parça', 'Drawer insert · 6 pieces'), 'drawer', { w: 187, d: 208, h: 50, cols: 3, rows: 3, holes: false }, '#d4621f'),
+    T('kirtasiye', n2('Kırtasiye düzeni', 'Stationery layout'), 'drawer', { w: 252, d: 208, h: 55, cols: 3, rows: 2, holes: false }, '#3f6fb0'),
+    T('tepsiler', n2('Modüler tepsiler · 8 parça', 'Modular trays · 8 pieces'), 'tray', { w: 187, d: 155, h: 32 }, '#b8372f'),
+    T('gridfinity', n2('Gridfinity · taban ve kutular', 'Gridfinity · plates and bins'), 'p3', { px: 5, py: 5 }, '#8fa58a'),
+    T('uzun', n2('Uzun kanallar · 12 parça', 'Long channels · 12 pieces'), 'drawer', { w: 93, d: 208, h: 48, cols: 1, rows: 1, holes: false, scoop: true }, '#ece9e2'),
+    T('atolye', n2('Atölye kutuları · 12 parça', 'Workshop boxes · 12 pieces'), 'drawer', { w: 124, d: 155, h: 45, cols: 2, rows: 3, holes: false }, '#2b3036'),
   ],
   kalemlik: [
     T('pencup', binName('pencup'), 'pencup'),
@@ -356,36 +353,50 @@ export async function buildTemplate(zone, id, { lang = 'tr', saksi = {}, pasta =
   const fs = await fonts(700);
   switch (zone) {
     case 'cekmece': {
-      // Çekmecenin içi ~400 × 560 mm: tek parça ya da birkaç kutunun dizilişi; renk şablon listesinden
-      const color = TEMPLATES.cekmece.find((x) => x.id === id)?.renk, R = color ? { color } : {};
-      if (id === 'drawer') return binModel('drawer', { w: 370, d: 500, h: 45, cols: 4, rows: 4, ...R });
-      if (id === 'screws') return binModel('screws', { w: 320, d: 320, h: 32, ...R });
-      if (id === 'uzun') return binModel('drawer', { w: 360, d: 480, h: 50, cols: 4, rows: 1, holes: false, ...R });
-      const G0 = { magnets: 'none', screws: 'none', ...R }; // Gridfinity: mıknatıs ve vida deliği yok (hızlı)
-      const dizi = (bin, yerler, g = new THREE.Group()) => {
-        for (const [x, y, rz = 0] of yerler) {
-          const c = bin.clone();
-          c.position.set(x, y, 0);
-          c.rotation.z = rz;
-          g.add(c);
-        }
-        return g;
+      // Çekmeceyi dolduran dizilişler: doldurulan alan W × D (yuva merkezine göre y −5), parçalar arası 1 mm. Aynı ölçüdeki
+      // parça bir kez üretilir, kopyalanır.
+      const t = TEMPLATES.cekmece.find((x) => x.id === id), R = t?.renk ? { color: t.renk } : {};
+      const W = 376, D = 626, Y0 = -5, AR = 1;
+      const g = new THREE.Group(), onbellek = new Map();
+      const parca = (preset, over, renk = R) => {
+        const k = preset + JSON.stringify(over) + JSON.stringify(renk);
+        if (!onbellek.has(k)) onbellek.set(k, binModel(preset, { ...over, ...renk }));
+        return onbellek.get(k).clone();
       };
-      if (id === 'g4') return dizi(binModel('g4', G0), [[-64, -92], [64, -92], [-64, 0], [64, 0], [-64, 92], [64, 92]]);
-      if (id === 'tools') return dizi(binModel('tray', R), [[-55, 150], [55, 150]], dizi(binModel('tools', R), [[-48, -125, Math.PI / 2], [48, -125, Math.PI / 2]]));
-      if (id === 'cards') return dizi(binModel('cards', R), [-108, 0, 108].flatMap((x) => [-84, 0, 84].map((y) => [x, y])));
-      if (id === 'desk') return dizi(binModel('desk', R), [[0, -70], [0, 60]]);
-      if (id === 'tray') return dizi(binModel('tray', R), [[-55, -45], [55, -45], [-55, 45], [55, 45]]);
-      if (id === 'roundtray') return dizi(binModel('roundtray', R), [[0, -90], [0, 90]]);
-      // Gridfinity karışık: 42 mm ızgarada 8 × 6 hücre (yüksek kutu, vida kutusu, etiketli, tekli, alçak tepsi)
-      const kutu = {}, g = new THREE.Group(), U = 42;
-      const yerlesim = [['g3', 0, 0, 2, 2], ['g5', 2, 0, 2, 2], ['g2', 4, 0, 2, 1], ['g2', 4, 1, 2, 1], ['g1', 6, 0], ['g1', 7, 0], ['g1', 6, 1], ['g1', 7, 1],
-        ['g6', 0, 2, 4, 2], ['g2', 4, 2, 2, 1], ['g2', 4, 3, 2, 1], ['g1', 6, 2], ['g1', 7, 2], ['g1', 6, 3], ['g1', 7, 3], ['g6', 0, 4, 4, 2], ['g5', 4, 4, 2, 2], ['g3', 6, 4, 2, 2]];
-      for (const [b, cx, cy, w = 1, h = 1] of yerlesim) {
-        kutu[b] ||= binModel(b, G0);
-        const c = kutu[b].clone();
-        c.position.set((cx + w / 2 - 4) * U, (cy + h / 2 - 3) * U, 0);
-        g.add(c);
+      const koy = (m, x, y, z = 0) => { m.position.set(x, y + Y0, z); g.add(m); };
+      // Izgara: sütun genişlikleri (verilmezse eşit), her hücreye fn(sütun, satır, w, d) ile parça
+      const izgara = (cols, rows, fn, sutunlar = null) => {
+        const ws = sutunlar ?? Array(cols).fill((W - (cols - 1) * AR) / cols), d = (D - (rows - 1) * AR) / rows;
+        let x = -W / 2;
+        ws.forEach((w, i) => {
+          for (let j = 0; j < rows; j++) koy(fn(i, j, w, d), x + w / 2, -D / 2 + d / 2 + j * (d + AR));
+          x += w + AR;
+        });
+      };
+      const kutu = (w, d, h, cols, rows, ek = {}) => parca('drawer', { shape: 'rect', w: Math.floor(w), d: Math.floor(d), h, cols, rows, r: 3, wall: 1.6, floor: 1.6, holes: false, lip: false, shelf: false, scoop: false, ...ek });
+      if (id === 'drawer') { // 2 × 3, satır satır farklı bölmeler
+        const B = [[[4, 1], [4, 1]], [[3, 3], [2, 2]], [[2, 1], [1, 2]]];
+        izgara(2, 3, (i, j, w, d) => kutu(w, d, 50, ...B[j][i]));
+      } else if (id === 'kirtasiye') { // solda uzun kalem kanalı, sağda bölmeli kutular
+        izgara(2, 3, (i, j, w, d) => (i === 0 ? kutu(w, d, 55, 1, 1, { scoop: true }) : kutu(w, d, 55, 3, 2)), [123, 252]);
+      } else if (id === 'tepsiler') {
+        izgara(2, 4, (i, j, w, d) => kutu(w, d, 32, 3, 2));
+      } else if (id === 'uzun') {
+        izgara(4, 3, (i, j, w, d) => kutu(w, d, 48, 1, 1, { scoop: true }));
+      } else if (id === 'atolye') {
+        izgara(3, 4, (i, j, w, d) => kutu(w, d, 45, 2, 3));
+      } else { // Gridfinity: 9 × 15 hücre (42 mm); 6 ince taban plakası (4 ya da 5 × 5 hücre, koyu) ve üstünde 44 kutu
+        // (iç bölmesiz dört kutu türü: üretimi hafif)
+        const U = 42, G0 = { magnets: 'none', screws: 'none' };
+        for (const [x0, nx] of [[0, 4], [4, 5]]) for (const y0 of [0, 5, 10]) {
+          koy(parca('p1', { px: nx, py: 5, plateStyle: 'thin', pfloor: 1, pmag: 'none', pscrew: 'none' }, { color: '#2b3036' }), (x0 + nx / 2 - 4.5) * U, (y0 + 2.5 - 7.5) * U);
+        }
+        const blok = [['g6', 0, 0, 4, 2], ['g3', 4, 0, 2, 2], ['g3', 6, 0, 2, 2], ['g1', 8, 0], ['g1', 8, 1],
+          ['g3', 0, 2, 2, 2], ['g2', 2, 2, 2, 1], ['g2', 2, 3, 2, 1], ['g6', 4, 2, 4, 2], ['g1', 8, 2], ['g1', 8, 3],
+          ['g2', 0, 4, 2, 1], ['g2', 0, 5, 2, 1], ['g6', 2, 4, 4, 2], ['g3', 6, 4, 2, 2], ['g1', 8, 4], ['g1', 8, 5]];
+        const yer = [...blok, ...blok.map(([b, x, y, w, h]) => [b, x, y + 6, w, h]), ['g6', 0, 12, 4, 2], ['g3', 4, 12, 2, 2], ['g3', 6, 12, 2, 2], ['g1', 8, 12], ['g1', 8, 13],
+          ['g2', 0, 14, 2, 1], ['g2', 2, 14, 2, 1], ['g2', 4, 14, 2, 1], ['g2', 6, 14, 2, 1], ['g1', 8, 14]];
+        for (const [b, cx, cy, w = 1, h = 1] of yer) koy(parca(b, G0), (cx + w / 2 - 4.5) * U, (cy + h / 2 - 7.5) * U, 0.6);
       }
       return g;
     }

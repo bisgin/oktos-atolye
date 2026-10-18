@@ -510,7 +510,7 @@ export async function buildScene({ scene, P, lang = 'tr' }) {
       focusedId = id;
       pilot?.huzme.userData.guc(0.25, reduced ? 0.01 : 0.8, gsap); // yakın planda huzme kısılır (pus ürünü örtmesin)
       gsap.delayedCall(reduced ? 0.1 : 1.3, () => { if (focusedId === id) prefetch(id); }); // kamera uçuşu bitince
-      if (id === 'cekmece') openDrawer(380, reduced ? 0.01 : 0.8);
+      if (id === 'cekmece') openDrawer(590, reduced ? 0.01 : 0.9); // tam açılan ray: organizerin tamamı görünür
       if (id === 'buzdolabi') { // kapalı başlar: kapağı bir an görünür, sonra açılır, iç ışık yanar
         const bekle = reduced ? 0 : 1.4;
         gsap.delayedCall(bekle, () => {
