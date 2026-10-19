@@ -23,6 +23,22 @@
 .oda .pin.left:not(.on) .pin-label { transform: translateX(4px); }
 .oda .pin-label i { display: none; } /* işaretçide yalnız ürünün kısa adı */
 
+/* ---- Üst çubuk ve alttaki şablon şeridi: loş odanın içinde koyu (beyaz çubuk sahneyi ikiye bölüyordu). Sol üstte
+   şeffaf zeminli beyaz Oktos logosu (core/logo-beyaz.svg). Renkler yakın plan panelininkiyle aynı aile. */
+.topbar { background: #111214; border-bottom-color: rgb(243 238 229 / 0.1); }
+.topbar .brand { color: #f3eee5; }
+.topbar .lang { border-color: rgb(243 238 229 / 0.22); }
+.topbar .lang button { color: rgb(243 238 229 / 0.7); }
+.topbar .lang button.on { background: #f3eee5; color: #111214; }
+.oda .story-strip { background: rgb(17 18 20 / 0.88); box-shadow: 0 1px 2px rgb(0 0 0 / 0.3), 0 10px 30px rgb(0 0 0 / 0.35); }
+.oda .chip-name { color: #f3eee5; }
+.oda .chip-act { color: #f2b48a; }
+.oda .chip.soon .chip-act { color: rgb(243 238 229 / 0.62); }
+.oda .chip:hover, .oda .chip.on { background: rgb(243 238 229 / 0.1); border-color: rgb(243 238 229 / 0.16); }
+.oda .chip.focused { background: #f3eee5; }
+.oda .chip.focused .chip-name { color: #111214; }
+.oda .chip.focused .chip-act { color: var(--accent-ink); }
+
 /* ---- Yakın plan paneli ----
    Loş odanın içinde koyu: yatay ekranda sol kenarda, kart zemini yok; okunurluğu soldan gelen koyu bir gölge verir
    (.oda-scrim), sahne arkada görünmeye devam eder. Başlık aracın filament renginde (bu tonlar koyu zemin için seçildi).

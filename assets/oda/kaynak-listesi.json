@@ -84,6 +84,48 @@
       "tur": "doku",
       "cozunurluk": "1k",
       "not": "Karşı binanın balkon döşemeleri ve zemin kat"
+    },
+    {
+      "id": "jug_01",
+      "tur": "model",
+      "cozunurluk": "1k",
+      "not": "Buzdolabında süt sürahisi"
+    },
+    {
+      "id": "long_life_food",
+      "tur": "model",
+      "cozunurluk": "1k",
+      "not": "Buzdolabında süt kartonu ve konserveler"
+    },
+    {
+      "id": "food_apple_01",
+      "tur": "model",
+      "cozunurluk": "1k",
+      "not": "Buzdolabında elma"
+    },
+    {
+      "id": "food_lime_01",
+      "tur": "model",
+      "cozunurluk": "1k",
+      "not": "Buzdolabında misket limonu"
+    },
+    {
+      "id": "lemon",
+      "tur": "model",
+      "cozunurluk": "1k",
+      "not": "Buzdolabında limon"
+    },
+    {
+      "id": "food_kiwi_01",
+      "tur": "model",
+      "cozunurluk": "1k",
+      "not": "Buzdolabında kivi"
+    },
+    {
+      "id": "food_pomegranate_01",
+      "tur": "model",
+      "cozunurluk": "1k",
+      "not": "Buzdolabında nar"
     }
   ],
   "diger": [

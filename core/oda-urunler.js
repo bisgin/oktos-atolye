@@ -34,6 +34,18 @@ const storyName = (tool, id) => ({ tr: STORIES[tool].hotspots[id].tr, en: STORIE
 // over: aracın şablonu üstüne ölçü farkı (varsa "Bu şablonla tasarla" ölçüleri adrese yazar, bkz. sablonDegeri)
 const T = (id, name, preset = null, over = null, renk = null) => ({ id, name, preset, over, renk });
 const n2 = (tr, en) => ({ tr, en });
+const U = (t, urun) => ({ ...t, urun });
+// Çoklu yuva: bölgede birden çok ürün birlikte durur, şablon yalnız kendi ürününü değiştirir; seçili ürün öne kalkar.
+// yer: ürünün yuvadaki yeri [x, y, z] mm; kalk: seçilince yükselme (mm); egim: seçilince ön kenarı üstünde kameraya
+// doğru dikelme (rad); dur: seçili değilken eğim. Anahtarlık rafın arkasında duvara yaslı durur (düz yatınca kameradan
+// ince bir çizgi görünüyordu), seçilince dikleşir; standlar biraz öne eğilir.
+export const COKLU = {
+  modem: {
+    wifi: { yer: [-160, -15, 36], kalk: 12, egim: 0.16 },
+    card: { yer: [0, 0, 0], kalk: 12, egim: 0.16 },
+    key: { yer: [250, 115, 0], kalk: 8, dur: 1.2, egim: 1.42 },
+  },
+};
 export const TEMPLATES = {
   // Çekmece şablonları çekmeceyi doldurur (iç ölçü ~380 × 630 mm). Her parça yazıcı tablasına (256 mm) sığar: şablon
   // parçaların dizilişidir; araçta (over) temsilci parça açılır. Renkler Kutu aracının paletinden, her şablon ayrı.
@@ -57,7 +69,16 @@ export const TEMPLATES = {
   ],
   // Klavye: tuş başlığı setleri (Esc, Enter, yukarı ok) ve yanında aynı tasarımın anahtarlık clicker'ı
   klavye: [T('kedi', n2('Kedi seti', 'Cat set')), T('kalp', n2('Kalp seti', 'Heart set')), T('yildiz', n2('Yıldız seti', 'Star set')), T('harf', n2('Harf seti', 'Letter set'))],
-  modem: ['wifi', 'card', 'key'].map((id) => T(id, storyName('qr', id))),
+  // QR: üç ayrı ürün rafta birlikte durur (yerleri COKLU.modem); şablonun `urun`u hangisinin değiştiğini söyler. Sıra
+  // ürünleri dolaşır (turdaki otomatik geçiş üçünü de gösterir), sonra ikinci şablonları
+  modem: [
+    U(T('wifi', storyName('qr', 'wifi')), 'wifi'),
+    U(T('card', storyName('qr', 'card')), 'card'),
+    U(T('key', storyName('qr', 'key')), 'key'),
+    U(T('wifi_turuncu', n2('Misafir Wi-Fi standı', 'Guest Wi-Fi stand')), 'wifi'),
+    U(T('card_koyu', n2('Koyu kartvizit', 'Dark business card')), 'card'),
+    U(T('key_yuvarlak', n2('Yuvarlak QR anahtarlık', 'Round QR keychain')), 'key'),
+  ],
   puzzle3d: [T('sphere', storyName('puzzle', 'sphere')), T('cube', storyName('puzzle', 'cube')), T('egg', { tr: 'Yumurta yapboz', en: 'Egg puzzle' }), T('heart', { tr: 'Kalp yapboz', en: 'Heart puzzle' })],
   tabela: [T('plate', { tr: 'Plakalı', en: 'On a plate' }), T('letters', { tr: 'Harf harf', en: 'Letter by letter' }), T('round', { tr: 'Yuvarlak plaka', en: 'Rounded plate' })],
   saksilar: ['hex', 'square', 'flower', 'organic', 'twist', 'morph', 'amphora'].map((id) => T(id, vaseName(id), id)),
@@ -140,29 +161,56 @@ function toprakKapagi(res, z) {
   for (let i = 0; i < uv.count; i++) uv.setXY(i, pos.getX(i) / 250, pos.getY(i) / 250);
   return geo;
 }
-// Kutunun bölme merkezleri (kalem dizmek için): yuvarlakta dilimler (rows 2: ortada halka), köşelide ızgara
-function bolmeMerkezleri(v) {
+// Kalemliğin bölmeleri: merkez ve iç yarıçap (kalemin tabanı bunun içinde kalır). Yuvarlakta dilimler (rows 2: ortada
+// halka), köşelide ızgara. Duvar kalınlığı düşülür.
+function bolmeler(v) {
+  const wall = v.wall ?? 2;
   if (v.shape === 'round') {
-    const R = v.w / 2, out = v.rows > 1 ? [[0, 0]] : [];
-    if (v.cols <= 1) return [[0, 0]];
-    const r = v.rows > 1 ? R * 0.68 : R * 0.48;
-    for (let i = 0; i < v.cols; i++) { const a = ((i + 0.5) / v.cols) * TAU; out.push([Math.cos(a) * r, Math.sin(a) * r]); }
+    const R = v.w / 2 - wall;
+    if (v.cols <= 1) return [{ x: 0, y: 0, r: R }];
+    const out = [], halka = v.rows > 1, rm = halka ? R * 0.68 : R * 0.5;
+    if (halka) out.push({ x: 0, y: 0, r: R * 0.3 });
+    const rs = Math.min(halka ? R * 0.3 : R * 0.48, rm * Math.sin(Math.PI / v.cols)) - wall / 2;
+    for (let i = 0; i < v.cols; i++) { const a = ((i + 0.5) / v.cols) * TAU; out.push({ x: Math.cos(a) * rm, y: Math.sin(a) * rm, r: rs }); }
     return out;
   }
-  const out = [];
-  for (let i = 0; i < v.cols; i++) for (let j = 0; j < (v.rows || 1); j++) out.push([((i + 0.5) / v.cols - 0.5) * v.w, ((j + 0.5) / (v.rows || 1) - 0.5) * v.d]);
+  const out = [], rows = v.rows || 1, cw = v.w / v.cols, cd = v.d / rows;
+  for (let i = 0; i < v.cols; i++) for (let j = 0; j < rows; j++) out.push({ x: ((i + 0.5) / v.cols - 0.5) * v.w, y: ((j + 0.5) / rows - 0.5) * v.d, r: Math.min(cw, cd) / 2 - wall });
   return out;
 }
-// Kalemliğin içinde dışa yaslı kalemler (içerik)
-function pencils(g, centers, r = 14) {
-  const cols = [0xf2c14e, 0x3f6fb0, 0xb8372f, 0x2b3036, 0x8fa58a, 0xf2c14e];
-  let k = 0;
-  for (const [cx, cy] of centers) {
-    for (let i = 0; i < 2; i++, k++) {
-      const a = (i / 2) * TAU + k, pen = P.mesh(P.cyl(4, 4, 168 + (k % 3) * 10, 8), P.clay(cols[k % cols.length], { rough: 0.6 }));
-      pen.position.set(cx + Math.cos(a) * r, cy + Math.sin(a) * r, 4);
-      pen.rotation.set(-Math.sin(a) * 0.14, Math.cos(a) * 0.14, 0);
-      g.add(pen);
+// Kalem çeşitleri (tabanı z = 0, ucu aşağıda): kurşun kalem, tükenmez, keçeli, fosforlu
+function isaretKalemi(renk, fosforlu = false) {
+  const g = new THREE.Group(), L = fosforlu ? 122 : 136, r = fosforlu ? 7.4 : 6.6;
+  const govde = P.clay(fosforlu ? renk : 0xeceae4, { rough: 0.45 }), kapak = P.clay(renk, { rough: 0.35 });
+  g.add(P.mesh(P.cyl(r - 0.6, r, L - 40, 24), govde));
+  g.add(P.mesh(P.cyl(r + 0.3, r + 0.3, 40, 24), kapak).translateZ(L - 40));
+  if (!fosforlu) g.add(P.mesh(P.cyl(r + 0.05, r + 0.05, 9, 24), kapak).translateZ(18)); // gövdede renk bandı
+  return g;
+}
+const KALEMLER = [
+  () => P.pencil({ len: 176, color: K.yellow }),
+  () => P.pen({ len: 146, color: K.blue }),
+  () => isaretKalemi(0x1f2226),
+  () => P.pen({ len: 144, color: K.ink }),
+  () => isaretKalemi(0xf0e04a, true),
+  () => P.pencil({ len: 168, color: K.red }),
+  () => P.pen({ len: 142, color: K.red }),
+  () => isaretKalemi(0xef6f9e, true),
+];
+// Kalemliğe kalem dizer: bölme başına sığdığı kadar (iç yarıçapa göre), tabanı bölmenin içinde, tepesi hafifçe dışa yaslı
+function kalemDiz(g, v, tohum = 1) {
+  const rng = P.rng(tohum), z0 = (v.floor ?? 2) + 0.4;
+  let k = Math.floor(rng() * KALEMLER.length);
+  for (const b of bolmeler(v)) {
+    const n = b.r > 32 ? 5 : b.r > 22 ? 3 : b.r > 12 ? 2 : 1;
+    for (let i = 0; i < n; i++, k++) {
+      const kalem = KALEMLER[k % KALEMLER.length](), merkez = n === 5 && i === 4;
+      const a = (i / (n === 5 ? 4 : n)) * TAU + rng() * 0.5, rho = n === 1 || merkez ? 0 : Math.max(0, b.r - 8.5) * 0.62;
+      // Eğim, kalemin ağız hizasında duvara değmeyeceği kadar (uzun kalemlikte fosforlu duvardan taşıyordu)
+      const lean = Math.min(n === 1 ? 0.05 : merkez ? 0.02 : 0.07 + rng() * 0.05, Math.max(0, (b.r - rho - 8.5) / (v.h ?? 100)));
+      kalem.position.set(b.x + Math.cos(a) * rho, b.y + Math.sin(a) * rho, z0);
+      kalem.rotation.set(-Math.sin(a) * lean, Math.cos(a) * lean, rng() * TAU);
+      g.add(kalem);
     }
   }
 }
@@ -320,6 +368,37 @@ async function qrTile(text, { size, color = K.ink, base = P.clay(0xf4f2ec, { rou
   g.userData.size = size;
   return g;
 }
+// QR ürünleri, ikişer şablon: Wi-Fi standı (mürekkep / turuncu), kartvizit (açık / koyu), anahtarlık (sarı kare /
+// adaçayı yuvarlak). Tabanı z = 0, ön yüzü −y
+const WIFI = 'WIFI:T:WPA;S:Oktos Misafir;P:ornek-sifre;;';
+async function qrUrunu(id, fs, lang) {
+  if (id === 'wifi') return standing(await qrTile(WIFI, { size: 70, header: 'Wi-Fi', fs }), { baseW: 82 });
+  if (id === 'wifi_turuncu') return standing(await qrTile(WIFI, { size: 70, color: K.accent, header: lang === 'en' ? 'Guest' : 'Misafir', fs }), { baseW: 82, color: K.ink });
+  if (id === 'card' || id === 'card_koyu') {
+    const koyu = id === 'card_koyu', card = new THREE.Group(), cq = await qrTile(SITE, { size: 40, corner: 2, fs });
+    card.add(P.mesh(P.rbox(85, 55, 1.2, 3, 1), P.clay(koyu ? 0x26292e : 0xf6f3ec, { rough: 0.7 })).translateY(27.5));
+    cq.scale.set(1, 1, 0.5);
+    cq.position.set(koyu ? 18 : -18, 27.5, 1);
+    card.add(cq);
+    if (koyu) for (const [w, y] of [[30, 40], [22, 32], [26, 24]]) card.add(P.mesh(P.rbox(w, 3, 0.6, 1, 1), P.clay(y === 40 ? K.accent : 0xd8d3c8, { rough: 0.6 })).translateX(-38 + w / 2 + 4).translateY(y).translateZ(1));
+    card.userData.size = 0; // standing() kartı alt kenarından tutar
+    return standing(card, { baseW: 92, color: koyu ? K.woodLight : K.ink });
+  }
+  const tag = new THREE.Group(), yuvarlak = id === 'key_yuvarlak';
+  if (yuvarlak) {
+    tag.add(P.mesh(P.cyl(30, 30, 3, 56), P.clay(K.sage, { rough: 0.5 })));
+    const kq = await qrTile(SITE, { size: 36, corner: 3, fs });
+    kq.position.z = 2.2;
+    tag.add(kq, keyRing(0, 37, 0));
+  } else tag.add(await qrTile(SITE, { size: 40, base: P.clay(K.yellow, { rough: 0.5 }), corner: 5, fs }), keyRing(0, 32, 0));
+  const key = P.key({ color: K.brass });
+  key.position.set(12, yuvarlak ? 55 : 50, 0.5);
+  key.rotation.z = 0.9;
+  tag.add(key);
+  tag.rotation.z = yuvarlak ? 0.1 : 0.35; // anahtar yukarı bakar (sağa yatınca kadrajdan taşıyordu)
+  return new THREE.Group().add(tag);
+}
+
 // Karoyu kaideye geriye yaslı diker; ön yüzü −y
 function standing(t, { baseW, color = K.woodLight }) {
   const g = new THREE.Group(), holder = new THREE.Group();
@@ -493,31 +572,15 @@ export async function buildTemplate(zone, id, { lang = 'tr', saksi = {}, pasta =
       const t = TEMPLATES.kalemlik.find((x) => x.id === id), p = BIN.presets.find((x) => x.id === t.preset);
       const v = { ...p.values, ...(t.over || {}) };
       const g = binModel(t.preset, { ...(t.over || {}), ...(t.renk ? { color: t.renk } : {}) });
-      pencils(g, bolmeMerkezleri(v), v.cols * (v.rows || 1) > 1 ? 7 : 16);
+      kalemDiz(g, v, TEMPLATES.kalemlik.indexOf(t) + 3);
       return g;
     }
     case 'klavye': return klavye ? tusSeti(id, klavye, fs) : keychain(TUS_SETI[id]?.anahtarlik || 'cat');
     case 'modem': {
-      // Yer şablona göre (yuva modemin sağında, kartvizitin yeri): Wi-Fi standı modemin üstünde, anahtarlık rafın sağında
-      const yer = (m, x, y = 0, z = 0) => { const g = new THREE.Group(); m.position.set(x, y, z); g.add(m); return g; };
-      if (id === 'wifi') return yer(standing(await qrTile('WIFI:T:WPA;S:Oktos Misafir;P:ornek-sifre;;', { size: 70, header: 'Wi-Fi', fs }), { baseW: 82 }), -160, -15, 36);
-      if (id === 'card') {
-        const card = new THREE.Group(), cq = await qrTile(SITE, { size: 40, corner: 2, fs });
-        card.add(P.mesh(P.rbox(85, 55, 1.2, 3, 1), P.clay(0xf6f3ec, { rough: 0.7 })).translateY(27.5));
-        cq.scale.set(1, 1, 0.5);
-        cq.position.set(-18, 27.5, 1);
-        card.add(cq);
-        card.userData.size = 0; // standing() kartı alt kenarından tutar
-        return standing(card, { baseW: 92, color: K.ink });
-      }
-      const tag = new THREE.Group(), kq = await qrTile(SITE, { size: 40, base: P.clay(K.yellow, { rough: 0.5 }), corner: 5, fs });
-      tag.add(kq, keyRing(0, 32, 0));
-      const key = P.key({ color: K.brass });
-      key.position.set(12, 50, 0.5);
-      key.rotation.z = 0.9;
-      tag.add(key);
-      tag.rotation.z = 0.35;
-      return yer(tag, 380, -20);
+      // Ürün kendi orijininde (yeri COKLU.modem); onKenar: ön kenarın y'si (seçilince bu kenarın üstünde dikelir)
+      const g = await qrUrunu(id, fs, lang);
+      g.userData.onKenar = new THREE.Box3().setFromObject(g).min.y;
+      return g;
     }
     case 'puzzle3d': return puzzle3d(id);
     case 'tabela': return signModel(id, fs, SIGN[lang] || SIGN.tr);

@@ -726,7 +726,19 @@ BITKILER = [  # (kaynak, çözünürlük, nesne, yeni ad): ürünlerimizin için
     ('strawberry_chocolate_cake', '1k', 'strawberry_chocolate_cake', 'pasta'),  # pasta süsümüz üstüne batar
     ('anthurium_botany_01', '2k', 'anthurium_botany_01_b', 'balkon_bitki'),    # balkondaki büyük saksı
     ('flower_gazania', '2k', 'flower_gazania_h_LOD0', 'balkon_cicek'),         # balkondaki kase saksı
+    # Buzdolabının rafları (yiyecek_*): doku ve üçgen sayısı aşağıda küçültülür (YIYECEK_DOKU, YIYECEK_UCGEN)
+    ('jug_01', '1k', 'jug_01', 'yiyecek_surahi'),
+    ('long_life_food', '1k', 'long_life_food_milk', 'yiyecek_sut'),
+    ('long_life_food', '1k', 'long_life_food_tomatoes', 'yiyecek_domates'),
+    ('long_life_food', '1k', 'long_life_food_beans', 'yiyecek_fasulye'),
+    ('food_apple_01', '1k', 'food_apple_01', 'yiyecek_elma'),
+    ('food_lime_01', '1k', 'food_lime_01', 'yiyecek_misket'),
+    ('lemon', '1k', 'lemon', 'yiyecek_limon'),
+    ('food_kiwi_01', '1k', 'food_kiwi_01', 'yiyecek_kivi'),
+    ('food_pomegranate_01', '1k', 'food_pomegranate_01', 'yiyecek_nar'),
 ]
+YIYECEK_DOKU = {'yiyecek_surahi': 512, 'yiyecek_sut': 512, 'yiyecek_domates': 512, 'yiyecek_fasulye': 512}  # px; meyveler 256
+YIYECEK_UCGEN = 2500  # bundan fazlası Decimate ile inceltilir (raf içinde ~60–120 px görünürler)
 
 
 def bitki_yaz(hedef):
@@ -736,6 +748,9 @@ def bitki_yaz(hedef):
         bpy.ops.import_scene.gltf(filepath=yol(KAYNAK, kay, f'{kay}_{res}.gltf'))
     for kay, _, ad, yeni in BITKILER:
         ob = bpy.data.objects[ad]
+        mw = ob.matrix_world.copy()  # glTF düğüm ağacından çıkar (ebeveyn silinince yeri kaymasın)
+        ob.parent = None
+        ob.matrix_world = mw
         ob.matrix_world = Matrix.Scale(1000, 4) @ ob.matrix_world  # metre → mm
         bpy.context.view_layer.update()
         bb = [ob.matrix_world @ Vector(c) for c in ob.bound_box]
@@ -754,6 +769,19 @@ def bitki_yaz(hedef):
             for n in m.node_tree.nodes:
                 if n.type == 'TEX_IMAGE' and n.image and n.image.size[0] > 1024:
                     n.image.scale(1024, 1024)
+    # Buzdolabı yiyecekleri: düşük çözünürlük (paylaşılan doku bir kez küçülür), üçgen sayısı YIYECEK_UCGEN'e iner
+    for ob in tut:
+        if not ob.name.startswith('yiyecek_'):
+            continue
+        px = YIYECEK_DOKU.get(ob.name, 256)
+        for m in ob.data.materials:
+            for n in m.node_tree.nodes:
+                if n.type == 'TEX_IMAGE' and n.image and n.image.size[0] > px:
+                    n.image.scale(px, px)
+        if len(ob.data.polygons) > YIYECEK_UCGEN:
+            d = ob.modifiers.new('incelt', 'DECIMATE')
+            d.ratio = YIYECEK_UCGEN / len(ob.data.polygons)
+        log(f'{ob.name}: {len(ob.data.polygons)} üçgen → ~{min(len(ob.data.polygons), YIYECEK_UCGEN)}, doku ≤ {px} px')
     disa_aktar(tut, hedef, isikli=True)
 
 
@@ -1369,16 +1397,60 @@ def dondur(ob, rz):
     return ob
 
 
+def egri(pts, ara=6):
+    """Kapalı Catmull-Rom eğrisi: kontrol noktalarından yumuşak çokgen (silüet için)."""
+    out, n = [], len(pts)
+    for i in range(n):
+        p0, p1, p2, p3 = (Vector((*pts[(i + k) % n], 0)) for k in (-1, 0, 1, 2))
+        for j in range(ara):
+            t = j / ara
+            t2, t3 = t * t, t * t * t
+            q = 0.5 * ((2 * p1) + (-p0 + p2) * t + (2 * p0 - 5 * p1 + 4 * p2 - p3) * t2 + (-p0 + 3 * p1 - 3 * p2 + p3) * t3)
+            out.append((q.x, q.y))
+    return out
+
+
+def ayna(sag):
+    """Sağ yarının (x ≥ 0, yukarıdan aşağı) noktalarından simetrik kapalı silüet."""
+    return sag + [(-x, z) for x, z in reversed(sag)]
+
+
+def profil(ad, pts, kalinlik, malz, ust, eksen='y', pah=18.0, kayma=(0, 0, 0)):
+    """Kapalı silüetten kalınlık verilmiş parça. eksen 'y': silüet XZ düzleminde, kalınlık y boyunca (ortalı);
+    eksen 'x': silüet YZ düzleminde (u = y), kalınlık x boyunca. Kenarlar pahla yuvarlanır."""
+    bm = bmesh.new()
+    vs = [bm.verts.new((u, -kalinlik / 2, v) if eksen == 'y' else (-kalinlik / 2, u, v)) for u, v in pts]
+    f = bm.faces.new(vs)
+    ex = bmesh.ops.extrude_face_region(bm, geom=[f])
+    yon = Vector((0, kalinlik, 0)) if eksen == 'y' else Vector((kalinlik, 0, 0))
+    bmesh.ops.translate(bm, verts=[e for e in ex['geom'] if isinstance(e, bmesh.types.BMVert)], vec=yon)
+    bmesh.ops.translate(bm, verts=bm.verts[:], vec=Vector(kayma))
+    bmesh.ops.recalc_face_normals(bm, faces=bm.faces[:])
+    me = bpy.data.meshes.new(ad)
+    bm.to_mesh(me)
+    bm.free()
+    ob = bpy.data.objects.new(ad, me)
+    bpy.context.scene.collection.objects.link(ob)
+    me.materials.append(malz)
+    if pah:
+        bv = ob.modifiers.new('pah', 'BEVEL')
+        bv.width, bv.segments, bv.limit_method, bv.harden_normals = pah, 4, 'ANGLE', True
+    for poly in me.polygons:
+        poly.use_smooth = True
+    ob.parent = ust
+    return ob
+
+
 def koltuk_kur(o):
-    """Oyuncu koltuğu: beş kollu tekerlekli ayak, amortisör, kenarları kabarık oturak, kanatlı yüksek sırt (geriye eğik),
-    boyun ve bel yastığı, kolçaklar. Siyah suni deri, Oktos turuncusu şeritler. Orijin zeminde, ayağın ortası; ön yüzü +y
-    (tarayıcı CHAIR.rz kadar döndürür)."""
+    """Oyuncu koltuğu: yarış koltuğu silüetli sırt (üstte dar başlık, omuzlara doğru genişler), turuncu kenarlı orta
+    panel ve kemer yuvaları, yanları kavisli kanatlı oturak, kolçaklar, beş kollu tekerlekli ayak. Siyah suni deri,
+    Oktos turuncusu. Orijin zeminde, ayağın ortası; ön yüzü +y (tarayıcı CHAIR.rz kadar döndürür)."""
     deri = malzeme('deri_siyah', (0.022, 0.022, 0.025), puruz=0.42, kaplama=0.35, kaplama_puruz=0.3)
     serit = malzeme('deri_turuncu', (0.66, 0.13, 0.025), puruz=0.45, kaplama=0.3, kaplama_puruz=0.3)
     metal = malzeme('koltuk_metal', (0.06, 0.06, 0.065), puruz=0.25, metal=1.0)
     siyah = bpy.data.materials.get('siyah_plastik') or malzeme('siyah_plastik', (0.018, 0.018, 0.02), puruz=0.42)
     kok = bos('koltuk')
-    # Ayak: beş kol, uçlarında tekerlek
+    # Ayak: beş kol, uçlarında tekerlek; amortisör
     for k in range(5):
         a = math.radians(90 + 72 * k)
         dondur(yk('koltuk_kol', 300, 48, 30, 165, 0, 62, metal, pah=8, ust=kok), a)
@@ -1387,32 +1459,36 @@ def koltuk_kur(o):
     silindir('koltuk_amortisor', 26, 340, 0, 0, 90, metal, ust=kok)
     silindir('koltuk_kilif', 33, 170, 0, 0, 92, siyah, ust=kok)
     yk('koltuk_mekanizma', 230, 230, 30, 0, 0, 430, siyah, pah=6, ust=kok)
-    # Oturak: ortası alçak, kenarları kabarık; üstünde iki turuncu şerit
-    yk('koltuk_oturak', 500, 500, 90, 0, 10, 460, deri, pah=30, ust=kok)
+    # Oturak: yuvarlak yastık, turuncu kenarlı orta panel; yanlarda önü kalkık kavisli kanatlar
+    yk('koltuk_oturak', 470, 500, 80, 0, 10, 460, deri, pah=32, ust=kok)
+    yk('koltuk_oturak_kenar', 300, 400, 8, 0, 20, 536, serit, pah=4, ust=kok)
+    yk('koltuk_oturak_panel', 284, 384, 10, 0, 20, 538, deri, pah=5, ust=kok)
+    kanat = egri([(-240, 0), (0, 0), (250, 0), (275, 45), (250, 110), (150, 120), (0, 100), (-160, 95), (-245, 70)], 5)
     for sx in (-1, 1):
-        yk('koltuk_oturak_kenar', 80, 480, 46, sx * 215, 10, 525, deri, pah=24, ust=kok)
-        yk('koltuk_oturak_serit', 26, 420, 6, sx * 110, 20, 548, serit, pah=3, ust=kok)
+        profil('koltuk_oturak_kanati', kanat, 80, deri, kok, eksen='x', pah=22, kayma=(sx * 222, 10, 500))
     # Kolçaklar
     for sx in (-1, 1):
-        yk('koltuk_kolcak_ayak', 40, 60, 210, sx * 285, -10, 470, siyah, pah=8, ust=kok)
-        yk('koltuk_kolcak', 90, 260, 30, sx * 285, 10, 680, siyah, pah=10, ust=kok)
-    # Sırt: oturağın arkasında, 12° geriye eğik (kendi düğümünde)
+        yk('koltuk_kolcak_ayak', 40, 60, 210, sx * 290, -10, 470, siyah, pah=8, ust=kok)
+        yk('koltuk_kolcak', 90, 260, 30, sx * 290, 10, 680, siyah, pah=12, ust=kok)
+    # Sırt (kendi düğümünde, 12° geriye eğik): yarış koltuğu silüeti, ortada turuncu kenarlı panel, kemer yuvaları
     sirt = bos('koltuk_sirt', (0, -215, 545), ust=kok)
     sirt.rotation_euler[0] = math.radians(-12)
-    yk('koltuk_sirt_pano', 500, 100, 820, 0, 0, 0, deri, pah=34, ust=sirt)
+    sag = [(95, 860), (132, 820), (138, 760), (122, 700), (150, 650), (225, 600), (262, 540), (272, 420), (262, 280),
+           (248, 160), (252, 60), (232, 0)]
+    dis = egri(ayna(sag), 6)
+    profil('koltuk_sirt_pano', dis, 96, deri, sirt, pah=26)
+    olc = lambda pts, kx, kz, dz: [(x * kx, z * kz + dz) for x, z in pts]
+    profil('koltuk_sirt_kenar', egri(ayna(olc(sag[1:-1], 0.66, 0.86, 70)), 6), 8, serit, sirt, pah=3, kayma=(0, 50, 0))
+    profil('koltuk_sirt_panel', egri(ayna(olc(sag[1:-1], 0.6, 0.83, 85)), 6), 10, deri, sirt, pah=4, kayma=(0, 54, 0))
     for sx in (-1, 1):
-        yk('koltuk_sirt_kanat', 70, 120, 560, sx * 228, 18, 90, deri, pah=30, ust=sirt)
-        yk('koltuk_sirt_serit', 26, 4, 640, sx * 150, 51, 90, serit, pah=2, ust=sirt)
-        yk('koltuk_kemer_yuvasi', 60, 4, 110, sx * 115, 51, 650, siyah, pah=10, ust=sirt)
-    yk('koltuk_boyun_yastigi', 300, 70, 140, 0, 82, 640, deri, pah=30, ust=sirt)
-    yk('koltuk_boyun_serit', 300, 4, 18, 0, 118, 702, serit, pah=6, ust=sirt)
-    yk('koltuk_bel_yastigi', 340, 80, 160, 0, 86, 130, deri, pah=34, ust=sirt)
+        yk('koltuk_kemer_yuvasi', 24, 6, 74, sx * 70, 58, 640, siyah, pah=10, ust=sirt)
+    yk('koltuk_bel_yastigi', 300, 70, 130, 0, 86, 150, deri, pah=34, ust=sirt)
     return kok
 
 
 def esya_yaz(o, hedef):
     bpy.ops.wm.read_factory_settings(use_empty=True)
-    kok = [monitor_kur(o), buzdolabi_kur(o), masa_alti_kur(o), kahvalti_kur(bpy.context.scene), perde_kur(o), koltuk_kur(o)]
+    kok = [monitor_kur(o), buzdolabi_kur(o), masa_alti_kur(o), perde_kur(o), koltuk_kur(o)]  # kahvalti_kur şu an kullanılmıyor
     bpy.ops.object.select_all(action='DESELECT')
     for k in kok:
         k.select_set(True)
@@ -1499,7 +1575,7 @@ def main():
         doku_yaz()
     if 'esya' in parca:
         esya_yaz(o, yol(CIKTI, 'oda-esya.glb'))
-        meta['esya'] = {'dosya': 'oda-esya.glb', 'koklar': ['monitor', 'buzdolabi', 'masa_alti', 'kahvalti', 'perde', 'koltuk'], 'perde': PERDE}
+        meta['esya'] = {'dosya': 'oda-esya.glb', 'koklar': ['monitor', 'buzdolabi', 'masa_alti', 'perde', 'koltuk'], 'perde': PERDE}
     if 'bitki' in parca:
         bitki_yaz(yol(CIKTI, 'oda-bitki.glb'))
         meta['bitki'] = {'dosya': 'oda-bitki.glb', 'cesitler': [b[3] for b in BITKILER]}

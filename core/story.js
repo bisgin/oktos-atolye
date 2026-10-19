@@ -304,6 +304,12 @@ export async function mountStory(root, { toolId, lang = 'tr', mode = pickMode(to
     if (custom) {
       pos = new THREE.Vector3(...custom.pos);
       center = new THREE.Vector3(...custom.target);
+      // custom.w: kadraja yatayda sığması gereken genişlik (mm). Dar ekranda (telefon dikey) kamera bakış doğrultusunda
+      // o genişlik sığana kadar geri çekilir; geniş ekranda zaten sığar, açı değişmez
+      if (custom.w) {
+        const gerek = custom.w / 2 / (Math.tan((camera.fov * Math.PI) / 360) * camera.aspect), d = pos.distanceTo(center);
+        if (gerek > d) pos.sub(center).multiplyScalar(gerek / d).add(center);
+      }
     } else {
       const dir = new THREE.Vector3(...shots.main.pos).sub(new THREE.Vector3(...shots.main.target)).normalize();
       const elev = h.focusElev ?? 0.42;

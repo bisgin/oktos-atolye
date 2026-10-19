@@ -9,9 +9,8 @@
 import * as THREE from 'three';
 import { gsap } from 'gsap';
 import { initCSG } from './csg.js';
-import { fonts, textSolid, standUp, solid, C } from './scene-kit.js';
 import { ZONES, A, SHOTS, LOOK, FOCUS, LIGHTS } from './oda-yerler.js';
-import { TEMPLATES, buildTemplate, binModel, vaseModel, OZEL_TUSLAR } from './oda-urunler.js';
+import { TEMPLATES, COKLU, buildTemplate, binModel, vaseModel, OZEL_TUSLAR } from './oda-urunler.js';
 import { OLCU, toSun } from './oda-olcu.js';
 
 const TAU = Math.PI * 2;
@@ -48,7 +47,6 @@ let P_ = null; // props.js (buildScene'e gelir; pilot malzemesi için)
 export async function buildScene({ scene, P, lang = 'tr' }) {
   P_ = P;
   await initCSG();
-  const fs = await fonts(700);
   const pilot = options.pilot ? await pilotYukle() : null;
   const kabuk = !pilot; // gri kutu oda kabuğu (pilotta GLB'den gelir)
   const tone = (c, rough = 0.85) => P.clay(c, { rough, env: 0.45 });
@@ -174,11 +172,47 @@ export async function buildScene({ scene, P, lang = 'tr' }) {
   }
   async function slot(zone, host, { plant = null } = {}) {
     const s = (slots[zone] = { host, plant, cache: new Map(), index: 0, model: null, busy: false });
-    s.model = await model(zone, TEMPLATES[zone][0].id);
-    host.add(s.model);
+    const list = TEMPLATES[zone];
+    if (COKLU[zone]) {
+      // Çoklu yuva (QR): her ürün kendi yerinde, ilk şablonuyla. Ürün düğümü: kok (yer) → mentese (ön kenarda, dikelme
+      // ekseni) → ic (modeli kenara göre geri kaydırır) → model
+      s.coklu = {};
+      for (const [urun, c] of Object.entries(COKLU[zone])) {
+        const t = list.find((x) => x.urun === urun);
+        const u = { ...c, kok: place(new THREE.Group(), c.yer, host), mentese: new THREE.Group(), ic: new THREE.Group(), id: t.id };
+        u.kok.add(u.mentese);
+        u.mentese.add(u.ic);
+        u.model = await model(zone, t.id);
+        u.ic.add(u.model);
+        u.mentese.rotation.x = c.dur ?? 0;
+        kenar(u);
+        s.coklu[urun] = u;
+      }
+      s.model = s.coklu[list[0].urun].model;
+    } else {
+      s.model = await model(zone, list[0].id);
+      host.add(s.model);
+    }
     if (plant) plant.position.z = agiz(s.model);
     await yieldMain();
     return s;
+  }
+  // Çoklu yuvada dikelme ekseni modelin ön kenarında: kenar orada kalır, arkası kalkar (yatan anahtarlık kameraya döner)
+  function kenar(u) {
+    const y = u.model.userData.onKenar ?? 0;
+    u.mentese.position.y = y;
+    u.ic.position.y = -y;
+  }
+  // Seçili ürünü öne çıkarır (yalnız yakın planda; genel planda hepsi yerinde). Diğerleri yerinde kalır, silinmez.
+  function isaretle(zone, { reduced = false } = {}) {
+    const s = slots[zone];
+    if (!s?.coklu) return;
+    const secili = focusedId === zone ? TEMPLATES[zone][s.index].urun : null, d = reduced ? 0.01 : 0.45;
+    for (const [urun, u] of Object.entries(s.coklu)) {
+      const on = urun === secili;
+      gsap.to(u.mentese.rotation, { x: on ? u.egim : u.dur ?? 0, duration: d, ease: 'power3.out', overwrite: true });
+      gsap.to(u.kok.position, { z: u.yer[2] + (on ? u.kalk : 0), duration: d, ease: 'power3.out', overwrite: true });
+    }
   }
 
   // ---- çekmeceli dolap; üst çekmece raylı, −y yönünde açılır; içinde Kutu aracının çekmeceye uyan şablonları ----
@@ -323,8 +357,8 @@ export async function buildScene({ scene, P, lang = 'tr' }) {
   scene.add(tableItems);
   await slot('balkonMasa', place(new THREE.Group(), [A.table[0] + 80, A.table[1] + 60, 722, -0.3], tableItems));
 
-  // ---- mini buzdolabı (sağ duvar, ön yüzü −x): alt rafta pasta süsü yuvası, üst rafta "Gluten yok" etiketli ekmek;
-  // üstünde döner tablada Text Flip yuvası ----
+  // ---- mini buzdolabı (sağ duvar, ön yüzü −x): üst rafta pasta süsü yuvası, iki raf yiyecekle dolu; üstünde döner
+  // tablada Text Flip yuvası ----
   const F = FRIDGE;
   const fridge = place(new THREE.Group(), A.fridge);
   if (pilot) fridge.add(pilot.esya.buzdolabi); // gerçekçi model (raf ve taban yuvaların yüksekliğinde)
@@ -336,21 +370,25 @@ export async function buildScene({ scene, P, lang = 'tr' }) {
     box(F.d - 50, F.w - 50, 10, 10, 0, F.shelf - 10, M.inner, { parent: fridge, r: 2 });
     box(F.d - 40, F.w - 40, 8, 10, 0, F.floor - 8, M.inner, { parent: fridge, r: 2 });
   }
-  {
-    // Ekmek ve üstüne batırılmış etiket: "Gluten yok" (3D Yazı). Pilotta tabakta somun ve beyaz peynir (Blender);
-    // etiketin battığı nokta modelin userData.etiket'inde [x, y, z]
-    const bread = place(pilot ? pilot.esya.kahvalti : new THREE.Group(), [-40, 0, F.shelf, -Math.PI / 2], fridge);
-    if (!pilot) box(220, 110, 90, 0, 0, 0, tone(0xd9b77e, 0.9), { parent: bread, r: 30 });
-    const at = pilot ? bread.userData.etiket : null;
-    const label = lang === 'en' ? 'Gluten free' : 'Gluten yok';
-    bread.add(solid(() => {
-      const t = textSolid(fs, label, 19, 2, { spacing: 0.4 });
-      const card = standUp(C.extrude(C.rrect(t.width + 14, t.cap + 14, 3), 2), 2);
-      const [x, y, z] = at ? [at[0], at[1], at[2] + 22 + (t.cap + 14) / 2] : [20, -20, 132]; // çubuk ekmeğe ~22 mm batar
-      return C.move(C.union([card, C.move(standUp(t.solid, 2), 0, -2, -t.cap / 2), C.box(2.4, 2.4, 44, -1.2, -1.2, -44 - (t.cap + 14) / 2)]), x, y, z);
-    }, P.clay(0xe6b33a, { rough: 0.5 })));
+  // Raflarda yiyecek (pilot, Poly Haven CC0; düşük çözünürlük): üstte pastanın iki yanında meyve, altta sürahi, süt,
+  // konserve ve meyve. Buzdolabının yerel düzlemi: x derinlik (ön −x; kapak raflarına çarpmasın diye x > −150), y genişlik
+  if (pilot) {
+    // Kopya bir kabın içinde: düğümün kendi konumu (tabanı orijine getiren kayma, limonda 52 mm) korunur
+    const koy = (ad, x, y, z, rz = 0) => { if (pilot.cicek[ad]) place(new THREE.Group().add(pilot.cicek[ad].clone()), [x, y, z, rz], fridge); };
+    koy('yiyecek_nar', 120, 160, F.shelf, 0.6);
+    koy('yiyecek_elma', 130, -165, F.shelf, 1.2);
+    koy('yiyecek_limon', -70, -170, F.shelf, 0.4);
+    koy('yiyecek_misket', -90, 175, F.shelf, 2.1);
+    koy('yiyecek_misket', -30, 190, F.shelf, 0.3);
+    koy('yiyecek_surahi', 95, -80, F.floor, Math.PI / 2 + 0.15);
+    koy('yiyecek_sut', 125, 150, F.floor, 0.25);
+    koy('yiyecek_fasulye', 0, 180, F.floor);
+    koy('yiyecek_domates', -50, 75, F.floor, 1.1);
+    koy('yiyecek_kivi', -95, -165, F.floor, 0.8);
+    koy('yiyecek_kivi', -130, -100, F.floor, 2.6);
+    koy('yiyecek_elma', -60, -40, F.floor, 3.0);
   }
-  await slot('buzdolabi', place(new THREE.Group(), [-40, 0, F.floor, -Math.PI / 2], fridge));
+  await slot('buzdolabi', place(new THREE.Group(), [-40, 0, F.shelf, -Math.PI / 2], fridge));
   let door; // menteşe arka köşede; yakın planda açılır
   if (pilot) door = pilot.esya.buzdolabi.getObjectByName('buzdolabi_kapak');
   else {
@@ -444,15 +482,25 @@ export async function buildScene({ scene, P, lang = 'tr' }) {
     if (i === s.index) return info(zone);
     s.busy = true;
     try {
-      const next = await model(zone, list[i].id), old = s.model;
-      // Parçalı şablon (klavyedeki tuş başlıkları): her parça kendi yerinde küçülür/büyür, grup merkezine kaymaz
-      const olcek = (m) => (m.userData.parcali ? m.children.map((c) => c.scale) : [m.scale]);
+      // Çoklu yuvada yalnız şablonun ürünü değişir (öbürleri yerinde kalır); ürün zaten bu şablondaysa yalnız öne çıkar
+      const u = s.coklu?.[list[i].urun], host = u ? u.ic : s.host, old = u ? u.model : s.model;
+      const next = u && u.id === list[i].id ? old : await model(zone, list[i].id);
+      const simdiki = () => (u ? u.model : s.model);
       s.index = i;
       s.model = next;
+      if (u) { u.model = next; u.id = list[i].id; isaretle(zone, { reduced }); }
+      if (next === old) {
+        measure(zone);
+        api.onChange?.(zone, info(zone));
+        return info(zone);
+      }
+      if (u) kenar(u);
+      // Parçalı şablon (klavyedeki tuş başlıkları): her parça kendi yerinde küçülür/büyür, grup merkezine kaymaz
+      const olcek = (m) => (m.userData.parcali ? m.children.map((c) => c.scale) : [m.scale]);
       gsap.killTweensOf([...olcek(next), next.position]);
-      s.host.add(next);
+      host.add(next);
       if (reduced) {
-        s.host.remove(old);
+        host.remove(old);
         olcek(next).forEach((x) => x.setScalar(1));
         next.position.z = 0;
         if (s.plant) s.plant.position.z = agiz(next);
@@ -460,11 +508,11 @@ export async function buildScene({ scene, P, lang = 'tr' }) {
         api.onChange?.(zone, info(zone));
       } else {
         gsap.killTweensOf(olcek(old));
-        gsap.to(olcek(old), { x: 0.001, y: 0.001, z: 0.001, duration: 0.2, ease: 'power2.in', onComplete: () => { if (s.model !== old) s.host.remove(old); olcek(old).forEach((x) => x.setScalar(1)); } });
+        gsap.to(olcek(old), { x: 0.001, y: 0.001, z: 0.001, duration: 0.2, ease: 'power2.in', onComplete: () => { if (simdiki() !== old) host.remove(old); olcek(old).forEach((x) => x.setScalar(1)); } });
         olcek(next).forEach((x) => x.setScalar(0.55));
         next.position.z = 24;
         gsap.to(olcek(next), { x: 1, y: 1, z: 1, duration: 0.5, delay: 0.12, ease: 'back.out(1.7)' });
-        gsap.to(next.position, { z: 0, duration: 0.5, delay: 0.12, ease: 'power3.out', onComplete: () => { if (s.model === next) measure(zone); } });
+        gsap.to(next.position, { z: 0, duration: 0.5, delay: 0.12, ease: 'power3.out', onComplete: () => { if (simdiki() === next) measure(zone); } });
         if (s.plant) gsap.to(s.plant.position, { z: agiz(next), duration: 0.5, delay: 0.1, ease: 'power3.out', overwrite: true });
         api.onChange?.(zone, info(zone));
         await new Promise((r) => gsap.delayedCall(0.22, r)); // eski model küçülene kadar kilit
@@ -545,6 +593,7 @@ export async function buildScene({ scene, P, lang = 'tr' }) {
         });
       }
       if (id === 'flip' && !reduced) turn(-Math.PI / 2, 1.1); // ikinci kelime kameraya döner
+      isaretle(id, { reduced }); // QR: seçili ürün öne çıkar
     },
     onUnfocus(id) {
       if (focusedId === id) focusedId = null;
@@ -555,6 +604,7 @@ export async function buildScene({ scene, P, lang = 'tr' }) {
         if (icIsik) gsap.to(icIsik, { intensity: 0, duration: 0.3, overwrite: true });
       }
       if (id === 'flip') turn(0, 0.8);
+      isaretle(id); // QR: ürünler yerine oturur
     },
   };
 }

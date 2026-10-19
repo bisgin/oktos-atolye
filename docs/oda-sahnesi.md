@@ -53,7 +53,15 @@ markasız içecekler (kutular ve cam şişe; raflar 9 cm derin). Oyuncu koltuğu
 saksılar durağı sağdan bakar. Balkonun karşısı Blender'da kuruldu ve odayla birlikte pişer: oda 2. katta; aşağıda
 sokak (asfalt, kaldırımlar), 14 m ötede dükkânlı zemin kat ve balkonlu, perdeli üç katlı karşı bina; balkonumuzun
 altında kendi cephemiz. HDRI yalnız binanın üstündeki gökyüzünde kalır. Yapbozda aile fotoğrafı (Unsplash, kayıt
-KAYNAKLAR.md'de). Ana sayfanın tek sahnesi: ev ofisi ve açık balkon. Ürettiğimiz her şey kendi doğal yerinde
+KAYNAKLAR.md'de).
+2026-10-19 (devam): kalemlikler farklı kalemlerle (kurşun, tükenmez, keçeli, fosforlu) ve her şablonda bölmelere
+dizili, kalem ağız hizasında duvara değmez. Koltuk yarış koltuğu silüetinde (dar başlık, geniş omuz, kanatlı oturak),
+masanın sağ önünde dönük; kasa masanın altında sola alındı. Buzdolabında ekmek ve peynir kalktı, pasta üst rafta, iki
+raf Poly Haven yiyecekleriyle dolu (sürahi, süt, konserve, meyve; doku 256–512 px, en çok ~2.500 üçgen). QR üç ürünü
+birlikte gösterir (Wi-Fi standı, kartvizit, duvara yaslı anahtarlık; ikişer şablon): şablon yalnız kendi ürününü
+değiştirir, seçili ürün kalkıp dikelir (`COKLU`, oda-sahne çoklu yuva). Yakın planlara `w` (sığacak genişlik): telefonda
+kamera geri çekilir, klavye ve QR kenardan taşmaz. Üst çubuk ve şablon şeridi koyu, sol üstte beyaz Oktos logosu.
+Ana sayfanın tek sahnesi: ev ofisi ve açık balkon. Ürettiğimiz her şey kendi doğal yerinde
 durur; ziyaretçi bakar, tıklar, şablonları değiştirir, araca geçer. Görsel referanslar: sade ev ofisi (yatay
 aynalanmış) ve açık balkon (ahşap zemin, bistro masa, büyük saksılar).
 
@@ -77,7 +85,7 @@ aynalanmış) ve açık balkon (ahşap zemin, bistro masa, büyük saksılar).
 | Balkon kapısı | 3D Yazı: "Oksijen alma alanı" plakası | Harfler düşüp dizilir | Tabela şablonları | Adın kapında dursun. |
 | Pencere kenarı, balkon | Vazo: saksılar (bitkiler içinde) | Çiçek yerinde kalır, saksı değişir; birkaç şablondan sonra tozdan "Sana özel saksıyı tasarla!" yazısı | Vazo şablonları | Her bitkinize şık bir kıyafet. |
 | Balkon masası | QR: menü standı, bardak altlığı | Altlık dönerek yatar, kod yağar | Menü, kartvizit | *(taslak yazılacak)* |
-| Mini buzdolabı | 3D Yazı: "İyi ki doğdun" pasta süsü, "Gluten yok" etiketli ekmek; üstünde Text Flip | Kapak açılır; Flip tablası döner | Yazılar; kelime çiftleri | Bir yandan sen, öbür yandan o. (Flip) |
+| Mini buzdolabı | 3D Yazı: üst rafta "İyi ki doğdun" pasta süsü (raflar yiyecekle dolu); üstünde Text Flip | Kapak açılır; Flip tablası döner | Yazılar; kelime çiftleri | Bir yandan sen, öbür yandan o. (Flip) |
 
 Kaplar ve ürünler bizim baskı modellerimiz; hazır model yalnız içine konanlar için (bitki, yiyecek), kaynağı ve
 lisansıyla (proje kuralı).

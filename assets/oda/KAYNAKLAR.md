@@ -19,6 +19,13 @@ Ham dosyalar `kaynak/` altında durur (depoya girmez); sitede yalnız sıkışt�
 | `kaynak/concrete_pavement/` (doku, 1k) | https://polyhaven.com/a/concrete_pavement | Charlotte Baglioni | Karşı kaldırım |
 | `kaynak/painted_plaster_wall/` (doku, 1k) | https://polyhaven.com/a/painted_plaster_wall | Amal Kumar | Karşı binanın sıvalı cephesi |
 | `kaynak/brushed_concrete/` (doku, 1k) | https://polyhaven.com/a/brushed_concrete | Dario Barresi, Dimitrios Savva | Karşı binanın balkon döşemeleri ve zemin kat |
+| `kaynak/jug_01/` (model, 1k) | https://polyhaven.com/a/jug_01 | Kuutti Siitonen | Buzdolabında süt sürahisi |
+| `kaynak/long_life_food/` (model, 1k) | https://polyhaven.com/a/long_life_food | Mia Pecina Zorko | Buzdolabında süt kartonu ve konserveler |
+| `kaynak/food_apple_01/` (model, 1k) | https://polyhaven.com/a/food_apple_01 | Oliver Harries | Buzdolabında elma |
+| `kaynak/food_lime_01/` (model, 1k) | https://polyhaven.com/a/food_lime_01 | Oliver Harries | Buzdolabında misket limonu |
+| `kaynak/lemon/` (model, 1k) | https://polyhaven.com/a/lemon | Kuutti Siitonen | Buzdolabında limon |
+| `kaynak/food_kiwi_01/` (model, 1k) | https://polyhaven.com/a/food_kiwi_01 | Oliver Harries | Buzdolabında kivi |
+| `kaynak/food_pomegranate_01/` (model, 1k) | https://polyhaven.com/a/food_pomegranate_01 | Oliver Harries | Buzdolabında nar |
 
 ## Diğer kaynaklar (CC0 değil)
 

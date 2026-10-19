@@ -56,10 +56,19 @@
    "cicek_b",
    "pasta",
    "balkon_bitki",
-   "balkon_cicek"
+   "balkon_cicek",
+   "yiyecek_surahi",
+   "yiyecek_sut",
+   "yiyecek_domates",
+   "yiyecek_fasulye",
+   "yiyecek_elma",
+   "yiyecek_misket",
+   "yiyecek_limon",
+   "yiyecek_kivi",
+   "yiyecek_nar"
   ]
  },
- "tarih": "2026-10-19 05:39",
+ "tarih": "2026-10-19 06:46",
  "kodlama": "sqrt-srgb",
  "esya": {
   "dosya": "oda-esya.glb",
@@ -67,7 +76,6 @@
    "monitor",
    "buzdolabi",
    "masa_alti",
-   "kahvalti",
    "perde",
    "koltuk"
   ],

@@ -30,7 +30,7 @@ export const A = {
   pencup: [-1400, 1520, 740, 0],      // monitörün solunda (önceki yerde kalemler monitörün içine giriyordu)
   keyboard: [-930, 1330, 740, 0.02],
   monitor: [MONITOR.x, MONITOR.y, 740, 0], // klavyenin arkasında (pilotta gerçekçi monitör)
-  clickers: [-700, 1238, 743, -0.35], // anahtarlık clicker: klavyenin önünde, mousepad'in üstünde (tuş setiyle aynı tasarım)
+  clickers: [-760, 1235, 743, -0.35], // anahtarlık clicker: klavyenin önünde, mousepad'in üstünde (tuş setiyle aynı tasarım)
   modem: [-1110, 1690, 1328, 0.05],   // alt rafın solu (raflar masanın sağ yarısında: sol üst duvar başlığa kalır)
   qrHolder: [-950, 1700, 1328, -0.1],
   frameA: [-1440, 1785, 1390, 0],     // arka duvar, monitörün sol üstü: Painter rölyefi (küçük çerçeve, raf ucunun solunda)
@@ -54,19 +54,20 @@ export const SHOTS = {
 export const LOOK = { min: -0.52, max: 0.46, edge: 0.2, speed: 0.75 };
 
 // Yakın planlar: her durağın kendi açısı (kaydırmalı turun durakları). Yatay ekranda motor kadrajı kartın tersine,
-// dikey ekranda yukarı kaydırır. Çekmece açık hâliyle: içi çapraz yukarıdan, organizer ortada.
+// dikey ekranda yukarı kaydırır. Çekmece açık hâliyle: içi çapraz yukarıdan, organizer ortada. w: yatayda sığması
+// gereken genişlik (mm); telefonda kamera bu genişlik sığana kadar geri çekilir (story.js focusShot).
 export const FOCUS = {
   cekmece: { pos: [-930, -220, 1900], target: [-1790, 860, 560] },  // tam açık çekmece (590 mm dışarıda)
   kalemlik: { pos: [-950, 640, 1180], target: [-1290, 1500, 830] },   // masa üstü: kalemlik, monitörün solu
-  klavye: { pos: [-800, 640, 1190], target: [-925, 1305, 760] },    // klavyenin tamamı (Esc'ten oka) ve önündeki anahtarlık
-  modem: { pos: [-830, 760, 1520], target: [-850, 1690, 1370] },     // alt raf: modem ve QR'lar
-  tabela: { pos: [800, 560, 1650], target: [800, 1790, 2370] },      // kapının üstündeki plaka (odanın içinden, aşağıdan)
+  klavye: { pos: [-785, 630, 1195], target: [-910, 1300, 760], w: 440 }, // klavyenin tamamı (Esc'ten oka) ve önündeki anahtarlık
+  modem: { pos: [-934, 700, 1540], target: [-954, 1690, 1370], w: 640 }, // alt raf: modem, kartvizit ve anahtarlık ortada
+  tabela: { pos: [800, 560, 1650], target: [800, 1790, 2370], w: 700 }, // kapının üstündeki plaka (odanın içinden, aşağıdan)
   saksilar: { pos: [330, 480, 1260], target: [-20, 1650, 1080] },   // pervazdaki saksılar ve çiçekleri, arkada tül (sağdan: koltuk solda kalır)
-  miknatis: { pos: [690, 610, 1100], target: [1530, 850, 650] },        // kapalı kapağa karşıdan: mıknatıslar
-  buzdolabi: { pos: [380, 260, 1020], target: [1660, 860, 300] },   // ön yüzüne karşıdan; ortada alt raftaki pasta
-  cerceve: { pos: [-1440, 1080, 1520], target: [-1440, 1785, 1515] }, // monitörün sol üstündeki çerçeveye karşıdan
-  yapboz: { pos: [-860, 900, 1320], target: [-2090, 920, 1300] },
-  flip: { pos: [1355, 592, 1041], target: [1825, 850, 880] },      // heykele önden, alçaktan: ilk kelime okunur
+  miknatis: { pos: [690, 610, 1100], target: [1530, 850, 650], w: 480 }, // kapalı kapağa karşıdan: mıknatıslar
+  buzdolabi: { pos: [380, 260, 1020], target: [1660, 860, 300], w: 640 }, // ön yüzüne karşıdan: üst rafta pasta, iki raf dolu
+  cerceve: { pos: [-1440, 1080, 1520], target: [-1440, 1785, 1515], w: 380 }, // monitörün sol üstündeki çerçeveye karşıdan
+  yapboz: { pos: [-860, 900, 1320], target: [-2090, 920, 1300], w: 720 },
+  flip: { pos: [1355, 592, 1041], target: [1825, 850, 880], w: 380 }, // heykele önden, alçaktan: ilk kelime okunur
   balkonMasa: { pos: [760, 1640, 1460], target: [900, 2620, 760] }, // odanın içinden, kapı boşluğundan masaya (kasaya çarpmaz)
 };
 
