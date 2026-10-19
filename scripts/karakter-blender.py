@@ -25,7 +25,7 @@ SS = {'saç sakal': 1, 'kafa': 1, 'sol kulak': 0, 'sağ kulak': 0, 'kulaklık': 
 DEC = {'sol göz': 0.06, 'sağ göz': 0.06, 'saç sakal': 0.45, 'kafa': 0.7, 'sol kaş': 0.6, 'sağ kaş': 0.6, 'burun': 0.6}
 KLIP = {'merdiven': 'Merdivenden İnme', 'ip': 'İpten İnme', 'yuru': 'Yürüme', 'dur': 'Durma', 'dans_twist': 'Dans Twist',
         'dans_tavuk': 'Dans Tavuk', 'dans_lahana': 'Dans Lahana', 'dans_runningman': 'Dans Runningman',
-        'otur': 'Koltuğa Oturma', 'kalk': 'Koltuktan Kalkma', 'uzan': 'Klavyeye Uzanma', 'cekil': 'Klavyeden Yaslanma',
+        'otur': 'Koltuğa Oturma', 'otur2': 'Oturmaya Geçiş', 'kalk': 'Koltuktan Kalkma', 'uzan': 'Klavyeye Uzanma', 'cekil': 'Klavyeden Yaslanma',
         'yaz': 'Klavye Tuşlama', 'kafa_salla': 'Tuşlarken Müziğe Kafa Sallama', 'muzik': 'Taburede Müzik Dinleme',
         'sevin': 'Bilgisayar Başında Sevinme', 'inanamama': 'Ekrana İnanamama', 'bekle': 'Masada Bekleme'}
 # Sonradan eklenecek klipler: dosyada varsa alınır (yoksa core/oda-karakter.js yer tutucuyla oynar)
@@ -71,7 +71,7 @@ meta = {
         'yuru': {'tekrar': True}, 'dur': {'tekrar': True},
         # Oturma: kalça 57–81. karede iner (site koltuğu yüksek: kök aynı anda koltuk yüksekliğine kalkar, ayaklar
         # sarkar); 134–164 arası koltuk öne kayar
-        'otur': {'z': [[55, 0], [81, MASA_Z]], 'koltuk': [[1, kg(0.128)], [134, kg(0.128)], [164, kg(0)]]},
+        'otur': {'z': [[55, 0], [81, MASA_Z]], 'koltuk': [[1, kg(0.128)], [134, kg(0.128)], [164, kg(0)]], 'inis': 81},
         # Kalkma: önce koltuk geri (1–30), kalça 61–89. karede kalkar
         'kalk': {'z': [[61, MASA_Z], [89, 0]], 'koltuk': [[1, kg(0)], [30, kg(0.128)]]},
         # Koltukta Yaslanma alınmaz: eller başın arkasında, sitedeki yüksek koltuk sırtının içinden çıkıyor. Kenarda
@@ -81,6 +81,33 @@ meta = {
         'kaydir': {'tekrar': True, **MASA},
     },
 }
+
+# İkinci oturma (Oturmaya Geçiş, Mixamo "Stand To Sit"; ziyaret başına otur ile rastgele seçilir): tabureye geri oturur,
+# koltuk yerinde durur. Klibin başında kalça kökün ~22 cm önünde (Durma'da ~2,5 cm): gövde 'ileri' kadar geri kaydırılır
+# (geçişte sıçramasın), klip bitince site bu kaymayı köke aktarır. Kalça inişi ve oturuşun koltuk mesafesi ölçülür:
+# son pozda koltuk kalçaya göre yazma pozundaki yerinde, kök kalçanın son yüksekliğini yazma pozuna eşler.
+def kalca(ad, f):
+    act = bpy.data.actions[ad]
+    rig.animation_data.action = act
+    if act.slots: rig.animation_data.action_slot = act.slots[0]
+    sc.frame_set(f)
+    h = rig.pose.bones['kalça'].head
+    return h.y, h.z
+O2 = 'Hareket - Oturmaya Geçiş'
+o2_son = int(bpy.data.actions[O2].frame_range[1])
+o2 = [kalca(O2, f) for f in range(1, o2_son + 1)]
+yd, _ = kalca('Hareket - Durma', 1)
+yy, zy = kalca('Hareket - Klavye Tuşlama', 1)
+z0, zmin = o2[0][1], min(z for _, z in o2)
+bas = next(i + 1 for i, (_, z) in enumerate(o2) if z < z0 - 0.03 * (z0 - zmin))
+inis = min(range(1, o2_son + 1), key=lambda f: o2[f - 1][1])
+ileri = mm(o2[0][0] - yd)                                      # gövde kayması (ileri +): başta kalça Durma'daki yerinde
+meta['klip']['otur2'] = {
+    'z': [[bas, 0], [inis, round(MASA_Z + mm(zy - o2[-1][1]), 1)]],
+    'koltuk': round(kg(0) + mm(o2[-1][0] - yy) - ileri, 1),   # koltuk merkezi kökün arkasında (taburenin yeri, sabit)
+    'ileri': ileri, 'inis': inis,
+}
+print('OTUR2', meta['klip']['otur2'])
 
 # Sitenin koltuğuna göre kurulan kliplerin bilgisi aksiyonun kendisinde ("site_meta": sırt, kök kayması, tutma, dönüş)
 for k, a in KLIP.items():

@@ -222,6 +222,11 @@ yok: sayfanın en üstünde yukarı kaydırmak üst kata çıkmak sayılır).
 - **İmleç dairesi (genel plan):** fare kartvizit, kalemlik ya da tuşların üzerindeyse imlecin çevresinde, ürünün
   uzaklığında ~12 cm'lik bir daire karakteri ve koltuğu siler, arkadaki ürün görünür; tıklama ürüne gider
   (`AYAR.fareDelik`, `AYAR.fareCap`; dokunmatikte yok, yakın planda eski daire geçerli).
+- **Oturuş:** ziyaret başına iki klipten biri rastgele: Koltuğa Oturma (`otur`) ya da Oturmaya Geçiş (`otur2`, Mixamo
+  "Stand To Sit": koltuğun önünden geri oturur, daha çevik). `otur2`'nin başında kalça kökün ~20 cm önünde: gövde
+  `ileri` kadar geri kaydırılır, klip bitince kayma köke aktarılır (görüntü değişmez). Kalça koltuğa indiği karede
+  (`inis`) minder ezilip yaylanarak toparlanır (karakter onunla çöker), oturak karakterle birlikte kendi ekseninde
+  sönerek sallanır (`AYAR.minderEz`, `AYAR.donme`).
 - **Hız:** karakterin bütün zamanı `AYAR.tempo` (1,1) kat hızlı akar: klipler, yürüyüş, kayma ve iniş birlikte
   hızlanır, ayak kaymaz (2026-10-19, %10).
 - **Gider:** üst kata dönülünce koltukla oturma yerine kayar, kalkar, aynı yoldan tırmanır; yolda geri dönülürse kaldığı
