@@ -177,7 +177,7 @@ export const STORIES = {
     },
   },
   painter: {
-    live: false,
+    live: true,
     href: 'tools/painter/index.html',
     name: { tr: 'Filament Painter', en: 'Filament Painter' },
     title: { tr: 'Fotoğrafın ışıkta derinleşsin.', en: 'Let your photo deepen in the light.' },

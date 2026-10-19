@@ -71,6 +71,7 @@ const dict = {
     'oda.dust.modem': 'Sana özel QR kodu tasarla!',
     'oda.dust.flip': 'Kendi kelimelerinle heykel yap!',
     'oda.dust.yapboz': 'Fotoğrafını yapboz yap!',
+    'oda.dust.cerceve': 'Fotoğrafını katman katman bas!',
     'oda.dust.balkonMasa': 'Masana QR menü tasarla!',
   },
   en: {
@@ -144,6 +145,7 @@ const dict = {
     'oda.dust.modem': 'Design your own QR code!',
     'oda.dust.flip': 'Make a sculpture of your own words!',
     'oda.dust.yapboz': 'Turn your photo into a puzzle!',
+    'oda.dust.cerceve': 'Print your photo layer by layer!',
     'oda.dust.balkonMasa': 'Design a QR menu for your table!',
   },
 };

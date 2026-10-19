@@ -127,7 +127,7 @@ export async function buildScene({ scene, P }) {
       g.add(s);
     }
     put(g, WIN.x, BACK - 70, 1340, 0);
-    hotspots.push({ id: 'window', preset: null, object: g, anchor: [WIN.x, BACK - 70, 1620] });
+    hotspots.push({ id: 'window', preset: 'window', object: g, anchor: [WIN.x, BACK - 70, 1620] });
   }
 
   // ---- Duvarda çerçeveli rölyef + altında konsol ----
@@ -145,7 +145,7 @@ export async function buildScene({ scene, P }) {
     const fr = P.frame({ w: 480, h: 346, depth: 30, border: 26, color: K.woodDark });
     g.add(fr);
     put(g, FX, BACK - 18, 1200, 0);
-    hotspots.push({ id: 'frame', preset: null, object: g });
+    hotspots.push({ id: 'frame', preset: 'mountain', object: g });
   }
   {
     const con = new THREE.Group();
@@ -174,7 +174,7 @@ export async function buildScene({ scene, P }) {
     c.position.set(0, -2, 48);
     g.add(c);
     put(g, FX + 180, BACK - 200, 760, -0.3);
-    hotspots.push({ id: 'card', preset: null, object: g });
+    hotspots.push({ id: 'card', preset: 'card', object: g });
   }
   put(P.books({ count: 4, seed: 12, lean: false }), FX - 330, BACK - 190, 760, 0);
   put(P.plant({ kind: 'leafy', size: 2.4, seed: 4, pot: K.paper }), -300, 150, 0);

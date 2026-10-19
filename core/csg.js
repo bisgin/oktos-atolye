@@ -18,24 +18,33 @@ function T(obj) {
   return obj;
 }
 
+// Manifold → düz diziler (scope çıktısı)
+function diziler(m) {
+  const mesh = m.getMesh();
+  const box = m.boundingBox();
+  const props = m.getProperties();
+  return {
+    positions: mesh.vertProperties.slice(),
+    numProp: mesh.numProp,
+    indices: mesh.triVerts.slice(),
+    triCount: mesh.triVerts.length / 3,
+    volume: props.volume,
+    box: { min: [...box.min], max: [...box.max] },
+    empty: m.isEmpty(),
+  };
+}
+
 // fn() bir Manifold döndürür. Sonuç düz diziler olarak alınır, tüm ara nesneler silinir.
 export function scope(fn) {
+  return scopeMany(() => [fn()])[0];
+}
+
+// fn() Manifold dizisi döndürür (ortak bir katıdan çıkan parçalar: bir kez kurulur, birkaç parçaya bölünür).
+export function scopeMany(fn) {
   const prev = live;
   live = [];
   try {
-    const m = fn();
-    const mesh = m.getMesh();
-    const box = m.boundingBox();
-    const props = m.getProperties();
-    return {
-      positions: mesh.vertProperties.slice(),
-      numProp: mesh.numProp,
-      indices: mesh.triVerts.slice(),
-      triCount: mesh.triVerts.length / 3,
-      volume: props.volume,
-      box: { min: [...box.min], max: [...box.max] },
-      empty: m.isEmpty(),
-    };
+    return fn().map(diziler);
   } finally {
     for (const o of live) { try { o.delete(); } catch (_) { /* zaten silinmiş */ } }
     live = prev;
