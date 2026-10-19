@@ -800,6 +800,8 @@ export async function mountStory(root, { toolId, lang = 'tr', mode = pickMode(to
     // ve sahne canlanmasını uçuşsuz açıp kapar; shotOf(id) o bölgenin yakın plan kadrajı (id yoksa genel plan).
     drive(on) { driven = !!on; if (driven) { flight?.kill(); if (intro.progress() < 1) intro.progress(1); } root.toggleAttribute('data-driven', driven); },
     get driven() { return driven; },
+    // Ekran noktasındaki bölge (yoksa null): sayfa sürüklemenin üründen mi başladığını sorar
+    hit(x, y) { return hitAt(x, y)?.id ?? null; },
     shotOf(id) { const h = id && hotspots.find((x) => x.id === id); return h ? focusShot(h) : { pos: [...shots.main.pos], target: [...shots.main.target] }; },
     view() { return { pos: rig.pos.toArray(), target: rig.target.toArray() }; },
     setView(pos, target) { rig.pos.set(...pos); rig.target.set(...target); },

@@ -89,6 +89,8 @@ export function odaPanel(root, { lang = 'tr', reduce = false } = {}) {
     // İpucu: şablonu çok olan bölgede nasıl değiştirileceği; dokunmatikte etrafa bakma kapalı (kaydırma şablonundur)
     if (cur?.count > 1) els.hint.textContent = t(coarse() ? 'oda.tplHintTouch' : 'oda.tplHint');
     else if (coarse()) els.hint.textContent = '';
+    const donIpucu = t('oda.donHint'), ipucu = els.hint.textContent.replace(donIpucu, '').trim(); // önceki bölgeden kalmasın
+    els.hint.textContent = story.api.donebilir?.(zone) ? [ipucu, donIpucu].filter(Boolean).join(' ') : ipucu;
     // Çağrı yazısı bu bölgede bir kez oluştuysa artık yerinde durur
     const done = dusty(zone) && (counts.get(zone) || 0) >= DUST_AFTER;
     if (done) els.dustText.textContent = t('oda.dust.' + zone);
@@ -158,10 +160,28 @@ export function odaPanel(root, { lang = 'tr', reduce = false } = {}) {
         step(e.key === 'ArrowRight' ? 1 : -1); // basılı tutmak tekrar etmez: her basış bir şablon
       }, on);
       const area = root.querySelector('.story-canvas');
-      let sw = null;
-      area.addEventListener('pointerdown', (e) => { sw = e.pointerType === 'touch' && zone ? [e.clientX, e.clientY] : null; }, on);
-      area.addEventListener('pointercancel', () => { sw = null; }, on);
+      let sw = null, don = null;
+      // Ürünün üstünden başlayan sürükleme ürünü çevirir (fare ve parmak); başka yerden başlayan yatay kaydırma
+      // (dokunmatik) şablon değiştirir. Sürüklemeden bırakılan tıklama motorda kalır (sıradaki şablon).
+      area.addEventListener('pointerdown', (e) => {
+        sw = e.pointerType === 'touch' && zone ? [e.clientX, e.clientY] : null;
+        don = null;
+        if (zone && story.api.donebilir?.(zone) && story.hit?.(e.clientX, e.clientY) === zone) {
+          don = { x: e.clientX, a0: story.api.donus(zone), id: e.pointerId, oynadi: false };
+          sw = null;
+        }
+      }, on);
+      area.addEventListener('pointermove', (e) => {
+        if (!don || e.pointerId !== don.id) return;
+        const dx = e.clientX - don.x;
+        if (!don.oynadi && Math.abs(dx) < 6) return;
+        if (!don.oynadi) { don.oynadi = true; area.setPointerCapture?.(e.pointerId); root.classList.add('oda-donuyor'); }
+        story.api.dondur(zone, don.a0 + (dx / area.clientWidth) * 3.2); // ekran eninin yarısı ≈ 90°
+      }, on);
+      const donBitir = () => { don = null; root.classList.remove('oda-donuyor'); };
+      area.addEventListener('pointercancel', () => { sw = null; donBitir(); }, on);
       area.addEventListener('pointerup', (e) => {
+        donBitir();
         if (!sw) return;
         const dx = e.clientX - sw[0], dy = e.clientY - sw[1];
         sw = null;

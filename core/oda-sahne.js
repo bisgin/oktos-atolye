@@ -151,6 +151,7 @@ export async function buildScene({ scene, P, lang = 'tr' }) {
 
   // ---- yuvalar: bölgenin ürünü burada; şablon değişince yalnız yuvadaki model değişir ----
   const slots = {};
+  const duvarlar = {}, donen = {}; // yakın planda çevirme: bölge → duvardaki nesne; bölge → { obj, rz0, pos0, w, aci }
   let klavyeBilgi = null; // klavye kurulunca: tuş yerleri ve anahtarlığın yeri (klavye şablonları için)
   const agiz = (m) => m.userData.soil ?? m.userData.h; // bitki toprağa (yoksa saksının ağzına) oturur
   const tag = (o, zone) => o.traverse((x) => { x.userData.hotspot = zone; });
@@ -273,6 +274,7 @@ export async function buildScene({ scene, P, lang = 'tr' }) {
 
   // ---- balkon kapısının üstünde 3D Yazı plakası ("Oksijen alma alanı") ----
   const sign = place(new THREE.Group(), A.sign);
+  duvarlar.tabela = sign;
   await slot('tabela', sign);
 
   // ---- sol duvarda iki yatay çerçeve: Painter rölyefi ve resimli yapboz ----
@@ -284,8 +286,10 @@ export async function buildScene({ scene, P, lang = 'tr' }) {
     return f;
   };
   const frameA = frameOf(A.frameA, FRAME_K, 0), frameB = frameOf(A.frameB, FRAME, Math.PI / 2);
+  duvarlar.cerceve = frameA;
+  duvarlar.yapboz = frameB;
   const rolyef = place(new THREE.Group(), [0, -20, FRAME_K.h / 2], frameA);
-  rolyef.scale.setScalar(0.46); // 560 × 392 rölyef küçük çerçeveye
+  // Rölyef Painter aracından gerçek ölçüde (248 mm + kenar): çerçevenin 280 × 210 mm arkalığına sığar
   await slot('cerceve', rolyef);
   await slot('yapboz', place(new THREE.Group(), [0, -20, FRAME.h / 2], frameB));
 
@@ -462,6 +466,46 @@ export async function buildScene({ scene, P, lang = 'tr' }) {
   // Kart halkanın 285°'sine takılı (Blender: kart −y'ye sarkar; kulağı halkadan 18 mm dışarıda)
   await slot('anahtarlik', place(new THREE.Group(), [18 * Math.cos(4.974), 18 * Math.sin(4.974), 0, 4.974 + Math.PI / 2], anahtarlar));
 
+  // ---- yakın planda ürünü sürükleyerek çevirme (oda-panel sürüklemeyi verir) ----
+  // dik: yuva kendi dikey ekseninde ±40°; coklu: QR rafında seçili ürün; tabla: Flip döner tablası (iki kelimeyi de
+  // gösterecek kadar); duvar: çerçeve ve plaka döndükçe duvardan ayrılır (yarı eni × |sin| + 8 mm, gömülmesin).
+  // Klavye tuşları, çekmece organizeri, kapaktaki mıknatıslar ve halkadaki kart yerlerine sabit: dönmez.
+  const DONER = { kalemlik: 'dik', saksilar: 'dik', balkonMasa: 'dik', buzdolabi: 'dik', modem: 'coklu', flip: 'tabla', cerceve: 'duvar', yapboz: 'duvar', tabela: 'duvar' };
+  const donenNesne = (zone) => {
+    const tur = DONER[zone], s = slots[zone];
+    if (tur === 'coklu') return s.coklu[TEMPLATES[zone][s.index].urun].kok;
+    if (tur === 'duvar') return duvarlar[zone];
+    if (tur === 'tabla') return s.host;
+    return s.host;
+  };
+  function donmeyiBirak(zone, dur = 0.5) {
+    const d = donen[zone];
+    if (!d) return;
+    delete donen[zone];
+    if (DONER[zone] === 'tabla') return; // tabla odaktan çıkınca kendi döner (turn)
+    gsap.to(d.obj.rotation, { z: d.rz0, duration: dur, ease: 'power3.out', overwrite: true });
+    gsap.to(d.obj.position, { x: d.pos0.x, y: d.pos0.y, z: d.pos0.z, duration: dur, ease: 'power3.out', overwrite: true });
+  }
+  function dondur(zone, aci) {
+    const tur = DONER[zone];
+    if (!tur || !slots[zone]) return 0;
+    const o = donenNesne(zone);
+    let d = donen[zone];
+    if (d && d.obj !== o) { donmeyiBirak(zone, 0.3); d = null; } // QR rafında seçim değişti
+    if (!d) {
+      const kutu = new THREE.Box3().setFromObject(o), boy = kutu.getSize(new THREE.Vector3());
+      d = donen[zone] = { obj: o, rz0: o.rotation.z, pos0: o.position.clone(), w: Math.max(boy.x, boy.y), aci: tur === 'tabla' ? o.rotation.z : 0 };
+    }
+    gsap.killTweensOf([o.rotation, o.position]);
+    d.aci = tur === 'tabla' ? THREE.MathUtils.clamp(aci, -2.4, 0.8) : THREE.MathUtils.clamp(aci, -0.7, 0.7);
+    o.rotation.z = tur === 'tabla' ? d.aci : d.rz0 + d.aci;
+    if (tur === 'duvar') { // duvarın normali: nesnenin yerel −y'si (ön yüzü odaya)
+      const cik = (d.w / 2) * Math.abs(Math.sin(d.aci)) + 8 * Math.min(1, Math.abs(d.aci) * 4);
+      o.position.set(d.pos0.x + Math.sin(d.rz0) * cik, d.pos0.y - Math.cos(d.rz0) * cik, d.pos0.z);
+    }
+    return d.aci;
+  }
+
   // ---- davranış ----
   const openDrawer = (k, dur) => gsap.to(drawer.position, { y: DRAWER_Y - k, duration: dur, ease: 'power3.out', overwrite: true });
   const openDoor = (a, dur) => gsap.to(door.rotation, { z: a, duration: dur, ease: 'power3.out', overwrite: true });
@@ -481,6 +525,10 @@ export async function buildScene({ scene, P, lang = 'tr' }) {
     current: (zone) => (slots[zone] ? info(zone) : null),
     show,
     onChange: null,
+    // Yakın planda sürükleyerek çevirme: donebilir(bölge), donus(bölge) şimdiki açı, dondur(bölge, açı) → uygulanan açı
+    donebilir: (zone) => !!DONER[zone],
+    donus: (zone) => donen[zone]?.aci ?? (DONER[zone] === 'tabla' && slots[zone] ? slots[zone].host.rotation.z : 0),
+    dondur,
     // Ürünün dünyadaki ortası: sayfa ekrana izdüşürür (toz yazısının zerreleri buradan kalkar)
     center: (zone) => (slots[zone] ? new THREE.Box3().setFromObject(slots[zone].model).getCenter(new THREE.Vector3()) : null),
   };
@@ -608,6 +656,7 @@ export async function buildScene({ scene, P, lang = 'tr' }) {
     },
     onUnfocus(id) {
       if (focusedId === id) focusedId = null;
+      donmeyiBirak(id);
       if (!focusedId) pilot?.huzme.userData.guc(1, 0.8, gsap);
       if (id === 'cekmece') openDrawer(0, 0.5);
       if (id === 'buzdolabi') {

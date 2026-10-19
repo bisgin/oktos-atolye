@@ -90,6 +90,12 @@ Fidget Clicker aracı açıldı (tools/clicker): içine MX uyumlu klavye anahtar
 yıldız, yazılı kutu; kapak sapa oturur, 4 mm basma yolu) ve MX uyumlu tuş başlığı (1u–2,25u, motifli). Sekiz aracın
 hepsi açık; odada ve ana sayfada "Yakında" yok. MX ölçüleri: plaka yuvası 14 mm, tuş yuvası artı 4,1 × 1,17 (+0,1 pay);
 plaka altındaki anahtar gövdesi için resmî ölçü bulunamadı (boşluk 9 mm): ilk siparişten önce deneme baskısı.
+Yakın planda ürünü sürükleyerek çevirme (fare ve parmak; sürükleme ürünün üstünden başlamalı, başka yerden yatay
+kaydırma şablon değiştirir): kalemlik, saksı, balkon masası, pasta ±40°; QR rafında seçili ürün; Flip tablası iki
+kelimeyi gösterecek kadar; duvardaki çerçeveler ve kapı plakası döndükçe duvardan ayrılır. Klavye, çekmece, kapak
+mıknatısları ve halkadaki kart sabit. Odadaki QR standı ve kartviziti, balkon menüsü ve altlık, pasta süsü, kapı
+plakası ve rölyef artık araçların kendi üreteciyle kurulur (oda-urunler aracModeli): odada görünen, araçta açılanın
+aynısı; kapalı katılar, renk parçaları ayrı.
 Ana sayfanın tek sahnesi: ev ofisi ve açık balkon. Ürettiğimiz her şey kendi doğal yerinde
 durur; ziyaretçi bakar, tıklar, şablonları değiştirir, araca geçer. Görsel referanslar: sade ev ofisi (yatay
 aynalanmış) ve açık balkon (ahşap zemin, bistro masa, büyük saksılar).

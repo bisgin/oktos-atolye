@@ -116,6 +116,30 @@ export function binModel(id, over = {}) {
   for (const part of BIN.build(s).parts) if (!part.ghost) g.add(P.mesh(toGeometry(part.result), P.clay(over.color ?? p.color, { rough: 0.55, env: 0.7 })));
   return g;
 }
+// Bir aracın şablonunu aracın kendi üreteciyle kurar (odada görünen, araçta açılanla aynı): parçalar kendi renginde,
+// kapalı katılar (çevrilince yanları ve arkası bitmiş). ek: odaya özel ölçü farkı (ör. kapı üstü plaka daha büyük).
+// Parçalar aracın düzleminde (XY, yüz +z); dik: x ekseninde 90° (yüz −y, yazı yukarı), tabanı z = 0'a oturur.
+async function aracModeli(arac, id, ek = {}, { dik = false } = {}) {
+  const { TOOL } = await import(`../tools/${arac}/app.js`);
+  if (TOOL.init) await TOOL.init();
+  const p = TOOL.presets.find((x) => x.id === id) || TOOL.presets[0];
+  const st = { ...TOOL.defaults, ...(p.mode ? { mode: p.mode } : {}), ...p.values, ...ek };
+  TOOL.enforce(st);
+  const ic = new THREE.Group();
+  for (const part of TOOL.build(st).parts) {
+    if (part.ghost || !part.result || part.result.empty) continue;
+    const m = P.mesh(toGeometry(part.result), pla(part.color || st.color));
+    m.castShadow = m.receiveShadow = true;
+    ic.add(m);
+    await yieldMain();
+  }
+  if (!dik) return ic;
+  ic.rotation.x = Math.PI / 2;
+  const g = new THREE.Group().add(ic);
+  g.updateMatrixWorld(true);
+  ic.position.z = -new THREE.Box3().setFromObject(g).min.z;
+  return g;
+}
 // toprak: verilirse (malzeme) saksı ağzın 12 mm altına kadar toprakla dolar; malzeme: renkten malzeme üreten işlev
 export function vaseModel(id, over = {}, { toprak = null, malzeme = null } = {}) {
   const p = VASE.presets.find((x) => x.id === id);
@@ -374,24 +398,6 @@ async function qrTile(text, { size, color = K.ink, base = P.clay(0xf4f2ec, { rou
   g.userData.size = size;
   return g;
 }
-// QR ürünleri, ikişer şablon: Wi-Fi standı (mürekkep / turuncu), kartvizit (açık / koyu), anahtarlık (sarı kare /
-// adaçayı yuvarlak). Tabanı z = 0, ön yüzü −y
-const WIFI = 'WIFI:T:WPA;S:Oktos Misafir;P:ornek-sifre;;';
-async function qrUrunu(id, fs, lang) {
-  if (id === 'wifi') return standing(await qrTile(WIFI, { size: 70, header: 'Wi-Fi', fs }), { baseW: 82 });
-  if (id === 'wifi_turuncu') return standing(await qrTile(WIFI, { size: 70, color: 0x94400f, header: lang === 'en' ? 'Guest' : 'Misafir', fs }), { baseW: 82, color: K.ink });
-  if (id === 'card' || id === 'card_koyu') {
-    const koyu = id === 'card_koyu', card = new THREE.Group(), cq = await qrTile(SITE, { size: 40, corner: 2, fs });
-    card.add(P.mesh(P.rbox(85, 55, 1.2, 3, 1), P.clay(koyu ? 0x26292e : 0xf6f3ec, { rough: 0.7 })).translateY(27.5));
-    cq.scale.set(1, 1, 0.5);
-    cq.position.set(koyu ? 18 : -18, 27.5, 1);
-    card.add(cq);
-    if (koyu) for (const [w, y] of [[30, 40], [22, 32], [26, 24]]) card.add(P.mesh(P.rbox(w, 3, 0.6, 1, 1), P.clay(y === 40 ? K.accent : 0xd8d3c8, { rough: 0.6 })).translateX(-38 + w / 2 + 4).translateY(y).translateZ(1));
-    card.userData.size = 0; // standing() kartı alt kenarından tutar
-    return standing(card, { baseW: 92, color: koyu ? K.woodLight : K.ink });
-  }
-  return null;
-}
 // Tepsideki halkaya takılan QR anahtarlık (kart anahtarlıkla aynı düzen: bağlantı halkası orijinde, etiket −y'ye
 // sarkar, yatar). Kare: sarı karo; yuvarlak: adaçayı disk üstünde krem karo. 3D QR aracının key / key_yuvarlak şablonu.
 async function qrEtiket(yuvarlak, fs) {
@@ -493,16 +499,6 @@ async function kartAnahtarlik(id, kart) {
   return g;
 }
 
-// Karoyu kaideye geriye yaslı diker; ön yüzü −y
-function standing(t, { baseW, color = K.woodLight }) {
-  const g = new THREE.Group(), holder = new THREE.Group();
-  t.position.y = t.userData.size / 2;
-  holder.add(t);
-  holder.rotation.x = Math.PI / 2 - 0.25;
-  holder.position.set(0, -4, 12);
-  g.add(P.mesh(P.rbox(baseW, 46, 14, 5), P.clay(color, { rough: 0.7 })), holder);
-  return g;
-}
 
 // ---- Puzzle: 3B yapbozlar (dikey kesici prizmalarla parçalanmış katılar) ve resimli düz yapboz ----
 async function puzzle3d(id) {
@@ -578,34 +574,11 @@ function manzaraResmi() {
 // ---- 3D Yazı: kapı üstü plakası ve pasta süsü (yazı dik, ön yüzü −y) ----
 // Orijin: duvar yüzü (y = 0) ve plakanın alt kenarı; plaka 140 mm yüksek, yazı ortasında. 'letters': plakasız,
 // harfler doğrudan duvarda.
-function signModel(id, fs, text) {
-  const g = new THREE.Group(), size = 62, depth = id === 'letters' ? 14 : 5, back = id === 'letters' ? 0 : 14;
-  let w = 0;
-  const letters = solid(() => {
-    const t = textSolid(fs, text, size, depth, { spacing: 2 });
-    w = t.width;
-    return C.move(standUp(t.solid, depth), 0, -depth - back, 70 - t.cap / 2);
-  }, id === 'plate' ? pla(0xf3efe6) : pla(K.ink));
-  if (id === 'plate') g.add(solid(() => C.move(standUp(plate(w + 80, 140, 14, 10), 14), 0, -14, 70), pla(K.ink)));
-  if (id === 'round') g.add(solid(() => C.move(standUp(plate(w + 110, 150, 14, 70), 14), 0, -14, 70), pla(0xece5d8)));
-  g.add(letters);
-  return g;
-}
-function cakeTopper(fs, text) {
-  return solid(() => {
-    const t = textSolid(fs, text, 30, 3, { spacing: 0.5 });
-    const bar = C.move(plate(t.width + 8, 5, 3, 2), 0, -2.2, 0);
-    const sticks = [-0.3, 0.3].map((k) => C.move(C.box(3, 46, 3, -1.5, -46, 0), t.width * k, 0, 0));
-    return C.move(standUp(C.union([t.solid, bar, ...sticks]), 3), 0, -1.5, 46);
-  }, pla(K.yellow));
-}
-const TOPPER = { iyi: { tr: 'İyi ki doğdun', en: 'Happy birthday' }, nice: { tr: 'Nice yıllara', en: 'Many more' } };
-const SIGN = { tr: 'Oksijen alma alanı', en: 'Fresh air zone' };
+
 const FLIP = {
   tr: { family: ['ANNE', 'BABA'], us: ['SEN', 'BEN'], sea: ['ADA', 'EGE'] },
   en: { family: ['MOM', 'DAD'], us: ['YOU', 'ME'], sea: ['SEA', 'SUN'] },
 };
-const RELIEF = { mountain: ['mountain', 'sunset', 7], sea: ['sea', 'sea', 5], lake: ['lake', 'lake', 3] };
 
 // Bir bölgenin bir şablonunu üretir. lang: yazılı ürünler (plaka, pasta süsü, Flip, QR başlığı) için.
 // saksi: fotogerçekçi odada saksılara toprak ve baskı malzemesi ({ toprak, malzeme }, vaseModel'e gider).
@@ -672,24 +645,16 @@ export async function buildTemplate(zone, id, { lang = 'tr', saksi = {}, pasta =
     case 'klavye': return klavye ? tusSeti(id, klavye, fs) : keychain(TUS_SETI[id]?.anahtarlik || 'cat');
     case 'modem': {
       // Ürün kendi orijininde (yeri COKLU.modem); onKenar: ön kenarın y'si (seçilince bu kenarın üstünde dikelir)
-      const g = await qrUrunu(id, fs, lang);
+      const g = await aracModeli('qr', id); // 3D QR aracının standı ve kartviziti
       g.userData.onKenar = new THREE.Box3().setFromObject(g).min.y;
       return g;
     }
     case 'puzzle3d': return puzzle3d(id);
     case 'anahtarlik': return id.startsWith('qr_') ? qrEtiket(id === 'qr_yuvarlak', fs) : kartAnahtarlik(id, kart);
-    case 'tabela': return signModel(id, fs, SIGN[lang] || SIGN.tr);
+    case 'tabela': return aracModeli('text', id, { boy: 56 }, { dik: true }); // kapı üstünde: 3D Yazı plakası, büyük
     case 'miknatis': return miknatisModel(id, fs, lang);
     case 'saksilar': return vaseModel(id, {}, saksi);
-    case 'balkonMasa': {
-      if (id === 'menu') return standing(await qrTile(SITE, { size: 74, color: 0x94400f, header: lang === 'en' ? 'Menu' : 'Menü', fs }), { baseW: 86, color: K.ink });
-      const g = new THREE.Group(), aq = await qrTile(SITE, { size: 54, corner: 3, fs });
-      g.add(P.mesh(P.cyl(46, 46, 4, 64), P.clay(0xb38e64, { rough: 0.9 })));
-      aq.scale.set(1, 1, 0.6);
-      aq.position.z = 3.4;
-      g.add(aq);
-      return g;
-    }
+    case 'balkonMasa': return aracModeli('qr', id); // menü standı ve bardak altlığı
     case 'buzdolabi': {
       const g = new THREE.Group();
       let ust = 70; // pastanın üst yüzü (krema)
@@ -698,7 +663,7 @@ export async function buildTemplate(zone, id, { lang = 'tr', saksi = {}, pasta =
         g.add(p);
         ust = new THREE.Box3().setFromObject(p).max.z - 16; // çileklerin altı
       } else g.add(P.mesh(P.cyl(100, 100, 70, 40), P.clay(0xf3e6d6, { rough: 0.7 })));
-      const top = cakeTopper(fs, TOPPER[id][lang] || TOPPER[id].tr);
+      const top = await aracModeli('text', id, {}, { dik: true }); // 3D Yazı pasta süsü (arkasında birleştiren zemin)
       top.position.z = ust - 26; // çubuklar 26 mm pastaya girer
       g.add(top);
       return g;
@@ -708,14 +673,10 @@ export async function buildTemplate(zone, id, { lang = 'tr', saksi = {}, pasta =
       const [a, b] = (FLIP[lang] || FLIP.tr)[id];
       return smooth(solid(() => flipSolid(fs, a, b, 40), pla(K.sage)));
     }
-    case 'cerceve': {
-      const { landscape, reliefGeometry, FILAMENTS } = await import('../tools/painter/scene.js');
-      const [kind, pal, seed] = RELIEF[id];
-      const m = new THREE.Mesh(reliefGeometry(landscape(kind, 160, 112, seed), 560, 392, { colors: FILAMENTS[pal] }),
-        new THREE.MeshStandardMaterial({ vertexColors: true, roughness: 0.75, envMapIntensity: 0.6 }));
-      m.castShadow = m.receiveShadow = true;
-      m.rotation.x = Math.PI / 2; // rölyef yüzü −y'ye
-      return m;
+    case 'cerceve': { // Filament Painter rölyefi (renk bantları ve kenarıyla), çerçevenin arkalığına oturur
+      const g = await aracModeli('painter', id, { genislik: 248 }, { dik: true });
+      g.position.z = -new THREE.Box3().setFromObject(g).getCenter(new THREE.Vector3()).z; // dikeyde ortalı
+      return g;
     }
     case 'yapboz': {
       // Aile fotoğrafı (Unsplash, Land O'Lakes, Inc.; kayıt assets/oda/KAYNAKLAR.md)
