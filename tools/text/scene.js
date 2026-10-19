@@ -31,7 +31,7 @@ export async function buildScene({ scene, P, lang }) {
       return C.move(standUp(t.solid, 4), 0, -4, -t.cap / 2);
     }, pla(K.ink)));
     put(g, DX, BACK - 30 - 22 - 7, 1480);
-    hotspots.push({ id: 'door', preset: null, object: g });
+    hotspots.push({ id: 'door', preset: 'door', object: g });
   }
   put(P.plant({ kind: 'leafy', size: 2.2, seed: 14, pot: K.terracotta }), DX + 620, 120, 0);
 
@@ -60,7 +60,7 @@ export async function buildScene({ scene, P, lang }) {
     }, pla(K.accent)));
     g.add(solid(() => C.move(plate(t.w + 30, 40, 12, 8), 0, 0, 0), pla(K.ink)));
     put(g, CX + 230, CY - 40, CT, -0.12);
-    hotspots.push({ id: 'sign', preset: null, object: g });
+    hotspots.push({ id: 'sign', preset: 'sign', object: g });
   }
 
   // ---- Pasta + pasta süsü ----
@@ -78,7 +78,7 @@ export async function buildScene({ scene, P, lang }) {
     topper.position.z = cake.userData.top - 40;
     g.add(topper);
     put(g, CX - 230, CY - 30, CT, 0.08);
-    hotspots.push({ id: 'cake', preset: null, object: g, anchor: [CX - 230, CY - 30, CT + 260] });
+    hotspots.push({ id: 'cake', preset: 'iyi', object: g, anchor: [CX - 230, CY - 30, CT + 260] });
   }
 
   // ---- Anahtar askılığı + anahtarlık ----
@@ -115,7 +115,7 @@ export async function buildScene({ scene, P, lang }) {
     g.add(swing);
     g.userData.swing = swing;
     put(g, 165, BACK - 50, 1390);
-    hotspots.push({ id: 'key', preset: null, object: g });
+    hotspots.push({ id: 'key', preset: 'key', object: g });
   }
 
   const keyGroup = hotspots.find((h) => h.id === 'key').object;

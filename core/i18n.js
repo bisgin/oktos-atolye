@@ -72,6 +72,9 @@ const dict = {
     'oda.dust.flip': 'Kendi kelimelerinle heykel yap!',
     'oda.dust.yapboz': 'Fotoğrafını yapboz yap!',
     'oda.dust.cerceve': 'Fotoğrafını katman katman bas!',
+    'oda.dust.tabela': 'Kapına kendi yazını as!',
+    'oda.dust.miknatis': 'Buzdolabına kendi yazını yapıştır!',
+    'oda.dust.buzdolabi': 'Pastana kendi süsünü tak!',
     'oda.dust.balkonMasa': 'Masana QR menü tasarla!',
   },
   en: {
@@ -146,6 +149,9 @@ const dict = {
     'oda.dust.flip': 'Make a sculpture of your own words!',
     'oda.dust.yapboz': 'Turn your photo into a puzzle!',
     'oda.dust.cerceve': 'Print your photo layer by layer!',
+    'oda.dust.tabela': 'Hang your own words on the door!',
+    'oda.dust.miknatis': 'Stick your own words on the fridge!',
+    'oda.dust.buzdolabi': 'Top your cake with your own words!',
     'oda.dust.balkonMasa': 'Design a QR menu for your table!',
   },
 };

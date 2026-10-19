@@ -119,7 +119,7 @@ export const STORIES = {
     },
   },
   text: {
-    live: false,
+    live: true,
     href: 'tools/text/index.html',
     name: { tr: '3D Yazı', en: '3D Text' },
     title: { tr: 'Adın kapında dursun.', en: 'Put your name on the door.' },

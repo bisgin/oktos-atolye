@@ -86,12 +86,12 @@ export const TEMPLATES = {
     U(T('card_koyu', n2('Koyu kartvizit', 'Dark business card'), 'card_koyu'), 'card'),
   ],
   puzzle3d: [T('sphere', storyName('puzzle', 'sphere')), T('cube', storyName('puzzle', 'cube')), T('egg', { tr: 'Yumurta yapboz', en: 'Egg puzzle' }), T('heart', { tr: 'Kalp yapboz', en: 'Heart puzzle' })],
-  tabela: [T('plate', { tr: 'Plakalı', en: 'On a plate' }), T('letters', { tr: 'Harf harf', en: 'Letter by letter' }), T('round', { tr: 'Yuvarlak plaka', en: 'Rounded plate' })],
+  tabela: [T('plate', { tr: 'Plakalı', en: 'On a plate' }, 'plate'), T('letters', { tr: 'Harf harf', en: 'Letter by letter' }, 'letters'), T('round', { tr: 'Yuvarlak plaka', en: 'Rounded plate' }, 'round')], // 3D Yazı şablonları
   saksilar: ['hex', 'square', 'flower', 'organic', 'twist', 'morph', 'amphora'].map((id) => T(id, vaseName(id), id)),
   balkonMasa: [T('menu', storyName('qr', 'menu'), 'menu'), T('coaster', { tr: 'Bardak altlığı', en: 'Coaster' }, 'coaster')],
   // Buzdolabının kapağı (kapak kapalı durak): 3D Yazı mıknatısları
-  miknatis: [T('harfler', n2('Harf mıknatısları', 'Letter magnets')), T('not', n2('"Süt al!" notu', '"Buy milk" note')), T('kalp', n2('Kalp ve yıldız', 'Hearts and stars'))],
-  buzdolabi: [T('iyi', { tr: '"İyi ki doğdun"', en: '"Happy birthday"' }), T('nice', { tr: '"Nice yıllara"', en: '"Many more"' })],
+  miknatis: [T('harfler', n2('Harf mıknatısları', 'Letter magnets'), 'harfler'), T('not', n2('"Süt al!" notu', '"Buy milk" note'), 'not'), T('kalp', n2('Kalp ve yıldız', 'Hearts and stars'), 'kalp')],
+  buzdolabi: [T('iyi', { tr: '"İyi ki doğdun"', en: '"Happy birthday"' }, 'iyi'), T('nice', { tr: '"Nice yıllara"', en: '"Many more"' }, 'nice')],
   flip: ['family', 'us', 'sea'].map((id) => T(id, storyName('flip', id), id)), // Text Flip aracının şablonları
   cerceve: [T('mountain', { tr: 'Gün batımı', en: 'Sunset' }, 'mountain'), T('sea', { tr: 'Deniz', en: 'Sea' }, 'sea'), T('lake', { tr: 'Göl', en: 'Lake' }, 'lake')], // Filament Painter şablonları
   yapboz: [T('picture', { tr: 'Aile fotoğrafı yapboz', en: 'Family photo puzzle' }, 'picture')], // Puzzle aracının şablonu
