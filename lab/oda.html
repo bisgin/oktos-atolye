@@ -103,7 +103,7 @@
     onCard: panel.onCard,
   });
   panel.attach(story);
-  // ?kamera=a|b|c|d|eski: tıklamayla durağa geçiş biçimi (lab/kamera.html karşılaştırır); ?demo=1 tıklamaları kendisi yapar
+  // ?kamera=a|b|c|d|eski: tıklamayla durağa geçiş biçimi (varsayılan A, doğrudan uçuş); ?demo=1 tıklamaları kendisi yapar
   const kamera = ['a', 'b', 'c', 'd', 'eski'].includes(params.get('kamera')) ? params.get('kamera') : 'a';
   function demoBaslat() { if (params.has('demo')) tur.demo(['cekmece', 'buzdolabi', 'modem', 'saksilar', 'klavye', null]); }
   tur = odaTuru(root, story, {

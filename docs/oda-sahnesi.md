@@ -63,7 +63,8 @@ değiştirir, seçili ürün kalkıp dikelir (`COKLU`, oda-sahne çoklu yuva). Y
 kamera geri çekilir, klavye ve QR kenardan taşmaz. Üst çubuk ve şablon şeridi koyu, sol üstte beyaz Oktos logosu.
 2026-10-19 (öğleden sonra): tıklamayla durağa geçiş artık aradaki durakların üzerinden geçmez: sayfa anında atlar, kamera
 doğrudan gider ve varışta 2 sn'de %10 yaklaşır (`core/oda-tur.js` GECIS). Dört varyant ve eski davranış
-`?kamera=a|b|c|d|eski`, kendiliğinden oynayan demo `&demo=1`, karşılaştırma `lab/kamera.html`; varsayılan A (doğrudan).
+`?kamera=a|b|c|d|eski`, kendiliğinden oynayan demo `&demo=1`; kullanıcı A'yı (doğrudan) seçti, karşılaştırma sayfası
+kaldırıldı (_silinecek/kamera-2026-10-19).
 Çekmeceli dolabın üstünde anahtar tepsisi (yeni durak `anahtarlik`, çekmeceden sonra): Kutu aracının mürekkep rengi
 tepsisi, Blender'da modellenmiş çelik halka ve üç anahtar, halkaya takılı kart anahtarlık. Mağazadaki kart
 anahtarlıklar lisanslı kart kopyası (Pokémon, Magic, Yu-Gi-Oh!) olduğu için sahnede yeniden üretilmez: kartın yüzü
