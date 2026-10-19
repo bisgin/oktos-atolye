@@ -19,6 +19,7 @@ export const ZONES = [
   { id: 'tabela', tool: 'text' },
   { id: 'saksilar', tool: 'vase', preset: 'hex' },
   { id: 'balkonMasa', tool: 'qr' },
+  { id: 'miknatis', tool: 'text' },
   { id: 'buzdolabi', tool: 'text' },
   { id: 'flip', tool: 'flip' },
 ];
@@ -61,6 +62,7 @@ export const FOCUS = {
   modem: { pos: [-830, 760, 1520], target: [-850, 1690, 1370] },     // alt raf: modem ve QR'lar
   tabela: { pos: [800, 560, 1650], target: [800, 1790, 2370] },      // kapının üstündeki plaka (odanın içinden, aşağıdan)
   saksilar: { pos: [-380, 330, 1260], target: [-30, 1650, 1070] },   // pervazdaki saksılar ve çiçekleri, arkada tül
+  miknatis: { pos: [690, 610, 1100], target: [1530, 850, 650] },        // kapalı kapağa karşıdan: mıknatıslar
   buzdolabi: { pos: [380, 260, 1020], target: [1660, 860, 300] },   // ön yüzüne karşıdan; ortada alt raftaki pasta
   cerceve: { pos: [-1440, 1080, 1520], target: [-1440, 1785, 1515] }, // monitörün sol üstündeki çerçeveye karşıdan
   yapboz: { pos: [-860, 900, 1320], target: [-2090, 920, 1300] },

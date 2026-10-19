@@ -795,9 +795,10 @@ def buzdolabi_kur(o):
     yk('kapak_ic', 10, w - 60, h - 110, 5, -w / 2, 60, ic_m, pah=4, ust=kp)
     for fw, fd, fh, fx, fy, fz in ((8, w - 20, 14, 2, -w / 2, 30), (8, w - 20, 14, 2, -w / 2, h - 34), (8, 14, h - 60, 2, -17, 34), (8, 14, h - 60, 2, -w + 17, 34)):
         yk('kapak_conta', fw, fd, fh, fx, fy, fz, conta, pah=2, ust=kp)
+    # Kapak rafları ~9 cm derin (içecek kutusu Ø 66 sığsın): taban iç kaplamadan (x = 10) çıtaya, çıta önde
     for z in (280, 560):
-        yk('kapak_rafi', 8, w - 110, 56, 52, -w / 2, z, ic_m, pah=2, ust=kp)
-        yk('kapak_rafi_taban', 50, w - 110, 5, 28, -w / 2, z, ic_m, pah=1.5, ust=kp)
+        yk('kapak_rafi', 8, w - 110, 56, 96, -w / 2, z, ic_m, pah=2, ust=kp)
+        yk('kapak_rafi_taban', 90, w - 110, 5, 55, -w / 2, z, ic_m, pah=1.5, ust=kp)
     yk('kapak_kulp', 14, 20, 320, -40, -w + 36, 360, alu, pah=3, ust=kp)
     for z in (372, 668):
         yk('kapak_kulp_ayak', 14, 16, 12, -30, -w + 36, z, alu, pah=2, ust=kp)

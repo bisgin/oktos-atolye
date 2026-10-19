@@ -298,3 +298,28 @@ export function perdeTul(kok, { zUst, zAlt }) {
   kok.userData.tick = (t) => { u.zaman.value = t; };
   return kok;
 }
+
+// Markasız içecekler (buzdolabının kapak rafı): 330 ml alüminyum kutu (Ø 66, boy 122; gövde boyalı, yazı ve logo yok,
+// ince gümüş şerit) ve uzun boyunlu cam şişe (içi opak: geçirgen camın ardındaki ikinci geçirgen nesne çizilmez).
+// Tabanı z = 0'da.
+const icAlu = () => new THREE.MeshStandardMaterial({ color: 0xd6d9dc, metalness: 1, roughness: 0.3 });
+export function icecekKutusu(renk) {
+  const g = new THREE.Group(), alu = icAlu();
+  const boya = new THREE.MeshPhysicalMaterial({ color: renk, metalness: 0.4, roughness: 0.32, clearcoat: 0.8, clearcoatRoughness: 0.12 });
+  g.add(new THREE.Mesh(donme([[0, 2.5], [22, 0.4], [27, 1], [31, 4], [33, 9]], 48), alu));
+  g.add(new THREE.Mesh(donme([[33, 9], [33, 66], [33, 66.1]], 48), boya));
+  g.add(new THREE.Mesh(donme([[33.05, 66], [33.05, 70]], 48), alu));
+  g.add(new THREE.Mesh(donme([[33, 70], [33, 104]], 48), boya));
+  g.add(new THREE.Mesh(donme([[33, 104], [31.5, 110], [28, 116.5], [27.2, 120.5], [26.4, 122], [24.6, 121.2], [24.2, 118], [0, 118]], 48), alu));
+  g.traverse((o) => { if (o.isMesh) o.castShadow = true; });
+  return g;
+}
+export function camSise(icRenk = 0xc9d36a, kapakRenk = 0xb8372f) {
+  const g = new THREE.Group();
+  const cam = new THREE.MeshPhysicalMaterial({ color: 0xcfe8d4, roughness: 0.04, transmission: 1, thickness: 3, ior: 1.5, envMapIntensity: 1.2 });
+  const sivi = new THREE.MeshStandardMaterial({ color: icRenk, roughness: 0.2 });
+  g.add(new THREE.Mesh(donme([[0, 0], [28, 0], [30, 4], [30, 140], [26, 165], [15, 195], [13, 228], [0, 228]], 48), cam));
+  g.add(new THREE.Mesh(donme([[0, 3], [27, 3], [28, 6], [28, 138], [24, 162], [12.5, 188], [0, 188]], 48), sivi));
+  g.add(new THREE.Mesh(donme([[0, 238], [14, 238], [14.6, 236], [14.6, 227], [13.6, 226], [0, 226]], 32), new THREE.MeshStandardMaterial({ color: kapakRenk, metalness: 0.6, roughness: 0.35 })));
+  return g;
+}

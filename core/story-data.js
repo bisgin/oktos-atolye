@@ -239,6 +239,7 @@ export const ODA_STORY = {
     tabela: zone('Kapı plakası', 'Door sign', STORIES.text.title.tr, STORIES.text.title.en, ['3D yazı', '3D text']),
     saksilar: zone('Saksılar', 'Planters', 'Her bitkinize şık bir kıyafet.', 'A stylish outfit for every plant.', ['Saksı', 'Planter']),
     balkonMasa: zone('Balkon masası', 'Balcony table', 'Menü bir okutma uzağında.', 'The menu is one scan away.', ['QR menü', 'QR menu']), // taslak
+    miknatis: zone('Buzdolabı kapağı', 'Fridge door', 'Kapakta senin yazın: not, harf, kalp.', 'Your words on the door: notes, letters, hearts.', ['Mıknatıs', 'Magnet']),
     buzdolabi: zone('Buzdolabı', 'Fridge', 'Pastaya, ekmeğe, kapağa: ne yazmak istersen.', 'On the cake, the bread, the lid: whatever you want to say.', ['Pasta süsü', 'Cake topper']), // taslak
     flip: zone('Flip heykeli', 'Flip sculpture', STORIES.flip.title.tr, STORIES.flip.title.en, ['Text Flip', 'Text Flip']),
     cerceve: zone('Rölyef çerçeve', 'Relief frame', STORIES.painter.title.tr, STORIES.painter.title.en, ['Rölyef', 'Relief']),

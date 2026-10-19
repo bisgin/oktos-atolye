@@ -358,6 +358,19 @@ export async function buildScene({ scene, P, lang = 'tr' }) {
     box(24, F.w, F.h - 10, -12, -F.w / 2, 5, M.fridge, { parent: door, r: 6 });
     box(16, 20, 220, -30, -F.w + 40, 380, M.metal, { parent: door, r: 6 });
   }
+  // Kapağın ön yüzünde mıknatıs yuvası (kapakla birlikte döner). Yerel düzlem: x sağa (−y), y yukarı (z), z dışarı (−x)
+  const kapakYuzu = new THREE.Group();
+  kapakYuzu.quaternion.setFromRotationMatrix(new THREE.Matrix4().makeBasis(new THREE.Vector3(0, -1, 0), new THREE.Vector3(0, 0, 1), new THREE.Vector3(-1, 0, 0)));
+  kapakYuzu.position.set(-26.5, -F.w / 2, 0);
+  door.add(kapakYuzu);
+  await slot('miknatis', kapakYuzu);
+  // Kapak raflarında markasız içecekler (pilot): üst rafta üç kutu, altta şişe ve kutu (kapağın yerel düzleminde)
+  if (pilot) {
+    const O = await import('./oda-ortam.js');
+    for (const [renk, y] of [[0xb3181d, -340], [0xef7d1a, -268], [0x2a2224, -196]]) place(O.icecekKutusu(renk), [52, y, 565], door);
+    place(O.camSise(), [52, -330, 285], door);
+    place(O.icecekKutusu(0x6aa84f), [52, -250, 285], door);
+  }
   // Kapak açılınca iç ışık yanar (pilot). Sahne mm: nokta ışığın gücü bu yüzden büyük (ışık mesafenin karesiyle söner).
   const icIsik = pilot ? place(new THREE.PointLight(0xfff3e4, 0, 700, 2), [-60, 0, F.h - 120], fridge) : null;
   // Monitör klavyenin arkasında (pilot): ekranında Kutu aracının sayfası; masa altı (kasa, priz, kablo kanalı, fare,
@@ -505,6 +518,7 @@ export async function buildScene({ scene, P, lang = 'tr' }) {
       hs('tabela', sign, { noLift: true }),
       hs('saksilar', pots, { noLift: true }),
       hs('balkonMasa', tableItems, { extra: [tableDecor] }),
+      hs('miknatis', kapakYuzu, { noLift: true }),
       hs('buzdolabi', fridge, { noLift: true, anchor: [A.fridge[0] - F.d / 2 - 30, A.fridge[1] - 60, F.h - 140] }), // kapağın önünde (pasta içeride)
       hs('flip', flipZone),
     ],
@@ -519,6 +533,7 @@ export async function buildScene({ scene, P, lang = 'tr' }) {
       pilot?.huzme.userData.guc(0.25, reduced ? 0.01 : 0.8, gsap); // yakın planda huzme kısılır (pus ürünü örtmesin)
       gsap.delayedCall(reduced ? 0.1 : 1.3, () => { if (focusedId === id) prefetch(id); }); // kamera uçuşu bitince
       if (id === 'cekmece') openDrawer(590, reduced ? 0.01 : 0.9); // tam açılan ray: organizerin tamamı görünür
+      if (id === 'miknatis') openDoor(0, reduced ? 0.01 : 0.6); // mıknatıslar kapalı kapakta
       if (id === 'buzdolabi') { // kapalı başlar: kapağı bir an görünür, sonra açılır, iç ışık yanar
         const bekle = reduced ? 0 : 1.4;
         gsap.delayedCall(bekle, () => {

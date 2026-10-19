@@ -46,7 +46,9 @@ yer; buzdolabı kapalı başlar; odadaki saksı hep içi boş ve topraklı; moni
 dolduran organizerler, klavyede tuş başlıkları, buzdolabı mıknatısları ve içecekler, oyuncu koltuğu, balkonun
 karşısında bina.
 2026-10-19: çekmeceyi dolduran 6 organizer (tablaya sığan modüller, tam açılan çekmece); klavyede tuş başlığı
-setleri (Esc, Enter, yukarı ok: kedi, kalp, yıldız, harf) ve önünde aynı tasarımın anahtarlık clicker'ı. Ana sayfanın tek sahnesi: ev ofisi ve açık balkon. Ürettiğimiz her şey kendi doğal yerinde
+setleri (Esc, Enter, yukarı ok: kedi, kalp, yıldız, harf) ve önünde aynı tasarımın anahtarlık clicker'ı; buzdolabı iki
+durak: kapak kapalıyken 3D Yazı mıknatısları (harfler, "Süt al!" notu, kalp ve yıldız), açılınca kapak raflarında
+markasız içecekler (kutular ve cam şişe; raflar 9 cm derin). Ana sayfanın tek sahnesi: ev ofisi ve açık balkon. Ürettiğimiz her şey kendi doğal yerinde
 durur; ziyaretçi bakar, tıklar, şablonları değiştirir, araca geçer. Görsel referanslar: sade ev ofisi (yatay
 aynalanmış) ve açık balkon (ahşap zemin, bistro masa, büyük saksılar).
 
