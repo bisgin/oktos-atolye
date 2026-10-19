@@ -94,7 +94,7 @@
       const cur = story.api?.current(h.id), v = cur && sablonDegeri(h.id, cur.id);
       const q = v ? new URLSearchParams(Object.entries(v).map(([k, x]) => [k, typeof x === 'object' ? JSON.stringify(x) : String(x)])).toString()
         : `sablon=${encodeURIComponent(preset)}`;
-      location.href = `../tools/${h.tool}/index.html?${q}`;
+      location.href = `../tools/${cur?.arac || h.tool}/index.html?${q}`; // tepside QR anahtarlık 3D QR aracında
     },
     onSkip: () => { location.href = '../index.html'; },
     // Giriş bitince kamerayı tur sürer; turdayken tıklama önce tura sorulur

@@ -371,7 +371,7 @@ export async function mountStory(root, { toolId, lang = 'tr', mode = pickMode(to
   function fillCard(h) {
     scTitle.textContent = h.name;
     scDesc.textContent = h.desc || '';
-    scGo.textContent = h.cta?.[lang] || ui.designThis; // mağaza ürünü: "Mağazada gör"
+    scGo.textContent = (h.preset === 'magaza' && h.cta?.[lang]) || ui.designThis; // mağaza ürünü: "Mağazada gör"
     scGo.hidden = !h.live;
     scSoon.textContent = h.live ? '' : ui.soonCard;
     scSoon.hidden = h.live;
@@ -519,7 +519,7 @@ export async function mountStory(root, { toolId, lang = 'tr', mode = pickMode(to
 
   function pick(h) {
     if (busy) return; // çift tıklama: atölyeye bir kez geçilir
-    if (h.disari) { window.open(h.disari, '_blank', 'noopener'); return; } // mağaza ürünü: yeni sekmede mağaza
+    if (h.disari && h.preset === 'magaza') { window.open(h.disari, '_blank', 'noopener'); return; } // mağaza ürünü: yeni sekmede
     if (!h.live) {
       if (focused !== h) focusOn(h);
       toast(ui.soonToast);
@@ -816,6 +816,7 @@ export async function mountStory(root, { toolId, lang = 'tr', mode = pickMode(to
       h.preset = preset;
       h.live = story.live && !!preset;
       if (focused === h) {
+        scGo.textContent = (preset === 'magaza' && h.cta?.[lang]) || ui.designThis;
         scGo.hidden = !h.live;
         scSoon.textContent = h.live ? '' : ui.soonCard;
         scSoon.hidden = h.live;

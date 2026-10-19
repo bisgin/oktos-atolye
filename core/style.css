@@ -259,7 +259,7 @@ select:hover { border-color: var(--line); }
 .ctl.is-disabled input { cursor: not-allowed; }
 
 /* ---------- Alt eylem çubuğu: tek satır (sipariş + bağlantı) ---------- */
-.actions #order { grid-column: 1; grid-row: 1; }
+.actions #order, .actions #hazir { grid-column: 1; grid-row: 1; } /* Hazır basılınca yerini Sipariş ver alır */
 .actions #share { grid-column: 2; grid-row: 1; } /* sipariş ile aynı satırda: çubuk alçak kalsın */
 .actions .order-meta { grid-column: 1 / -1; grid-row: 2; }
 .btn:disabled { opacity: 0.55; cursor: progress; }

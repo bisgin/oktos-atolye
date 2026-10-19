@@ -72,6 +72,11 @@ Oktos tasarımı (koyu, turuncu, krem şablon), düğme "Mağazada gör" oktoswo
 modem ve balkon masası durakları "Yakında" değil, araçta açılır. Kalan beş araç (Clicker, 3D Yazı, Flip, Painter,
 Puzzle) sırada; ana sayfadaki hazır bilgisi artık core/story-data.js `live`'dan. Text Flip aracı açıldı (tools/flip:
 iki kelime, harf boyu, köşegen ya da yuvarlak taban, harf ve taban ayrı renk; şablonlar odadaki family/us/sea + ask).
+QR anahtarlık modem rafından anahtar tepsisine taşındı: tepside kart anahtarlıklar (mağaza) ve QR anahtarlıklar (3D QR
+aracının key / key_yuvarlak şablonu) sırayla değişir; düğme şablona göre "Mağazada gör" ya da "Bu şablonla tasarla"
+(şablonun `arac`'ı). Modem rafında Wi-Fi standı ve kartvizit kaldı. Araçlarda tahmini fiyat kendiliğinden hesaplanmaz:
+ziyaretçi "Hazır" der, fiyat ve "Sipariş ver" o zaman çıkar; tasarım değişince yeniden "Hazır". STL düğmesi kalktı
+(atölyeye ?atolye=1 ile 3MF).
 Ana sayfanın tek sahnesi: ev ofisi ve açık balkon. Ürettiğimiz her şey kendi doğal yerinde
 durur; ziyaretçi bakar, tıklar, şablonları değiştirir, araca geçer. Görsel referanslar: sade ev ofisi (yatay
 aynalanmış) ve açık balkon (ahşap zemin, bistro masa, büyük saksılar).

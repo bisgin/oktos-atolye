@@ -63,7 +63,7 @@ export const FOCUS = {
   anahtarlik: { pos: [-1560, 900, 1130], target: [-1790, 1255, 745], w: 330 }, // tepsiye önden, yukarıdan
   kalemlik: { pos: [-950, 640, 1180], target: [-1290, 1500, 830] },   // masa üstü: kalemlik, monitörün solu
   klavye: { pos: [-785, 630, 1195], target: [-910, 1300, 760], w: 440 }, // klavyenin tamamı (Esc'ten oka) ve önündeki anahtarlık
-  modem: { pos: [-934, 700, 1540], target: [-954, 1690, 1370], w: 640 }, // alt raf: modem, kartvizit ve anahtarlık ortada
+  modem: { pos: [-1040, 720, 1540], target: [-1060, 1690, 1370], w: 440 }, // alt raf: modem üstünde Wi-Fi standı, yanında kartvizit
   tabela: { pos: [800, 560, 1650], target: [800, 1790, 2370], w: 700 }, // kapının üstündeki plaka (odanın içinden, aşağıdan)
   saksilar: { pos: [330, 480, 1260], target: [-20, 1650, 1080] },   // pervazdaki saksılar ve çiçekleri, arkada tül (sağdan: koltuk solda kalır)
   miknatis: { pos: [690, 610, 1100], target: [1530, 850, 650], w: 480 }, // kapalı kapağa karşıdan: mıknatıslar

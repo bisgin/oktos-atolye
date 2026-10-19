@@ -37,13 +37,12 @@ const n2 = (tr, en) => ({ tr, en });
 const U = (t, urun) => ({ ...t, urun });
 // Çoklu yuva: bölgede birden çok ürün birlikte durur, şablon yalnız kendi ürününü değiştirir; seçili ürün öne kalkar.
 // yer: ürünün yuvadaki yeri [x, y, z] mm; kalk: seçilince yükselme (mm); egim: seçilince ön kenarı üstünde kameraya
-// doğru dikelme (rad); dur: seçili değilken eğim. Anahtarlık rafın arkasında duvara yaslı durur (düz yatınca kameradan
-// ince bir çizgi görünüyordu), seçilince dikleşir; standlar biraz öne eğilir.
+// doğru dikelme (rad); dur: seçili değilken eğim. Standlar seçilince biraz öne eğilir. (QR anahtarlık rafta değil,
+// dolabın üstündeki anahtar tepsisinde: anahtarlik bölgesi.)
 export const COKLU = {
   modem: {
     wifi: { yer: [-160, -15, 36], kalk: 12, egim: 0.16 },
     card: { yer: [0, 0, 0], kalk: 12, egim: 0.16 },
-    key: { yer: [250, 115, 0], kalk: 8, dur: 1.2, egim: 1.42 },
   },
 };
 export const TEMPLATES = {
@@ -57,10 +56,13 @@ export const TEMPLATES = {
     T('uzun', n2('Uzun kanallar · 12 parça', 'Long channels · 12 pieces'), 'drawer', { w: 93, d: 208, h: 48, cols: 1, rows: 1, holes: false, scoop: true }, '#ece9e2'),
     T('atolye', n2('Atölye kutuları · 12 parça', 'Workshop boxes · 12 pieces'), 'drawer', { w: 124, d: 155, h: 45, cols: 2, rows: 3, holes: false }, '#2b3036'),
   ],
-  // Kart anahtarlık: mağaza ürünü (preset 'magaza': araç yerine mağaza açılır); yüzü Oktos tasarımı (KART)
+  // Anahtar tepsisi: kart anahtarlık mağaza ürünü (preset 'magaza': mağaza açılır, yüzü Oktos tasarımı, KART); QR
+  // anahtarlık 3D QR aracının şablonu (arac: 'qr', preset aracın şablonu). Halkada sırayla değişirler.
   anahtarlik: [
     T('koyu', n2('Oktos kart · koyu', 'Oktos card · dark'), 'magaza'),
+    { ...T('qr_kare', n2('QR anahtarlık', 'QR keychain'), 'key'), arac: 'qr' },
     T('turuncu', n2('Oktos kart · turuncu', 'Oktos card · orange'), 'magaza'),
+    { ...T('qr_yuvarlak', n2('Yuvarlak QR anahtarlık', 'Round QR keychain'), 'key_yuvarlak'), arac: 'qr' },
     T('krem', n2('Oktos kart · krem', 'Oktos card · cream'), 'magaza'),
   ],
   kalemlik: [
@@ -75,15 +77,13 @@ export const TEMPLATES = {
   ],
   // Klavye: tuş başlığı setleri (Esc, Enter, yukarı ok) ve yanında aynı tasarımın anahtarlık clicker'ı
   klavye: [T('kedi', n2('Kedi seti', 'Cat set')), T('kalp', n2('Kalp seti', 'Heart set')), T('yildiz', n2('Yıldız seti', 'Star set')), T('harf', n2('Harf seti', 'Letter set'))],
-  // QR: üç ayrı ürün rafta birlikte durur (yerleri COKLU.modem); şablonun `urun`u hangisinin değiştiğini söyler. Sıra
-  // ürünleri dolaşır (turdaki otomatik geçiş üçünü de gösterir), sonra ikinci şablonları
+  // QR: iki ayrı ürün rafta birlikte durur (yerleri COKLU.modem); şablonun `urun`u hangisinin değiştiğini söyler. Sıra
+  // ürünleri dolaşır, sonra ikinci şablonları
   modem: [
     U(T('wifi', storyName('qr', 'wifi'), 'wifi'), 'wifi'), // üçüncü değer: 3D QR aracının şablonu (tools/qr/app.js)
     U(T('card', storyName('qr', 'card'), 'card'), 'card'),
-    U(T('key', storyName('qr', 'key'), 'key'), 'key'),
     U(T('wifi_turuncu', n2('Misafir Wi-Fi standı', 'Guest Wi-Fi stand'), 'wifi_turuncu'), 'wifi'),
     U(T('card_koyu', n2('Koyu kartvizit', 'Dark business card'), 'card_koyu'), 'card'),
-    U(T('key_yuvarlak', n2('Yuvarlak QR anahtarlık', 'Round QR keychain'), 'key_yuvarlak'), 'key'),
   ],
   puzzle3d: [T('sphere', storyName('puzzle', 'sphere')), T('cube', storyName('puzzle', 'cube')), T('egg', { tr: 'Yumurta yapboz', en: 'Egg puzzle' }), T('heart', { tr: 'Kalp yapboz', en: 'Heart puzzle' })],
   tabela: [T('plate', { tr: 'Plakalı', en: 'On a plate' }), T('letters', { tr: 'Harf harf', en: 'Letter by letter' }), T('round', { tr: 'Yuvarlak plaka', en: 'Rounded plate' })],
@@ -390,19 +390,29 @@ async function qrUrunu(id, fs, lang) {
     card.userData.size = 0; // standing() kartı alt kenarından tutar
     return standing(card, { baseW: 92, color: koyu ? K.woodLight : K.ink });
   }
-  const tag = new THREE.Group(), yuvarlak = id === 'key_yuvarlak';
+  return null;
+}
+// Tepsideki halkaya takılan QR anahtarlık (kart anahtarlıkla aynı düzen: bağlantı halkası orijinde, etiket −y'ye
+// sarkar, yatar). Kare: sarı karo; yuvarlak: adaçayı disk üstünde krem karo. 3D QR aracının key / key_yuvarlak şablonu.
+async function qrEtiket(yuvarlak, fs) {
+  const g = new THREE.Group();
   if (yuvarlak) {
-    tag.add(P.mesh(P.cyl(30, 30, 3, 56), P.clay(K.sage, { rough: 0.5 })));
+    g.add(P.mesh(P.cyl(28, 28, 3, 56), P.clay(K.sage, { rough: 0.5 })).translateY(-34));
     const kq = await qrTile(SITE, { size: 36, corner: 3, fs });
-    kq.position.z = 2.2;
-    tag.add(kq, keyRing(0, 37, 0));
-  } else tag.add(await qrTile(SITE, { size: 40, base: P.clay(K.yellow, { rough: 0.5 }), corner: 5, fs }), keyRing(0, 32, 0));
-  const key = P.key({ color: K.brass });
-  key.position.set(12, yuvarlak ? 55 : 50, 0.5);
-  key.rotation.z = 0.9;
-  tag.add(key);
-  tag.rotation.z = yuvarlak ? 0.1 : 0.35; // anahtar yukarı bakar (sağa yatınca kadrajdan taşıyordu)
-  return new THREE.Group().add(tag);
+    kq.position.set(0, -34, 2.2);
+    g.add(kq);
+    g.add(P.mesh(P.cyl(6.5, 6.5, 3, 32), P.clay(K.sage, { rough: 0.5 })).translateY(-3.5));
+  } else {
+    const kq = await qrTile(SITE, { size: 40, base: P.clay(K.yellow, { rough: 0.5 }), corner: 5, fs });
+    kq.position.set(0, -27, 0);
+    g.add(kq, P.mesh(P.cyl(6.5, 6.5, 3, 32), P.clay(K.yellow, { rough: 0.5 })).translateY(-3.5));
+  }
+  const halka = P.mesh(new THREE.TorusGeometry(4.2, 0.75, 10, 28), P.metal(0xc9ccd1, 0.3)); // dik bağlantı halkası
+  halka.rotation.x = Math.PI / 2;
+  halka.position.set(0, 2.5, 3.2);
+  g.add(halka);
+  g.traverse((o) => { if (o.isMesh) o.castShadow = o.receiveShadow = true; });
+  return g;
 }
 
 // ---- Kart anahtarlık (mağaza ürünü): Blender'daki kart (kart_anahtarlik) kopyalanır, yüzüne Oktos tasarımı basılır.
@@ -667,7 +677,7 @@ export async function buildTemplate(zone, id, { lang = 'tr', saksi = {}, pasta =
       return g;
     }
     case 'puzzle3d': return puzzle3d(id);
-    case 'anahtarlik': return kartAnahtarlik(id, kart);
+    case 'anahtarlik': return id.startsWith('qr_') ? qrEtiket(id === 'qr_yuvarlak', fs) : kartAnahtarlik(id, kart);
     case 'tabela': return signModel(id, fs, SIGN[lang] || SIGN.tr);
     case 'miknatis': return miknatisModel(id, fs, lang);
     case 'saksilar': return vaseModel(id, {}, saksi);

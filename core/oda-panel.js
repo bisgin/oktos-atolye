@@ -63,6 +63,10 @@ export function odaPanel(root, { lang = 'tr', reduce = false } = {}) {
       els.n.textContent = `${cur.index + 1}/${cur.count}`;
     }
     story.setPreset(zone, cur?.preset ?? null);
+    // Araç satırı şablona göre: mağaza ürünü satışta, araç şablonu kendi aracında (tepside ikisi bir arada)
+    const arac = cur?.arac || tool;
+    els.arac.textContent = arac === 'magaza' || cur?.preset === 'magaza' ? t('oda.magazada')
+      : t(cur?.preset ? 'oda.aracta' : 'oda.aracYakinda').replace('{a}', STORIES[arac].name[lang]);
   }
 
   function onCard(h, c) {
@@ -78,8 +82,6 @@ export function odaPanel(root, { lang = 'tr', reduce = false } = {}) {
     card.style.setProperty('--c', tone);
     // Başlık görünen ürün (işaretçideki kısa ad); araç adı altta, hangi araçta açılacağıyla
     els.title.textContent = ODA_STORY.hotspots?.[zone]?.pin?.[lang] || h.name;
-    els.arac.textContent = tool === 'magaza' ? t('oda.magazada') // mağaza ürünü: araç değil, satışta
-      : t(h.live ? 'oda.aracta' : 'oda.aracYakinda').replace('{a}', STORIES[tool].name[lang]);
     els.title.dataset.tool = tool;
     if (!reduce) titleFx = playTitle(els.title, tool, { cycles: 1, color: tone });
     const cur = story.api.current(zone);

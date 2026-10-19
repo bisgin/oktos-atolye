@@ -474,7 +474,7 @@ export async function buildScene({ scene, P, lang = 'tr' }) {
   // api.onChange(bölge, bilgi) çağrılır (sayfanın seçicisi; değişim üründen de gelebilir).
   const info = (zone) => {
     const s = slots[zone], t = TEMPLATES[zone][s.index];
-    return { index: s.index, count: TEMPLATES[zone].length, id: t.id, name: t.name, preset: t.preset };
+    return { index: s.index, count: TEMPLATES[zone].length, id: t.id, name: t.name, preset: t.preset, arac: t.arac };
   };
   const api = {
     templates: (zone) => TEMPLATES[zone] || [],

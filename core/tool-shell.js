@@ -4,7 +4,8 @@
 //   enforce(state) → notlar (değerleri yerinde düzeltir)
 //   build(state) → { parts: [{ result, name, color?, ghost?, offset? }], info: [[labelKey, text]] }
 //   init?() → Promise: build'den önce bir kez (kütüphane, yazı tipi yükleme); parça kendi color'ını verebilir
-// Dışa aktarma (STL/3MF) müşteriye kapalıdır; atölye için ?atolye=1 ile görünür.
+// Dışa aktarma (3MF) müşteriye kapalıdır; atölye için ?atolye=1 ile görünür. Sipariş: ziyaretçi önce "Hazır" der,
+// tahmini fiyat o zaman hazırlanır ve "Sipariş ver" çıkar; tasarım değişince yeniden "Hazır"a döner.
 import { initCSG } from './csg.js';
 import { Viewer } from './viewer.js';
 import { buildPanel, buildPresetGrid, toast } from './ui.js';
@@ -40,6 +41,8 @@ export async function createTool(tool, opts = {}) {
   const notesEl = $('#notes');
   const srStatus = $('#sr-status');
   const orderBtn = $('#order');
+  const hazirBtn = $('#hazir'); // eski sayfalarda yoksa sipariş eskisi gibi hep görünür
+  let hazir = false; // ziyaretçi "Hazır" dedi mi (fiyat gösterilir)
   const shareBtn = $('#share');
   const orderMeta = $('#order-meta');
   const exportsEl = $('#exports');
@@ -143,6 +146,7 @@ export async function createTool(tool, opts = {}) {
   let srTimer = null;
   function schedule(refit = false) {
     refitNext ||= refit;
+    if (hazir) hazirla(false); // tasarım değişti: fiyat yeniden "Hazır" ile
     clearTimeout(timer);
     busy.textContent = t('common.building');
     busy.classList.add('on');
@@ -190,8 +194,21 @@ export async function createTool(tool, opts = {}) {
   }
 
   function setReady(on) {
-    for (const b of [orderBtn, shareBtn, ...document.querySelectorAll('#exports button')]) b.disabled = !on;
+    for (const b of [orderBtn, hazirBtn, shareBtn, ...document.querySelectorAll('#exports button')]) if (b) b.disabled = !on;
   }
+  // "Hazır": fiyatı hazırlar, yerini "Sipariş ver"e bırakır (on: false → başa döner)
+  function hazirla(on) {
+    hazir = on;
+    if (!hazirBtn) return;
+    hazirBtn.hidden = on;
+    orderBtn.hidden = !on;
+    renderOrderMeta();
+  }
+  hazirBtn?.addEventListener('click', () => {
+    if (!last || !lastStats) return;
+    hazirla(true);
+    orderBtn.focus({ preventScroll: true });
+  });
 
   function renderStats(out) {
     const solid = out.parts.filter((p) => !p.ghost && p.result && !p.result.empty);
@@ -233,6 +250,7 @@ export async function createTool(tool, opts = {}) {
   }
   function renderOrderMeta() {
     if (!lastStats) return;
+    if (hazirBtn && !hazir) { orderMeta.hidden = true; return; } // fiyat yalnız "Hazır"dan sonra
     const parts = [];
     const price = priceOf(lastStats.grams);
     if (price) parts.push(`${t('common.estPrice')} ${fmtNum(price, 0)} ${ORDER.currency}`);
@@ -304,7 +322,7 @@ export async function createTool(tool, opts = {}) {
   // Atölye dışa aktarma (yalnız ?atolye=1)
   const fileBase = () => tool.fileName ? tool.fileName(state) : tool.id;
   const solidParts = () => (last?.parts || []).filter((p) => !p.ghost && p.result && !p.result.empty);
-  $('#dl-stl').addEventListener('click', () => {
+  $('#dl-stl')?.addEventListener('click', () => { // eski sayfalar (STL düğmesi kaldırıldı)
     const parts = solidParts();
     if (parts.length) download(toSTL(parts), fileBase() + '.stl');
   });
