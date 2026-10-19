@@ -12,3 +12,6 @@ _silinecek/
 
 # Oda sahnesinin ham varlıkları (Poly Haven indirmeleri, Blender kaynak dosyası): büyük, yerelde kalır
 kaynak/
+
+# Cowork oturumlarının çıktı klasörü (özet görseller): yerelde kalır
+Claude outputs/

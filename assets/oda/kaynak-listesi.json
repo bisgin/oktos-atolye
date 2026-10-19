@@ -170,6 +170,13 @@
       "yazar": "Oktos Workshop (kendi ürün fotoğrafı)",
       "lisans": "Oktos'un kendi fotoğrafı; kartın baskısındaki görsel hak sahibine aittir (ürün mağazada satılan haliyle gösterilir, kullanıcı kararı 2026-10-19)",
       "not": "Anahtar tepsisindeki kart anahtarlığın yüzü (ürün fotoğrafından perspektifi düzeltilip kırpıldı, 360 × 503, WebP)"
+    },
+    {
+      "dosya": "assets/oda/karakter.glb",
+      "kaynak": "Model: Tripo AI ile Oktos'un hesabında üretildi, Blender'da yeniden kuruldu (scripts/karakter-blender.py, kaynak .blend depoda değil); hareketler: Mixamo (Adobe)",
+      "yazar": "Oktos Workshop (model), Adobe Mixamo (hareketler)",
+      "lisans": "Model: Tripo AI, ücretli plan aktifken üretildi (ticari kullanım hakkı; kullanıcı beyanı 2026-10-19). Hareketler: Mixamo, projede telifsiz kullanım; ham karakter ve hareket dosyalarının tek başına dağıtımı yasak (Adobe Mixamo SSS)",
+      "not": "Odadaki karakter (bizzikoloşko); core/oda-karakter.js okur (2,2 MB, Draco)"
     }
   ]
 }
