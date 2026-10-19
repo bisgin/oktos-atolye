@@ -157,7 +157,7 @@ export const STORIES = {
     },
   },
   qr: {
-    live: false,
+    live: true,
     href: 'tools/qr/index.html',
     name: { tr: '3D QR Kod', en: '3D QR Code' },
     title: { tr: 'Misafirin şifre sormasın.', en: 'Guests stop asking for the password.' },

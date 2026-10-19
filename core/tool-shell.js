@@ -3,6 +3,7 @@
 //   id, strings, defaults, modes?: [[id, labelKey]], schema(state), presets: [{id, mode?, label, color, values}]
 //   enforce(state) → notlar (değerleri yerinde düzeltir)
 //   build(state) → { parts: [{ result, name, color?, ghost?, offset? }], info: [[labelKey, text]] }
+//   init?() → Promise: build'den önce bir kez (kütüphane, yazı tipi yükleme); parça kendi color'ını verebilir
 // Dışa aktarma (STL/3MF) müşteriye kapalıdır; atölye için ?atolye=1 ile görünür.
 import { initCSG } from './csg.js';
 import { Viewer } from './viewer.js';
@@ -74,6 +75,7 @@ export async function createTool(tool, opts = {}) {
   busy.textContent = t('common.loading');
   busy.classList.add('on');
   await initCSG();
+  if (tool.init) await tool.init(); // araç kendi kaynaklarını (kütüphane, yazı tipi) bir kez yükler; build eşzamanlı kalır
 
   // Mod düğmeleri: seçim değişince odak yeni seçili düğmede kalır.
   const modesEl = $('#modes');
@@ -367,7 +369,7 @@ export async function createTool(tool, opts = {}) {
           tool.enforce(s);
           const out = tool.build(s);
           thumbViewer.setColor(p.color || s.color);
-          thumbViewer.show(out.parts.filter((x) => !x.ghost).map((x) => ({ ...x, color: p.color || s.color })), { refit: true });
+          thumbViewer.show(out.parts.filter((x) => !x.ghost).map((x) => ({ ...x, color: x.color || p.color || s.color })), { refit: true }); // çok renkli parça kendi renginde
           thumbViewer.resize();
           thumbs[p.id] = thumbViewer.snapshot();
           grid?.setThumb(p.id, thumbs[p.id]);

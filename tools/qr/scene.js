@@ -115,7 +115,7 @@ export async function buildScene({ scene, P, lang }) {
     const st = standing(wifi, { baseW: 104 });
     put(st, SX + 40, SY - 30, ST, -0.12);
     tiles.wifi = wifi;
-    hotspots.push({ id: 'wifi', preset: null, object: st });
+    hotspots.push({ id: 'wifi', preset: 'wifi', object: st });
   }
 
   // ---- Kafe masası: menü karosu, fincanlar, kartvizit, anahtarlık ----
@@ -127,7 +127,7 @@ export async function buildScene({ scene, P, lang }) {
     const st = standing(menu, { baseW: 124, color: K.ink });
     put(st, TX - 40, TY + 140, TT, -0.35);
     tiles.menu = menu;
-    hotspots.push({ id: 'menu', preset: null, object: st });
+    hotspots.push({ id: 'menu', preset: 'menu', object: st });
   }
   put(P.cafeCup(), TX - 230, TY - 40, TT, 0.4);
   put(P.cafeCup(), TX + 170, TY + 60, TT, -0.9);
@@ -150,7 +150,7 @@ export async function buildScene({ scene, P, lang }) {
     g.add(card2);
     put(g, TX + 40, TY - 170, TT + 1.3, 0.3);
     tiles.card = q;
-    hotspots.push({ id: 'card', preset: null, object: g });
+    hotspots.push({ id: 'card', preset: 'card', object: g });
   }
   {
     const g = new THREE.Group();
@@ -165,7 +165,7 @@ export async function buildScene({ scene, P, lang }) {
     g.add(key);
     put(g, TX + 230, TY - 120, TT, -0.5);
     tiles.key = tagQ;
-    hotspots.push({ id: 'key', preset: null, object: g });
+    hotspots.push({ id: 'key', preset: 'key', object: g });
   }
   put(P.phone(), TX + 250, TY - 260 + 60, TT, 0.6);
 

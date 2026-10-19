@@ -61,10 +61,8 @@
     painter: '<rect x="4" y="6" width="24" height="20" rx="2"/><path d="m4 21 7-7 5 5 4-4 8 8"/><circle cx="21" cy="11" r="2"/>',
     puzzle: '<path d="M6 6h8v3a2 2 0 1 0 4 0V6h8v8h-3a2 2 0 1 0 0 4h3v8h-8v-3a2 2 0 1 0-4 0v3H6v-8h3a2 2 0 1 0 0-4H6z"/>',
   };
-  const tools = [
-    ['bin', 'tools/bin/index.html', true], ['vase', 'tools/vase/index.html', true], ['clicker', 'tools/clicker/index.html', false], ['text', 'tools/text/index.html', false],
-    ['flip', 'tools/flip/index.html', false], ['qr', 'tools/qr/index.html', false], ['painter', 'tools/painter/index.html', false], ['puzzle', 'tools/puzzle/index.html', false],
-  ];
+  // Hazır olup olmadığı core/story-data.js'teki live'dan (tek kaynak: araç açılınca yalnız orada değişir)
+  const tools = ['bin', 'vase', 'clicker', 'text', 'flip', 'qr', 'painter', 'puzzle'].map((id) => [id, `tools/${id}/index.html`, STORIES[id].live]);
   // Her araç kendi sayfasına gider: hazır olanlar atölyeye, "Yakında" olanlar hikâye sahnesine.
   const render = () => {
     const lang = getLang();

@@ -78,17 +78,17 @@ export const TEMPLATES = {
   // QR: üç ayrı ürün rafta birlikte durur (yerleri COKLU.modem); şablonun `urun`u hangisinin değiştiğini söyler. Sıra
   // ürünleri dolaşır (turdaki otomatik geçiş üçünü de gösterir), sonra ikinci şablonları
   modem: [
-    U(T('wifi', storyName('qr', 'wifi')), 'wifi'),
-    U(T('card', storyName('qr', 'card')), 'card'),
-    U(T('key', storyName('qr', 'key')), 'key'),
-    U(T('wifi_turuncu', n2('Misafir Wi-Fi standı', 'Guest Wi-Fi stand')), 'wifi'),
-    U(T('card_koyu', n2('Koyu kartvizit', 'Dark business card')), 'card'),
-    U(T('key_yuvarlak', n2('Yuvarlak QR anahtarlık', 'Round QR keychain')), 'key'),
+    U(T('wifi', storyName('qr', 'wifi'), 'wifi'), 'wifi'), // üçüncü değer: 3D QR aracının şablonu (tools/qr/app.js)
+    U(T('card', storyName('qr', 'card'), 'card'), 'card'),
+    U(T('key', storyName('qr', 'key'), 'key'), 'key'),
+    U(T('wifi_turuncu', n2('Misafir Wi-Fi standı', 'Guest Wi-Fi stand'), 'wifi_turuncu'), 'wifi'),
+    U(T('card_koyu', n2('Koyu kartvizit', 'Dark business card'), 'card_koyu'), 'card'),
+    U(T('key_yuvarlak', n2('Yuvarlak QR anahtarlık', 'Round QR keychain'), 'key_yuvarlak'), 'key'),
   ],
   puzzle3d: [T('sphere', storyName('puzzle', 'sphere')), T('cube', storyName('puzzle', 'cube')), T('egg', { tr: 'Yumurta yapboz', en: 'Egg puzzle' }), T('heart', { tr: 'Kalp yapboz', en: 'Heart puzzle' })],
   tabela: [T('plate', { tr: 'Plakalı', en: 'On a plate' }), T('letters', { tr: 'Harf harf', en: 'Letter by letter' }), T('round', { tr: 'Yuvarlak plaka', en: 'Rounded plate' })],
   saksilar: ['hex', 'square', 'flower', 'organic', 'twist', 'morph', 'amphora'].map((id) => T(id, vaseName(id), id)),
-  balkonMasa: [T('menu', storyName('qr', 'menu')), T('coaster', { tr: 'Bardak altlığı', en: 'Coaster' })],
+  balkonMasa: [T('menu', storyName('qr', 'menu'), 'menu'), T('coaster', { tr: 'Bardak altlığı', en: 'Coaster' }, 'coaster')],
   // Buzdolabının kapağı (kapak kapalı durak): 3D Yazı mıknatısları
   miknatis: [T('harfler', n2('Harf mıknatısları', 'Letter magnets')), T('not', n2('"Süt al!" notu', '"Buy milk" note')), T('kalp', n2('Kalp ve yıldız', 'Hearts and stars'))],
   buzdolabi: [T('iyi', { tr: '"İyi ki doğdun"', en: '"Happy birthday"' }), T('nice', { tr: '"Nice yıllara"', en: '"Many more"' })],
@@ -379,7 +379,7 @@ async function qrTile(text, { size, color = K.ink, base = P.clay(0xf4f2ec, { rou
 const WIFI = 'WIFI:T:WPA;S:Oktos Misafir;P:ornek-sifre;;';
 async function qrUrunu(id, fs, lang) {
   if (id === 'wifi') return standing(await qrTile(WIFI, { size: 70, header: 'Wi-Fi', fs }), { baseW: 82 });
-  if (id === 'wifi_turuncu') return standing(await qrTile(WIFI, { size: 70, color: K.accent, header: lang === 'en' ? 'Guest' : 'Misafir', fs }), { baseW: 82, color: K.ink });
+  if (id === 'wifi_turuncu') return standing(await qrTile(WIFI, { size: 70, color: 0x94400f, header: lang === 'en' ? 'Guest' : 'Misafir', fs }), { baseW: 82, color: K.ink });
   if (id === 'card' || id === 'card_koyu') {
     const koyu = id === 'card_koyu', card = new THREE.Group(), cq = await qrTile(SITE, { size: 40, corner: 2, fs });
     card.add(P.mesh(P.rbox(85, 55, 1.2, 3, 1), P.clay(koyu ? 0x26292e : 0xf6f3ec, { rough: 0.7 })).translateY(27.5));
@@ -672,7 +672,7 @@ export async function buildTemplate(zone, id, { lang = 'tr', saksi = {}, pasta =
     case 'miknatis': return miknatisModel(id, fs, lang);
     case 'saksilar': return vaseModel(id, {}, saksi);
     case 'balkonMasa': {
-      if (id === 'menu') return standing(await qrTile(SITE, { size: 74, color: K.accent, header: lang === 'en' ? 'Menu' : 'Menü', fs }), { baseW: 86, color: K.ink });
+      if (id === 'menu') return standing(await qrTile(SITE, { size: 74, color: 0x94400f, header: lang === 'en' ? 'Menu' : 'Menü', fs }), { baseW: 86, color: K.ink });
       const g = new THREE.Group(), aq = await qrTile(SITE, { size: 54, corner: 3, fs });
       g.add(P.mesh(P.cyl(46, 46, 4, 64), P.clay(0xb38e64, { rough: 0.9 })));
       aq.scale.set(1, 1, 0.6);

@@ -67,6 +67,8 @@ const dict = {
     'oda.aracYakinda': '{a} aracı yakında',
     'oda.magazada': "oktosworkshop.com'da satışta",
     'oda.dust.anahtarlik': 'Anahtarlığını mağazada bul!',
+    'oda.dust.modem': 'Sana özel QR kodu tasarla!',
+    'oda.dust.balkonMasa': 'Masana QR menü tasarla!',
   },
   en: {
     'app.name': 'Oktos Workshop',
@@ -135,6 +137,8 @@ const dict = {
     'oda.aracYakinda': '{a} is coming soon',
     'oda.magazada': 'Sold at oktosworkshop.com',
     'oda.dust.anahtarlik': 'Find your keychain in the shop!',
+    'oda.dust.modem': 'Design your own QR code!',
+    'oda.dust.balkonMasa': 'Design a QR menu for your table!',
   },
 };
 

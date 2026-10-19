@@ -7,6 +7,7 @@
 //   { type: 'toggle', key, label, hint?, show? }
 //   { type: 'swatch', key, label, options: [[hex, labelKey]] }   renk kartelası
 //   { type: 'advanced', label }   sonraki tüm bölümler katlanır "Atölye ayarları" içine girer
+//   { type: 'text', key, label, max?, placeholder?, show? }   tek satır metin (yazdıkça 250 ms sonra uygulanır)
 //   { type: 'html', id, show? }
 // Her kontrol disabled?(s) alabilir: gizlemek yerine pasifleştirir (düzen zıplamaz).
 import { t } from './i18n.js';
@@ -130,6 +131,15 @@ export function buildPanel(root, schema, state, onChange) {
       const cb = row.querySelector('input');
       cb.addEventListener('change', () => { state[item.key] = cb.checked; onChange(item.key); });
       rec.sync = () => { cb.checked = !!state[item.key]; };
+    } else if (item.type === 'text') {
+      row.innerHTML = `<label><span>${t(item.label)}</span><input type="text" maxlength="${item.max ?? 200}" spellcheck="false" autocomplete="off" autocapitalize="off"></label>`;
+      const inp = row.querySelector('input');
+      if (item.placeholder) inp.placeholder = t(item.placeholder);
+      let bekle = null;
+      const uygula = () => { clearTimeout(bekle); if (state[item.key] === inp.value) return; state[item.key] = inp.value; onChange(item.key); };
+      inp.addEventListener('input', () => { clearTimeout(bekle); bekle = setTimeout(uygula, 250); });
+      inp.addEventListener('change', uygula);
+      rec.sync = () => { if (document.activeElement !== inp) inp.value = state[item.key] ?? ''; };
     } else if (item.type === 'html') {
       row.id = item.id;
     }
