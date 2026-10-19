@@ -92,21 +92,21 @@ export async function buildScene({ scene, P, lang }) {
     const s = solid(() => flipSolid(fs, w1, w2, 78), pla(K.accent));
     s.position.z = 8;
     spin.add(s);
-    hotspots.push({ id: 'family', preset: null, object: tt });
+    hotspots.push({ id: 'family', preset: 'family', object: tt });
   }
   {
     const [w1, w2] = pairs.us;
     const g = new THREE.Group();
     g.add(solid(() => flipSolid(fs, w1, w2, 46), pla(K.ink)));
     put(g, CX - 380, CY + 20, CT, faceWord2);
-    hotspots.push({ id: 'us', preset: null, object: g });
+    hotspots.push({ id: 'us', preset: 'us', object: g });
   }
   {
     const [w1, w2] = pairs.sea;
     const g = new THREE.Group();
     g.add(solid(() => flipSolid(fs, w1, w2, 46), pla(K.blue)));
     put(g, CX + 390, CY + 10, CT, faceWord1);
-    hotspots.push({ id: 'sea', preset: null, object: g });
+    hotspots.push({ id: 'sea', preset: 'sea', object: g });
   }
 
   // Hikâyeyi tamamlayan eşyalar

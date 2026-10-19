@@ -139,7 +139,7 @@ export const STORIES = {
     },
   },
   flip: {
-    live: false,
+    live: true,
     href: 'tools/flip/index.html',
     name: { tr: 'Text Flip', en: 'Text Flip' },
     title: { tr: 'Bir yandan sen, öbür yandan o.', en: 'One side you, the other side them.' },

@@ -70,7 +70,8 @@ anahtarlıklar lisanslı kart kopyası (Pokémon, Magic, Yu-Gi-Oh!) olduğu içi
 Oktos tasarımı (koyu, turuncu, krem şablon), düğme "Mağazada gör" oktosworkshop.com/anahtarlik'i yeni sekmede açar.
 3D QR aracı açıldı (tools/qr: masa standı, kartvizit, anahtarlık, bardak altlığı; 8 şablon odadakilerle aynı kimlikte):
 modem ve balkon masası durakları "Yakında" değil, araçta açılır. Kalan beş araç (Clicker, 3D Yazı, Flip, Painter,
-Puzzle) sırada; ana sayfadaki hazır bilgisi artık core/story-data.js `live`'dan.
+Puzzle) sırada; ana sayfadaki hazır bilgisi artık core/story-data.js `live`'dan. Text Flip aracı açıldı (tools/flip:
+iki kelime, harf boyu, köşegen ya da yuvarlak taban, harf ve taban ayrı renk; şablonlar odadaki family/us/sea + ask).
 Ana sayfanın tek sahnesi: ev ofisi ve açık balkon. Ürettiğimiz her şey kendi doğal yerinde
 durur; ziyaretçi bakar, tıklar, şablonları değiştirir, araca geçer. Görsel referanslar: sade ev ofisi (yatay
 aynalanmış) ve açık balkon (ahşap zemin, bistro masa, büyük saksılar).
