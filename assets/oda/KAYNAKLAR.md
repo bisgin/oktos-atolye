@@ -19,3 +19,9 @@ Ham dosyalar `kaynak/` altında durur (depoya girmez); sitede yalnız sıkışt�
 | `kaynak/concrete_pavement/` (doku, 1k) | https://polyhaven.com/a/concrete_pavement | Charlotte Baglioni | Karşı kaldırım |
 | `kaynak/painted_plaster_wall/` (doku, 1k) | https://polyhaven.com/a/painted_plaster_wall | Amal Kumar | Karşı binanın sıvalı cephesi |
 | `kaynak/brushed_concrete/` (doku, 1k) | https://polyhaven.com/a/brushed_concrete | Dario Barresi, Dimitrios Savva | Karşı binanın balkon döşemeleri ve zemin kat |
+
+## Diğer kaynaklar (CC0 değil)
+
+| Dosya | Kaynak | Yazar | Lisans | Kullanım |
+|---|---|---|---|---|
+| `assets/oda/yapboz-aile.webp` | https://unsplash.com/photos/family-posing-in-a-lush-garden-setting-p6wuN_3Wwqs | Land O'Lakes, Inc. (Unsplash) | Unsplash License (https://unsplash.com/license): ticari kullanım serbest, kaynak belirtmek zorunlu değil; model izni garanti edilmez | Duvardaki resimli yapbozun fotoğrafı (1040 × 780, WebP) |

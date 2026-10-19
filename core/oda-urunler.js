@@ -67,7 +67,7 @@ export const TEMPLATES = {
   buzdolabi: [T('iyi', { tr: '"İyi ki doğdun"', en: '"Happy birthday"' }), T('nice', { tr: '"Nice yıllara"', en: '"Many more"' })],
   flip: ['family', 'us', 'sea'].map((id) => T(id, storyName('flip', id))),
   cerceve: [T('mountain', { tr: 'Gün batımı', en: 'Sunset' }), T('sea', { tr: 'Deniz', en: 'Sea' }), T('lake', { tr: 'Göl', en: 'Lake' })],
-  yapboz: [T('picture', { tr: 'Resimli yapboz', en: 'Picture puzzle' })],
+  yapboz: [T('picture', { tr: 'Aile fotoğrafı yapboz', en: 'Family photo puzzle' })],
 };
 
 // Ölçü farkı olan şablonun araçta birebir açılması için tam durum (mode + şablon değerleri + fark); yoksa null.
@@ -370,19 +370,10 @@ async function puzzle3d(id) {
   }
   return g;
 }
-// Resimli düz yapboz (gün batımında dağlar): XY'de yatar, w × h mm, kalınlık 6
-export async function picturePuzzle({ cols = 4, rows = 3, cell = 130 } = {}) {
+// Resimli düz yapboz: XY'de yatar, w × h mm, kalınlık 6. resim: fotoğrafın adresi (4:3); verilmezse gün batımında dağlar
+export async function picturePuzzle({ cols = 4, rows = 3, cell = 130, resim = null } = {}) {
   const { jigsaw } = await import('../tools/puzzle/scene.js');
-  const cv = document.createElement('canvas');
-  cv.width = 512; cv.height = 384;
-  const g2 = cv.getContext('2d');
-  const sky = g2.createLinearGradient(0, 0, 0, 384);
-  sky.addColorStop(0, '#9fc1d8'); sky.addColorStop(0.6, '#f4e3c3'); sky.addColorStop(1, '#e9b07a');
-  g2.fillStyle = sky; g2.fillRect(0, 0, 512, 384);
-  const ridge = (base, amp, f, col, ph) => { g2.fillStyle = col; g2.beginPath(); g2.moveTo(0, 384); for (let x = 0; x <= 512; x += 4) g2.lineTo(x, base - amp * (Math.sin(x * f + ph) * 0.6 + Math.sin(x * f * 2.3 + ph) * 0.4)); g2.lineTo(512, 384); g2.fill(); };
-  g2.fillStyle = '#fff4dc'; g2.beginPath(); g2.arc(370, 130, 36, 0, TAU); g2.fill();
-  ridge(235, 44, 0.012, '#c27d55', 1); ridge(280, 36, 0.02, '#8c4f3a', 3); ridge(335, 24, 0.03, '#3d3a46', 5);
-  const tex = new THREE.CanvasTexture(cv);
+  const tex = resim ? await new THREE.TextureLoader().loadAsync(resim) : new THREE.CanvasTexture(manzaraResmi());
   tex.colorSpace = THREE.SRGBColorSpace;
   tex.anisotropy = 8;
   const top = new THREE.MeshStandardMaterial({ map: tex, roughness: 0.7, envMapIntensity: 0.6 });
@@ -397,6 +388,18 @@ export async function picturePuzzle({ cols = 4, rows = 3, cell = 130 } = {}) {
   }
   g.userData.size = [W, H];
   return g;
+}
+function manzaraResmi() {
+  const cv = document.createElement('canvas');
+  cv.width = 512; cv.height = 384;
+  const g2 = cv.getContext('2d');
+  const sky = g2.createLinearGradient(0, 0, 0, 384);
+  sky.addColorStop(0, '#9fc1d8'); sky.addColorStop(0.6, '#f4e3c3'); sky.addColorStop(1, '#e9b07a');
+  g2.fillStyle = sky; g2.fillRect(0, 0, 512, 384);
+  const ridge = (base, amp, f, col, ph) => { g2.fillStyle = col; g2.beginPath(); g2.moveTo(0, 384); for (let x = 0; x <= 512; x += 4) g2.lineTo(x, base - amp * (Math.sin(x * f + ph) * 0.6 + Math.sin(x * f * 2.3 + ph) * 0.4)); g2.lineTo(512, 384); g2.fill(); };
+  g2.fillStyle = '#fff4dc'; g2.beginPath(); g2.arc(370, 130, 36, 0, TAU); g2.fill();
+  ridge(235, 44, 0.012, '#c27d55', 1); ridge(280, 36, 0.02, '#8c4f3a', 3); ridge(335, 24, 0.03, '#3d3a46', 5);
+  return cv;
 }
 
 // ---- 3D Yazı: kapı üstü plakası ve pasta süsü (yazı dik, ön yüzü −y) ----
@@ -557,7 +560,8 @@ export async function buildTemplate(zone, id, { lang = 'tr', saksi = {}, pasta =
       return m;
     }
     case 'yapboz': {
-      const g = await picturePuzzle();
+      // Aile fotoğrafı (Unsplash, Land O'Lakes, Inc.; kayıt assets/oda/KAYNAKLAR.md)
+      const g = await picturePuzzle({ resim: new URL('../assets/oda/yapboz-aile.webp', import.meta.url).href });
       g.rotation.x = Math.PI / 2; // resim yüzü −y'ye
       return g;
     }

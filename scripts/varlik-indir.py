@@ -62,7 +62,8 @@ def main():
     ap = argparse.ArgumentParser()
     ap.add_argument('--dry-run', action='store_true')
     a = ap.parse_args()
-    liste = json.load(open(LISTE, encoding='utf-8'))['polyhaven']
+    tum = json.load(open(LISTE, encoding='utf-8'))
+    liste = tum['polyhaven']
     toplam, satirlar = 0, []
     for v in liste:
         bilgi = api('info/' + v['id'])
@@ -94,6 +95,10 @@ def main():
                  'Bu dosya `scripts/varlik-indir.py` ile yazılır, elle düzenleme.\n\n'
                  '| Ham dosya | Kaynak | Yazar | Kullanım |\n|---|---|---|---|\n')
         fh.write('\n'.join(satirlar) + '\n')
+        diger = tum.get('diger', [])  # Poly Haven dışı (CC0 değil): elle indirilir, burada yalnız kaydı yazılır
+        if diger:
+            fh.write('\n## Diğer kaynaklar (CC0 değil)\n\n| Dosya | Kaynak | Yazar | Lisans | Kullanım |\n|---|---|---|---|---|\n')
+            fh.write('\n'.join(f"| `{v['dosya']}` | {v['kaynak']} | {v['yazar']} | {v['lisans']} | {v['not']} |" for v in diger) + '\n')
     print('yazıldı:', os.path.relpath(KAYNAKLAR, ROOT))
 
 

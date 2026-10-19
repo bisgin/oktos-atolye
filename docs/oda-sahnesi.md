@@ -52,7 +52,8 @@ markasız içecekler (kutular ve cam şişe; raflar 9 cm derin). Oyuncu koltuğu
 şeritli, kanatlı yüksek sırt) masanın sağ yarısına itilmiş; genel planda monitörü, klavyeyi ve saksıları kapatmaz,
 saksılar durağı sağdan bakar. Balkonun karşısı Blender'da kuruldu ve odayla birlikte pişer: oda 2. katta; aşağıda
 sokak (asfalt, kaldırımlar), 14 m ötede dükkânlı zemin kat ve balkonlu, perdeli üç katlı karşı bina; balkonumuzun
-altında kendi cephemiz. HDRI yalnız binanın üstündeki gökyüzünde kalır. Ana sayfanın tek sahnesi: ev ofisi ve açık balkon. Ürettiğimiz her şey kendi doğal yerinde
+altında kendi cephemiz. HDRI yalnız binanın üstündeki gökyüzünde kalır. Yapbozda aile fotoğrafı (Unsplash, kayıt
+KAYNAKLAR.md'de). Ana sayfanın tek sahnesi: ev ofisi ve açık balkon. Ürettiğimiz her şey kendi doğal yerinde
 durur; ziyaretçi bakar, tıklar, şablonları değiştirir, araca geçer. Görsel referanslar: sade ev ofisi (yatay
 aynalanmış) ve açık balkon (ahşap zemin, bistro masa, büyük saksılar).
 

@@ -85,5 +85,14 @@
       "cozunurluk": "1k",
       "not": "Karşı binanın balkon döşemeleri ve zemin kat"
     }
+  ],
+  "diger": [
+    {
+      "dosya": "assets/oda/yapboz-aile.webp",
+      "kaynak": "https://unsplash.com/photos/family-posing-in-a-lush-garden-setting-p6wuN_3Wwqs",
+      "yazar": "Land O'Lakes, Inc. (Unsplash)",
+      "lisans": "Unsplash License (https://unsplash.com/license): ticari kullanım serbest, kaynak belirtmek zorunlu değil; model izni garanti edilmez",
+      "not": "Duvardaki resimli yapbozun fotoğrafı (1040 × 780, WebP)"
+    }
   ]
 }
