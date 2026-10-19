@@ -97,6 +97,11 @@ kelimeyi gösterecek kadar; duvardaki çerçeveler ve kapı plakası döndükçe
 mıknatısları ve halkadaki kart sabit. Odadaki QR standı ve kartviziti, balkon menüsü ve altlık, pasta süsü, kapı
 plakası ve rölyef artık araçların kendi üreteciyle kurulur (oda-urunler aracModeli): odada görünen, araçta açılanın
 aynısı; kapalı katılar, renk parçaları ayrı.
+2026-10-19 revizyon: anahtar tepsisi spot lambanın başının altında, dolabın arkasında ve düz; halka ortada, kart öne
+sarkar, anahtarlar arkaya yelpaze. Tepside oktosworkshop.com'daki beş kart anahtarlık (Charizard, Black Lotus,
+Venusaur, Blastoise, Dark Magician; yüzleri ürün fotoğrafından), "Satın al" seçili ürünün sayfasını açar; QR
+anahtarlıklar tepsiden kalktı. Aile fotoğrafı yapbozu sağ duvarda buzdolabının üstüne, rölyef çerçevesi 1,6 kat
+büyüyüp sol duvarın ortasına taşındı.
 Ana sayfanın tek sahnesi: ev ofisi ve açık balkon. Ürettiğimiz her şey kendi doğal yerinde
 durur; ziyaretçi bakar, tıklar, şablonları değiştirir, araca geçer. Görsel referanslar: sade ev ofisi (yatay
 aynalanmış) ve açık balkon (ahşap zemin, bistro masa, büyük saksılar).

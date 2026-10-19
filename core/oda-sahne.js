@@ -15,8 +15,8 @@ import { OLCU, toSun } from './oda-olcu.js';
 
 const TAU = Math.PI * 2;
 const { ROOM, GLASS, BALCONY, DESK, SILL, SHELF, PEDESTAL, FRIDGE } = OLCU; // GLASS: pencere | kapı | pencere
-const FRAME = { w: 680, h: 520 };      // sol duvardaki yapboz çerçevesi
-const FRAME_K = { w: 320, h: 250 };    // monitörün sol üstündeki rölyef çerçevesi
+const FRAME = { w: 680, h: 520 };      // sağ duvarda, buzdolabının üstünde aile fotoğrafı yapbozu
+const FRAME_K = { w: 512, h: 400 };    // sol duvarda rölyef çerçevesi (önceki 320 × 250'nin 1,6 katı)
 const yieldMain = () => globalThis.scheduler?.yield?.() ?? new Promise((r) => setTimeout(r, 0));
 export const options = { pilot: false }; // sayfa sahne kurulmadan önce açar
 
@@ -283,7 +283,7 @@ export async function buildScene({ scene, P, lang = 'tr' }) {
   duvarlar.tabela = sign;
   await slot('tabela', sign);
 
-  // ---- sol duvarda iki yatay çerçeve: Painter rölyefi ve resimli yapboz ----
+  // ---- iki yatay çerçeve: sol duvarda ortada Painter rölyefi, sağ duvarda buzdolabının üstünde resimli yapboz ----
   const frameOf = (at, F2, rz) => {
     const f = place(new THREE.Group(), at);
     box(F2.w, 30, F2.h, 0, 0, 0, M.dark, { parent: f, r: 4 });
@@ -291,11 +291,11 @@ export async function buildScene({ scene, P, lang = 'tr' }) {
     f.rotation.z = rz; // ön yüzü odaya
     return f;
   };
-  const frameA = frameOf(A.frameA, FRAME_K, 0), frameB = frameOf(A.frameB, FRAME, Math.PI / 2);
+  const frameA = frameOf(A.frameA, FRAME_K, Math.PI / 2), frameB = frameOf(A.frameB, FRAME, -Math.PI / 2);
   duvarlar.cerceve = frameA;
   duvarlar.yapboz = frameB;
   const rolyef = place(new THREE.Group(), [0, -20, FRAME_K.h / 2], frameA);
-  // Rölyef Painter aracından gerçek ölçüde (248 mm + kenar): çerçevenin 280 × 210 mm arkalığına sığar
+  rolyef.scale.setScalar(1.6); // Painter rölyefi (248 mm + kenar) çerçeveyle birlikte büyür: 472 × 360 mm arkalığa sığar
   await slot('cerceve', rolyef);
   await slot('yapboz', place(new THREE.Group(), [0, -20, FRAME.h / 2], frameB));
 

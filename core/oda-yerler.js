@@ -37,8 +37,8 @@ export const A = {
   clickers: [-760, 1235, 743, -0.35], // anahtarlık clicker: klavyenin önünde, mousepad'in üstünde (tuş setiyle aynı tasarım)
   modem: [-1110, 1690, 1328, 0.05],   // alt rafın solu (raflar masanın sağ yarısında: sol üst duvar başlığa kalır)
   qrHolder: [-950, 1700, 1328, -0.1],
-  frameA: [-1440, 1785, 1390, 0],     // arka duvar, monitörün sol üstü: Painter rölyefi (küçük çerçeve, raf ucunun solunda)
-  frameB: [-2095, 920, 1050, 0],      // sol duvar, yatay çerçeve: resimli yapboz
+  frameA: [-2095, 850, 1250, 0],      // sol duvar, ortada: Painter rölyefi (büyük çerçeve; taban yüksekliği)
+  frameB: [2095, 850, 1200, 0],       // sağ duvar, buzdolabının (ve üstündeki Flip'in) üstü: resimli yapboz
   sign: [800, 1800, 2320, 0],         // balkon kapısının üstü (duvar yüzü, plakanın alt kenarı)
   sillL: [100, 1655, 850, 0],         // sol pencere kenarı (arkasında tül: saksı ona değmesin)
   sillR: [1500, 1655, 850, 0],        // sağ pencere kenarı
@@ -71,8 +71,8 @@ export const FOCUS = {
   saksilar: { pos: [330, 480, 1260], target: [-20, 1650, 1080] },   // pervazdaki saksılar ve çiçekleri, arkada tül (sağdan: koltuk solda kalır)
   miknatis: { pos: [690, 610, 1100], target: [1530, 850, 650], w: 480 }, // kapalı kapağa karşıdan: mıknatıslar
   buzdolabi: { pos: [380, 260, 1020], target: [1660, 860, 300], w: 640 }, // ön yüzüne karşıdan: üst rafta pasta, iki raf dolu
-  cerceve: { pos: [-1440, 1080, 1520], target: [-1440, 1785, 1515], w: 380 }, // monitörün sol üstündeki çerçeveye karşıdan
-  yapboz: { pos: [-860, 900, 1320], target: [-2090, 920, 1300], w: 720 },
+  cerceve: { pos: [-1000, 650, 1560], target: [-2090, 860, 1450], w: 620 }, // sol duvardaki çerçeveye karşıdan, hafif çapraz
+  yapboz: { pos: [560, 560, 1580], target: [2090, 870, 1460], w: 760 }, // buzdolabının üstündeki çerçeveye karşıdan
   flip: { pos: [1355, 592, 1041], target: [1825, 850, 880], w: 380 }, // heykele önden, alçaktan: ilk kelime okunur
   balkonMasa: { pos: [760, 1640, 1460], target: [900, 2620, 760] }, // odanın içinden, kapı boşluğundan masaya (kasaya çarpmaz)
 };
