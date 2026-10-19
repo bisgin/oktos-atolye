@@ -195,7 +195,7 @@ export const STORIES = {
     },
   },
   puzzle: {
-    live: false,
+    live: true,
     href: 'tools/puzzle/index.html',
     name: { tr: 'Puzzle Maker', en: 'Puzzle Maker' },
     title: { tr: 'Bir model, yüz parça.', en: 'One model, a hundred pieces.' },

@@ -1,15 +1,15 @@
 <!doctype html>
-<html lang="tr" class="story-on">
+<html lang="tr">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Puzzle Maker · Oktos Workshop</title>
-<meta name="description" content="Sevdiğin modeli yapboz parçalarına böl. Birlikte toplamak da hediyenin bir parçası olsun.">
+<meta name="description" content="Fotoğrafını ya da küre, küp, yumurta, kalp gibi bir şekli yapboz parçalarına böl. Tarayıcıda tasarla, Oktos basıp göndersin.">
 <meta name="theme-color" content="#eaedeb">
 <meta property="og:type" content="website">
 <meta property="og:site_name" content="Oktos Workshop">
 <meta property="og:title" content="Puzzle Maker · Oktos Workshop">
-<meta property="og:description" content="Sevdiğin modeli yapboz parçalarına böl. Birlikte toplamak da hediyenin bir parçası olsun.">
+<meta property="og:description" content="Fotoğrafını ya da küre, küp, yumurta, kalp gibi bir şekli yapboz parçalarına böl. Tarayıcıda tasarla, Oktos basıp göndersin.">
 <meta name="twitter:card" content="summary">
 <link rel="icon" href="../../core/icon.svg" type="image/svg+xml">
 <link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin>
@@ -28,13 +28,26 @@
 } }
 </script>
 <link rel="modulepreload" href="https://cdn.jsdelivr.net/npm/three@0.162.0/build/three.module.min.js" crossorigin>
+<script>
+  // Modül ya da kütüphane yüklenemezse sayfa sessizce boş kalmasın.
+  (function () {
+    function fail() { var e = document.getElementById('err'); if (e) { e.hidden = false; } var b = document.getElementById('busy'); if (b) b.classList.remove('on'); }
+    window.addEventListener('error', function (ev) { var t = ev.target; if (t && (t.tagName === 'SCRIPT' || t.tagName === 'LINK')) fail(); }, true);
+    window.addEventListener('unhandledrejection', function () { if (!window.__oktosReady) fail(); });
+    setTimeout(function () { if (!window.__oktosReady && !document.documentElement.classList.contains('story-on')) fail(); }, 25000);
+  })();
+</script>
+<script>
+  // Linkte ayar yoksa önce hikâye sahnesi; paylaşılan tasarım linki doğrudan atölyeye açılır.
+  if (location.search.length < 2) document.documentElement.classList.add('story-on');
+</script>
 </head>
 <body>
 <header class="topbar">
   <a class="brand" href="../../index.html"><img src="../../core/icon.svg" alt="" width="26" height="26"><span data-i18n="app.name">Oktos Workshop</span></a>
-  <span class="crumb" aria-hidden="true">/ <b data-story-name>Puzzle Maker</b></span>
+  <span class="crumb" aria-hidden="true">/ <b data-i18n="puzzle.title">Puzzle Maker</b></span>
   <span class="spacer"></span>
-  <a class="toplink" href="../../index.html" data-story-text="allTools">Tüm araçlar</a>
+  <button type="button" class="scene-back" id="scene-back" hidden><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 10.5 12 4l9 6.5M5.5 9v10.5h13V9"/><path d="M10 19.5v-5h4v5"/></svg><span>Sahneye dön</span></button>
   <div class="lang" role="group" aria-label="Dil / Language"><button type="button" data-lang="tr" aria-pressed="true">TR</button><button type="button" data-lang="en" aria-pressed="false">EN</button></div>
 </header>
 
@@ -42,11 +55,11 @@
   <div class="story-canvas"></div>
   <div class="story-pins"></div>
   <div class="story-copy">
-    <h1 class="story-title" id="story-title" tabindex="-1">Bir model, yüz parça.</h1>
-    <p class="story-lede">Sevdiğin modeli yapboz parçalarına böl. Birlikte toplamak da hediyenin bir parçası olsun.</p>
+    <h1 class="story-title" id="story-title" tabindex="-1"></h1>
+    <p class="story-lede"></p>
     <div class="story-actions">
-      <button type="button" class="story-cta" hidden></button>
-      <a class="story-alt" href="../../index.html">Tüm araçlar</a>
+      <button type="button" class="story-cta"></button>
+      <a class="story-alt" hidden></a>
       <span class="story-hint"></span>
     </div>
   </div>
@@ -55,9 +68,49 @@
   <p class="story-live" aria-live="polite"></p>
 </section>
 
+<main class="tool">
+  <div class="stage" id="stage">
+    <div class="hud" id="hud"></div>
+    <div class="busy" id="busy" aria-hidden="true"></div>
+    <div class="err" id="err" role="alert" hidden data-i18n="common.bootError">Atölye yüklenemedi. Bağlantını kontrol edip sayfayı yenile.</div>
+    <div class="viewbar" id="viewbar" role="group" aria-label="Görünüm">
+      <button type="button" data-view="iso" data-i18n="view.iso">İzometrik</button>
+      <button type="button" data-view="top" data-i18n="view.top">Üst</button>
+      <button type="button" data-view="front" data-i18n="view.front">Ön</button>
+      <button type="button" data-view="right" data-i18n="view.right">Sağ</button>
+      <span class="sep"></span>
+      <button type="button" data-view="fit" data-i18n="view.fit">Sığdır</button>
+    </div>
+  </div>
+
+  <aside class="side">
+    <div class="side-scroll">
+      <h1 class="tool-title" tabindex="-1" data-i18n="puzzle.title">Puzzle Maker</h1>
+      <p class="lede" data-i18n="puzzle.lede">Fotoğrafını ya da sevdiğin bir şekli yapboz parçalarına böl. Bir şablon seç, ayarla, sipariş ver.</p>
+      <div class="modes" id="modes" role="group" aria-label="Mod"></div>
+      <div id="presets"></div>
+      <div id="panel"></div>
+      <ul class="notes" id="notes" role="status"></ul>
+    </div>
+    <div class="actions">
+      <button type="button" class="btn primary wide" id="hazir" data-i18n="common.ready" disabled>Hazır</button>
+      <button type="button" class="btn primary wide" id="order" data-i18n="common.order" disabled hidden>Sipariş ver</button>
+      <p class="order-meta" id="order-meta" hidden></p>
+      <button type="button" class="btn ghost" id="share" data-i18n="common.share" disabled>Bağlantıyı kopyala</button>
+      <div class="share-fallback wide" id="share-fallback" hidden><input type="text" readonly aria-label="Tasarım bağlantısı"></div>
+      <div class="exports wide" id="exports" hidden>
+        <span data-i18n="common.workshopExport">Atölye: dışa aktar</span>
+        <button type="button" class="btn" id="dl-3mf" data-i18n="common.download3MF" disabled>3MF indir</button>
+      </div>
+    </div>
+  </aside>
+</main>
+<p class="sr-only" id="sr-status" role="status" aria-live="polite"></p>
+
 <script type="module">
-  import { bootStory } from '../../core/page.js';
-  bootStory({ toolId: 'puzzle', home: '../../index.html' });
+  import { bootTool } from '../../core/page.js';
+  import { TOOL } from './app.js';
+  bootTool({ toolId: 'puzzle', tool: TOOL, home: '../../index.html' }).catch((e) => { console.error(e); document.getElementById('err').hidden = false; document.getElementById('busy').classList.remove('on'); });
 </script>
 </body>
 </html>

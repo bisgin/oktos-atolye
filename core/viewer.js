@@ -69,7 +69,8 @@ export class Viewer {
     this.material.color.set(hex);
   }
 
-  // parts: [{ result (csg.scope çıktısı), color?, offset?: [x,y,z], ghost?: bool, smooth?: bool }]
+  // parts: [{ result (csg.scope çıktısı), color?, offset?: [x,y,z], ghost?: bool, smooth?: bool,
+  //          map?: THREE.Texture, uvBox?: [x0, y0, w, h] (dokuyu XY'ye düz yayar: fotoğraflı yapboz) }]
   // Geometri indeksli kalır; düz gölge malzemede (flatShading) yapılır. Kenar çizgisi yalnız
   // açıkken hesaplanır (en pahalı adımdı); sonradan açılırsa toggleEdges üretir.
   show(parts, { refit = false } = {}) {
@@ -88,6 +89,11 @@ export class Viewer {
       geo.setAttribute('position', new THREE.BufferAttribute(pos, 3));
       geo.setIndex(new THREE.BufferAttribute(r.indices, 1));
       if (p.smooth) geo.computeVertexNormals();
+      if (p.map && p.uvBox) { // düz izdüşüm: u, v parçanın dünya XY'sinden (bütün yapbozda tek resim)
+        const [x0, y0, w, h] = p.uvBox, uv = new Float32Array((pos.length / 3) * 2);
+        for (let i = 0; i < pos.length / 3; i++) { uv[i * 2] = (pos[i * 3] - x0) / w; uv[i * 2 + 1] = (pos[i * 3 + 1] - y0) / h; }
+        geo.setAttribute('uv', new THREE.BufferAttribute(uv, 2));
+      }
       const mat = this.materialFor(p);
       const mesh = new THREE.Mesh(geo, mat);
       mesh.userData.ghost = !!p.ghost;
@@ -107,7 +113,7 @@ export class Viewer {
 
   materialFor(p) {
     this.mats ||= new Map();
-    const key = p.ghost ? 'ghost' : `${p.smooth ? 's' : 'f'}|${p.color || ''}`;
+    const key = p.ghost ? 'ghost' : `${p.smooth ? 's' : 'f'}|${p.color || ''}|${p.map?.uuid || ''}`;
     if (!this.mats.has(key)) {
       let m;
       if (p.ghost) m = new THREE.MeshStandardMaterial({ color: 0xb8c0c8, roughness: 0.8, transparent: true, opacity: 0.45, flatShading: true });
@@ -115,6 +121,7 @@ export class Viewer {
         m = this.material.clone();
         m.flatShading = !p.smooth;
         if (p.color) m.color.set(p.color);
+        if (p.map) { m.map = p.map; m.color.set(0xffffff); }
       }
       this.mats.set(key, m);
     }

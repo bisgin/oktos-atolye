@@ -94,7 +94,7 @@ export const TEMPLATES = {
   buzdolabi: [T('iyi', { tr: '"İyi ki doğdun"', en: '"Happy birthday"' }), T('nice', { tr: '"Nice yıllara"', en: '"Many more"' })],
   flip: ['family', 'us', 'sea'].map((id) => T(id, storyName('flip', id), id)), // Text Flip aracının şablonları
   cerceve: [T('mountain', { tr: 'Gün batımı', en: 'Sunset' }), T('sea', { tr: 'Deniz', en: 'Sea' }), T('lake', { tr: 'Göl', en: 'Lake' })],
-  yapboz: [T('picture', { tr: 'Aile fotoğrafı yapboz', en: 'Family photo puzzle' })],
+  yapboz: [T('picture', { tr: 'Aile fotoğrafı yapboz', en: 'Family photo puzzle' }, 'picture')], // Puzzle aracının şablonu
 };
 
 // Ölçü farkı olan şablonun araçta birebir açılması için tam durum (mode + şablon değerleri + fark); yoksa null.

@@ -4,6 +4,7 @@
 //   enforce(state) → notlar (değerleri yerinde düzeltir)
 //   build(state) → { parts: [{ result, name, color?, ghost?, offset? }], info: [[labelKey, text]] }
 //   init?() → Promise: build'den önce bir kez (kütüphane, yazı tipi yükleme); parça kendi color'ını verebilir
+//   orderLines?(state) → [metin]: sipariş mesajına eklenecek satırlar (ör. fotoğrafın ayrıca gönderileceği)
 // Dışa aktarma (3MF) müşteriye kapalıdır; atölye için ?atolye=1 ile görünür. Sipariş: ziyaretçi önce "Hazır" der,
 // tahmini fiyat o zaman hazırlanır ve "Sipariş ver" çıkar; tasarım değişince yeniden "Hazır"a döner.
 import { initCSG } from './csg.js';
@@ -277,6 +278,7 @@ export async function createTool(tool, opts = {}) {
       `${t('order.weight')}: ${lastStats.grams} g PLA`,
       `${t('order.color')}: ${colorName()}`,
       ...(lastStats.fits ? [] : [t('order.split')]),
+      ...(tool.orderLines ? tool.orderLines(state) : []),
       `${t('order.design')}: ${url}`,
     ];
     return lines.join('\n');

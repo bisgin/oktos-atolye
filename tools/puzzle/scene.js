@@ -92,7 +92,7 @@ export async function buildScene({ scene, P }) {
       g.add(m);
     });
     put(g, TX - 30, TY - 40, TT, -0.12);
-    hotspots.push({ id: 'relief', preset: null, object: g });
+    hotspots.push({ id: 'relief', preset: 'relief', object: g });
   }
 
   // ---- Küre yapboz: 3×3 hücreyle dikey kesilmiş küre; parçalar havada açılmış ----
@@ -113,7 +113,7 @@ export async function buildScene({ scene, P }) {
     g.add(stand);
     put(g, TX + 280, TY + 130, TT + 10, 0);
     animated.push({ id: 'sphere', pieces, k: 0 });
-    hotspots.push({ id: 'sphere', preset: null, object: g, anchor: [TX + 280, TY + 130, TT + 230] });
+    hotspots.push({ id: 'sphere', preset: 'sphere', object: g, anchor: [TX + 280, TY + 130, TT + 230] });
   }
 
   // ---- Küp yapboz: 2×2 sütun parça, açılmış ----
@@ -130,7 +130,7 @@ export async function buildScene({ scene, P }) {
     });
     put(g, TX - 330, TY + 170, TT, 0.3);
     animated.push({ id: 'cube', pieces, k: 0 });
-    hotspots.push({ id: 'cube', preset: null, object: g });
+    hotspots.push({ id: 'cube', preset: 'cube', object: g });
   }
 
   put(P.mug({ color: K.paper }), TX + 120, TY - 330, TT, 0.4);

@@ -77,6 +77,9 @@ aracının key / key_yuvarlak şablonu) sırayla değişir; düğme şablona gö
 (şablonun `arac`'ı). Modem rafında Wi-Fi standı ve kartvizit kaldı. Araçlarda tahmini fiyat kendiliğinden hesaplanmaz:
 ziyaretçi "Hazır" der, fiyat ve "Sipariş ver" o zaman çıkar; tasarım değişince yeniden "Hazır". STL düğmesi kalktı
 (atölyeye ?atolye=1 ile 3MF).
+Puzzle Maker aracı açıldı (tools/puzzle): fotoğraflı düz yapboz (aile fotoğrafı ya da manzara örneği, kendi fotoğrafı
+yalnız önizlemede, sipariş mesajı fotoğrafın ayrıca gönderileceğini yazar; çerçeveli tabla isteğe bağlı) ve 3B şekil
+yapboz (küre, küp, yumurta, kalp; renkli parçalar). Odadaki yapboz çerçevesi 'picture' şablonuyla araçta açılır.
 Ana sayfanın tek sahnesi: ev ofisi ve açık balkon. Ürettiğimiz her şey kendi doğal yerinde
 durur; ziyaretçi bakar, tıklar, şablonları değiştirir, araca geçer. Görsel referanslar: sade ev ofisi (yatay
 aynalanmış) ve açık balkon (ahşap zemin, bistro masa, büyük saksılar).

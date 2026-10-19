@@ -8,6 +8,7 @@
 //   { type: 'swatch', key, label, options: [[hex, labelKey]] }   renk kartelası
 //   { type: 'advanced', label }   sonraki tüm bölümler katlanır "Atölye ayarları" içine girer
 //   { type: 'text', key, label, max?, placeholder?, show? }   tek satır metin (yazdıkça 250 ms sonra uygulanır)
+//   { type: 'file', key, label, accept?, hint?, onFile(file, state) → Promise, show? }   dosya seç (ör. fotoğraf)
 //   { type: 'html', id, show? }
 // Her kontrol disabled?(s) alabilir: gizlemek yerine pasifleştirir (düzen zıplamaz).
 import { t } from './i18n.js';
@@ -140,6 +141,15 @@ export function buildPanel(root, schema, state, onChange) {
       inp.addEventListener('input', () => { clearTimeout(bekle); bekle = setTimeout(uygula, 250); });
       inp.addEventListener('change', uygula);
       rec.sync = () => { if (document.activeElement !== inp) inp.value = state[item.key] ?? ''; };
+    } else if (item.type === 'file') {
+      row.innerHTML = `<label class="dosya"><span>${t(item.label)}</span><input type="file" accept="${item.accept || 'image/*'}"></label>${item.hint ? `<small>${t(item.hint)}</small>` : ''}`;
+      const inp = row.querySelector('input');
+      inp.addEventListener('change', async () => {
+        const f = inp.files?.[0];
+        if (!f) return;
+        await item.onFile(f, state);
+        onChange(item.key);
+      });
     } else if (item.type === 'html') {
       row.id = item.id;
     }
