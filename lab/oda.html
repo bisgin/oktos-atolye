@@ -47,7 +47,7 @@
   </div>
   <nav class="story-strip"></nav>
   <button type="button" class="oda-next"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20 12a8 8 0 1 1-2.35-5.65"/><path d="M20 4.5V9h-4.5"/></svg></button>
-  <div class="story-veil"></div>
+  <div class="story-veil"><div class="oda-yukle" role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0"><i></i></div></div>
   <p class="story-live" aria-live="polite"></p>
 </section>
 
@@ -60,6 +60,7 @@
   import { odaTuru } from '../core/oda-tur.js';
   import { sablonDegeri } from '../core/oda-urunler.js';
   import { t, getLang, setLang } from '../core/i18n.js';
+  import * as THREE from 'three';
 
   const params = new URLSearchParams(location.search);
   // ?cek=1 (scripts/sayfa-cek.py çekimleri): görünmez tarayıcıda kareler seyrek çizilir, GSAP her geç kareyi 33 ms sayar
@@ -74,6 +75,21 @@
     b.addEventListener('click', () => { setLang(b.dataset.lang); location.reload(); });
   });
   const root = document.getElementById('story');
+  // Açılış: koyu perdede yazı ve ilerleme çubuğu. Çubuğun %60'ı dosya yükleme (three.js yükleme yöneticisi: GLB, doku),
+  // %40'ı sahnenin ürünleri kurması (oda-sahne her yuvada 'oda-kurulum' yayar); uydurma animasyon değil
+  {
+    const veil = root.querySelector('.story-veil'), cubuk = veil.querySelector('.oda-yukle'), il = { y: 0, k: 0 };
+    veil.dataset.loading = t('oda.yukleniyor');
+    cubuk.setAttribute('aria-label', t('oda.yukleniyor'));
+    const ciz = () => {
+      const p = Math.max(0.06, 0.6 * il.y + 0.4 * il.k);
+      cubuk.style.setProperty('--ilerleme', p.toFixed(3));
+      cubuk.setAttribute('aria-valuenow', String(Math.round(p * 100)));
+    };
+    THREE.DefaultLoadingManager.onProgress = (_, yuklenen, toplam) => { il.y = toplam ? yuklenen / toplam : 0; ciz(); };
+    addEventListener('oda-kurulum', (e) => { il.k = e.detail; ciz(); });
+    ciz();
+  }
   const nextBtn = document.querySelector('.oda-next');
   nextBtn.setAttribute('aria-label', t('oda.next'));
   nextBtn.title = t('oda.next');

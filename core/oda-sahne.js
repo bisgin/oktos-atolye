@@ -195,6 +195,7 @@ export async function buildScene({ scene, P, lang = 'tr' }) {
       host.add(s.model);
     }
     if (plant) plant.position.z = agiz(s.model);
+    dispatchEvent(new CustomEvent('oda-kurulum', { detail: Object.keys(slots).length / ZONES.length })); // açılış çubuğu
     await yieldMain();
     return s;
   }

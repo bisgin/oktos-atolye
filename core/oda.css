@@ -272,6 +272,14 @@ html.oda-tur-on { scrollbar-width: none; }
 html.oda-tur-on::-webkit-scrollbar { display: none; }
 .oda-tur-on .topbar { position: fixed; top: 0; left: 0; right: 0; z-index: 30; }
 .oda-tur-alan { pointer-events: none; }
+/* Açılış perdesi koyu (sahne kurulurken beyaz parlamasın); ortada yazı ve ilerleme çubuğu (lab/oda.html --ilerleme) */
+body { background: #0b0c0e; }
+.oda .story-veil { background: #0b0c0e; }
+.oda[aria-busy="true"] .story-veil::after { top: calc(50% - 20px); color: rgb(243 238 229 / 0.72); letter-spacing: 0.02em; }
+.oda-yukle { position: absolute; left: 50%; top: calc(50% + 8px); width: min(260px, 60vw); height: 3px; translate: -50% 0; border-radius: 3px; background: rgb(243 238 229 / 0.14); overflow: hidden; }
+.oda-yukle i { position: absolute; inset: 0; background: #f2b48a; transform-origin: left center; transform: scaleX(var(--ilerleme, 0.06)); transition: transform 0.3s cubic-bezier(0.23, 1, 0.32, 1); }
+.oda:not([aria-busy="true"]) .oda-yukle { display: none; }
+@media (prefers-reduced-motion: reduce) { .oda-yukle i { transition: none; } }
 .oda.is-focused .story-canvas { touch-action: pan-y; } /* yakın planda yatay sürükleme ürünü çevirir */
 .oda.oda-donuyor .story-canvas { cursor: grabbing; }
 /* Tıklamayla geçişin B varyantında kısa kararma (core/oda-tur.js) */
