@@ -432,14 +432,21 @@ export async function buildScene({ scene, P, lang = 'tr' }) {
     }
   }
 
-  // ---- dolabın üstünde anahtar tepsisi (Kutu aracının tepsisi, mürekkep rengi): içinde Blender'dan halka ve üç
-  // anahtar, halkaya takılı kart anahtarlık yuvası (şablon yalnız kartı değiştirir; kart mağazada satılır) ----
+  // ---- dolabın üstünde, spot lambanın altında anahtar tepsisi (Kutu aracının tepsisi, mürekkep rengi): içinde
+  // Blender'dan halka ve üç anahtar, halkaya takılı kart anahtarlık yuvası (şablon yalnız kartı değiştirir; kartlar
+  // oktosworkshop.com'daki ürünler) ----
   const tepsi = place(new THREE.Group(), A.tepsi);
-  place(binModel('tray', { w: 230, d: 160, h: 22, cols: 1, rows: 1, r: 14, wall: 2.2, floor: 2, color: '#2b3036' }), [0, 0, 0], tepsi);
-  // Anahtarlar tepsinin uzun kenarına göre döner: kart ve kapı anahtarı enine, ev ve kilit anahtarı boyuna yatar
-  const anahtarlar = place(pilot?.esya.anahtarlik ?? new THREE.Group(), [-12, -2, 2, 1.31], tepsi);
-  // Kart halkanın 285°'sine takılı (Blender: kart −y'ye sarkar; kulağı halkadan 18 mm dışarıda)
-  await slot('anahtarlik', place(new THREE.Group(), [18 * Math.cos(4.974), 18 * Math.sin(4.974), 0, 4.974 + Math.PI / 2], anahtarlar));
+  place(binModel('tray', { w: 250, d: 220, h: 18, cols: 1, rows: 1, r: 14, wall: 2.2, floor: 2, color: '#2b3036' }), [0, 0, 0], tepsi);
+  // Simetrik düzen: halka arkada ortada, kart öne (kameraya) sarkar; anahtarlar halkada kayıp arkaya yelpaze olur
+  // (Blender'daki açılar ev 15°, kapı 105°, kilit 195°; burada ev 25°, kapı 155°, kilit 90°)
+  const anahtarlar = place(pilot?.esya.anahtarlik ?? new THREE.Group(), [0, 36, 2, 0], tepsi); // kart ön duvarın ardında kalmasın
+  const KAY = { anahtar_ev: 10, anahtar_kapi: 50, anahtar_kilit_bas: -105, anahtar_kilit_agiz: -105 };
+  for (const o of anahtarlar.children) if (KAY[o.name]) o.rotation.z = THREE.MathUtils.degToRad(KAY[o.name]);
+  // Kart halkanın önüne takılı (Blender: kart −y'ye sarkar, kulağı halkadan 18 mm dışarıda), gerçek boyda: 63 × 88 mm
+  // kart, Blender'daki 40 × 58 mm kartın 1,45 katı
+  const kartYuva = place(new THREE.Group(), [0, -18, 0, 0], anahtarlar);
+  kartYuva.scale.setScalar(1.45);
+  await slot('anahtarlik', kartYuva);
 
   // ---- yakın planda ürünü sürükleyerek çevirme (oda-panel sürüklemeyi verir) ----
   // dik: yuva kendi dikey ekseninde ±40°; coklu: QR rafında seçili ürün; tabla: Flip döner tablası (iki kelimeyi de
@@ -493,7 +500,7 @@ export async function buildScene({ scene, P, lang = 'tr' }) {
   // api.onChange(bölge, bilgi) çağrılır (sayfanın seçicisi; değişim üründen de gelebilir).
   const info = (zone) => {
     const s = slots[zone], t = TEMPLATES[zone][s.index];
-    return { index: s.index, count: TEMPLATES[zone].length, id: t.id, name: t.name, preset: t.preset, arac: t.arac };
+    return { index: s.index, count: TEMPLATES[zone].length, id: t.id, name: t.name, preset: t.preset, arac: t.arac, url: t.url };
   };
   const api = {
     templates: (zone) => TEMPLATES[zone] || [],
@@ -593,7 +600,7 @@ export async function buildScene({ scene, P, lang = 'tr' }) {
       // Sıra ZONES'la aynı (şerit ve tur). Kadrajlar FOCUS'ta (oda-yerler)
       hs('cekmece', drawer, { extra: [pedestal], noLift: true, anchor: [px, DRAWER_Y - PED.d / 2 + 60, PED.h + 50] }), // kapalı çekmecenin üstünde
       // Mağaza ürünü: düğme mağazayı yeni sekmede açar
-      hs('anahtarlik', tepsi, { noLift: true, cta: { tr: 'Mağazada gör', en: 'View in shop' }, disari: 'https://oktosworkshop.com/anahtarlik' }),
+      hs('anahtarlik', tepsi, { noLift: true, cta: { tr: 'Satın al', en: 'Buy' }, disari: TEMPLATES.anahtarlik[0].url }),
       hs('kalemlik', penZone),
       hs('kartvizit', kvZone),
       hs('klavye', kbZone),

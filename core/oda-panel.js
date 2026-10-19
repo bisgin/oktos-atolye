@@ -62,7 +62,7 @@ export function odaPanel(root, { lang = 'tr', reduce = false } = {}) {
       els.name.textContent = cur.name[lang] || cur.name.tr;
       els.n.textContent = `${cur.index + 1}/${cur.count}`;
     }
-    story.setPreset(zone, cur?.preset ?? null);
+    story.setPreset(zone, cur?.preset ?? null, cur?.url);
     // Araç satırı şablona göre: mağaza ürünü satışta, araç şablonu kendi aracında (tepside ikisi bir arada)
     const arac = cur?.arac || tool;
     els.arac.textContent = arac === 'magaza' || cur?.preset === 'magaza' ? t('oda.magazada')

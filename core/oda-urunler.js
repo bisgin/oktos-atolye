@@ -55,15 +55,15 @@ export const TEMPLATES = {
     T('uzun', n2('Uzun kanallar · 12 parça', 'Long channels · 12 pieces'), 'drawer', { w: 93, d: 208, h: 48, cols: 1, rows: 1, holes: false, scoop: true }, '#ece9e2'),
     T('atolye', n2('Atölye kutuları · 12 parça', 'Workshop boxes · 12 pieces'), 'drawer', { w: 124, d: 155, h: 45, cols: 2, rows: 3, holes: false }, '#2b3036'),
   ],
-  // Anahtar tepsisi: kart anahtarlık mağaza ürünü (preset 'magaza': mağaza açılır, yüzü Oktos tasarımı, KART); QR
-  // anahtarlık 3D QR aracının şablonu (arac: 'qr', preset aracın şablonu). Halkada sırayla değişirler.
+  // Anahtar tepsisi: oktosworkshop.com'daki kart anahtarlıklar (preset 'magaza'). Halkadaki kart sırayla değişir;
+  // yüzü ürünün kendi fotoğrafından (assets/oda/anahtarlik-<id>.webp), "Satın al" seçili ürünün sayfasını açar (url).
   anahtarlik: [
-    T('koyu', n2('Oktos kart · koyu', 'Oktos card · dark'), 'magaza'),
-    { ...T('qr_kare', n2('QR anahtarlık', 'QR keychain'), 'key'), arac: 'qr' },
-    T('turuncu', n2('Oktos kart · turuncu', 'Oktos card · orange'), 'magaza'),
-    { ...T('qr_yuvarlak', n2('Yuvarlak QR anahtarlık', 'Round QR keychain'), 'key_yuvarlak'), arac: 'qr' },
-    T('krem', n2('Oktos kart · krem', 'Oktos card · cream'), 'magaza'),
-  ],
+    ['charizard', 'Charizard', 'charizard-anahtarlik-canta-takisi-pokemon'],
+    ['black-lotus', 'Black Lotus', 'black-lotus-anahtarlik-canta-takisi-magic-thr-gathering'],
+    ['venusaur', 'Venusaur', 'venasaur-anahtarlik-canta-takisi-pokemon'], // mağazadaki adres yazımı böyle
+    ['blastoise', 'Blastoise', 'blastoise-anahtarlik-canta-takisi-pokemon'],
+    ['dark-magician', 'Dark Magician', 'dark-magician-anahtarlik-canta-takisi-yu-gi-oh'],
+  ].map(([id, ad, yol]) => ({ ...T(id, n2(`${ad} anahtarlık`, `${ad} keychain`), 'magaza'), url: `https://oktosworkshop.com/${yol}` })),
   kalemlik: [
     T('pencup', binName('pencup'), 'pencup'),
     T('pencup3', binName('pencup3'), 'pencup3'),
@@ -361,116 +361,23 @@ function miknatisModel(id, fs, lang) {
   return g;
 }
 
-// ---- QR: karo (taban + kabarık modüller), dik stand, kartvizit, anahtarlık, altlık ----
-let qrLib = null;
-const SITE = 'https://bisgin.github.io/oktos-atolye/';
-async function qrTile(text, { size, color = K.ink, base = P.clay(0xf4f2ec, { rough: 0.55 }), corner = 6, header = null, fs }) {
-  qrLib ||= (await import('https://cdn.jsdelivr.net/npm/qrcode-generator@1.4.4/+esm')).default;
-  const q = qrLib(0, 'M');
-  q.addData(text);
-  q.make();
-  const n = q.getModuleCount(), cell = size / (n + 4), headH = header ? size * 0.28 : 0;
-  const g = new THREE.Group();
-  g.add(P.mesh(P.rbox(size, size + headH, 3, corner), base).translateY(headH / 2));
-  let count = 0;
-  for (let r = 0; r < n; r++) for (let c = 0; c < n; c++) if (q.isDark(r, c)) count++;
-  const im = new THREE.InstancedMesh(new THREE.BoxGeometry(cell * 1.001, cell * 1.001, 1.4), P.clay(color, { rough: 0.45 }), count);
-  im.castShadow = im.receiveShadow = true;
-  const o = new THREE.Object3D();
-  let k = 0;
-  for (let r = 0; r < n; r++) for (let c = 0; c < n; c++) {
-    if (!q.isDark(r, c)) continue;
-    o.position.set(-size / 2 + (c + 2.5) * cell, size / 2 - (r + 2.5) * cell, 3.7);
-    o.updateMatrix();
-    im.setMatrixAt(k++, o.matrix);
-  }
-  g.add(im);
-  if (header) {
-    g.add(solid(() => {
-      const t = textSolid(fs, header, headH * 0.62, 1.4, { spacing: 0.4 });
-      return C.move(t.solid, 0, size / 2 + headH * 0.5 - t.cap / 2 - 1, 3);
-    }, P.clay(color, { rough: 0.45 })));
-  }
-  g.userData.size = size;
-  return g;
-}
-// Tepsideki halkaya takılan QR anahtarlık (kart anahtarlıkla aynı düzen: bağlantı halkası orijinde, etiket −y'ye
-// sarkar, yatar). Kare: sarı karo; yuvarlak: adaçayı disk üstünde krem karo. 3D QR aracının key / key_yuvarlak şablonu.
-async function qrEtiket(yuvarlak, fs) {
-  const g = new THREE.Group();
-  if (yuvarlak) {
-    g.add(P.mesh(P.cyl(28, 28, 3, 56), P.clay(K.sage, { rough: 0.5 })).translateY(-34));
-    const kq = await qrTile(SITE, { size: 36, corner: 3, fs });
-    kq.position.set(0, -34, 2.2);
-    g.add(kq);
-    g.add(P.mesh(P.cyl(6.5, 6.5, 3, 32), P.clay(K.sage, { rough: 0.5 })).translateY(-3.5));
-  } else {
-    const kq = await qrTile(SITE, { size: 40, base: P.clay(K.yellow, { rough: 0.5 }), corner: 5, fs });
-    kq.position.set(0, -27, 0);
-    g.add(kq, P.mesh(P.cyl(6.5, 6.5, 3, 32), P.clay(K.yellow, { rough: 0.5 })).translateY(-3.5));
-  }
-  const halka = P.mesh(new THREE.TorusGeometry(4.2, 0.75, 10, 28), P.metal(0xc9ccd1, 0.3)); // dik bağlantı halkası
-  halka.rotation.x = Math.PI / 2;
-  halka.position.set(0, 2.5, 3.2);
-  g.add(halka);
-  g.traverse((o) => { if (o.isMesh) o.castShadow = o.receiveShadow = true; });
-  return g;
-}
-
-// ---- Kart anahtarlık (mağaza ürünü): Blender'daki kart (kart_anahtarlik) kopyalanır, yüzüne Oktos tasarımı basılır.
-// Lisanslı kart görselleri (mağazadaki ürünler) sahnede yeniden üretilmez; yüz bizim logomuz ve yazımız.
-const KART = {
-  koyu: { zemin: '#16181b', logo: '#f3eee5', yazi: '#f2b48a', cerceve: 0x34363a },
-  turuncu: { zemin: '#d4621f', logo: '#16181b', yazi: '#16181b', cerceve: 0x3a2418 },
-  krem: { zemin: '#efe6d4', logo: '#d4621f', yazi: '#2b3036', cerceve: 0xb7a27e },
-};
-let logoResmi = null;
+// ---- Kart anahtarlık (mağaza ürünü): Blender'daki kart (kart_anahtarlik) kopyalanır; yüzü ürünün fotoğrafından
+// düzleştirilmiş kart, çerçeve ve kulak mağazadaki gibi beyaz. Kart oranı 63 × 88 mm (Blender'daki yüz 34 × 52):
+// çerçeve ve yüz enine KART_EN kadar genişler.
+const KART_EN = (63 / 88) / (34 / 52);
 async function kartYuzu(id) {
-  const k = KART[id], cv = document.createElement('canvas'), W = 340, H = 520;
-  cv.width = W;
-  cv.height = H;
-  const c = cv.getContext('2d');
-  c.fillStyle = k.zemin;
-  c.fillRect(0, 0, W, H);
-  logoResmi ||= await new Promise((ok, hata) => {
-    const im = new Image();
-    im.onload = () => ok(im);
-    im.onerror = hata;
-    im.src = new URL('./logo-beyaz.svg', import.meta.url).href;
-  });
-  const lc = document.createElement('canvas'), lw = 250, lh = Math.round((lw * 531.75) / 674); // logonun oranı
-  lc.width = lw;
-  lc.height = lh;
-  const l = lc.getContext('2d');
-  l.drawImage(logoResmi, 0, 0, lw, lh);
-  l.globalCompositeOperation = 'source-in'; // beyaz logoyu şablonun rengine boya
-  l.fillStyle = k.logo;
-  l.fillRect(0, 0, lw, lh);
-  c.drawImage(lc, (W - lw) / 2, 92);
-  await document.fonts.load('700 50px "Big Shoulders Display"').catch(() => {});
-  c.fillStyle = k.yazi;
-  c.textAlign = 'center';
-  c.font = '700 50px "Big Shoulders Display", "Schibsted Grotesk", sans-serif';
-  c.fillText('OKTOS', W / 2, 382);
-  c.font = '600 21px "Schibsted Grotesk", sans-serif';
-  c.letterSpacing = '7px';
-  c.fillText('WORKSHOP', W / 2 + 3, 418);
-  c.globalAlpha = 0.45;
-  c.strokeStyle = k.yazi;
-  c.lineWidth = 3;
-  c.strokeRect(20, 20, W - 40, H - 40);
-  const tex = new THREE.CanvasTexture(cv);
+  const tex = await new THREE.TextureLoader().loadAsync(new URL(`../assets/oda/anahtarlik-${id}.webp`, import.meta.url).href);
   tex.colorSpace = THREE.SRGBColorSpace;
-  tex.flipY = false; // glTF UV'si (v aşağı): tuvalin üstü kartın kulak tarafında
+  tex.flipY = false; // glTF UV'si (v aşağı): resmin üstü kartın kulak tarafında
   tex.anisotropy = 8;
   return tex;
 }
 async function kartAnahtarlik(id, kart) {
-  const k = KART[id], yuz = await kartYuzu(id);
+  const yuz = await kartYuzu(id), beyaz = 0xf1efea;
   if (!kart) { // pilotsuz: düz kart
     const g = new THREE.Group();
-    g.add(P.mesh(P.rbox(40, 58, 3, 4), P.clay(k.cerceve)).translateY(-36));
-    const m = new THREE.Mesh(new THREE.PlaneGeometry(34, 52), new THREE.MeshStandardMaterial({ map: yuz }));
+    g.add(P.mesh(P.rbox(40 * KART_EN, 58, 3, 4), P.clay(beyaz)).translateY(-36));
+    const m = new THREE.Mesh(new THREE.PlaneGeometry(34 * KART_EN, 52), new THREE.MeshStandardMaterial({ map: yuz }));
     m.position.set(0, -36, 3.05);
     g.add(m);
     yuz.flipY = true;
@@ -485,10 +392,14 @@ async function kartAnahtarlik(id, kart) {
       o.material = o.material.clone();
       o.material.map = yuz;
       o.material.color.set(0xffffff);
+      if (o.material.clearcoat) o.material.clearcoat = 0.35; // epoksi parlaklığı; tam kaplama kartı sütlü gösterir
       o.material.needsUpdate = true;
+      o.scale.x *= KART_EN;
     } else if (/^kart_(cerceve|kulak)/.test(o.name)) {
       o.material = o.material.clone();
-      o.material.color.setHex(k.cerceve);
+      o.material.color.setHex(beyaz);
+      o.material.roughness = 0.3; // epoksi kaplı, hafif parlak
+      if (/^kart_cerceve/.test(o.name)) o.scale.x *= KART_EN;
     }
     o.castShadow = o.receiveShadow = true;
   });
@@ -646,7 +557,7 @@ export async function buildTemplate(zone, id, { lang = 'tr', saksi = {}, pasta =
       return g;
     }
     case 'puzzle3d': return puzzle3d(id);
-    case 'anahtarlik': return id.startsWith('qr_') ? qrEtiket(id === 'qr_yuvarlak', fs) : kartAnahtarlik(id, kart);
+    case 'anahtarlik': return kartAnahtarlik(id, kart);
     case 'tabela': return aracModeli('text', id, { boy: 56 }, { dik: true }); // kapı üstünde: 3D Yazı plakası, büyük
     case 'miknatis': {
       if (id !== 'not') return miknatisModel(id, fs, lang);

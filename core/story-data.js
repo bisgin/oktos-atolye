@@ -232,7 +232,7 @@ export const ODA_STORY = {
   },
   hotspots: {
     cekmece: zone('Çekmece', 'Drawer', 'Atölye için organizerler.', 'Organizers for the workshop.', ['Organizer', 'Organizer']),
-    anahtarlik: zone('Anahtarlık', 'Keychains', 'Anahtarın yanında kendi kartın: kart anahtarlıklarımız mağazada.', 'Your own card next to your keys: our card keychains are in the shop.', ['Kart anahtarlık', 'Card keychain']),
+    anahtarlik: zone('Anahtarlık', 'Keychains', 'Sevdiğin kart anahtarının yanında: kart anahtarlıklarımız mağazada.', 'Your favourite card next to your keys: our card keychains are in the shop.', ['Kart anahtarlık', 'Card keychain']),
     kartvizit: zone('Kartvizit', 'Business card', 'Masanda kartvizitin: QR kodu telefon okur, bilgin hep yanında.', 'Your business card on the desk: a phone reads the QR, your details always at hand.', ['Kartvizit', 'Business card']),
     kalemlik: zone('Kalemlik', 'Pen cup', 'Kalemler yerini bilsin.', 'Every pen knows its place.', ['Kalemlik', 'Pen cup']), // taslak (kullanıcının cümlesi yarım kaldı)
     klavye: zone('Keycap/Fidget', 'Keycap/Fidget', 'Klavyene kendi tuşunu tak, aynısı anahtarlıkta tıklasın.', 'Fit your own keycaps; the same design clicks on your keyring.', ['Tuş başlığı', 'Keycaps']),

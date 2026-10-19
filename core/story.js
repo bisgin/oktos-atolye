@@ -813,10 +813,11 @@ export async function mountStory(root, { toolId, lang = 'tr', mode = pickMode(to
     // Sahnenin kendi denetimi (oda: yakın planda şablon değiştirme, built.api)
     api: built.api || null,
     // Yakın plandaki şablon değişince "Bu şablonla tasarla" yeni şablonu açar; şablonu olmayan bölgede atölye yakında.
-    setPreset(id, preset) {
+    setPreset(id, preset, disari = null) {
       const h = hotspots.find((x) => x.id === id);
       if (!h) return;
       h.preset = preset;
+      if (disari) h.disari = disari; // mağaza ürünü: seçili şablonun kendi sayfası
       h.live = story.live && !!preset;
       if (focused === h) {
         scGo.textContent = (preset === 'magaza' && h.cta?.[lang]) || ui.designThis;
