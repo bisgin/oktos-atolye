@@ -61,7 +61,7 @@ export const FOCUS = {
   klavye: { pos: [-800, 640, 1190], target: [-925, 1305, 760] },    // klavyenin tamamı (Esc'ten oka) ve önündeki anahtarlık
   modem: { pos: [-830, 760, 1520], target: [-850, 1690, 1370] },     // alt raf: modem ve QR'lar
   tabela: { pos: [800, 560, 1650], target: [800, 1790, 2370] },      // kapının üstündeki plaka (odanın içinden, aşağıdan)
-  saksilar: { pos: [-380, 330, 1260], target: [-30, 1650, 1070] },   // pervazdaki saksılar ve çiçekleri, arkada tül
+  saksilar: { pos: [330, 480, 1260], target: [-20, 1650, 1080] },   // pervazdaki saksılar ve çiçekleri, arkada tül (sağdan: koltuk solda kalır)
   miknatis: { pos: [690, 610, 1100], target: [1530, 850, 650] },        // kapalı kapağa karşıdan: mıknatıslar
   buzdolabi: { pos: [380, 260, 1020], target: [1660, 860, 300] },   // ön yüzüne karşıdan; ortada alt raftaki pasta
   cerceve: { pos: [-1440, 1080, 1520], target: [-1440, 1785, 1515] }, // monitörün sol üstündeki çerçeveye karşıdan

@@ -379,6 +379,8 @@ export async function buildScene({ scene, P, lang = 'tr' }) {
     place(pilot.esya.monitor, A.monitor);
     scene.add(pilot.esya.masa_alti);
     if (pilot.perde) scene.add(pilot.perde);
+    // Oyuncu koltuğu: masanın sağ önünde, halının üstünde (durak kameralarının önüne girmez)
+    if (pilot.esya.koltuk) place(pilot.esya.koltuk, [OLCU.CHAIR.x, OLCU.CHAIR.y, 0, OLCU.CHAIR.rz]);
   }
   const flipZone = place(new THREE.Group(), [A.fridge[0], A.fridge[1], F.h, -Math.PI / 2 + 0.5]);
   flipZone.add(P.mesh(P.cyl(90, 90, 12, 32), M.dark));

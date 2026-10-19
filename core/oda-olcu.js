@@ -20,6 +20,7 @@ export const OLCU = {
   "RACEWAY": { "x": -760, "z0": 110, "z1": 980 },
   "SOCKET": { "x": -560, "z": 300 },
   "RUG": { "x": -200, "y": -150, "w": 1700, "d": 2300 },
+  "CHAIR": { "x": -340, "y": 930, "rz": -0.5 },
   "SKIRTING": { "h": 80, "t": 14 },
   "SUN": { "azimuth": 25, "elevation": 42, "color": [1.0, 0.93, 0.84], "strength": 4.5 }
 };
