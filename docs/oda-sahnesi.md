@@ -219,6 +219,11 @@ yok: sayfanın en üstünde yukarı kaydırmak üst kata çıkmak sayılır).
   ucunun önü, pencere yanı) kayıp müzik dinler, gerek kalmayınca döner. Kenar yeri kadrajına giren durakta (saksılar)
   masada kalır. Ürünün önüne karakter ya da koltuk girerse ürün sade bir x-ray dairesinden görünür; kamera karakterin
   içinden geçerken karakter seyrelir.
+- **İmleç dairesi (genel plan):** fare kartvizit, kalemlik ya da tuşların üzerindeyse imlecin çevresinde, ürünün
+  uzaklığında ~12 cm'lik bir daire karakteri ve koltuğu siler, arkadaki ürün görünür; tıklama ürüne gider
+  (`AYAR.fareDelik`, `AYAR.fareCap`; dokunmatikte yok, yakın planda eski daire geçerli).
+- **Hız:** karakterin bütün zamanı `AYAR.tempo` (1,1) kat hızlı akar: klipler, yürüyüş, kayma ve iniş birlikte
+  hızlanır, ayak kaymaz (2026-10-19, %10).
 - **Gider:** üst kata dönülünce koltukla oturma yerine kayar, kalkar, aynı yoldan tırmanır; yolda geri dönülürse kaldığı
   yerden döner. Hareket azaltmada masada hareketsiz oturur.
 - **Ölçek ve eşleme:** Blender'da rig 1,5 (boy ~1,4 m). Masa başı klipleri kökü 335 mm kaldırır (eller klavyede,

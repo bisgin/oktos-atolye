@@ -23,7 +23,10 @@ const MASA_Z = 335; // masa başı kliplerinde kök yüksekliği (Blender eşlem
 
 // ---- Ayarlanabilir değerler ----
 export const AYAR = {
-  hizYuru: 406,          // mm/sn: yürüme döngüsünde basan ayağın hızı (Blender'da ölçüldü: 0,271 m/sn × 1,5)
+  tempo: 1.1,            // karakterin bütün zamanı (klipler, yürüyüş, kayma, iniş) bu kat hızlı akar: ayak kaymaz (2026-10-19)
+  fareDelik: ['kartvizit', 'kalemlik', 'klavye'], // genel planda fare bu ürünlerin üzerindeyse imleç dairesi karakteri siler
+  fareCap: 125,          // mm: imleç dairesinin çapı (ürünün uzaklığında)
+  hizYuru: 406,         // mm/sn: yürüme döngüsünde basan ayağın hızı (Blender'da ölçüldü: 0,271 m/sn × 1,5)
   donus: 3.2,            // rad/sn: yürürken en hızlı dönüş
   donusYerinde: 2.6,     // rad/sn: durduğu yerde dönüş
   hizKaydir: 330,        // mm/sn: koltukla kayma
@@ -830,6 +833,7 @@ export function karakterOlustur(g, { reduce = false, zorla = null } = {}) {
   const bak = { k: 0, yaw: 0, pitch: 0 }, kafaTaban = new THREE.Quaternion(), qInv = new THREE.Quaternion();
   let kafaDegisti = false;
   function update(t, dt) {
+    dt *= AYAR.tempo;
     saat += dt;
     if (kafaDegisti) { kafa.quaternion.copy(kafaTaban); kafaDegisti = false; } // klip kafayı yazmasa da bakış birikmesin
     for (const f of [...kareler]) if (f(dt)) kareler.delete(f);
@@ -932,6 +936,8 @@ export function karakterOlustur(g, { reduce = false, zorla = null } = {}) {
   // ---- x-ray ve seyrelme: kamera güncellendikten sonra, çizimden hemen önce ----
   const bufBoy = new THREE.Vector2(), pUrun = new THREE.Vector3(), pE = new THREE.Vector3(), pB = new THREE.Vector3(), kutu = new THREE.Box3();
   const xr = { guc: 0, sol: 1, kareNo: -1, urun: null, urunId: null, urunT: -9, t: 0 };
+  const fare = { x: 0, y: 0, zone: null, t: 0 }; // genel planda imleç (istemci koordinatı) ve altındaki ürün
+  const fareDelikte = () => !!fare.zone && AYAR.fareDelik.includes(fare.zone);
   let kareNo = 0;
   function xrayHesapla(cam) {
     if (!story || !ben.gorunur) { XR.xrGuc.value = 0; XR.xrSol.value = 1; return; }
@@ -972,8 +978,16 @@ export function karakterOlustur(g, { reduce = false, zorla = null } = {}) {
           if (!ortu) ortu = dene(kutu.getCenter(pB), 200);
         }
       }
+    } else if (fareDelikte()) {
+      // Genel planda fare masadaki ürünün (kartvizit, kalemlik, tuşlar) üzerinde: imlecin çevresinde ürünün uzaklığında
+      // ~12 cm'lik daire karakteri ve koltuğu siler, arkadaki ürün görünür (karakter orada değilse daire görünmez)
+      if (xr.urunId !== fare.zone || saat - xr.urunT > 0.4) { xr.urun = story.api?.center(fare.zone) ?? null; xr.urunId = fare.zone; xr.urunT = saat; }
+      const uzU = xr.urun ? cam.position.distanceTo(xr.urun) : 1500, rc = r.domElement.getBoundingClientRect();
+      rpx = Math.max(18, ((AYAR.fareCap / 2) * H) / 2 / (Math.tan((cam.fov * Math.PI) / 360) * uzU));
+      XR.xrMerkez.value.set(((fare.x - rc.left) / rc.width) * W, (1 - (fare.y - rc.top) / rc.height) * H);
+      ortu = true;
     }
-    xr.guc += ((ortu ? 1 : 0) - xr.guc) * (reduce ? 1 : Math.min(1, dt * 10));
+    xr.guc +=((ortu ? 1 : 0) - xr.guc) * (reduce ? 1 : Math.min(1, dt * 10));
     XR.xrGuc.value = xr.guc < 0.01 ? 0 : xr.guc;
     XR.xrYaricap.value = rpx || XR.xrYaricap.value;
   }
@@ -1067,11 +1081,22 @@ export function karakterOlustur(g, { reduce = false, zorla = null } = {}) {
         sonHover = performance.now();
         uzerinde = isinda(e) !== null;
       });
-      host.addEventListener('pointerleave', () => { uzerinde = false; });
+      // İmleç dairesi: konum her harekette, altındaki ürün ~60 ms'de bir (yakın planda kapalı; dokunmatikte fare yok)
+      host.addEventListener('pointermove', (e) => {
+        if (e.pointerType === 'touch') return;
+        fare.x = e.clientX;
+        fare.y = e.clientY;
+        if (performance.now() - fare.t < 60) return;
+        fare.t = performance.now();
+        fare.zone = s.focusedId ? null : s.hit?.(e.clientX, e.clientY) ?? null;
+      });
+      host.addEventListener('pointerleave', () => { uzerinde = false; fare.zone = null; });
       host.addEventListener('pointerdown', (e) => { asagiNokta = [e.clientX, e.clientY]; }, true);
-      // Karaktere tıklama ürüne gitmesin (önündeyse): yakalama evresinde durdurulur
+      // Karaktere tıklama ürüne gitmesin (önündeyse): yakalama evresinde durdurulur. İmleç dairesi açıkken ürün
+      // görünür: tıklama ürüne gider
       host.addEventListener('pointerup', (e) => {
         if (!asagiNokta || Math.hypot(e.clientX - asagiNokta[0], e.clientY - asagiNokta[1]) > 8) return;
+        if (fareDelikte()) return;
         const t = isinda(e);
         if (t === null) return;
         const z = s.hit?.(e.clientX, e.clientY), c = z && s.api?.center(z);
