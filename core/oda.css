@@ -272,6 +272,8 @@ html.oda-tur-on { scrollbar-width: none; }
 html.oda-tur-on::-webkit-scrollbar { display: none; }
 .oda-tur-on .topbar { position: fixed; top: 0; left: 0; right: 0; z-index: 30; }
 .oda-tur-alan { pointer-events: none; }
+/* Tıklamayla geçişin B varyantında kısa kararma (core/oda-tur.js) */
+.oda-perde { position: absolute; inset: 0; background: #0b0c0e; opacity: 0; pointer-events: none; z-index: 1; }
 .oda[data-tur] .story-lede { display: none; }
 .oda[data-tur].is-focused .story-canvas canvas { touch-action: pan-y; } /* yakın planda da dikey kaydırma sayfanın */
 .oda-tur-giris {

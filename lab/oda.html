@@ -98,17 +98,20 @@
     },
     onSkip: () => { location.href = '../index.html'; },
     // Giriş bitince kamerayı tur sürer; turdayken tıklama önce tura sorulur
-    onReady: () => { hazir = true; tur?.hazir(); },
+    onReady: () => { hazir = true; if (tur) { tur.hazir(); demoBaslat(); } },
     onActivate: (h) => tur?.sec(h) ?? false,
     onCard: panel.onCard,
   });
   panel.attach(story);
+  // ?kamera=a|b|c|d|eski: tıklamayla durağa geçiş biçimi (lab/kamera.html karşılaştırır); ?demo=1 tıklamaları kendisi yapar
+  const kamera = ['a', 'b', 'c', 'd', 'eski'].includes(params.get('kamera')) ? params.get('kamera') : 'a';
+  function demoBaslat() { if (params.has('demo')) tur.demo(['cekmece', 'buzdolabi', 'modem', 'saksilar', 'klavye', null]); }
   tur = odaTuru(root, story, {
     duraklar: [null, ...ZONES.map((z) => z.id)],
     metin: { baslik: t('oda.tur.baslik'), basla: t('oda.tur.basla') },
-    reduce, bekle: !!params.get('odak'),
+    reduce, bekle: !!params.get('odak'), gecis: kamera,
   });
-  if (hazir) tur.hazir();
+  if (hazir) { tur.hazir(); demoBaslat(); }
   // Yalnız laboratuvar (çekim için): ?bak=0.4 kenar bakışını o açıya çevirir (radyan, artı sola),
   // ?odak=cekmece açılışta o bölgeye yakınlaşır
   if (params.get('bak') && story.debug.look) story.debug.look.yaw = Number(params.get('bak'));

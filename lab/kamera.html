@@ -1,0 +1,73 @@
+<!doctype html>
+<html lang="tr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Kamera Geçişleri · Oktos Workshop</title>
+<meta name="robots" content="noindex">
+<meta name="theme-color" content="#111214">
+<link rel="icon" href="../core/icon.svg" type="image/svg+xml">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Schibsted+Grotesk:wght@400;500;600;700&display=swap">
+<link rel="stylesheet" href="../core/style.css">
+<style>
+  /* Odadaki tıklama geçişlerinin karşılaştırması (core/oda-tur.js GECIS): her varyantın kendiliğinden oynayan demosu
+     ve elle denenecek hâli. Oda sayfasıyla aynı koyu çubuk. */
+  body { background: #17181b; color: #f3eee5; }
+  .topbar { background: #111214; border-bottom-color: rgb(243 238 229 / 0.1); }
+  .topbar .brand { color: #f3eee5; }
+  main { max-width: 760px; margin: 0 auto; padding: 28px 16px 48px; }
+  h1 { font-size: clamp(26px, 6vw, 34px); margin: 0 0 8px; letter-spacing: -0.01em; }
+  .lede { margin: 0 0 24px; color: rgb(243 238 229 / 0.72); }
+  ol { list-style: none; margin: 0; padding: 0; display: grid; gap: 12px; }
+  li { background: #202226; border: 1px solid rgb(243 238 229 / 0.1); border-radius: 12px; padding: 16px; }
+  li.eski { background: transparent; border-style: dashed; }
+  h2 { font-size: 18px; margin: 0 0 4px; display: flex; gap: 10px; align-items: baseline; }
+  h2 b { color: #f2b48a; font-size: 14px; letter-spacing: 0.04em; }
+  p { margin: 0 0 12px; color: rgb(243 238 229 / 0.74); font-size: 14.5px; }
+  .links { display: flex; flex-wrap: wrap; gap: 8px; }
+  .links a { display: inline-flex; align-items: center; min-height: 44px; padding: 0 16px; border-radius: 999px; text-decoration: none; font-weight: 600; font-size: 14px; }
+  .links a.demo { background: #f3eee5; color: #111214; }
+  .links a.dene { color: #f3eee5; border: 1px solid rgb(243 238 229 / 0.28); }
+  .not { margin-top: 24px; font-size: 13.5px; color: rgb(243 238 229 / 0.6); }
+</style>
+</head>
+<body>
+<header class="topbar">
+  <a class="brand" href="oda.html"><img src="../core/logo-beyaz.svg" alt="" width="36" height="28"><span>Oktos Workshop</span></a>
+</header>
+<main>
+  <h1>Kamera geçişleri</h1>
+  <p class="lede">Odada bir ürüne ya da alttaki şeride tıklayınca kamera o ürüne nasıl gitsin? Hepsinde kamera varışta iki saniyede yavaşça yaklaşır. Kaydırarak gezmek aynen kalır. Demo kendiliğinden beş ürünü sırayla açar; ekrana dokununca durur.</p>
+  <ol>
+    <li>
+      <h2><b>A</b> Doğrudan uçuş</h2>
+      <p>Kamera bulunduğu yerden ürüne yumuşak bir doğruyla gider (uzaklığa göre 0,9–1,7 sn). En sade ve en hızlısı; odadaki yerini kaybettirmez.</p>
+      <div class="links"><a class="demo" href="oda.html?kamera=a&amp;demo=1">Demoyu izle</a><a class="dene" href="oda.html?kamera=a">Kendin dene</a></div>
+    </li>
+    <li>
+      <h2><b>B</b> Kararma</h2>
+      <p>Ekran bir an kararır, ürünün önünde açılır ve kamera yerinde yaklaşır. Sinematik ve en sakini; ama ürünün odada nerede olduğunu göstermez.</p>
+      <div class="links"><a class="demo" href="oda.html?kamera=b&amp;demo=1">Demoyu izle</a><a class="dene" href="oda.html?kamera=b">Kendin dene</a></div>
+    </li>
+    <li>
+      <h2><b>C</b> Genel plandan geçiş</h2>
+      <p>Önce odanın genel planına çıkar, sonra ürüne girer. Odayı her seferinde yeniden gösterir; en uzunu (2–3 sn).</p>
+      <div class="links"><a class="demo" href="oda.html?kamera=c&amp;demo=1">Demoyu izle</a><a class="dene" href="oda.html?kamera=c">Kendin dene</a></div>
+    </li>
+    <li>
+      <h2><b>D</b> Kavisli uçuş</h2>
+      <p>A gibi doğrudan gider ama yolun ortasında yükselir; odanın üstünden bir yay çizer. Uzak ürünler arasında daha akıcı, yakınlarda A'ya yakın.</p>
+      <div class="links"><a class="demo" href="oda.html?kamera=d&amp;demo=1">Demoyu izle</a><a class="dene" href="oda.html?kamera=d">Kendin dene</a></div>
+    </li>
+    <li class="eski">
+      <h2><b>ESKİ</b> Bugünkü davranış</h2>
+      <p>Sayfa o ürüne kayar, kamera aradaki bütün ürünlerin üzerinden hızla geçer. Karşılaştırma için.</p>
+      <div class="links"><a class="demo" href="oda.html?kamera=eski&amp;demo=1">Demoyu izle</a><a class="dene" href="oda.html?kamera=eski">Kendin dene</a></div>
+    </li>
+  </ol>
+  <p class="not">Seçtiğin geçiş odanın varsayılanı olur; bu sayfa ve bağlantılar ardından kaldırılabilir.</p>
+</main>
+</body>
+</html>
