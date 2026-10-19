@@ -152,6 +152,7 @@ export async function buildScene({ scene, P, lang = 'tr' }) {
   // ---- yuvalar: bölgenin ürünü burada; şablon değişince yalnız yuvadaki model değişir ----
   const slots = {};
   let cayBuhari = null; // balkondaki çaydan yükselen buhar (update'te tıklar)
+  const ledler = []; // robot süpürgenin sarı ve mavi durum ışığı (malzemeleri)
   const duvarlar = {}, donen = {}; // yakın planda çevirme: bölge → duvardaki nesne; bölge → { obj, rz0, pos0, w, aci }
   let klavyeBilgi = null; // klavye kurulunca: tuş yerleri ve anahtarlığın yeri (klavye şablonları için)
   const agiz = (m) => m.userData.soil ?? m.userData.h; // bitki toprağa (yoksa saksının ağzına) oturur
@@ -398,6 +399,17 @@ export async function buildScene({ scene, P, lang = 'tr' }) {
     if (pilot.perde) scene.add(pilot.perde);
     // Oyuncu koltuğu: masanın sağ önünde, halının üstünde (durak kameralarının önüne girmez)
     if (pilot.esya.koltuk) place(pilot.esya.koltuk, [OLCU.CHAIR.x, OLCU.CHAIR.y, 0, OLCU.CHAIR.rz]);
+    // Robot süpürge buzdolabı ile balkon duvarı arasında; durum ışıkları update'te yanıp söner
+    if (pilot.esya.supurge) {
+      place(pilot.esya.supurge, [OLCU.ROBOT.x, OLCU.ROBOT.y, 0, OLCU.ROBOT.rz]);
+      for (const ad of ['supurge_led_sari', 'supurge_led_mavi']) {
+        const m = pilot.esya.supurge.getObjectByName(ad);
+        if (!m?.isMesh) continue;
+        m.material = m.material.clone(); // ışık rengi: dışa aktarım şiddeti 0 olan ışığı siyah yazar
+        m.material.emissive.setHex(ad.endsWith('sari') ? 0xffb21a : 0x2a78ff);
+        ledler.push(m.material);
+      }
+    }
   }
   const flipZone = place(new THREE.Group(), [A.fridge[0], A.fridge[1], F.h, -Math.PI / 2 + 0.5]);
   flipZone.add(P.mesh(P.cyl(90, 90, 12, 32), M.dark));
@@ -590,7 +602,16 @@ export async function buildScene({ scene, P, lang = 'tr' }) {
     focusShift: 0.16, // yatay ekranda yakın plandaki ürün sağa kayar: sol kenarda başlık paneli
     touchOrbit: false, // dokunmatikte yakın planda yana kaydırma şablon değiştirir (etrafa bakma yok)
     langGeometry: true,
-    update(t) { pilot?.perde?.userData.tick(t); cayBuhari?.userData.tick(t); },
+    update(t) {
+      pilot?.perde?.userData.tick(t);
+      cayBuhari?.userData.tick(t);
+      // Süpürge ışıkları: sarı 6 sn'de bir iki kez çakar, mavi 9 sn'de bir yavaşça yanıp söner
+      if (ledler.length === 2) {
+        const s = t % 6, m = t % 9;
+        ledler[0].emissiveIntensity = (s < 0.18 || (s > 0.36 && s < 0.54)) ? 6 : 0;
+        ledler[1].emissiveIntensity = m > 4 && m < 5.6 ? 5 * Math.sin(((m - 4) / 1.6) * Math.PI) : 0;
+      }
+    },
     // Telefonun dikey ekranı: genel motor kamerayı odanın dışına çekip tepeden gökyüzünü gösteriyordu; oda kendi
     // kadrajını verir (içeriden, geniş açıyla: masa, raflar ve sol pencere)
     portraitShot: SHOTS.portrait,

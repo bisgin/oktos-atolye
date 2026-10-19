@@ -390,10 +390,17 @@ def ortam_kur(sc, o):
     V['koyu'].kutu(230, 170, 8, MO['x'], MO['y'] + 20, D['top'])
     PC = o['PC']
     V['koyu'].kutu(PC['w'], PC['d'], PC['h'], PC['x'], PC['y'], 0)  # masa altındaki kasa
-    CH = o['CHAIR']  # oyuncu koltuğu: oturak ve ayak (kaba; dönüşü yok sayılır)
-    V['koyu'].kutu(500, 500, 100, CH['x'], CH['y'], 460)
+    CH = o['CHAIR']  # oyuncu koltuğu masanın altında: oturak (piston en altta), öne katlı sırt, ayak (kaba; dönüşü yok)
+    V['koyu'].kutu(500, 500, 80, CH['x'], CH['y'], 390)
+    V['koyu'].kutu(500, 860, 96, CH['x'], CH['y'] + 215, 557)
     V['koyu'].kutu(560, 560, 40, CH['x'], CH['y'], 40)
-    V['koyu'].kutu(60, 60, 400, CH['x'], CH['y'], 60)
+    V['koyu'].kutu(60, 60, 330, CH['x'], CH['y'], 60)
+    # Robot süpürge: gölge vekili silindir ve altındaki kırmızı ışık halkası. Zemine kırmızı hale pişer; ikisi de dışa
+    # aktarılmaz (P'de değil). Canlı model oda-esya.glb 'supurge' kökünde.
+    RB = o['ROBOT']
+    silindir('vekil_supurge', RB['r'], 78, RB['x'], RB['y'], 14, V['koyu'].malzeme, seg=48)
+    halka_kur('vekil_supurge_isik', RB['r'] - 6, 5, (RB['x'], RB['y'], 9),
+              malzeme('vekil_supurge_isik', (0.8, 0.05, 0.03), isik=(1.0, 0.05, 0.02), isik_guc=5.0), None)  # yalnız tabanın çevresinde hale
     for ad, p in V.items():
         P['vekil_' + ad] = p
     karsi_kur(o, M, P)  # balkonun karşısı: sokak, karşı bina, bizim binanın alt cephesi
@@ -406,10 +413,11 @@ def ortam_kur(sc, o):
 
 
 # ---------------------------------------------------------------- balkonun karşısı: sokak ve karşı bina
-# Oda 2. katta (sokak z = −6000). Karşı binanın ön yüzü y = KARSI['y']; zemin katta dükkânlar, üstte üç kat, 4 m'lik
-# bölmeler: balkonlu bölmede balkon kapısı, öbüründe pencere (bazılarında perde). Hepsi kutu: delik açılmaz, cam ve
+# Oda 2. katta (sokak z = −6000). Karşı binanın ön yüzü y = KARSI['y']; zemin katta dükkânlar, üstte üç kat (3 m: katlar
+# bizim binayla aynı hizada, karşıdaki balkon bizimkiyle aynı yükseklikte), 4 m'lik bölmeler: balkonlu bölmede bizimki gibi
+# kapı (ortada kapı, iki yanda cam; kapalı, perdeler çekili), öbüründe pencere (bazılarında perde). Hepsi kutu: delik açılmaz, cam ve
 # kasa duvarın önüne biner (uzaktan fark edilmez). Ağaçlar ayrı nesne (ikosfer kümeleri).
-KARSI = {'y': 15000, 'x0': -18000, 'x1': 18000, 'sokak': -6000, 'katlar': [-2400, 600, 3600], 'cati': 6600, 'bolme': 4000,
+KARSI = {'y': 15000, 'x0': -18000, 'x1': 18000, 'sokak': -6000, 'katlar': [-3000, 0, 3000], 'cati': 6000, 'bolme': 4000,
          'yakin_kaldirim': 4400, 'uzak_kaldirim': 12500}
 
 
@@ -447,15 +455,14 @@ def karsi_kur(o, M, P):
     for i in range(n):
         x = K['x0'] + bol / 2 + i * bol
         # Dükkân: büyük koyu cam, ince koyu kasa, üstünde boş tabela bandı
-        yeni['karsi_vitrin'].kutu(bol - 900, 30, 2100, x, yf - 15, zs + 600)
+        yeni['karsi_vitrin'].kutu(bol - 900, 30, 1900, x, yf - 15, zs + 450)
         for fx, fw in ((x - (bol - 900) / 2, 60), (x + (bol - 900) / 2, 60)):
-            yeni['karsi_korkuluk'].kutu(fw, 50, 2100, fx, yf - 25, zs + 600)
-        yeni['karsi_korkuluk'].kutu(bol - 600, 60, 60, x, yf - 30, zs + 3000)
-        yeni['karsi_kasa'].kutu(bol - 900, 70, 420, x, yf - 35, zs + 3120)
+            yeni['karsi_korkuluk'].kutu(fw, 50, 1900, fx, yf - 25, zs + 450)
+        yeni['karsi_kasa'].kutu(bol - 900, 70, 380, x, yf - 35, zs + 2400)
+        yeni['karsi_korkuluk'].kutu(bol - 600, 60, 50, x, yf - 30, zs + 2800)
         for k, zf in enumerate(K['katlar']):
-            balkon = (i + k) % 2 == 0
+            balkon = (i + k) % 2 == 1  # tam karşımızdaki bölme (x = 0) bizim katta balkonlu
             if balkon:  # balkon kapısı, döşeme, korkuluk, saksı
-                gw, gh, gz = 1700, 2250, zf + 120
                 yeni['karsi_beton'].kutu(2700, 1300, 170, x, yf - 650, zf - 170)
                 yz, ky = zf + 1000, yf - 1260
                 yeni['karsi_korkuluk'].kutu(2700, 45, 45, x, ky, yz)
@@ -469,13 +476,27 @@ def karsi_kur(o, M, P):
                 if rng.random() < 0.7:
                     sx = -1 if rng.random() < 0.5 else 1
                     yeni['karsi_saksi'].kutu(700, 240, 280, x + sx * 750, yf - 1060, zf)
+                # Bizimki gibi: ortada 900 mm kapı (yere kadar), iki yanda 500 mm cam (denizlik 850 mm); hepsi kapalı,
+                # camın ardında perde çekili (kıvrımları ince dikey çıkıntılar)
+                for cx, cw, cz in ((x - 700, 500, zf + 850), (x, 900, zf + 40), (x + 700, 500, zf + 850)):
+                    ch = zf + 2300 - cz
+                    yeni['karsi_perde'].kutu(cw, 30, ch, cx, yf - 15, cz)
+                    kx = cx - cw / 2 + 55
+                    while kx < cx + cw / 2 - 30:
+                        yeni['karsi_perde'].kutu(34, 14, ch - 20, kx, yf - 37, cz + 10)
+                        kx += 105
+                for fw, fh, fx, fz in ((2020, 60, x, zf + 2300), (560, 60, x - 700, zf + 790), (560, 60, x + 700, zf + 790),
+                                       (960, 40, x, zf), (60, 1510, x - 980, zf + 790), (60, 1510, x + 980, zf + 790),
+                                       (60, 2300, x - 450, zf), (60, 2300, x + 450, zf)):
+                    yeni['karsi_kasa'].kutu(fw, 70, fh, fx, yf - 35, fz)
+                yeni['karsi_korkuluk'].kutu(22, 40, 170, x + 385, yf - 85, zf + 980)  # kapı kolu
             else:  # pencere ve mermer denizlik
                 gw, gh, gz = 1600, 1500, zf + 900
                 yeni['karsi_beton'].kutu(gw + 200, 140, 50, x, yf - 70, gz - 50)
-            parca = yeni['karsi_perde'] if rng.random() < 0.35 else yeni['karsi_cam']
-            parca.kutu(gw, 30, gh, x, yf - 15, gz)
-            for fw, fh, fx, fz in ((gw + 120, 60, x, gz - 60), (gw + 120, 60, x, gz + gh), (60, gh, x - gw / 2 - 30, gz), (60, gh, x + gw / 2 + 30, gz), (40, gh, x, gz)):
-                yeni['karsi_kasa'].kutu(fw, 70, fh, fx, yf - 35, fz)
+                parca = yeni['karsi_perde'] if rng.random() < 0.35 else yeni['karsi_cam']
+                parca.kutu(gw, 30, gh, x, yf - 15, gz)
+                for fw, fh, fx, fz in ((gw + 120, 60, x, gz - 60), (gw + 120, 60, x, gz + gh), (60, gh, x - gw / 2 - 30, gz), (60, gh, x + gw / 2 + 30, gz), (40, gh, x, gz)):
+                    yeni['karsi_kasa'].kutu(fw, 70, fh, fx, yf - 35, fz)
 
 
 def agac_kur(sc, o, M):
@@ -1444,7 +1465,9 @@ def profil(ad, pts, kalinlik, malz, ust, eksen='y', pah=18.0, kayma=(0, 0, 0)):
 def koltuk_kur(o):
     """Oyuncu koltuğu: yarış koltuğu silüetli sırt (üstte dar başlık, omuzlara doğru genişler), turuncu kenarlı orta
     panel ve kemer yuvaları, yanları kavisli kanatlı oturak, kolçaklar, beş kollu tekerlekli ayak. Siyah suni deri,
-    Oktos turuncusu. Orijin zeminde, ayağın ortası; ön yüzü +y (tarayıcı CHAIR.rz kadar döndürür)."""
+    Oktos turuncusu. Masanın altına itilmiş hali (2026-10-19): gaz pistonu en altta (oturaktan yukarısı INDIR kadar
+    aşağıda), sırt bel hizasındaki menteşeden (iki metal kulak, yatay silindir) öne katlanıp oturağın üstüne yatar;
+    kolçak ve katlı sırt masanın altına (712 mm) sığar, klavye görünür. Orijin zeminde, ayağın ortası; ön yüzü +y."""
     deri = malzeme('deri_siyah', (0.022, 0.022, 0.025), puruz=0.42, kaplama=0.35, kaplama_puruz=0.3)
     serit = malzeme('deri_turuncu', (0.66, 0.13, 0.025), puruz=0.45, kaplama=0.3, kaplama_puruz=0.3)
     metal = malzeme('koltuk_metal', (0.06, 0.06, 0.065), puruz=0.25, metal=1.0)
@@ -1458,21 +1481,28 @@ def koltuk_kur(o):
     silindir('koltuk_gobek', 46, 40, 0, 0, 58, metal, ust=kok)
     silindir('koltuk_amortisor', 26, 340, 0, 0, 90, metal, ust=kok)
     silindir('koltuk_kilif', 33, 170, 0, 0, 92, siyah, ust=kok)
-    yk('koltuk_mekanizma', 230, 230, 30, 0, 0, 430, siyah, pah=6, ust=kok)
+    INDIR, MZ = 70, 675  # piston inişi; menteşe ekseninin yüksekliği (üst düğümde; zeminden 605)
+    ust = bos('koltuk_ust', (0, 0, -INDIR), ust=kok)
+    yk('koltuk_mekanizma', 230, 230, 30, 0, 0, 430, siyah, pah=6, ust=ust)
     # Oturak: yuvarlak yastık, turuncu kenarlı orta panel; yanlarda önü kalkık kavisli kanatlar
-    yk('koltuk_oturak', 470, 500, 80, 0, 10, 460, deri, pah=32, ust=kok)
-    yk('koltuk_oturak_kenar', 300, 400, 8, 0, 20, 536, serit, pah=4, ust=kok)
-    yk('koltuk_oturak_panel', 284, 384, 10, 0, 20, 538, deri, pah=5, ust=kok)
+    yk('koltuk_oturak', 470, 500, 80, 0, 10, 460, deri, pah=32, ust=ust)
+    yk('koltuk_oturak_kenar', 300, 400, 8, 0, 20, 536, serit, pah=4, ust=ust)
+    yk('koltuk_oturak_panel', 284, 384, 10, 0, 20, 538, deri, pah=5, ust=ust)
     kanat = egri([(-240, 0), (0, 0), (250, 0), (275, 45), (250, 110), (150, 120), (0, 100), (-160, 95), (-245, 70)], 5)
     for sx in (-1, 1):
-        profil('koltuk_oturak_kanati', kanat, 80, deri, kok, eksen='x', pah=22, kayma=(sx * 222, 10, 500))
-    # Kolçaklar
+        profil('koltuk_oturak_kanati', kanat, 80, deri, ust, eksen='x', pah=22, kayma=(sx * 222, 10, 500))
+    # Kolçaklar (katlı sırt aralarından geçsin diye biraz dışarıda)
     for sx in (-1, 1):
-        yk('koltuk_kolcak_ayak', 40, 60, 210, sx * 290, -10, 470, siyah, pah=8, ust=kok)
-        yk('koltuk_kolcak', 90, 260, 30, sx * 290, 10, 680, siyah, pah=12, ust=kok)
-    # Sırt (kendi düğümünde, 12° geriye eğik): yarış koltuğu silüeti, ortada turuncu kenarlı panel, kemer yuvaları
-    sirt = bos('koltuk_sirt', (0, -215, 545), ust=kok)
-    sirt.rotation_euler[0] = math.radians(-12)
+        yk('koltuk_kolcak_ayak', 40, 60, 210, sx * 310, -10, 470, siyah, pah=8, ust=ust)
+        yk('koltuk_kolcak', 90, 260, 30, sx * 310, 10, 680, siyah, pah=12, ust=ust)
+    # Menteşe: oturağın arkasından yükselen iki metal kulak ve aralarında yatay silindir
+    for sx in (-1, 1):
+        yk('koltuk_mentese_kulak', 34, 26, MZ + 10 - 470, sx * 125, -228, 470, metal, pah=6, ust=ust)
+    silindir('koltuk_mentese', 22, 290, 0, -215, MZ, metal, ust=ust, eksen='x', seg=24)
+    # Sırt (kendi düğümünde, menteşe ekseninde): öne katlı, ön yüzü oturağa bakar. Yarış koltuğu silüeti, ortada
+    # turuncu kenarlı panel, kemer yuvaları
+    sirt = bos('koltuk_sirt', (0, -215, MZ), ust=ust)
+    sirt.rotation_euler[0] = math.radians(-90)
     sag = [(95, 860), (132, 820), (138, 760), (122, 700), (150, 650), (225, 600), (262, 540), (272, 420), (262, 280),
            (248, 160), (252, 60), (232, 0)]
     dis = egri(ayna(sag), 6)
@@ -1483,6 +1513,37 @@ def koltuk_kur(o):
     for sx in (-1, 1):
         yk('koltuk_kemer_yuvasi', 24, 6, 74, sx * 70, 58, 640, siyah, pah=10, ust=sirt)
     yk('koltuk_bel_yastigi', 300, 70, 130, 0, 86, 150, deri, pah=34, ust=sirt)
+    return kok
+
+
+def supurge_kur(o):
+    """Robot süpürge (Ø 340 mm, boy ~100 mm): koyu cilalı gövde, gri tampon bandı, üstte lidar kulesi ve düğme, önde yan
+    fırça; altında kırmızı ışık halkası (zemindeki kırmızı hale ortam pişirmesinde vekille verilir), üstte sarı ve mavi
+    durum ışığı ('supurge_led_sari', 'supurge_led_mavi': tarayıcı ara ara yakıp söndürür). Orijin zeminde, merkezde;
+    önü +y (tarayıcı ROBOT.rz kadar döndürür)."""
+    r = o['ROBOT']['r']
+    govde = malzeme('supurge_govde', (0.025, 0.025, 0.03), puruz=0.3, kaplama=0.6, kaplama_puruz=0.12)
+    tampon = malzeme('supurge_tampon', (0.16, 0.16, 0.17), puruz=0.55)
+    metal = bpy.data.materials.get('koltuk_metal') or malzeme('koltuk_metal', (0.06, 0.06, 0.065), puruz=0.25, metal=1.0)
+    siyah = bpy.data.materials.get('siyah_plastik') or malzeme('siyah_plastik', (0.018, 0.018, 0.02), puruz=0.42)
+    kirmizi = malzeme('supurge_alt_isik', (0.8, 0.05, 0.03), puruz=0.4, isik=(1.0, 0.05, 0.02), isik_guc=1.6)  # canlı ışıkta kırmızı kalsın
+    sari = malzeme('supurge_led_sari', (0.5, 0.4, 0.08), puruz=0.3, isik=(1.0, 0.72, 0.1), isik_guc=0.0)
+    mavi = malzeme('supurge_led_mavi', (0.06, 0.16, 0.5), puruz=0.3, isik=(0.15, 0.45, 1.0), isik_guc=0.0)
+    kok = bos('supurge')
+    silindir('supurge_govde', r, 66, 0, 0, 26, govde, ust=kok, seg=72)
+    silindir('supurge_tampon', r + 3, 44, 0, 0, 14, tampon, ust=kok, seg=72)
+    silindir('supurge_kapak', r - 26, 3, 0, 0, 92, siyah, ust=kok, seg=72)
+    silindir('supurge_lidar', 44, 22, 0, -62, 95, tampon, ust=kok, seg=40)
+    silindir('supurge_lidar_ust', 40, 3, 0, -62, 117, siyah, ust=kok, seg=40)
+    silindir('supurge_dugme', 15, 3, 0, 78, 95, metal, ust=kok, seg=28)
+    silindir('supurge_led_sari', 5, 2, -30, 78, 95, sari, ust=kok, seg=16)
+    silindir('supurge_led_mavi', 5, 2, 30, 78, 95, mavi, ust=kok, seg=16)
+    halka_kur('supurge_alt_isik', r - 6, 4, (0, 0, 8), kirmizi, kok)
+    silindir('supurge_firca_gobek', 9, 6, -118, 112, 3, siyah, ust=kok, seg=16)
+    for k in range(3):
+        a = math.radians(30 + 120 * k)
+        kil = yk('supurge_firca', 70, 3, 2, 35, 0, 4, siyah, pah=0.8, ust=kok)
+        dondur(kil, a).data.transform(Matrix.Translation((-118, 112, 0)))
     return kok
 
 
@@ -1629,7 +1690,7 @@ def kart_anahtarlik_kur():
 def esya_yaz(o, hedef):
     bpy.ops.wm.read_factory_settings(use_empty=True)
     kok = [monitor_kur(o), buzdolabi_kur(o), masa_alti_kur(o), perde_kur(o), koltuk_kur(o), anahtarlik_kur(o),
-           kart_anahtarlik_kur()]  # kahvalti_kur şu an kullanılmıyor
+           kart_anahtarlik_kur(), supurge_kur(o)]  # kahvalti_kur şu an kullanılmıyor
     bpy.ops.object.select_all(action='DESELECT')
     for k in kok:
         k.select_set(True)
@@ -1716,7 +1777,7 @@ def main():
         doku_yaz()
     if 'esya' in parca:
         esya_yaz(o, yol(CIKTI, 'oda-esya.glb'))
-        meta['esya'] = {'dosya': 'oda-esya.glb', 'koklar': ['monitor', 'buzdolabi', 'masa_alti', 'perde', 'koltuk', 'anahtarlik', 'kart_anahtarlik'], 'perde': PERDE}
+        meta['esya'] = {'dosya': 'oda-esya.glb', 'koklar': ['monitor', 'buzdolabi', 'masa_alti', 'perde', 'koltuk', 'anahtarlik', 'kart_anahtarlik', 'supurge'], 'perde': PERDE}
     if 'bitki' in parca:
         bitki_yaz(yol(CIKTI, 'oda-bitki.glb'))
         meta['bitki'] = {'dosya': 'oda-bitki.glb', 'cesitler': [b[3] for b in BITKILER]}

@@ -101,7 +101,10 @@ aynısı; kapalı katılar, renk parçaları ayrı.
 sarkar, anahtarlar arkaya yelpaze. Tepside oktosworkshop.com'daki beş kart anahtarlık (Charizard, Black Lotus,
 Venusaur, Blastoise, Dark Magician; yüzleri ürün fotoğrafından), "Satın al" seçili ürünün sayfasını açar; QR
 anahtarlıklar tepsiden kalktı. Aile fotoğrafı yapbozu sağ duvarda buzdolabının üstüne, rölyef çerçevesi 1,6 kat
-büyüyüp sol duvarın ortasına taşındı.
+büyüyüp sol duvarın ortasına taşındı. Koltuk dik ve masaya ortalı, masanın altına itilmiş: piston en altta, sırt bel
+hizasındaki menteşeden öne katlı (klavye genel planda görünür). Buzdolabı ile balkon duvarı arasında robot süpürge:
+altında kırmızı ışık (zemine pişer), üstte sarı ve mavi durum ışıkları ara ara yanar. Karşı binanın katları bizimkiyle
+aynı hizada; tam karşıdaki balkon bizim katta, kapısı bizimki gibi (ortada kapı, iki yanda cam; kapalı, perdeler çekili).
 Ana sayfanın tek sahnesi: ev ofisi ve açık balkon. Ürettiğimiz her şey kendi doğal yerinde
 durur; ziyaretçi bakar, tıklar, şablonları değiştirir, araca geçer. Görsel referanslar: sade ev ofisi (yatay
 aynalanmış) ve açık balkon (ahşap zemin, bistro masa, büyük saksılar).

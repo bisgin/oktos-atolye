@@ -68,7 +68,7 @@
    "yiyecek_nar"
   ]
  },
- "tarih": "2026-10-19 13:59",
+ "tarih": "2026-10-19 18:03",
  "kodlama": "sqrt-srgb",
  "esya": {
   "dosya": "oda-esya.glb",
@@ -79,7 +79,8 @@
    "perde",
    "koltuk",
    "anahtarlik",
-   "kart_anahtarlik"
+   "kart_anahtarlik",
+   "supurge"
   ],
   "perde": {
    "y": 1774,
