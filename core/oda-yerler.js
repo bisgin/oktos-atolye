@@ -11,6 +11,7 @@ const { PEDESTAL, FRIDGE, MONITOR } = OLCU;
 // 3B yapboz 2026-10-18'de rafa kalktı (kullanıcı kararı).
 export const ZONES = [
   { id: 'cekmece', tool: 'bin', preset: 'drawer' },
+  { id: 'anahtarlik', tool: 'magaza' }, // dolabın üstündeki tepsi: kart anahtarlık mağazada satılır (araç değil)
   { id: 'kalemlik', tool: 'bin', preset: 'pencup' },
   { id: 'klavye', tool: 'clicker' },
   { id: 'modem', tool: 'qr' },
@@ -27,6 +28,7 @@ export const ZONES = [
 // Ürün yerleri: [x, y, z(taban), dönüş z]
 export const A = {
   pedestal: [PEDESTAL.x, PEDESTAL.y, 0, 0], // çekmeceli dolap (üst çekmece −y yönünde açılır)
+  tepsi: [PEDESTAL.x + 5, PEDESTAL.y - 185, PEDESTAL.h, -0.18], // dolabın üstünde, lambanın önünde anahtar tepsisi
   pencup: [-1400, 1520, 740, 0],      // monitörün solunda (önceki yerde kalemler monitörün içine giriyordu)
   keyboard: [-930, 1330, 740, 0.02],
   monitor: [MONITOR.x, MONITOR.y, 740, 0], // klavyenin arkasında (pilotta gerçekçi monitör)
@@ -58,6 +60,7 @@ export const LOOK = { min: -0.52, max: 0.46, edge: 0.2, speed: 0.75 };
 // gereken genişlik (mm); telefonda kamera bu genişlik sığana kadar geri çekilir (story.js focusShot).
 export const FOCUS = {
   cekmece: { pos: [-930, -220, 1900], target: [-1790, 860, 560] },  // tam açık çekmece (590 mm dışarıda)
+  anahtarlik: { pos: [-1560, 900, 1130], target: [-1790, 1255, 745], w: 330 }, // tepsiye önden, yukarıdan
   kalemlik: { pos: [-950, 640, 1180], target: [-1290, 1500, 830] },   // masa üstü: kalemlik, monitörün solu
   klavye: { pos: [-785, 630, 1195], target: [-910, 1300, 760], w: 440 }, // klavyenin tamamı (Esc'ten oka) ve önündeki anahtarlık
   modem: { pos: [-934, 700, 1540], target: [-954, 1690, 1370], w: 640 }, // alt raf: modem, kartvizit ve anahtarlık ortada

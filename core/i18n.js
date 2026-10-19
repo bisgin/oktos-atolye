@@ -65,6 +65,8 @@ const dict = {
     'oda.tur.basla': 'Çekmece organizeriyle başla',
     'oda.aracta': '{a} aracında açılır',
     'oda.aracYakinda': '{a} aracı yakında',
+    'oda.magazada': "oktosworkshop.com'da satışta",
+    'oda.dust.anahtarlik': 'Anahtarlığını mağazada bul!',
   },
   en: {
     'app.name': 'Oktos Workshop',
@@ -131,6 +133,8 @@ const dict = {
     'oda.tur.basla': 'Start with the drawer organizer',
     'oda.aracta': 'Opens in {a}',
     'oda.aracYakinda': '{a} is coming soon',
+    'oda.magazada': 'Sold at oktosworkshop.com',
+    'oda.dust.anahtarlik': 'Find your keychain in the shop!',
   },
 };
 

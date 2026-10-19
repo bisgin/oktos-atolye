@@ -61,6 +61,13 @@ raf Poly Haven yiyecekleriyle dolu (sürahi, süt, konserve, meyve; doku 256–5
 birlikte gösterir (Wi-Fi standı, kartvizit, duvara yaslı anahtarlık; ikişer şablon): şablon yalnız kendi ürününü
 değiştirir, seçili ürün kalkıp dikelir (`COKLU`, oda-sahne çoklu yuva). Yakın planlara `w` (sığacak genişlik): telefonda
 kamera geri çekilir, klavye ve QR kenardan taşmaz. Üst çubuk ve şablon şeridi koyu, sol üstte beyaz Oktos logosu.
+2026-10-19 (öğleden sonra): tıklamayla durağa geçiş artık aradaki durakların üzerinden geçmez: sayfa anında atlar, kamera
+doğrudan gider ve varışta 2 sn'de %10 yaklaşır (`core/oda-tur.js` GECIS). Dört varyant ve eski davranış
+`?kamera=a|b|c|d|eski`, kendiliğinden oynayan demo `&demo=1`, karşılaştırma `lab/kamera.html`; varsayılan A (doğrudan).
+Çekmeceli dolabın üstünde anahtar tepsisi (yeni durak `anahtarlik`, çekmeceden sonra): Kutu aracının mürekkep rengi
+tepsisi, Blender'da modellenmiş çelik halka ve üç anahtar, halkaya takılı kart anahtarlık. Mağazadaki kart
+anahtarlıklar lisanslı kart kopyası (Pokémon, Magic, Yu-Gi-Oh!) olduğu için sahnede yeniden üretilmez: kartın yüzü
+Oktos tasarımı (koyu, turuncu, krem şablon), düğme "Mağazada gör" oktosworkshop.com/anahtarlik'i yeni sekmede açar.
 Ana sayfanın tek sahnesi: ev ofisi ve açık balkon. Ürettiğimiz her şey kendi doğal yerinde
 durur; ziyaretçi bakar, tıklar, şablonları değiştirir, araca geçer. Görsel referanslar: sade ev ofisi (yatay
 aynalanmış) ve açık balkon (ahşap zemin, bistro masa, büyük saksılar).

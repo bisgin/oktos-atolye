@@ -57,6 +57,12 @@ export const TEMPLATES = {
     T('uzun', n2('Uzun kanallar · 12 parça', 'Long channels · 12 pieces'), 'drawer', { w: 93, d: 208, h: 48, cols: 1, rows: 1, holes: false, scoop: true }, '#ece9e2'),
     T('atolye', n2('Atölye kutuları · 12 parça', 'Workshop boxes · 12 pieces'), 'drawer', { w: 124, d: 155, h: 45, cols: 2, rows: 3, holes: false }, '#2b3036'),
   ],
+  // Kart anahtarlık: mağaza ürünü (preset 'magaza': araç yerine mağaza açılır); yüzü Oktos tasarımı (KART)
+  anahtarlik: [
+    T('koyu', n2('Oktos kart · koyu', 'Oktos card · dark'), 'magaza'),
+    T('turuncu', n2('Oktos kart · turuncu', 'Oktos card · orange'), 'magaza'),
+    T('krem', n2('Oktos kart · krem', 'Oktos card · cream'), 'magaza'),
+  ],
   kalemlik: [
     T('pencup', binName('pencup'), 'pencup'),
     T('pencup3', binName('pencup3'), 'pencup3'),
@@ -399,6 +405,84 @@ async function qrUrunu(id, fs, lang) {
   return new THREE.Group().add(tag);
 }
 
+// ---- Kart anahtarlık (mağaza ürünü): Blender'daki kart (kart_anahtarlik) kopyalanır, yüzüne Oktos tasarımı basılır.
+// Lisanslı kart görselleri (mağazadaki ürünler) sahnede yeniden üretilmez; yüz bizim logomuz ve yazımız.
+const KART = {
+  koyu: { zemin: '#16181b', logo: '#f3eee5', yazi: '#f2b48a', cerceve: 0x34363a },
+  turuncu: { zemin: '#d4621f', logo: '#16181b', yazi: '#16181b', cerceve: 0x3a2418 },
+  krem: { zemin: '#efe6d4', logo: '#d4621f', yazi: '#2b3036', cerceve: 0xb7a27e },
+};
+let logoResmi = null;
+async function kartYuzu(id) {
+  const k = KART[id], cv = document.createElement('canvas'), W = 340, H = 520;
+  cv.width = W;
+  cv.height = H;
+  const c = cv.getContext('2d');
+  c.fillStyle = k.zemin;
+  c.fillRect(0, 0, W, H);
+  logoResmi ||= await new Promise((ok, hata) => {
+    const im = new Image();
+    im.onload = () => ok(im);
+    im.onerror = hata;
+    im.src = new URL('./logo-beyaz.svg', import.meta.url).href;
+  });
+  const lc = document.createElement('canvas'), lw = 250, lh = Math.round((lw * 531.75) / 674); // logonun oranı
+  lc.width = lw;
+  lc.height = lh;
+  const l = lc.getContext('2d');
+  l.drawImage(logoResmi, 0, 0, lw, lh);
+  l.globalCompositeOperation = 'source-in'; // beyaz logoyu şablonun rengine boya
+  l.fillStyle = k.logo;
+  l.fillRect(0, 0, lw, lh);
+  c.drawImage(lc, (W - lw) / 2, 92);
+  await document.fonts.load('700 50px "Big Shoulders Display"').catch(() => {});
+  c.fillStyle = k.yazi;
+  c.textAlign = 'center';
+  c.font = '700 50px "Big Shoulders Display", "Schibsted Grotesk", sans-serif';
+  c.fillText('OKTOS', W / 2, 382);
+  c.font = '600 21px "Schibsted Grotesk", sans-serif';
+  c.letterSpacing = '7px';
+  c.fillText('WORKSHOP', W / 2 + 3, 418);
+  c.globalAlpha = 0.45;
+  c.strokeStyle = k.yazi;
+  c.lineWidth = 3;
+  c.strokeRect(20, 20, W - 40, H - 40);
+  const tex = new THREE.CanvasTexture(cv);
+  tex.colorSpace = THREE.SRGBColorSpace;
+  tex.flipY = false; // glTF UV'si (v aşağı): tuvalin üstü kartın kulak tarafında
+  tex.anisotropy = 8;
+  return tex;
+}
+async function kartAnahtarlik(id, kart) {
+  const k = KART[id], yuz = await kartYuzu(id);
+  if (!kart) { // pilotsuz: düz kart
+    const g = new THREE.Group();
+    g.add(P.mesh(P.rbox(40, 58, 3, 4), P.clay(k.cerceve)).translateY(-36));
+    const m = new THREE.Mesh(new THREE.PlaneGeometry(34, 52), new THREE.MeshStandardMaterial({ map: yuz }));
+    m.position.set(0, -36, 3.05);
+    g.add(m);
+    yuz.flipY = true;
+    return g;
+  }
+  const g = kart.clone(true);
+  g.position.set(0, 0, 0);
+  g.rotation.set(0, 0, 0);
+  g.traverse((o) => {
+    if (!o.isMesh) return;
+    if (/^kart_yuz/.test(o.name)) {
+      o.material = o.material.clone();
+      o.material.map = yuz;
+      o.material.color.set(0xffffff);
+      o.material.needsUpdate = true;
+    } else if (/^kart_(cerceve|kulak)/.test(o.name)) {
+      o.material = o.material.clone();
+      o.material.color.setHex(k.cerceve);
+    }
+    o.castShadow = o.receiveShadow = true;
+  });
+  return g;
+}
+
 // Karoyu kaideye geriye yaslı diker; ön yüzü −y
 function standing(t, { baseW, color = K.woodLight }) {
   const g = new THREE.Group(), holder = new THREE.Group();
@@ -516,7 +600,7 @@ const RELIEF = { mountain: ['mountain', 'sunset', 7], sea: ['sea', 'sea', 5], la
 // Bir bölgenin bir şablonunu üretir. lang: yazılı ürünler (plaka, pasta süsü, Flip, QR başlığı) için.
 // saksi: fotogerçekçi odada saksılara toprak ve baskı malzemesi ({ toprak, malzeme }, vaseModel'e gider).
 // pasta: fotogerçekçi odada gerçek pasta modeli (kopyalanır); pasta süsümüz onun üstüne batar.
-export async function buildTemplate(zone, id, { lang = 'tr', saksi = {}, pasta = null, klavye = null } = {}) {
+export async function buildTemplate(zone, id, { lang = 'tr', saksi = {}, pasta = null, klavye = null, kart = null } = {}) {
   await initCSG();
   const fs = await fonts(700);
   switch (zone) {
@@ -583,6 +667,7 @@ export async function buildTemplate(zone, id, { lang = 'tr', saksi = {}, pasta =
       return g;
     }
     case 'puzzle3d': return puzzle3d(id);
+    case 'anahtarlik': return kartAnahtarlik(id, kart);
     case 'tabela': return signModel(id, fs, SIGN[lang] || SIGN.tr);
     case 'miknatis': return miknatisModel(id, fs, lang);
     case 'saksilar': return vaseModel(id, {}, saksi);

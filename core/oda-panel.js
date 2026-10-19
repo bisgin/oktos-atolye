@@ -9,7 +9,7 @@ import { playTitle } from './vitrin-titles.js';
 import { t } from './i18n.js';
 
 // Araçların filament rengi (başlığın ve toz yazısının tonu, harf hareketi)
-export const TOOL_TONE = { bin: '#ef8a46', vase: '#e3a093', clicker: '#74a7f2', text: '#ecc659', flip: '#a7cf9f', qr: '#c9d2dc', painter: '#6fc3bb', puzzle: '#ef6f62' };
+export const TOOL_TONE = { magaza: '#e8c48c', bin: '#ef8a46', vase: '#e3a093', clicker: '#74a7f2', text: '#ecc659', flip: '#a7cf9f', qr: '#c9d2dc', painter: '#6fc3bb', puzzle: '#ef6f62' };
 const DUST_AFTER = 3; // kaç şablon değişiminden sonra çağrı yazısı gelir
 const SWIPE = 40; // px: bundan kısa yatay kaydırma şablon değiştirmez
 const coarse = () => matchMedia('(pointer: coarse)').matches;
@@ -78,7 +78,8 @@ export function odaPanel(root, { lang = 'tr', reduce = false } = {}) {
     card.style.setProperty('--c', tone);
     // Başlık görünen ürün (işaretçideki kısa ad); araç adı altta, hangi araçta açılacağıyla
     els.title.textContent = ODA_STORY.hotspots?.[zone]?.pin?.[lang] || h.name;
-    els.arac.textContent = t(h.live ? 'oda.aracta' : 'oda.aracYakinda').replace('{a}', STORIES[tool].name[lang]);
+    els.arac.textContent = tool === 'magaza' ? t('oda.magazada') // mağaza ürünü: araç değil, satışta
+      : t(h.live ? 'oda.aracta' : 'oda.aracYakinda').replace('{a}', STORIES[tool].name[lang]);
     els.title.dataset.tool = tool;
     if (!reduce) titleFx = playTitle(els.title, tool, { cycles: 1, color: tone });
     const cur = story.api.current(zone);

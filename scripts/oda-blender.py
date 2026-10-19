@@ -1486,9 +1486,150 @@ def koltuk_kur(o):
     return kok
 
 
+# ---------------------------------------------------------------- tepsideki anahtarlar ve kart anahtarlık
+def levha(ad, pts, kalinlik, malz, ust, pah=0.5, delikler=()):
+    """Yatan düz parça: XY'deki kapalı silüetten z boyunca kalınlık (tabanı z = 0). delikler: [(x, y, r)] boydan boya
+    (Boolean; kesiciler ebeveynsiz, dışa aktarılmaz). Köşeler dünya koordinatında verilir: kök orijinde durmalı."""
+    bm = bmesh.new()
+    f = bm.faces.new([bm.verts.new((x, y, 0)) for x, y in pts])
+    ex = bmesh.ops.extrude_face_region(bm, geom=[f])
+    bmesh.ops.translate(bm, verts=[e for e in ex['geom'] if isinstance(e, bmesh.types.BMVert)], vec=Vector((0, 0, kalinlik)))
+    bmesh.ops.recalc_face_normals(bm, faces=bm.faces[:])
+    me = bpy.data.meshes.new(ad)
+    bm.to_mesh(me)
+    bm.free()
+    ob = bpy.data.objects.new(ad, me)
+    bpy.context.scene.collection.objects.link(ob)
+    me.materials.append(malz)
+    for i, (x, y, r) in enumerate(delikler):
+        kes = silindir(f'{ad}_kesici{i}', r, kalinlik + 4, x, y, -2, malz, seg=28)
+        kes.hide_render = True
+        kes.display_type = 'WIRE'
+        b = ob.modifiers.new('delik', 'BOOLEAN')
+        b.object, b.operation, b.solver = kes, 'DIFFERENCE', 'EXACT'
+    if pah:
+        bv = ob.modifiers.new('pah', 'BEVEL')
+        bv.width, bv.segments, bv.limit_method, bv.harden_normals = pah, 2, 'ANGLE', True
+    for poly in me.polygons:
+        poly.use_smooth = True
+    ob.parent = ust
+    return ob
+
+
+def halka_kur(ad, R, r, yer, malz, ust, dik=False):
+    """Halka (torus): yatay ya da dik (x ekseni çevresinde 90°). R: orta çizgi yarıçapı, r: tel kalınlığının yarısı."""
+    bm = bmesh.new()
+    n, m = 56, 12
+    rings = []
+    for i in range(n):
+        a = 2 * math.pi * i / n
+        rings.append([])
+        for j in range(m):
+            b = 2 * math.pi * j / m
+            p = Vector(((R + r * math.cos(b)) * math.cos(a), (R + r * math.cos(b)) * math.sin(a), r * math.sin(b)))
+            if dik:
+                p = Vector((p.x, -p.z, p.y))
+            rings[-1].append(bm.verts.new(p + Vector(yer)))
+    for i in range(n):
+        for j in range(m):
+            bm.faces.new((rings[i][j], rings[(i + 1) % n][j], rings[(i + 1) % n][(j + 1) % m], rings[i][(j + 1) % m]))
+    me = bpy.data.meshes.new(ad)
+    bm.to_mesh(me)
+    bm.free()
+    for poly in me.polygons:
+        poly.use_smooth = True
+    ob = bpy.data.objects.new(ad, me)
+    bpy.context.scene.collection.objects.link(ob)
+    me.materials.append(malz)
+    ob.parent = ust
+    return ob
+
+
+def anahtar_cizgi(bas_r, boy, en, tohum, kare=False):
+    """Anahtar silüeti (yerel: delik orijinde, ağız +x yönünde): yuvarlak ya da kare kafa, dişli ağız, sivri uç."""
+    rng = np.random.default_rng(tohum)
+    cx, pts = bas_r * 0.55, []
+    for i in range(33):
+        a = math.radians(25 + 310 * i / 32)
+        c, s = math.cos(a), math.sin(a)
+        rr = bas_r / (abs(c) ** 4 + abs(s) ** 4) ** 0.25 if kare else bas_r
+        pts.append((cx + rr * c, rr * s))
+    h, xb = en / 2, cx + bas_r * 0.9
+    pts += [(xb + 2, -h), (xb + boy, -h), (xb + boy + 4, -h + 3), (xb + boy + 3, h - 2.6)]
+    adim = (boy - 6) / 7
+    for j in range(7):
+        x = xb + boy - 1 - j * adim
+        pts += [(x - adim * 0.45, h - rng.uniform(1.4, 3.0)), (x - adim, h)]
+    pts.append((xb + 1, h))
+    return pts
+
+
+def anahtarlik_kur(o):
+    """Çekmeceli dolabın üstündeki tepsi için: çelik halka, üç anahtar (pirinç ev anahtarı, kare kafalı çelik kapı
+    anahtarı, siyah başlıklı kilit anahtarı) yatar. Orijin halkanın ortası, tepsinin tabanında; kart anahtarlık ayrı kök
+    (kart_anahtarlik_kur), tarayıcı halkaya takar. Köşeler dünya koordinatında (Boolean kesiciler bunu ister)."""
+    pirinc = malzeme('anahtar_pirinc', (0.78, 0.56, 0.22), puruz=0.32, metal=1.0)
+    celik = malzeme('anahtar_celik', (0.62, 0.62, 0.64), puruz=0.26, metal=1.0)
+    siyah = bpy.data.materials.get('siyah_plastik') or malzeme('siyah_plastik', (0.018, 0.018, 0.02), puruz=0.42)
+    kok = bos('anahtarlik')
+    RH = 14.0  # halkanın orta çizgisi
+    halka_kur('anahtarlik_halka', RH, 1.0, (0, 0, 1.1), celik, kok)
+
+    def yerlestir(pts, fi):
+        c, s, H = math.cos(fi), math.sin(fi), (RH * math.cos(fi), RH * math.sin(fi))
+        return [(H[0] + x * c - y * s, H[1] + x * s + y * c) for x, y in pts], H
+    for ad, malz, bas_r, boy, en, tohum, kare, fi in (('anahtar_ev', pirinc, 13, 40, 9, 3, False, 15),
+                                                       ('anahtar_kapi', celik, 14, 46, 9.5, 7, True, 105)):
+        pts, H = yerlestir(anahtar_cizgi(bas_r, boy, en, tohum, kare), math.radians(fi))
+        levha(ad, pts, 2.2, malz, kok, delikler=[(H[0], H[1], 3.2)])
+    # Kilit anahtarı: siyah plastik başlık ve kısa çelik ağız
+    fi = math.radians(195)
+    bas = [(10 + 11 * math.cos(math.radians(a)), 9.5 * math.sin(math.radians(a))) for a in range(0, 360, 12)]
+    pts, H = yerlestir(bas, fi)
+    levha('anahtar_kilit_bas', pts, 4.0, siyah, kok, pah=0.9, delikler=[(H[0], H[1], 3.0)])
+    agiz, _ = yerlestir([(19, -2.8), (44, -2.8), (47, 0), (44, 2.8), (19, 2.8)], fi)
+    levha('anahtar_kilit_agiz', agiz, 1.8, celik, kok, pah=0.3)
+    return kok
+
+
+def kart_anahtarlik_kur():
+    """Kart anahtarlık (yerel: kulak deliği orijinde, kart −y'ye sarkar, yatar): koyu çerçeve, üstünde kulak, içinde
+    parlak kart yüzü ('kart_yuz', UV 0..1; tarayıcı şablona göre Oktos tasarımını basar, çerçeve rengini değiştirir)
+    ve dik bağlantı halkası."""
+    cerceve = malzeme('kart_cerceve', (0.05, 0.05, 0.055), puruz=0.4)
+    yuz = malzeme('kart_yuz', (0.9, 0.9, 0.9), puruz=0.3, kaplama=0.7, kaplama_puruz=0.05)
+    celik = bpy.data.materials.get('anahtar_celik') or malzeme('anahtar_celik', (0.62, 0.62, 0.64), puruz=0.26, metal=1.0)
+    kok = bos('kart_anahtarlik')
+    W, Hh, r, cy = 40.0, 58.0, 4.0, -36.0
+    kose = []
+    for (sx, sy), a0 in zip(((1, 1), (-1, 1), (-1, -1), (1, -1)), (0, 90, 180, 270)):
+        for k in range(7):
+            a = math.radians(a0 + 90 * k / 6)
+            kose.append((sx * (W / 2 - r) + r * math.cos(a), cy + sy * (Hh / 2 - r) + r * math.sin(a)))
+    levha('kart_cerceve', kose, 3.0, cerceve, kok, pah=0.6)
+    kulak = [(6.5 * math.cos(math.radians(a)), -2 + 6.5 * math.sin(math.radians(a))) for a in range(0, 360, 10)]
+    levha('kart_kulak', kulak, 3.0, cerceve, kok, pah=0.6, delikler=[(0, 0, 2.4)])
+    bm = bmesh.new()  # kart yüzü: çerçevenin 3 mm içi, üstte; UV tam doku
+    uv = bm.loops.layers.uv.new('UVMap')
+    w2, h2 = W / 2 - 3, Hh / 2 - 3
+    f = bm.faces.new([bm.verts.new((x, cy + y, 3.02)) for x, y in ((-w2, -h2), (w2, -h2), (w2, h2), (-w2, h2))])
+    for lp, (u, v) in zip(f.loops, ((0, 0), (1, 0), (1, 1), (0, 1))):
+        lp[uv].uv = (u, v)
+    me = bpy.data.meshes.new('kart_yuz')
+    bm.to_mesh(me)
+    bm.free()
+    ob = bpy.data.objects.new('kart_yuz', me)
+    bpy.context.scene.collection.objects.link(ob)
+    me.materials.append(yuz)
+    ob.parent = kok
+    halka_kur('kart_baglanti', 4.2, 0.7, (0, 2.5, 3.2), celik, kok, dik=True)
+    return kok
+
+
 def esya_yaz(o, hedef):
     bpy.ops.wm.read_factory_settings(use_empty=True)
-    kok = [monitor_kur(o), buzdolabi_kur(o), masa_alti_kur(o), perde_kur(o), koltuk_kur(o)]  # kahvalti_kur şu an kullanılmıyor
+    kok = [monitor_kur(o), buzdolabi_kur(o), masa_alti_kur(o), perde_kur(o), koltuk_kur(o), anahtarlik_kur(o),
+           kart_anahtarlik_kur()]  # kahvalti_kur şu an kullanılmıyor
     bpy.ops.object.select_all(action='DESELECT')
     for k in kok:
         k.select_set(True)
@@ -1575,7 +1716,7 @@ def main():
         doku_yaz()
     if 'esya' in parca:
         esya_yaz(o, yol(CIKTI, 'oda-esya.glb'))
-        meta['esya'] = {'dosya': 'oda-esya.glb', 'koklar': ['monitor', 'buzdolabi', 'masa_alti', 'perde', 'koltuk'], 'perde': PERDE}
+        meta['esya'] = {'dosya': 'oda-esya.glb', 'koklar': ['monitor', 'buzdolabi', 'masa_alti', 'perde', 'koltuk', 'anahtarlik', 'kart_anahtarlik'], 'perde': PERDE}
     if 'bitki' in parca:
         bitki_yaz(yol(CIKTI, 'oda-bitki.glb'))
         meta['bitki'] = {'dosya': 'oda-bitki.glb', 'cesitler': [b[3] for b in BITKILER]}

@@ -158,7 +158,7 @@ export async function buildScene({ scene, P, lang = 'tr' }) {
   function model(zone, id) {
     const s = slots[zone];
     if (!s.cache.has(id)) {
-      const p = buildTemplate(zone, id, { lang, saksi: pilot?.saksi, pasta: pilot?.cicek.pasta, klavye: klavyeBilgi }).then((m) => { tag(m, zone); return m; });
+      const p = buildTemplate(zone, id, { lang, saksi: pilot?.saksi, pasta: pilot?.cicek.pasta, klavye: klavyeBilgi, kart: pilot?.esya.kart_anahtarlik }).then((m) => { tag(m, zone); return m; });
       p.catch(() => s.cache.delete(id)); // üretilemediyse sonraki istekte yeniden denenir
       s.cache.set(id, p);
     }
@@ -453,6 +453,15 @@ export async function buildScene({ scene, P, lang = 'tr' }) {
     }
   }
 
+  // ---- dolabın üstünde anahtar tepsisi (Kutu aracının tepsisi, mürekkep rengi): içinde Blender'dan halka ve üç
+  // anahtar, halkaya takılı kart anahtarlık yuvası (şablon yalnız kartı değiştirir; kart mağazada satılır) ----
+  const tepsi = place(new THREE.Group(), A.tepsi);
+  place(binModel('tray', { w: 230, d: 160, h: 22, cols: 1, rows: 1, r: 14, wall: 2.2, floor: 2, color: '#2b3036' }), [0, 0, 0], tepsi);
+  // Anahtarlar tepsinin uzun kenarına göre döner: kart ve kapı anahtarı enine, ev ve kilit anahtarı boyuna yatar
+  const anahtarlar = place(pilot?.esya.anahtarlik ?? new THREE.Group(), [-12, -2, 2, 1.31], tepsi);
+  // Kart halkanın 285°'sine takılı (Blender: kart −y'ye sarkar; kulağı halkadan 18 mm dışarıda)
+  await slot('anahtarlik', place(new THREE.Group(), [18 * Math.cos(4.974), 18 * Math.sin(4.974), 0, 4.974 + Math.PI / 2], anahtarlar));
+
   // ---- davranış ----
   const openDrawer = (k, dur) => gsap.to(drawer.position, { y: DRAWER_Y - k, duration: dur, ease: 'power3.out', overwrite: true });
   const openDoor = (a, dur) => gsap.to(door.rotation, { z: a, duration: dur, ease: 'power3.out', overwrite: true });
@@ -560,6 +569,8 @@ export async function buildScene({ scene, P, lang = 'tr' }) {
     hotspots: [
       // Sıra ZONES'la aynı (şerit ve tur). Kadrajlar FOCUS'ta (oda-yerler)
       hs('cekmece', drawer, { extra: [pedestal], noLift: true, anchor: [px, DRAWER_Y - PED.d / 2 + 60, PED.h + 50] }), // kapalı çekmecenin üstünde
+      // Mağaza ürünü: düğme mağazayı yeni sekmede açar
+      hs('anahtarlik', tepsi, { noLift: true, cta: { tr: 'Mağazada gör', en: 'View in shop' }, disari: 'https://oktosworkshop.com/anahtarlik' }),
       hs('kalemlik', penZone),
       hs('klavye', kbZone),
       hs('modem', modemZone),
