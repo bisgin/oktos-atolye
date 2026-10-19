@@ -42,7 +42,6 @@ const U = (t, urun) => ({ ...t, urun });
 export const COKLU = {
   modem: {
     wifi: { yer: [-160, -15, 36], kalk: 12, egim: 0.16 },
-    card: { yer: [0, 0, 0], kalk: 12, egim: 0.16 },
   },
 };
 export const TEMPLATES = {
@@ -81,9 +80,14 @@ export const TEMPLATES = {
   // ürünleri dolaşır, sonra ikinci şablonları
   modem: [
     U(T('wifi', storyName('qr', 'wifi'), 'wifi'), 'wifi'), // üçüncü değer: 3D QR aracının şablonu (tools/qr/app.js)
-    U(T('card', storyName('qr', 'card'), 'card'), 'card'),
     U(T('wifi_turuncu', n2('Misafir Wi-Fi standı', 'Guest Wi-Fi stand'), 'wifi_turuncu'), 'wifi'),
-    U(T('card_koyu', n2('Koyu kartvizit', 'Dark business card'), 'card_koyu'), 'card'),
+  ],
+  // Kalemliğin önünde kartvizit: dört tasarım, hepsi 3D QR aracının kartvizitinde açılır
+  kartvizit: [
+    T('acik', n2('Açık kartvizit', 'Light card'), 'card'),
+    T('koyu', n2('Koyu kartvizit', 'Dark card'), 'card_koyu'),
+    T('turuncu', n2('Turuncu kartvizit', 'Orange card'), 'card_turuncu'),
+    T('ahsap', n2('Ahşap kartvizit', 'Wood card'), 'card_ahsap'),
   ],
   puzzle3d: [T('sphere', storyName('puzzle', 'sphere')), T('cube', storyName('puzzle', 'cube')), T('egg', { tr: 'Yumurta yapboz', en: 'Egg puzzle' }), T('heart', { tr: 'Kalp yapboz', en: 'Heart puzzle' })],
   tabela: [T('plate', { tr: 'Plakalı', en: 'On a plate' }, 'plate'), T('letters', { tr: 'Harf harf', en: 'Letter by letter' }, 'letters'), T('round', { tr: 'Yuvarlak plaka', en: 'Rounded plate' }, 'round')], // 3D Yazı şablonları
@@ -654,6 +658,7 @@ export async function buildTemplate(zone, id, { lang = 'tr', saksi = {}, pasta =
     }
     case 'saksilar': return vaseModel(id, {}, saksi);
     case 'balkonMasa': return aracModeli('qr', id); // menü standı ve bardak altlığı
+    case 'kartvizit': return aracModeli('qr', TEMPLATES.kartvizit.find((x) => x.id === id).preset); // ayaklı kartvizit
     case 'buzdolabi': {
       const g = new THREE.Group();
       let ust = 70; // pastanın üst yüzü (krema)

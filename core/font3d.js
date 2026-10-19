@@ -1,21 +1,25 @@
 // 3B yazı için yazı tipleri (OFL-1.1, @fontsource): Schibsted Grotesk 5.3.0 (varsayılan) ve el yazısı Dancing Script
-// 5.2.8 ('el': pasta süsü, not). latin + latin-ext birlikte yüklenir, böylece Ş Ğ İ ı dahil tüm Türkçe harfler çıkar.
+// 5.2.8 ('el': pasta süsü) ve elle boyanmış dar büyük harf Londrina Solid 5.2.6 ('boya': not mıknatısı; yalnız latin,
+// Türkçe harfler Schibsted'den gelir). latin + latin-ext birlikte yüklenir, böylece Ş Ğ İ ı dahil tüm Türkçe harfler çıkar.
 // Harfler çokgenlere (mm, y yukarı) çevrilir. El yazısında harfler üst üste biner: kesiti NonZero kuralıyla al.
 import opentype from 'opentype';
 
 const AILE = {
   schibsted: 'https://cdn.jsdelivr.net/npm/@fontsource/schibsted-grotesk@5.3.0/files/schibsted-grotesk',
   el: 'https://cdn.jsdelivr.net/npm/@fontsource/dancing-script@5.2.8/files/dancing-script',
+  boya: 'https://cdn.jsdelivr.net/npm/@fontsource/londrina-solid@5.2.6/files/londrina-solid',
 };
+const YALNIZ_LATIN = { boya: 'schibsted' }; // latin-ext'i olmayan aile: eksik harf bu aileden
 const cache = new Map();
 
 export async function loadFont(weight = 700, aile = 'schibsted') {
   const key = `${aile}|${weight}`;
   if (!cache.has(key)) {
-    cache.set(key, Promise.all(['latin', 'latin-ext'].map(async (sub) => {
+    const yedek = YALNIZ_LATIN[aile];
+    cache.set(key, Promise.all((yedek ? ['latin'] : ['latin', 'latin-ext']).map(async (sub) => {
       const res = await fetch(`${AILE[aile] || AILE.schibsted}-${sub}-${weight}-normal.woff`);
       return opentype.parse(await res.arrayBuffer());
-    })));
+    })).then(async (f) => (yedek ? [...f, ...(await loadFont(700, yedek))] : f)));
   }
   return cache.get(key);
 }

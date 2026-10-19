@@ -14,7 +14,8 @@ const strings = {
     'text.lede': 'Kapı plakası, masa tabelası, pasta süsü, mıknatıs, anahtarlık. Yazını yaz, biçimini seç, sipariş ver.',
     'mode.plaka': 'Plaka', 'mode.masa': 'Masa tabelası', 'mode.pasta': 'Pasta süsü', 'mode.miknatis': 'Mıknatıs', 'mode.anahtarlik': 'Anahtarlık',
     'sec.yazi': 'Yazı', 'sec.bicim': 'Biçim', 'sec.olcu': 'Ölçü', 'sec.miknatis': 'Mıknatıs yuvası', 'sec.view': 'Görünüm',
-    'p.metin': 'Yazın (| alt satır)', 'p.yazitipi': 'Yazı tipi', 'yt.grotesk': 'Düz', 'yt.el': 'El yazısı', 'p.agirlik': 'Kalınlık', 'ag.500': 'Orta', 'ag.700': 'Kalın', 'ag.900': 'Çok kalın',
+    'p.metin': 'Yazın (| alt satır)', 'p.yazitipi': 'Yazı tipi', 'yt.grotesk': 'Düz', 'yt.el': 'El yazısı', 'yt.boya': 'Fırça', 'p.agirlik': 'Kalınlık',
+    'p.blok': 'Blok yazı', 'p.blok.h': 'Satırlar aynı eni kaplar (kısa satır iri)', 'ag.500': 'Orta', 'ag.700': 'Kalın', 'ag.900': 'Çok kalın',
     'p.boy': 'Yazı boyu', 'p.aralik': 'Harf aralığı', 'p.derinlik': 'Yazı kabartması', 'p.kalinlik': 'Gövde kalınlığı',
     'p.stil': 'Plaka', 'st.plaka': 'Düz plaka', 'st.yuvarlak': 'Yuvarlak', 'st.harf': 'Harf harf',
     'p.delik': 'Vida deliği', 'p.delik.h': 'İki uçta; yapıştırılacaksa kapalı kalsın',
@@ -23,7 +24,7 @@ const strings = {
     'p.color': 'Yazı rengi', 'p.govde': 'Gövde rengi', 'p.printer': 'Yazıcı', 'p.edges': 'Kenar çizgileri',
     'col.orange': 'Turuncu', 'col.sand': 'Kum', 'col.sage': 'Adaçayı', 'col.ink': 'Mürekkep', 'col.white': 'Beyaz', 'col.cream': 'Krem',
     'col.blue': 'Mavi', 'col.red': 'Kırmızı', 'col.yellow': 'Sarı', 'col.wood': 'Açık ahşap', 'col.rose': 'Gül', 'col.walnut': 'Ceviz',
-    'col.gold': 'Altın', 'col.rosegold': 'Gül altını',
+    'col.gold': 'Altın', 'col.rosegold': 'Gül altını', 'col.brick': 'Kiremit', 'col.amber': 'Kehribar',
     'info.yazi': 'Yazı', 'info.parca': 'Parça',
     'n.small': 'Yazı küçük: ince çizgiler kırılabilir, en az 12 mm önerilir.',
     'n.empty': 'Yazı boş; örnek yazı kullanıldı.',
@@ -38,7 +39,8 @@ const strings = {
     'text.lede': 'Door plates, desk signs, cake toppers, magnets, keychains. Type your words, pick a form, order it.',
     'mode.plaka': 'Plate', 'mode.masa': 'Desk sign', 'mode.pasta': 'Cake topper', 'mode.miknatis': 'Magnet', 'mode.anahtarlik': 'Keychain',
     'sec.yazi': 'Text', 'sec.bicim': 'Form', 'sec.olcu': 'Size', 'sec.miknatis': 'Magnet pocket', 'sec.view': 'View',
-    'p.metin': 'Your text (| new line)', 'p.yazitipi': 'Typeface', 'yt.grotesk': 'Sans', 'yt.el': 'Script', 'p.agirlik': 'Weight', 'ag.500': 'Medium', 'ag.700': 'Bold', 'ag.900': 'Heavy',
+    'p.metin': 'Your text (| new line)', 'p.yazitipi': 'Typeface', 'yt.grotesk': 'Sans', 'yt.el': 'Script', 'yt.boya': 'Brush', 'p.agirlik': 'Weight',
+    'p.blok': 'Block lettering', 'p.blok.h': 'Lines span the same width (short lines bigger)', 'ag.500': 'Medium', 'ag.700': 'Bold', 'ag.900': 'Heavy',
     'p.boy': 'Text size', 'p.aralik': 'Letter spacing', 'p.derinlik': 'Text relief', 'p.kalinlik': 'Body thickness',
     'p.stil': 'Plate', 'st.plaka': 'Flat plate', 'st.yuvarlak': 'Rounded', 'st.harf': 'Letters only',
     'p.delik': 'Screw holes', 'p.delik.h': 'At both ends; leave off if you glue it',
@@ -47,7 +49,7 @@ const strings = {
     'p.color': 'Text colour', 'p.govde': 'Body colour', 'p.printer': 'Printer', 'p.edges': 'Edge lines',
     'col.orange': 'Orange', 'col.sand': 'Sand', 'col.sage': 'Sage', 'col.ink': 'Ink', 'col.white': 'White', 'col.cream': 'Cream',
     'col.blue': 'Blue', 'col.red': 'Red', 'col.yellow': 'Yellow', 'col.wood': 'Light wood', 'col.rose': 'Rose', 'col.walnut': 'Walnut',
-    'col.gold': 'Gold', 'col.rosegold': 'Rose gold',
+    'col.gold': 'Gold', 'col.rosegold': 'Rose gold', 'col.brick': 'Brick', 'col.amber': 'Amber',
     'info.yazi': 'Text', 'info.parca': 'Pieces',
     'n.small': 'Small text: thin strokes can break, 12 mm or more is recommended.',
     'n.empty': 'Text is empty; an example is used.',
@@ -62,16 +64,16 @@ const strings = {
 const COLORS = [
   ['#2b3036', 'col.ink'], ['#f3efe6', 'col.cream'], ['#ece9e2', 'col.white'], ['#d4621f', 'col.orange'], ['#b8372f', 'col.red'],
   ['#e6b33a', 'col.yellow'], ['#8fa58a', 'col.sage'], ['#3f6fb0', 'col.blue'], ['#d49a9a', 'col.rose'], ['#c9b596', 'col.sand'],
-  ['#dcc2a2', 'col.wood'], ['#b38e64', 'col.walnut'], ['#d4a537', 'col.gold'], ['#d99a7e', 'col.rosegold'],
+  ['#dcc2a2', 'col.wood'], ['#b38e64', 'col.walnut'], ['#d4a537', 'col.gold'], ['#d99a7e', 'col.rosegold'], ['#9c2a1f', 'col.brick'], ['#e39a3b', 'col.amber'],
 ];
 
 // Şablon yazıları sayfanın diline göre (odadaki yazılarla aynı)
 const YAZI = getLang() === 'en'
-  ? { plate: 'Fresh air zone', door: 'STUDIO', sign: 'HELLO', key: 'OKTOS', harfler: 'OKTOS', not: 'Something beautiful|is going to|happen', iyi: 'Happy birthday', mutlu: 'Happy new year' }
-  : { plate: 'Oksijen alma alanı', door: 'ATÖLYE', sign: 'MERHABA', key: 'OKTOS', harfler: 'OKTOS', not: 'Something beautiful|is going to|happen', iyi: 'İyi ki doğdun', mutlu: 'Mutlu yıllar' };
+  ? { plate: 'Fresh air zone', door: 'STUDIO', sign: 'HELLO', key: 'OKTOS', harfler: 'OKTOS', not: 'SOMETHING|BEAUTIFUL|IS GOING TO HAPPEN', iyi: 'Happy birthday', mutlu: 'Happy new year' }
+  : { plate: 'Oksijen alma alanı', door: 'ATÖLYE', sign: 'MERHABA', key: 'OKTOS', harfler: 'OKTOS', not: 'SOMETHING|BEAUTIFUL|IS GOING TO HAPPEN', iyi: 'İyi ki doğdun', mutlu: 'Mutlu yıllar' };
 
 const defaults = {
-  mode: 'plaka', metin: YAZI.door, yazitipi: 'grotesk', agirlik: 700, boy: 30, aralik: 0.04, derinlik: 2, kalinlik: 4, stil: 'plaka', delik: false,
+  mode: 'plaka', metin: YAZI.door, yazitipi: 'grotesk', blok: false, agirlik: 700, boy: 30, aralik: 0.04, derinlik: 2, kalinlik: 4, stil: 'plaka', delik: false,
   mstil: 'harf', renkli: true, mCap: 6, mH: 2, color: '#2b3036', govde: '#f3efe6', printer: 'p1s', edges: false,
 };
 
@@ -85,7 +87,8 @@ const presets = [
   P('masa', 'sign', { metin: YAZI.sign, boy: 34, color: '#d4621f', govde: '#dcc2a2' }),
   P('anahtarlik', 'key', { metin: YAZI.key, boy: 14, color: '#f3efe6', govde: '#3f6fb0' }),
   P('miknatis', 'harfler', { metin: YAZI.harfler, mstil: 'harf', boy: 56, renkli: true, mCap: 6, color: '#d4621f' }), // 6 × 2 mm mıknatıs
-  P('miknatis', 'not', { metin: YAZI.not, mstil: 'not', yazitipi: 'el', boy: 17, color: '#b8372f', govde: '#f6f1e4' }), // kırmızımsı el yazısı
+  // "Something beautiful is going to happen": elle boyanmış dar büyük harf, blok (üç satır aynı en), turuncu üstünde kırmızı
+  P('miknatis', 'not', { metin: YAZI.not, mstil: 'not', yazitipi: 'boya', blok: true, aralik: 0.02, boy: 16, color: '#9c2a1f', govde: '#e39a3b' }),
   P('miknatis', 'kalp', { mstil: 'sekil', boy: 30, renkli: true, color: '#b8372f' }),
   // Pasta süsü el yazısıyla, metalik tonda (altın, gül altını): zemin ve yazı aynı renk, tek parça görünür
   P('pasta', 'iyi', { metin: YAZI.iyi, yazitipi: 'el', boy: 34, aralik: 0, color: '#d4a537', govde: '#d4a537' }),
@@ -98,8 +101,9 @@ function schema() {
   return [
     { type: 'section', label: 'sec.yazi', show: (s) => !(s.mode === 'miknatis' && s.mstil === 'sekil') },
     { type: 'text', key: 'metin', label: 'p.metin', max: 40, show: (s) => !(s.mode === 'miknatis' && s.mstil === 'sekil') },
-    { type: 'segmented', key: 'yazitipi', label: 'p.yazitipi', options: [['grotesk', 'yt.grotesk'], ['el', 'yt.el']], show: (s) => !(s.mode === 'miknatis' && s.mstil === 'sekil') },
-    { type: 'segmented', key: 'agirlik', label: 'p.agirlik', options: [[500, 'ag.500'], [700, 'ag.700'], [900, 'ag.900']], show: (s) => s.yazitipi !== 'el' && !(s.mode === 'miknatis' && s.mstil === 'sekil') },
+    { type: 'segmented', key: 'yazitipi', label: 'p.yazitipi', options: [['grotesk', 'yt.grotesk'], ['el', 'yt.el'], ['boya', 'yt.boya']], show: (s) => !(s.mode === 'miknatis' && s.mstil === 'sekil') },
+    { type: 'toggle', key: 'blok', label: 'p.blok', hint: 'p.blok.h', show: (s) => String(s.metin).includes('|') },
+    { type: 'segmented', key: 'agirlik', label: 'p.agirlik', options: [[500, 'ag.500'], [700, 'ag.700'], [900, 'ag.900']], show: (s) => s.yazitipi === 'grotesk' && !(s.mode === 'miknatis' && s.mstil === 'sekil') },
     { type: 'section', label: 'sec.bicim', show: is('plaka', 'miknatis') },
     { type: 'segmented', key: 'stil', label: 'p.stil', options: [['plaka', 'st.plaka'], ['yuvarlak', 'st.yuvarlak'], ['harf', 'st.harf']], show: is('plaka') },
     { type: 'toggle', key: 'delik', label: 'p.delik', hint: 'p.delik.h', show: (s) => s.mode === 'plaka' && s.stil !== 'harf' },

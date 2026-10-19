@@ -245,6 +245,10 @@ export async function buildScene({ scene, P, lang = 'tr' }) {
   const penZone = new THREE.Group();
   scene.add(penZone);
   await slot('kalemlik', place(new THREE.Group(), A.pencup, penZone));
+  // Kalemliğin önünde ayaklı kartvizit (kendi durağı: kamera yaklaşır, dört tasarım)
+  const kvZone = new THREE.Group();
+  scene.add(kvZone);
+  await slot('kartvizit', place(new THREE.Group(), A.kartvizit, kvZone));
 
   // ---- klavye (hafif eğik, arkası ayaklı): Esc, Enter ve yukarı ok boş (MX anahtarı); yuvası klavyenin kendisi,
   // şablon o tuşlara başlık takar ve klavyenin sağına aynı tasarımın anahtarlığını koyar ----
@@ -441,7 +445,7 @@ export async function buildScene({ scene, P, lang = 'tr' }) {
   // dik: yuva kendi dikey ekseninde ±40°; coklu: QR rafında seçili ürün; tabla: Flip döner tablası (iki kelimeyi de
   // gösterecek kadar); duvar: çerçeve ve plaka döndükçe duvardan ayrılır (yarı eni × |sin| + 8 mm, gömülmesin).
   // Klavye tuşları, çekmece organizeri, kapaktaki mıknatıslar ve halkadaki kart yerlerine sabit: dönmez.
-  const DONER = { kalemlik: 'dik', saksilar: 'dik', balkonMasa: 'dik', buzdolabi: 'dik', modem: 'coklu', flip: 'tabla', cerceve: 'duvar', yapboz: 'duvar', tabela: 'duvar' };
+  const DONER = { kartvizit: 'dik', kalemlik: 'dik', saksilar: 'dik', balkonMasa: 'dik', buzdolabi: 'dik', modem: 'coklu', flip: 'tabla', cerceve: 'duvar', yapboz: 'duvar', tabela: 'duvar' };
   const donenNesne = (zone) => {
     const tur = DONER[zone], s = slots[zone];
     if (tur === 'coklu') return s.coklu[TEMPLATES[zone][s.index].urun].kok;
@@ -591,6 +595,7 @@ export async function buildScene({ scene, P, lang = 'tr' }) {
       // Mağaza ürünü: düğme mağazayı yeni sekmede açar
       hs('anahtarlik', tepsi, { noLift: true, cta: { tr: 'Mağazada gör', en: 'View in shop' }, disari: 'https://oktosworkshop.com/anahtarlik' }),
       hs('kalemlik', penZone),
+      hs('kartvizit', kvZone),
       hs('klavye', kbZone),
       hs('modem', modemZone),
       hs('cerceve', frameA, { noLift: true }),

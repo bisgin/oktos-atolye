@@ -13,6 +13,7 @@ export const ZONES = [
   { id: 'cekmece', tool: 'bin', preset: 'drawer' },
   { id: 'anahtarlik', tool: 'magaza' }, // dolabın üstündeki tepsi: kart anahtarlık mağazada satılır (araç değil)
   { id: 'kalemlik', tool: 'bin', preset: 'pencup' },
+  { id: 'kartvizit', tool: 'qr' }, // kalemliğin önünde masada kartvizit (QR aracının kartvizit şablonları)
   { id: 'klavye', tool: 'clicker' },
   { id: 'modem', tool: 'qr' },
   { id: 'cerceve', tool: 'painter' },
@@ -32,6 +33,7 @@ export const A = {
   pencup: [-1400, 1520, 740, 0],      // monitörün solunda (önceki yerde kalemler monitörün içine giriyordu)
   keyboard: [-930, 1330, 740, 0.02],
   monitor: [MONITOR.x, MONITOR.y, 740, 0], // klavyenin arkasında (pilotta gerçekçi monitör)
+  kartvizit: [-1385, 1395, 740, -0.22], // kalemliğin önü, kameraya hafif dönük
   clickers: [-760, 1235, 743, -0.35], // anahtarlık clicker: klavyenin önünde, mousepad'in üstünde (tuş setiyle aynı tasarım)
   modem: [-1110, 1690, 1328, 0.05],   // alt rafın solu (raflar masanın sağ yarısında: sol üst duvar başlığa kalır)
   qrHolder: [-950, 1700, 1328, -0.1],
@@ -62,8 +64,9 @@ export const FOCUS = {
   cekmece: { pos: [-930, -220, 1900], target: [-1790, 860, 560] },  // tam açık çekmece (590 mm dışarıda)
   anahtarlik: { pos: [-1560, 900, 1130], target: [-1790, 1255, 745], w: 330 }, // tepsiye önden, yukarıdan
   kalemlik: { pos: [-950, 640, 1180], target: [-1290, 1500, 830] },   // masa üstü: kalemlik, monitörün solu
+  kartvizit: { pos: [-1235, 1060, 960], target: [-1385, 1400, 775], w: 220 }, // yakından, çapraz yukarıdan
   klavye: { pos: [-785, 630, 1195], target: [-910, 1300, 760], w: 440 }, // klavyenin tamamı (Esc'ten oka) ve önündeki anahtarlık
-  modem: { pos: [-1040, 720, 1540], target: [-1060, 1690, 1370], w: 440 }, // alt raf: modem üstünde Wi-Fi standı, yanında kartvizit
+  modem: { pos: [-1100, 860, 1530], target: [-1110, 1690, 1390], w: 360 }, // alt raf: modem ve üstündeki Wi-Fi standı
   tabela: { pos: [800, 560, 1650], target: [800, 1790, 2370], w: 700 }, // kapının üstündeki plaka (odanın içinden, aşağıdan)
   saksilar: { pos: [330, 480, 1260], target: [-20, 1650, 1080] },   // pervazdaki saksılar ve çiçekleri, arkada tül (sağdan: koltuk solda kalır)
   miknatis: { pos: [690, 610, 1100], target: [1530, 850, 650], w: 480 }, // kapalı kapağa karşıdan: mıknatıslar

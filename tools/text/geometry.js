@@ -12,11 +12,11 @@ import { loadFont, textPolys } from '../../core/font3d.js';
 const AGIRLIK = [500, 700, 900];
 const yazilar = {};
 export async function hazirla() {
-  await Promise.all([...AGIRLIK.map((w) => ['schibsted', w]), ['el', 700]].map(async ([aile, w]) => {
+  await Promise.all([...AGIRLIK.map((w) => ['schibsted', w]), ['el', 700], ['boya', 900]].map(async ([aile, w]) => {
     try { yazilar[`${aile}|${w}`] ||= await loadFont(w, aile); } catch (e) { console.warn('yazı tipi', aile, w, e); }
   }));
 }
-const font = (s) => (s.yazitipi === 'el' ? yazilar['el|700'] : yazilar[`schibsted|${s.agirlik}`]) || yazilar['schibsted|700'];
+const font = (s) => (s.yazitipi === 'el' ? yazilar['el|700'] : s.yazitipi === 'boya' ? yazilar['boya|900'] : yazilar[`schibsted|${s.agirlik}`]) || yazilar['schibsted|700'];
 
 // Yazı: ortası x = 0, taban çizgisi y = 0. kesit() katıyı yalnız istenince kurar (scope içinde; ölçüm sızdırmaz).
 // Glifler mıknatıs harfleri için ayrı ayrı; ic: harfin içinde kenarlara en uzak nokta (mıknatıs yuvası, O'nun ortası boş)
@@ -25,10 +25,17 @@ function yazi(s, metin, boy, aralik = s.aralik) {
   const satirlar = String(metin).split('|').map((x) => x.trim()).filter(Boolean);
   const aral = boy * 1.3, n = Math.max(1, satirlar.length);
   const ts = (satirlar.length ? satirlar : [' ']).map((m) => textPolys(font(s), m, boy, { spacing: aralik * boy }));
-  const width = Math.max(...ts.map((t) => t.width)), cap = ts[0].cap + (n - 1) * aral;
+  const width = Math.max(...ts.map((t) => t.width));
+  // Blok: her satır en geniş satırın enine büyür (tabela gibi; kısa satır iri, uzun satır ufak); satır arası ona göre
+  const k = ts.map((t) => (s.blok && n > 1 ? width / Math.max(t.width, 0.01) : 1));
+  const oys = [];
+  let y = 0;
+  for (let i = n - 1; i >= 0; i--) { oys[i] = y; y += ts[i].cap * k[i] + (i ? boy * (s.blok ? 0.32 : 0.3) * Math.max(k[i - 1], 1) : 0); }
+  const cap = s.blok && n > 1 ? y : ts[0].cap + (n - 1) * aral;
   const polys = [], glifler = [];
   ts.forEach((t, i) => {
-    const ox = t.width / 2, oy = (n - 1 - i) * aral, kay = (p) => p.map(([x, y]) => [x - ox, y + oy]);
+    const ox = t.width / 2, oy = s.blok && n > 1 ? oys[i] : (n - 1 - i) * aral, kk = k[i];
+    const kay = (p) => p.map(([x, y]) => [(x - ox) * kk, y * kk + oy]);
     polys.push(...t.polys.map(kay));
     for (const g of t.glyphs.filter((x) => x.box)) {
       const gp = g.polys.map(kay);

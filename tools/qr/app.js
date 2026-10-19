@@ -34,7 +34,7 @@ const strings = {
     'n.dark': 'Açık kod koyu zeminde: bazı telefonlar ters renkli kodu okumaz.',
     'n.empty': 'İçerik boş; örnek adres kullanıldı.',
     'pr.wifi': 'Wi-Fi standı', 'pr.wifiTuruncu': 'Misafir Wi-Fi', 'pr.menu': 'Menü standı', 'pr.card': 'Kartvizit',
-    'pr.cardKoyu': 'Koyu kartvizit', 'pr.key': 'QR anahtarlık', 'pr.keyRound': 'Yuvarlak anahtarlık', 'pr.coaster': 'Bardak altlığı',
+    'pr.cardKoyu': 'Koyu kartvizit', 'pr.cardTuruncu': 'Turuncu kartvizit', 'pr.cardAhsap': 'Ahşap kartvizit', 'pr.key': 'QR anahtarlık', 'pr.keyRound': 'Yuvarlak anahtarlık', 'pr.coaster': 'Bardak altlığı',
   },
   en: {
     'qr.title': '3D QR Code',
@@ -61,7 +61,7 @@ const strings = {
     'n.dark': 'Light code on a dark background: some phones cannot read inverted codes.',
     'n.empty': 'Content is empty; an example address is used.',
     'pr.wifi': 'Wi-Fi stand', 'pr.wifiTuruncu': 'Guest Wi-Fi', 'pr.menu': 'Menu stand', 'pr.card': 'Business card',
-    'pr.cardKoyu': 'Dark business card', 'pr.key': 'QR keychain', 'pr.keyRound': 'Round keychain', 'pr.coaster': 'Coaster',
+    'pr.cardKoyu': 'Dark business card', 'pr.cardTuruncu': 'Orange business card', 'pr.cardAhsap': 'Wood business card', 'pr.key': 'QR keychain', 'pr.keyRound': 'Round keychain', 'pr.coaster': 'Coaster',
   },
 };
 
@@ -86,6 +86,8 @@ const presets = [
   P('stand', 'wifi_turuncu', 'pr.wifiTuruncu', { icerik: 'wifi', size: 70, baslik: 'Misafir', color: '#94400f', zemin: '#f4f2ec', govde: '#2b3036' }),
   P('stand', 'menu', 'pr.menu', { icerik: 'url', size: 74, baslik: 'Menü', color: '#94400f', zemin: '#f4f2ec', govde: '#2b3036' }),
   P('card', 'card', 'pr.card', { icerik: 'url', size: 40, icKaro: false, standli: true, baslik: 'Oktos Workshop', color: '#2b3036', govde: '#f4f2ec' }),
+  P('card', 'card_turuncu', 'pr.cardTuruncu', { icerik: 'url', size: 40, icKaro: true, standli: true, baslik: 'Oktos Workshop', color: '#2b3036', zemin: '#f4f2ec', govde: '#d4621f' }),
+  P('card', 'card_ahsap', 'pr.cardAhsap', { icerik: 'url', size: 40, icKaro: false, standli: true, baslik: 'Oktos Workshop', color: '#2b3036', govde: '#dcc2a2' }),
   P('card', 'card_koyu', 'pr.cardKoyu', { icerik: 'url', size: 40, icKaro: true, standli: true, baslik: 'Oktos Workshop', color: '#2b3036', zemin: '#f4f2ec', govde: '#26292e' }),
   P('key', 'key', 'pr.key', { icerik: 'url', size: 40, shape: 'square', icKaro: false, color: '#2b3036', govde: '#e6b33a' }),
   P('key', 'key_yuvarlak', 'pr.keyRound', { icerik: 'url', size: 38, shape: 'round', icKaro: true, color: '#2b3036', zemin: '#f4f2ec', govde: '#8fa58a' }),
