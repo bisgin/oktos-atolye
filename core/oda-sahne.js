@@ -35,7 +35,7 @@ async function pilotYukle() {
   // Tül perde iki yan pencerede: ışığın süzülmesi pişmiş dokuda, burada kumaş rüzgârla salınır
   const perde = esya.perde ? O.perdeTul(esya.perde, { zUst: G.head + PD.ust, zAlt: G.sill + PD.alt }) : null;
   return {
-    meta, kabuk, pano, gok, cicek, esya, huzme, perde, golge: O.golgeYuzeyi, cayTakimi: O.cayTakimi,
+    meta, kabuk, pano, gok, cicek, esya, huzme, perde, golge: O.golgeYuzeyi, cayTakimi: O.cayTakimi, buhar: O.buhar,
     saksi: { toprak: O.toprakMalzemesi(), malzeme: (renk) => P_.clay(renk, { rough: 0.36, env: 1 }) },
     // Güneş: pişirmedekiyle aynı yön, renk ve güç (fiziksel birimler); ortam ışığı 360° görüntüden, diğer lambalar kapalı
     isik: { ...LIGHTS, key: [c[0] + sun[0] * dist, c[1] + sun[1] * dist, c[2] + sun[2] * dist], keyIntensity: meta.gunes.strength, keyColor: meta.gunes.color,
@@ -151,6 +151,7 @@ export async function buildScene({ scene, P, lang = 'tr' }) {
 
   // ---- yuvalar: bölgenin ürünü burada; şablon değişince yalnız yuvadaki model değişir ----
   const slots = {};
+  let cayBuhari = null; // balkondaki çaydan yükselen buhar (update'te tıklar)
   const duvarlar = {}, donen = {}; // yakın planda çevirme: bölge → duvardaki nesne; bölge → { obj, rz0, pos0, w, aci }
   let klavyeBilgi = null; // klavye kurulunca: tuş yerleri ve anahtarlığın yeri (klavye şablonları için)
   const agiz = (m) => m.userData.soil ?? m.userData.h; // bitki toprağa (yoksa saksının ağzına) oturur
@@ -307,38 +308,10 @@ export async function buildScene({ scene, P, lang = 'tr' }) {
     const plant = pilot?.cicek.cicek_a ?? sprout();
     hero.add(plant);
     await slot('saksilar', hero, { plant });
-    for (const [id, at, k, cicek] of [['tulip', [A.sillL[0] + 115, A.sillL[1], A.sillL[2]], 0.8, 'cicek_b'], ['ribbed', A.sillR, 0.6, null]]) {
-      const v = place(vaseModel(id, {}, pilot?.saksi), at, pots), s = (pilot && cicek ? pilot.cicek[cicek] : null) ?? (pilot ? null : sprout(k));
-      if (!s) continue;
-      s.position.z = agiz(v);
-      v.add(s);
-    }
-    const olive = place(vaseModel('hex', {}, pilot?.saksi), A.planterL, pots); // büyük saksı (bizim baskımız)
-    olive.scale.setScalar(2.8);
-    const bowl = place(vaseModel('flower', {}, pilot?.saksi), A.planterR, pots); // kase saksı
-    bowl.scale.setScalar(2.4);
-    if (pilot) { // gerçek bitkiler (Poly Haven CC0): antoryum ve gazanya, toprağa oturur
-      place(pilot.cicek.balkon_bitki, [A.planterL[0], A.planterL[1], agiz(olive) * 2.8 - 6], pots);
-      place(pilot.cicek.balkon_cicek, [A.planterR[0], A.planterR[1], agiz(bowl) * 2.4 - 4], pots);
-    }
-  }
-  if (!pilot) { // gri kutu: top yapraklı zeytin ve çubuk lavanta
-    const tree = place(new THREE.Group(), [A.planterL[0], A.planterL[1], 300], pots);
-    tree.add(P.mesh(P.cyl(12, 20, 950, 10), M.trunk));
-    [[0, 0, 1180, 230], [-120, 40, 1050, 170], [130, -30, 1080, 180], [30, 90, 1320, 160]].forEach(([x, y, z, rr]) => {
-      tree.add(P.mesh(new THREE.SphereGeometry(rr, 14, 10), M.leaf).translateX(x).translateY(y).translateZ(z));
-    });
-    const lav = place(new THREE.Group(), [A.planterR[0], A.planterR[1], 200], pots);
-    const r = P.rng(8);
-    for (let i = 0; i < 22; i++) {
-      const a = r() * TAU, rr = r() * 120, len = 280 + r() * 120, lean = 0.25 + r() * 0.2;
-      const st = new THREE.Group();
-      st.add(P.mesh(P.cyl(3, 3, len, 6), M.stem));
-      place(P.mesh(P.cyl(8, 6, 70, 8), M.lav), [0, 0, len], st);
-      st.position.set(Math.cos(a) * rr, Math.sin(a) * rr, 0);
-      st.rotation.set(-Math.sin(a) * lean, Math.cos(a) * lean, 0);
-      lav.add(st);
-    }
+    // Yanında çiçekli ikinci saksı. (Sağ pervazdaki boş saksı ve balkondaki büyük saksılar kullanıcı isteğiyle kalktı.)
+    const v = place(vaseModel('tulip', {}, pilot?.saksi), [A.sillL[0] + 115, A.sillL[1], A.sillL[2]], pots);
+    const cicekB = pilot ? pilot.cicek.cicek_b : sprout(0.8);
+    if (cicekB) { cicekB.position.z = agiz(v); v.add(cicekB); }
   }
 
   // ---- balkon masası: bistro masa ve rattan sandalyeler (dekor), kupa; QR yuvası (menü / altlık) ----
@@ -357,6 +330,7 @@ export async function buildScene({ scene, P, lang = 'tr' }) {
     }
     // Pilotta kupanın yerine cam çay bardağı (gerçek cam, demli çay, porselen tabak)
     place(pilot ? pilot.cayTakimi() : P.mug({ color: 0xe8e2d6 }), [A.table[0] - 120, A.table[1] - 60, 722], tableDecor);
+    if (pilot) cayBuhari = place(pilot.buhar(), [A.table[0] - 120, A.table[1] - 60, 722 + 100], tableDecor); // sıcak çaydan buhar
   }
   const tableItems = new THREE.Group();
   scene.add(tableItems);
@@ -609,7 +583,7 @@ export async function buildScene({ scene, P, lang = 'tr' }) {
     focusShift: 0.16, // yatay ekranda yakın plandaki ürün sağa kayar: sol kenarda başlık paneli
     touchOrbit: false, // dokunmatikte yakın planda yana kaydırma şablon değiştirir (etrafa bakma yok)
     langGeometry: true,
-    update(t) { pilot?.perde?.userData.tick(t); },
+    update(t) { pilot?.perde?.userData.tick(t); cayBuhari?.userData.tick(t); },
     // Telefonun dikey ekranı: genel motor kamerayı odanın dışına çekip tepeden gökyüzünü gösteriyordu; oda kendi
     // kadrajını verir (içeriden, geniş açıyla: masa, raflar ve sol pencere)
     portraitShot: SHOTS.portrait,

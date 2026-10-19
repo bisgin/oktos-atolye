@@ -272,6 +272,40 @@ html.oda-tur-on { scrollbar-width: none; }
 html.oda-tur-on::-webkit-scrollbar { display: none; }
 .oda-tur-on .topbar { position: fixed; top: 0; left: 0; right: 0; z-index: 30; }
 .oda-tur-alan { pointer-events: none; }
+/* Ürün işaretçileri: aracın renginde ışıklı çekirdek, sürekli yayılan iki dalga halkası, hafif süzülme. Renk
+   core/oda-panel.js TOOL_TONE ile aynı (motor işaretçiye data-tool yazar). Hareket azaltmada durağan parıltı. */
+.oda .pin { --c: #ef8a46; }
+.oda .pin[data-tool="vase"] { --c: #e3a093; }
+.oda .pin[data-tool="clicker"] { --c: #74a7f2; }
+.oda .pin[data-tool="text"] { --c: #ecc659; }
+.oda .pin[data-tool="flip"] { --c: #a7cf9f; }
+.oda .pin[data-tool="qr"] { --c: #c9d2dc; }
+.oda .pin[data-tool="painter"] { --c: #6fc3bb; }
+.oda .pin[data-tool="puzzle"] { --c: #ef6f62; }
+.oda .pin[data-tool="magaza"] { --c: #e8c48c; }
+.story.oda .pin-dot {
+  left: -7px; top: -7px; width: 14px; height: 14px;
+  background: radial-gradient(circle at 36% 34%, #fff 0 16%, var(--c) 58%, color-mix(in srgb, var(--c) 55%, #000) 100%);
+  box-shadow: 0 0 0 1.5px rgb(255 255 255 / 0.9), 0 0 14px 3px color-mix(in srgb, var(--c) 75%, transparent), 0 2px 8px rgb(0 0 0 / 0.4);
+  animation: oda-suzul 3.2s ease-in-out infinite;
+  animation-delay: calc(var(--i, 0) * -0.37s);
+}
+.story.oda .pin-dot::before, .story.oda .pin-dot::after {
+  content: ''; position: absolute; inset: -1px; border-radius: 50%;
+  box-shadow: 0 0 0 2px var(--c), 0 0 10px 1px color-mix(in srgb, var(--c) 60%, transparent);
+  opacity: 0;
+  animation: oda-dalga 2.6s cubic-bezier(0.23, 1, 0.32, 1) infinite;
+  animation-delay: calc(var(--i, 0) * -0.29s);
+}
+.story.oda .pin-dot::after { animation-delay: calc(var(--i, 0) * -0.29s - 1.3s); }
+@keyframes oda-dalga { 0% { transform: scale(1); opacity: 0.85; } 100% { transform: scale(3.6); opacity: 0; } }
+@keyframes oda-suzul { 0%, 100% { translate: 0 0; } 50% { translate: 0 -2.5px; } }
+.story.oda .pin.on .pin-dot { transform: scale(1.4); box-shadow: 0 0 0 1.5px #fff, 0 0 22px 7px color-mix(in srgb, var(--c) 85%, transparent), 0 2px 8px rgb(0 0 0 / 0.4); }
+.oda .pin-label { border-left: 3px solid var(--c); }
+@media (prefers-reduced-motion: reduce) {
+  .story.oda .pin-dot, .story.oda .pin-dot::before, .story.oda .pin-dot::after { animation: none; }
+}
+
 /* Açılış perdesi koyu (sahne kurulurken beyaz parlamasın); ortada yazı ve ilerleme çubuğu (lab/oda.html --ilerleme) */
 body { background: #0b0c0e; }
 .oda .story-veil { background: #0b0c0e; }

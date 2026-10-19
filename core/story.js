@@ -350,7 +350,7 @@ export async function mountStory(root, { toolId, lang = 'tr', mode = pickMode(to
     const kisa = story.hotspots?.[h.id]?.pin?.[lang] || h.name; // sahne kısa ad verdiyse işaretçide o
     pin.innerHTML = `<span class="pin-dot"></span><span class="pin-label"><b>${kisa}</b><i>${ui.look}</i></span>`;
     pin._lw = 0; // not genişliği yeniden ölçülsün (üst üste binme denetimi)
-    chip.innerHTML = `<span class="chip-name">${h.name}</span><span class="chip-act">${h.live ? ui.look : ui.soon}</span>`;
+    chip.innerHTML = `<span class="chip-name">${h.name}</span>${h.live ? '' : `<span class="chip-act">${ui.soon}</span>`}`; // hazırsa yalnız ad
     chip.setAttribute('aria-label', `${h.name}, ${ui.look}`);
   }
   let card = root.querySelector('.story-card');
@@ -393,6 +393,7 @@ export async function mountStory(root, { toolId, lang = 'tr', mode = pickMode(to
     pin.tabIndex = -1; // klavye için şerit yeterli; işaretçi fare kolaylığıdır
     pin.setAttribute('aria-hidden', 'true');
     pin.style.setProperty('--i', h.index); // nabız sırası
+    if (h.tool) pin.dataset.tool = h.tool; // sahne işaretçiyi aracın renginde boyayabilsin
     pinsEl.appendChild(pin);
     pinBtns.push(pin);
 

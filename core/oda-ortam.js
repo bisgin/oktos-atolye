@@ -274,7 +274,7 @@ export function toprakMalzemesi() {
 export function perdeTul(kok, { zUst, zAlt }) {
   const u = {
     zaman: { value: 0 }, zUst: { value: zUst }, zAlt: { value: zAlt },
-    genlik: { value: matchMedia('(prefers-reduced-motion: reduce)').matches ? 0 : 16 }, // etekte en çok, mm
+    genlik: { value: matchMedia('(prefers-reduced-motion: reduce)').matches ? 0 : 40 }, // etekte rüzgâr itmesi, mm
   };
   const mat = new THREE.MeshStandardMaterial({
     color: 0xf2efe8, roughness: 0.92, transparent: true, opacity: 0.62, side: THREE.DoubleSide, depthWrite: false,
@@ -285,9 +285,12 @@ export function perdeTul(kok, { zUst, zAlt }) {
     sh.vertexShader = 'uniform float zaman; uniform float genlik; uniform float zUst; uniform float zAlt;\n' + sh.vertexShader.replace('#include <begin_vertex>', `#include <begin_vertex>
       float etek = clamp((zUst - position.z) / (zUst - zAlt), 0.0, 1.0);
       etek *= etek;
-      float esinti = (sin(zaman * 0.8 + position.x * 0.011) + 0.45 * sin(zaman * 1.9 + position.x * 0.029 + 1.3)) / 1.45;
-      transformed.y -= genlik * etek * (0.55 + 0.45 * esinti);   // pencereden esen rüzgâr eteği odaya iter
-      transformed.x += genlik * 0.2 * etek * sin(zaman * 0.6 + position.z * 0.004);`);
+      // Balkondan esen rüzgâr: ~14 sn'lik nefes (hep aynı döngü) eteği odaya iter, üstünden yan yana bir dalga geçer
+      float nefes = 0.55 + 0.45 * sin(zaman * 0.45);
+      float dalga = sin(zaman * 1.1 - position.x * 0.012) + 0.4 * sin(zaman * 2.3 - position.x * 0.031 + 1.3);
+      transformed.y -= genlik * etek * nefes * (1.0 + 0.25 * dalga);
+      transformed.x += genlik * 0.22 * etek * sin(zaman * 0.7 + position.z * 0.004);
+      transformed.z += genlik * 0.1 * etek * nefes;   // etek rüzgârla hafifçe kalkar`);
   };
   mat.customProgramCacheKey = () => 'oda-perde';
   kok.traverse((o) => {
@@ -298,6 +301,40 @@ export function perdeTul(kok, { zUst, zAlt }) {
   });
   kok.userData.tick = (t) => { u.zaman.value = t; };
   return kok;
+}
+
+// Sıcak çaydan buhar: bardağın ağzından yükselip genişleyen, sönen yumuşak bulutlar (tarayıcıda, canlı). Orijin bardağın
+// ağzı; tick(t) her karede. Hareket azaltmada durur (soluk, hareketsiz).
+let buharDoku = null;
+export function buhar(n = 7) {
+  if (!buharDoku) {
+    const cv = document.createElement('canvas');
+    cv.width = cv.height = 64;
+    const c = cv.getContext('2d'), gr = c.createRadialGradient(32, 32, 0, 32, 32, 32);
+    gr.addColorStop(0, 'rgba(255,255,255,0.9)'); gr.addColorStop(0.5, 'rgba(255,255,255,0.35)'); gr.addColorStop(1, 'rgba(255,255,255,0)');
+    c.fillStyle = gr;
+    c.fillRect(0, 0, 64, 64);
+    buharDoku = new THREE.CanvasTexture(cv);
+  }
+  const g = new THREE.Group(), duran = matchMedia('(prefers-reduced-motion: reduce)').matches;
+  const bulutlar = Array.from({ length: n }, (_, i) => {
+    const s = new THREE.Sprite(new THREE.SpriteMaterial({ map: buharDoku, color: 0xfffaf2, transparent: true, depthWrite: false, opacity: 0 }));
+    s.userData.k = i / n;
+    g.add(s);
+    return s;
+  });
+  g.userData.tick = (t) => {
+    for (const s of bulutlar) {
+      const p = duran ? 0.35 : (t * 0.22 + s.userData.k) % 1; // yaşam (0 ağızda, 1 sönmüş)
+      const sap = Math.sin(t * 0.9 + s.userData.k * 9) * 8 * p;
+      s.position.set(sap, Math.cos(t * 0.7 + s.userData.k * 5) * 5 * p, 6 + p * 150);
+      s.scale.setScalar(18 + p * 52);
+      s.material.opacity = Math.sin(p * Math.PI) * (duran ? 0.14 : 0.3);
+      s.material.rotation = s.userData.k * 6 + p * 0.8;
+    }
+  };
+  g.userData.tick(0);
+  return g;
 }
 
 // Markasız içecekler (buzdolabının kapak rafı): 330 ml alüminyum kutu (Ø 66, boy 122; gövde boyalı, yazı ve logo yok,
