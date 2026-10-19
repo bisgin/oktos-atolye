@@ -183,7 +183,8 @@ def dunya_kur(sc, o):
 
 # ---------------------------------------------------------------- malzemeler
 def doku(ad, harita, renkli):
-    i = bpy.data.images.load(yol(KAYNAK, ad, f'{ad}_{harita}_2k.jpg'), check_existing=True)
+    yollar = [yol(KAYNAK, ad, f'{ad}_{harita}_{c}.jpg') for c in ('2k', '1k')]
+    i = bpy.data.images.load(next((p for p in yollar if os.path.exists(p)), yollar[0]), check_existing=True)
     i.colorspace_settings.name = 'sRGB' if renkli else 'Non-Color'
     return i
 
@@ -288,6 +289,18 @@ def ortam_kur(sc, o):
         'deck': pbr('deck', 'wood_floor', ton=(0.78, 0.74, 0.7)),
         'mermer': pbr('mermer', 'marble_01'),
         'koyu': boya('koyu_boya', (0.022, 0.022, 0.024), 0.45),
+        # balkonun karşısı (sokak ve karşı bina)
+        'karsi_siva': pbr('karsi_siva', 'painted_plaster_wall', ton=(1.0, 0.9, 0.78)),
+        'beton': pbr('beton', 'brushed_concrete'),
+        'asfalt': pbr('asfalt', 'asphalt_02'),
+        'kaldirim': pbr('kaldirim', 'concrete_pavement'),
+        'cam_koyu': boya('cam_koyu', (0.03, 0.04, 0.05), 0.12),
+        'vitrin': boya('vitrin', (0.16, 0.18, 0.2), 0.25),  # dükkân camı: içi aydınlık, koyu blok gibi durmasın
+        'perde_acik': boya('perde_acik', (0.72, 0.69, 0.62), 0.85),
+        'pvc': boya('pvc', (0.78, 0.78, 0.76), 0.4),
+        'saksi_kil': boya('saksi_kil', (0.42, 0.18, 0.09), 0.75),
+        'yaprak': boya('yaprak', (0.06, 0.13, 0.035), 0.85),
+        'govde': boya('agac_govde', (0.1, 0.07, 0.045), 0.9),
     }
     P = {
         'zemin': Parca('zemin', M['zemin'], 1400, sil=('-z', '+x', '-x', '+y', '-y')),
@@ -383,11 +396,120 @@ def ortam_kur(sc, o):
     V['koyu'].kutu(60, 60, 400, CH['x'], CH['y'], 60)
     for ad, p in V.items():
         P['vekil_' + ad] = p
+    karsi_kur(o, M, P)  # balkonun karşısı: sokak, karşı bina, bizim binanın alt cephesi
     nes = {ad: p.nesne(sc) for ad, p in P.items()}
     nes['kilim'] = kilim_kur(sc, o)
     P['kilim'] = Parca('kilim', None, disa=True, cozunurluk='buyuk')  # yalnız pişirme ayarı için (nesneyi kilim_kur kurdu)
     perde_kur(o, isikli=True)  # tül ışığı süzer (dışa aktarılmaz, kendisi pişmez; tarayıcıya oda-esya.glb ile gider)
+    # Kaldırım ağaçları (agac_kur) 2026-10-19'da çıkarıldı: ikosfer kümeleri yakından oyuncak gibi duruyordu
     return nes, P
+
+
+# ---------------------------------------------------------------- balkonun karşısı: sokak ve karşı bina
+# Oda 2. katta (sokak z = −6000). Karşı binanın ön yüzü y = KARSI['y']; zemin katta dükkânlar, üstte üç kat, 4 m'lik
+# bölmeler: balkonlu bölmede balkon kapısı, öbüründe pencere (bazılarında perde). Hepsi kutu: delik açılmaz, cam ve
+# kasa duvarın önüne biner (uzaktan fark edilmez). Ağaçlar ayrı nesne (ikosfer kümeleri).
+KARSI = {'y': 15000, 'x0': -18000, 'x1': 18000, 'sokak': -6000, 'katlar': [-2400, 600, 3600], 'cati': 6600, 'bolme': 4000,
+         'yakin_kaldirim': 4400, 'uzak_kaldirim': 12500}
+
+
+def karsi_kur(o, M, P):
+    K, R = KARSI, o['ROOM']
+    zs, yf, bol = K['sokak'], K['y'], K['bolme']
+    yeni = {
+        'dis_duvar': Parca('dis_duvar', M['siva'], 1500, cozunurluk='kucuk', sil=('+y', '+z', '-z')),
+        'sokak_asfalt': Parca('sokak_asfalt', M['asfalt'], 3000, cozunurluk='kucuk', sil=('-z',)),
+        'sokak_kaldirim': Parca('sokak_kaldirim', M['kaldirim'], 2000, cozunurluk='kucuk', sil=('-z',)),
+        'karsi_cephe': Parca('karsi_cephe', M['karsi_siva'], 2500, sil=('+y',)),
+        'karsi_beton': Parca('karsi_beton', M['beton'], 1500, cozunurluk='kucuk'),
+        'karsi_cam': Parca('karsi_cam', M['cam_koyu'], 2000, cozunurluk='kucuk', sil=('+y',)),
+        'karsi_vitrin': Parca('karsi_vitrin', M['vitrin'], 2000, cozunurluk='kucuk', sil=('+y',)),
+        'karsi_perde': Parca('karsi_perde', M['perde_acik'], 2000, cozunurluk='kucuk', sil=('+y',)),
+        'karsi_kasa': Parca('karsi_kasa', M['pvc'], 1000, cozunurluk='kucuk'),
+        'karsi_korkuluk': Parca('karsi_korkuluk', M['koyu'], 1000, cozunurluk='kucuk'),
+        'karsi_saksi': Parca('karsi_saksi', M['saksi_kil'], 1000, cozunurluk='kucuk'),
+    }
+    P.update(yeni)
+    y_ic = R['y1'] + R['wall']  # bizim binanın dış yüzü
+    # Bizim binanın balkonun altındaki cephesi ve sokak
+    yeni['dis_duvar'].kutu(K['x1'] - K['x0'], 200, -zs - 30, 0, y_ic - 100, zs)
+    yeni['sokak_kaldirim'].kutu(K['x1'] - K['x0'] + 8000, K['yakin_kaldirim'] - y_ic, 150, 0, (y_ic + K['yakin_kaldirim']) / 2, zs)
+    yeni['sokak_asfalt'].kutu(K['x1'] - K['x0'] + 8000, K['uzak_kaldirim'] - K['yakin_kaldirim'], 20, 0, (K['yakin_kaldirim'] + K['uzak_kaldirim']) / 2, zs - 20)
+    yeni['sokak_kaldirim'].kutu(K['x1'] - K['x0'] + 8000, yf - K['uzak_kaldirim'], 150, 0, (K['uzak_kaldirim'] + yf) / 2, zs)
+    # Karşı bina: zemin kat (beton, dükkân camları), üst katlar (sıva), kat bantları, korkuluk duvarı (çatı)
+    W = K['x1'] - K['x0']
+    yeni['karsi_beton'].kutu(W, 400, K['katlar'][0] - zs, 0, yf + 200, zs)
+    yeni['karsi_cephe'].kutu(W, 400, K['cati'] + 800 - K['katlar'][0], 0, yf + 200, K['katlar'][0])
+    for z in K['katlar'] + [K['cati']]:
+        yeni['karsi_beton'].kutu(W, 120, 180, 0, yf - 60, z - 90)
+    n = int(W // bol)
+    rng = np.random.default_rng(11)
+    for i in range(n):
+        x = K['x0'] + bol / 2 + i * bol
+        # Dükkân: büyük koyu cam, ince koyu kasa, üstünde boş tabela bandı
+        yeni['karsi_vitrin'].kutu(bol - 900, 30, 2100, x, yf - 15, zs + 600)
+        for fx, fw in ((x - (bol - 900) / 2, 60), (x + (bol - 900) / 2, 60)):
+            yeni['karsi_korkuluk'].kutu(fw, 50, 2100, fx, yf - 25, zs + 600)
+        yeni['karsi_korkuluk'].kutu(bol - 600, 60, 60, x, yf - 30, zs + 3000)
+        yeni['karsi_kasa'].kutu(bol - 900, 70, 420, x, yf - 35, zs + 3120)
+        for k, zf in enumerate(K['katlar']):
+            balkon = (i + k) % 2 == 0
+            if balkon:  # balkon kapısı, döşeme, korkuluk, saksı
+                gw, gh, gz = 1700, 2250, zf + 120
+                yeni['karsi_beton'].kutu(2700, 1300, 170, x, yf - 650, zf - 170)
+                yz, ky = zf + 1000, yf - 1260
+                yeni['karsi_korkuluk'].kutu(2700, 45, 45, x, ky, yz)
+                for sx in (-1, 1):
+                    yeni['karsi_korkuluk'].kutu(45, 1250, 45, x + sx * 1327, yf - 640, yz)
+                    yeni['karsi_korkuluk'].kutu(45, 45, 1000, x + sx * 1327, ky, zf)
+                b = x - 1300
+                while b < x + 1300:
+                    yeni['karsi_korkuluk'].kutu(16, 16, 1000, b, ky, zf)
+                    b += 115
+                if rng.random() < 0.7:
+                    sx = -1 if rng.random() < 0.5 else 1
+                    yeni['karsi_saksi'].kutu(700, 240, 280, x + sx * 750, yf - 1060, zf)
+            else:  # pencere ve mermer denizlik
+                gw, gh, gz = 1600, 1500, zf + 900
+                yeni['karsi_beton'].kutu(gw + 200, 140, 50, x, yf - 70, gz - 50)
+            parca = yeni['karsi_perde'] if rng.random() < 0.35 else yeni['karsi_cam']
+            parca.kutu(gw, 30, gh, x, yf - 15, gz)
+            for fw, fh, fx, fz in ((gw + 120, 60, x, gz - 60), (gw + 120, 60, x, gz + gh), (60, gh, x - gw / 2 - 30, gz), (60, gh, x + gw / 2 + 30, gz), (40, gh, x, gz)):
+                yeni['karsi_kasa'].kutu(fw, 70, fh, fx, yf - 35, fz)
+
+
+def agac_kur(sc, o, M):
+    """Kaldırım ağaçları (gövde + yaprak kümesi). Pişirme için iki nesne: 'karsi_agac' (yaprak), 'karsi_govde'."""
+    K = KARSI
+    rng = np.random.default_rng(5)
+    yer = [(x, K['uzak_kaldirim'] + 900) for x in range(-16000, 17000, 6500)] + [(x, K['yakin_kaldirim'] - 1100) for x in range(-13000, 14000, 7000)]
+    out = {}
+    for ad, malz in (('karsi_govde', M['govde']), ('karsi_agac', M['yaprak'])):
+        bm = bmesh.new()
+        for (x, y) in yer:
+            zt = K['sokak'] + 150
+            if ad == 'karsi_govde':
+                bmesh.ops.create_cone(bm, cap_ends=True, segments=8, radius1=130, radius2=90, depth=3600,
+                                      matrix=Matrix.Translation((x, y, zt + 1800)))
+            else:
+                for _ in range(7):
+                    r = rng.uniform(800, 1300)
+                    c = (x + rng.uniform(-700, 700), y + rng.uniform(-700, 700), zt + rng.uniform(3300, 4600))
+                    g = bmesh.ops.create_icosphere(bm, subdivisions=2, radius=r, matrix=Matrix.Translation(c))
+                    for v in g['verts']:
+                        v.co += (v.co - Vector(c)).normalized() * rng.uniform(-r * 0.12, r * 0.12)
+        me = bpy.data.meshes.new(ad)
+        bm.to_mesh(me)
+        bm.free()
+        for poly in me.polygons:
+            poly.use_smooth = True
+        ob = bpy.data.objects.new(ad, me)
+        sc.collection.objects.link(ob)
+        me.materials.append(malz)
+        me.uv_layers.new(name='UVMap')
+        me.uv_layers.new(name='BakeUV')
+        out[ad] = ob
+    return out
 
 
 # ---------------------------------------------------------------- kilim: deseni koddan (lisans derdi yok)

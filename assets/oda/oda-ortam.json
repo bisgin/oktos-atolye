@@ -23,7 +23,7 @@
   1350,
   1050
  ],
- "kalite": "onizleme",
+ "kalite": "final",
  "nesneler": [
   "zemin",
   "tavan",
@@ -36,6 +36,17 @@
   "korkuluk",
   "balkon_duvar",
   "supurgelik",
+  "dis_duvar",
+  "sokak_asfalt",
+  "sokak_kaldirim",
+  "karsi_cephe",
+  "karsi_beton",
+  "karsi_cam",
+  "karsi_vitrin",
+  "karsi_perde",
+  "karsi_kasa",
+  "karsi_korkuluk",
+  "karsi_saksi",
   "kilim"
  ],
  "bitki": {
@@ -48,7 +59,7 @@
    "balkon_cicek"
   ]
  },
- "tarih": "2026-10-18 19:33",
+ "tarih": "2026-10-19 05:39",
  "kodlama": "sqrt-srgb",
  "esya": {
   "dosya": "oda-esya.glb",
@@ -57,7 +68,8 @@
    "buzdolabi",
    "masa_alti",
    "kahvalti",
-   "perde"
+   "perde",
+   "koltuk"
   ],
   "perde": {
    "y": 1774,

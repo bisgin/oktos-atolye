@@ -41,7 +41,8 @@ export async function odaKabugu(meta) {
   const kok = g.scene;
   kok.traverse((o) => {
     if (!o.isMesh) return;
-    const dis = /^(balkon|korkuluk)/.test(o.name) || /^(balkon|korkuluk)/.test(o.parent?.name ?? '');
+    const disari = /^(balkon|korkuluk|karsi|sokak|dis_)/; // balkon, sokak, karşı bina: dışarısı parlak kalır
+    const dis = disari.test(o.name) || disari.test(o.parent?.name ?? '');
     pismis(o.material, meta.olcek.ortam / (dis ? 1 : IC));
     o.castShadow = false;
     o.receiveShadow = false;

@@ -15,3 +15,7 @@ Ham dosyalar `kaynak/` altında durur (depoya girmez); sitede yalnız sıkışt�
 | `kaynak/periwinkle_plant/` (model, 2k) | https://polyhaven.com/a/periwinkle_plant | Amal Kumar | Saksıdaki canlı çiçek (cezayir menekşesi) |
 | `kaynak/strawberry_chocolate_cake/` (model, 1k) | https://polyhaven.com/a/strawberry_chocolate_cake | Kuutti Siitonen | Buzdolabındaki pasta (üstüne bizim 3D Yazı pasta süsümüz) |
 | `kaynak/balcony/` (hdri, 4k) | https://polyhaven.com/a/balcony | Greg Zaal | Balkonun ardındaki manzara (yalnız görünüm; odanın ışığı sabah gökyüzünden) |
+| `kaynak/asphalt_02/` (doku, 1k) | https://polyhaven.com/a/asphalt_02 | Rob Tuytel | Balkonun önündeki sokak (asfalt) |
+| `kaynak/concrete_pavement/` (doku, 1k) | https://polyhaven.com/a/concrete_pavement | Charlotte Baglioni | Karşı kaldırım |
+| `kaynak/painted_plaster_wall/` (doku, 1k) | https://polyhaven.com/a/painted_plaster_wall | Amal Kumar | Karşı binanın sıvalı cephesi |
+| `kaynak/brushed_concrete/` (doku, 1k) | https://polyhaven.com/a/brushed_concrete | Dario Barresi, Dimitrios Savva | Karşı binanın balkon döşemeleri ve zemin kat |

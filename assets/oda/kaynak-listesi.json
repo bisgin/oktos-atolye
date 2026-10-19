@@ -60,6 +60,30 @@
       "tur": "hdri",
       "cozunurluk": "4k",
       "not": "Balkonun ardındaki manzara (yalnız görünüm; odanın ışığı sabah gökyüzünden)"
+    },
+    {
+      "id": "asphalt_02",
+      "tur": "doku",
+      "cozunurluk": "1k",
+      "not": "Balkonun önündeki sokak (asfalt)"
+    },
+    {
+      "id": "concrete_pavement",
+      "tur": "doku",
+      "cozunurluk": "1k",
+      "not": "Karşı kaldırım"
+    },
+    {
+      "id": "painted_plaster_wall",
+      "tur": "doku",
+      "cozunurluk": "1k",
+      "not": "Karşı binanın sıvalı cephesi"
+    },
+    {
+      "id": "brushed_concrete",
+      "tur": "doku",
+      "cozunurluk": "1k",
+      "not": "Karşı binanın balkon döşemeleri ve zemin kat"
     }
   ]
 }
