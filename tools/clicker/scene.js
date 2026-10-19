@@ -46,7 +46,7 @@ export async function buildScene({ scene, P }) {
     g.add(bottom, top);
     put(g, 70, -120, TOP + 3, 0.35);
     tops.cat = { obj: top, z0: 0 };
-    hotspots.push({ id: 'cat', preset: null, object: g });
+    hotspots.push({ id: 'cat', preset: 'cat', object: g });
   }
 
   // ---- Kutulu clicker: 40×40 kutu + "OKTOS" kabartma yazı + basılır kapak ----
@@ -61,7 +61,7 @@ export async function buildScene({ scene, P }) {
     g.add(base, lid, word);
     put(g, 330, -160, TOP + 3, -0.4);
     tops.boxed = { obj: lid, z0: 0 };
-    hotspots.push({ id: 'boxed', preset: null, object: g });
+    hotspots.push({ id: 'boxed', preset: 'boxed', object: g });
   }
 
   // ---- Gömülü yıldız: yıldız prizması, üst yarısı basılır ----
@@ -81,7 +81,7 @@ export async function buildScene({ scene, P }) {
     g.add(bottom, top);
     put(g, 250, 120, TOP + 3, 0.2);
     tops.star = { obj: top, z0: 0 };
-    hotspots.push({ id: 'star', preset: null, object: g });
+    hotspots.push({ id: 'star', preset: 'star', object: g });
   }
 
   // ---- Patlatılmış görünüm: alt gövde, mavi anahtar, üst gövde havada ----
@@ -106,7 +106,7 @@ export async function buildScene({ scene, P }) {
     exploded.add(stack);
     exploded.userData = { lower, sw, upper, stack };
     put(exploded, 470, 150, TOP, -0.3);
-    hotspots.push({ id: 'switch', preset: null, object: exploded, anchor: [470, 150, TOP + 120] });
+    hotspots.push({ id: 'switch', preset: 'boxed', object: exploded, anchor: [470, 150, TOP + 120] });
   }
 
   let hoverId = null;

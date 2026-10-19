@@ -76,7 +76,7 @@ export const TEMPLATES = {
     T('ikiz', n2('Yan yana kalemlik', 'Twin cup'), 'tray', { w: 130, d: 72, h: 100, cols: 2, rows: 1, r: 12 }, '#8fa58a'),
   ],
   // Klavye: tuş başlığı setleri (Esc, Enter, yukarı ok) ve yanında aynı tasarımın anahtarlık clicker'ı
-  klavye: [T('kedi', n2('Kedi seti', 'Cat set')), T('kalp', n2('Kalp seti', 'Heart set')), T('yildiz', n2('Yıldız seti', 'Star set')), T('harf', n2('Harf seti', 'Letter set'))],
+  klavye: [T('kedi', n2('Kedi seti', 'Cat set'), 'kedi'), T('kalp', n2('Kalp seti', 'Heart set'), 'kalp'), T('yildiz', n2('Yıldız seti', 'Star set'), 'yildiz'), T('harf', n2('Harf seti', 'Letter set'), 'harf')], // Fidget Clicker tuş şablonları
   // QR: iki ayrı ürün rafta birlikte durur (yerleri COKLU.modem); şablonun `urun`u hangisinin değiştiğini söyler. Sıra
   // ürünleri dolaşır, sonra ikinci şablonları
   modem: [

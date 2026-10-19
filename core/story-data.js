@@ -99,7 +99,7 @@ export const STORIES = {
     },
   },
   clicker: {
-    live: false,
+    live: true,
     href: 'tools/clicker/index.html',
     name: { tr: 'Fidget Clicker', en: 'Fidget Clicker' },
     title: { tr: 'Tık. Bir nefes daha.', en: 'Click. Breathe again.' },
