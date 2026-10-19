@@ -349,23 +349,19 @@ export async function buildScene({ scene, P, lang = 'tr' }) {
     box(F.d - 50, F.w - 50, 10, 10, 0, F.shelf - 10, M.inner, { parent: fridge, r: 2 });
     box(F.d - 40, F.w - 40, 8, 10, 0, F.floor - 8, M.inner, { parent: fridge, r: 2 });
   }
-  // Raflarda yiyecek (pilot, Poly Haven CC0; düşük çözünürlük): üstte pastanın iki yanında meyve, altta sürahi, süt,
-  // konserve ve meyve. Buzdolabının yerel düzlemi: x derinlik (ön −x; kapak raflarına çarpmasın diye x > −150), y genişlik
+  // Raflarda yiyecek (pilot, Poly Haven CC0; düşük çözünürlük): üst rafta tabakta pasta (yuva), alt rafta hasır sepette
+  // meyveler, yanında süt ve konserveler. Buzdolabının yerel düzlemi: x derinlik (ön −x; kapak raflarına çarpmasın diye
+  // x > −150), y genişlik
   if (pilot) {
+    const O = await import('./oda-ortam.js');
     // Kopya bir kabın içinde: düğümün kendi konumu (tabanı orijine getiren kayma, limonda 52 mm) korunur
-    const koy = (ad, x, y, z, rz = 0) => { if (pilot.cicek[ad]) place(new THREE.Group().add(pilot.cicek[ad].clone()), [x, y, z, rz], fridge); };
-    koy('yiyecek_nar', 120, 160, F.shelf, 0.6);
-    koy('yiyecek_elma', 130, -165, F.shelf, 1.2);
-    koy('yiyecek_limon', -70, -170, F.shelf, 0.4);
-    koy('yiyecek_misket', -90, 175, F.shelf, 2.1);
-    koy('yiyecek_misket', -30, 190, F.shelf, 0.3);
-    koy('yiyecek_surahi', 95, -80, F.floor, Math.PI / 2 + 0.15);
+    const koy = (ad, x, y, z, rz = 0, ust = fridge) => { if (pilot.cicek[ad]) place(new THREE.Group().add(pilot.cicek[ad].clone()), [x, y, z, rz], ust); };
+    const sepet = place(O.meyveSepeti(), [40, -110, F.floor, 0.3], fridge);
+    for (const [ad, x, y, z, rz] of [['yiyecek_nar', -18, 22, 8, 0.6], ['yiyecek_elma', 36, -22, 8, 1.2], ['yiyecek_elma', -30, -38, 8, 2.6],
+      ['yiyecek_limon', 40, 34, 8, 0.4], ['yiyecek_misket', -52, 8, 8, 2.1], ['yiyecek_kivi', 6, -54, 8, 0.8], ['yiyecek_misket', 8, 6, 52, 0.3]]) koy(ad, x, y, z, rz, sepet);
     koy('yiyecek_sut', 125, 150, F.floor, 0.25);
     koy('yiyecek_fasulye', 0, 180, F.floor);
-    koy('yiyecek_domates', -50, 75, F.floor, 1.1);
-    koy('yiyecek_kivi', -95, -165, F.floor, 0.8);
-    koy('yiyecek_kivi', -130, -100, F.floor, 2.6);
-    koy('yiyecek_elma', -60, -40, F.floor, 3.0);
+    koy('yiyecek_domates', -60, 80, F.floor, 1.1);
   }
   await slot('buzdolabi', place(new THREE.Group(), [-40, 0, F.shelf, -Math.PI / 2], fridge));
   let door; // menteşe arka köşede; yakın planda açılır
@@ -381,12 +377,12 @@ export async function buildScene({ scene, P, lang = 'tr' }) {
   kapakYuzu.position.set(-26.5, -F.w / 2, 0);
   door.add(kapakYuzu);
   await slot('miknatis', kapakYuzu);
-  // Kapak raflarında markasız içecekler (pilot): üst rafta üç kutu, altta şişe ve kutu (kapağın yerel düzleminde)
+  // Kapak raflarında markasız içecekler (pilot): üst rafta üç kutu, altta cam su şişesi ve kutu (kapağın yerel düzleminde)
   if (pilot) {
     const O = await import('./oda-ortam.js');
-    for (const [renk, y] of [[0xb3181d, -340], [0xef7d1a, -268], [0x2a2224, -196]]) place(O.icecekKutusu(renk), [52, y, 565], door);
-    place(O.camSise(), [52, -330, 285], door);
-    place(O.icecekKutusu(0x6aa84f), [52, -250, 285], door);
+    for (const [serit, y] of [[0xb8372f, -340], [0xd4621f, -268], [0x5f8f55, -196]]) place(O.icecekKutusu(serit), [52, y, 565], door);
+    place(O.suSisesi(), [52, -330, 285], door); // cam su şişesi
+    place(O.icecekKutusu(0x3f6fb0), [52, -250, 285], door);
   }
   // Kapak açılınca iç ışık yanar (pilot). Sahne mm: nokta ışığın gücü bu yüzden büyük (ışık mesafenin karesiyle söner).
   const icIsik = pilot ? place(new THREE.PointLight(0xfff3e4, 0, 700, 2), [-60, 0, F.h - 120], fridge) : null;

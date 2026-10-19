@@ -91,7 +91,7 @@ export const TEMPLATES = {
   balkonMasa: [T('menu', storyName('qr', 'menu'), 'menu'), T('coaster', { tr: 'Bardak altlığı', en: 'Coaster' }, 'coaster')],
   // Buzdolabının kapağı (kapak kapalı durak): 3D Yazı mıknatısları
   miknatis: [T('harfler', n2('Harf mıknatısları', 'Letter magnets'), 'harfler'), T('not', n2('"Süt al!" notu', '"Buy milk" note'), 'not'), T('kalp', n2('Kalp ve yıldız', 'Hearts and stars'), 'kalp')],
-  buzdolabi: [T('iyi', { tr: '"İyi ki doğdun"', en: '"Happy birthday"' }, 'iyi'), T('nice', { tr: '"Nice yıllara"', en: '"Many more"' }, 'nice')],
+  buzdolabi: [T('iyi', { tr: '"İyi ki doğdun"', en: '"Happy birthday"' }, 'iyi'), T('mutlu', { tr: '"Mutlu yıllar"', en: '"Happy new year"' }, 'mutlu')],
   flip: ['family', 'us', 'sea'].map((id) => T(id, storyName('flip', id), id)), // Text Flip aracının şablonları
   cerceve: [T('mountain', { tr: 'Gün batımı', en: 'Sunset' }, 'mountain'), T('sea', { tr: 'Deniz', en: 'Sea' }, 'sea'), T('lake', { tr: 'Göl', en: 'Lake' }, 'lake')], // Filament Painter şablonları
   yapboz: [T('picture', { tr: 'Aile fotoğrafı yapboz', en: 'Family photo puzzle' }, 'picture')], // Puzzle aracının şablonu
@@ -348,14 +348,6 @@ function miknatisModel(id, fs, lang) {
     const renk = [K.accent, K.blue, K.yellow, K.red, K.sage];
     [...'OKTOS'].forEach((ch, i) => koy(yazi(ch, 64, renk[i]), -170 + i * 72, 660 + Math.sin(i * 1.3) * 18, (i % 2 ? 1 : -1) * 0.12));
     koy(yazi(lang === 'en' ? 'HOME' : 'EV', 34, K.ink), -120, 540, 0.06);
-  } else if (id === 'not') {
-    const n = koy(solid(() => C.extrude(C.rrect(180, 118, 10), 4), pla(0xf6f1e4)), -40, 600, -0.05);
-    const y = yazi(lang === 'en' ? 'BUY MILK!' : 'SÜT AL!', 26, K.ink, 2);
-    y.position.set(0, -12, 4);
-    n.add(y);
-    const d = P.mesh(P.cyl(9, 9, 5, 24), pla(K.red)); // notu tutan yuvarlak mıknatıs (z ekseninde, notun üstünde)
-    d.position.set(0, 50, 4);
-    n.add(d);
   } else {
     koy(smooth(solid(() => C.extrude(C.poly2(heartPts(2.3)), 6), pla(K.red))), -110, 690, 0.15);
     koy(smooth(solid(() => C.extrude(C.poly2(heartPts(1.3)), 6), pla(K.rose))), -40, 545, -0.2);
@@ -652,16 +644,26 @@ export async function buildTemplate(zone, id, { lang = 'tr', saksi = {}, pasta =
     case 'puzzle3d': return puzzle3d(id);
     case 'anahtarlik': return id.startsWith('qr_') ? qrEtiket(id === 'qr_yuvarlak', fs) : kartAnahtarlik(id, kart);
     case 'tabela': return aracModeli('text', id, { boy: 56 }, { dik: true }); // kapı üstünde: 3D Yazı plakası, büyük
-    case 'miknatis': return miknatisModel(id, fs, lang);
+    case 'miknatis': {
+      if (id !== 'not') return miknatisModel(id, fs, lang);
+      const g = new THREE.Group(), n = await aracModeli('text', 'not'); // "Something beautiful is going to happen"
+      n.position.set(-40, 600, 0);
+      n.rotation.z = -0.05;
+      g.add(n);
+      return g;
+    }
     case 'saksilar': return vaseModel(id, {}, saksi);
     case 'balkonMasa': return aracModeli('qr', id); // menü standı ve bardak altlığı
     case 'buzdolabi': {
       const g = new THREE.Group();
       let ust = 70; // pastanın üst yüzü (krema)
-      if (pasta) {
-        const p = pasta.clone();
+      if (pasta) { // pasta porselen tabakta (havada durmasın)
+        const p = pasta.clone(), b = new THREE.Box3().setFromObject(p), r = Math.max(b.max.x - b.min.x, b.max.y - b.min.y) / 2;
+        const { pastaTabagi } = await import('./oda-ortam.js');
+        g.add(pastaTabagi(r + 28));
+        p.position.z += 4; // tabağın düz ortasına oturur
         g.add(p);
-        ust = new THREE.Box3().setFromObject(p).max.z - 16; // çileklerin altı
+        ust = b.max.z + 4 - 16; // çileklerin altı
       } else g.add(P.mesh(P.cyl(100, 100, 70, 40), P.clay(0xf3e6d6, { rough: 0.7 })));
       const top = await aracModeli('text', id, {}, { dik: true }); // 3D Yazı pasta süsü (arkasında birleştiren zemin)
       top.position.z = ust - 26; // çubuklar 26 mm pastaya girer

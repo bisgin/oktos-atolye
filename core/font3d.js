@@ -1,18 +1,23 @@
-// 3B yazı için yazı tipi: Schibsted Grotesk (OFL-1.1, @fontsource 5.3.0). latin + latin-ext birlikte
-// yüklenir, böylece Ş Ğ İ ı dahil tüm Türkçe harfler çıkar. Harfler çokgenlere (mm, y yukarı) çevrilir.
+// 3B yazı için yazı tipleri (OFL-1.1, @fontsource): Schibsted Grotesk 5.3.0 (varsayılan) ve el yazısı Dancing Script
+// 5.2.8 ('el': pasta süsü, not). latin + latin-ext birlikte yüklenir, böylece Ş Ğ İ ı dahil tüm Türkçe harfler çıkar.
+// Harfler çokgenlere (mm, y yukarı) çevrilir. El yazısında harfler üst üste biner: kesiti NonZero kuralıyla al.
 import opentype from 'opentype';
 
-const BASE = 'https://cdn.jsdelivr.net/npm/@fontsource/schibsted-grotesk@5.3.0/files/';
+const AILE = {
+  schibsted: 'https://cdn.jsdelivr.net/npm/@fontsource/schibsted-grotesk@5.3.0/files/schibsted-grotesk',
+  el: 'https://cdn.jsdelivr.net/npm/@fontsource/dancing-script@5.2.8/files/dancing-script',
+};
 const cache = new Map();
 
-export async function loadFont(weight = 700) {
-  if (!cache.has(weight)) {
-    cache.set(weight, Promise.all(['latin', 'latin-ext'].map(async (sub) => {
-      const res = await fetch(`${BASE}schibsted-grotesk-${sub}-${weight}-normal.woff`);
+export async function loadFont(weight = 700, aile = 'schibsted') {
+  const key = `${aile}|${weight}`;
+  if (!cache.has(key)) {
+    cache.set(key, Promise.all(['latin', 'latin-ext'].map(async (sub) => {
+      const res = await fetch(`${AILE[aile] || AILE.schibsted}-${sub}-${weight}-normal.woff`);
       return opentype.parse(await res.arrayBuffer());
     })));
   }
-  return cache.get(weight);
+  return cache.get(key);
 }
 
 function glyphFor(fonts, ch) {

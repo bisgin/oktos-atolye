@@ -337,27 +337,89 @@ export function buhar(n = 7) {
   return g;
 }
 
-// Markasız içecekler (buzdolabının kapak rafı): 330 ml alüminyum kutu (Ø 66, boy 122; gövde boyalı, yazı ve logo yok,
-// ince gümüş şerit) ve uzun boyunlu cam şişe (içi opak: geçirgen camın ardındaki ikinci geçirgen nesne çizilmez).
+// Markasız içecekler (buzdolabının kapak rafı): 330 ml alüminyum kutu (Ø 66, boy 122), aynı aileden sade tasarım:
+// beyaz gövde, ortada renkli şerit (kutudan kutuya yalnız şerit değişir); üstte gömük kapak, açma halkası ve
+// perçin görünür. Cam su şişesi: hafif mavi cam, içi su dolu görünür (kalınlık zayıflaması), metal kapak.
 // Tabanı z = 0'da.
 const icAlu = () => new THREE.MeshStandardMaterial({ color: 0xd6d9dc, metalness: 1, roughness: 0.3 });
-export function icecekKutusu(renk) {
+let halkaGeo = null;
+export function icecekKutusu(serit) {
   const g = new THREE.Group(), alu = icAlu();
-  const boya = new THREE.MeshPhysicalMaterial({ color: renk, metalness: 0.4, roughness: 0.32, clearcoat: 0.8, clearcoatRoughness: 0.12 });
+  const beyaz = new THREE.MeshPhysicalMaterial({ color: 0xefede7, metalness: 0.15, roughness: 0.3, clearcoat: 0.8, clearcoatRoughness: 0.12 });
+  const renk = new THREE.MeshPhysicalMaterial({ color: serit, metalness: 0.3, roughness: 0.32, clearcoat: 0.8, clearcoatRoughness: 0.12 });
   g.add(new THREE.Mesh(donme([[0, 2.5], [22, 0.4], [27, 1], [31, 4], [33, 9]], 48), alu));
-  g.add(new THREE.Mesh(donme([[33, 9], [33, 66], [33, 66.1]], 48), boya));
-  g.add(new THREE.Mesh(donme([[33.05, 66], [33.05, 70]], 48), alu));
-  g.add(new THREE.Mesh(donme([[33, 70], [33, 104]], 48), boya));
+  g.add(new THREE.Mesh(donme([[33, 9], [33, 48]], 48), beyaz));
+  g.add(new THREE.Mesh(donme([[33, 48], [33, 78]], 48), renk));
+  g.add(new THREE.Mesh(donme([[33, 78], [33, 104]], 48), beyaz));
+  // Omuz, ağız kenarı ve gömük kapak (kenar 122'de, kapak 118'de)
   g.add(new THREE.Mesh(donme([[33, 104], [31.5, 110], [28, 116.5], [27.2, 120.5], [26.4, 122], [24.6, 121.2], [24.2, 118], [0, 118]], 48), alu));
+  // Açma halkası: yuvarlak köşeli, ortası boş; perçin; açılacak ağzın çizgisi
+  if (!halkaGeo) {
+    const sh = new THREE.Shape();
+    sh.absarc(0, 0, 6.5, Math.PI / 2, (3 * Math.PI) / 2, false);
+    sh.lineTo(9, -6.5); sh.absarc(9, 0, 6.5, -Math.PI / 2, Math.PI / 2, false); sh.lineTo(0, 6.5);
+    const delik = new THREE.Path();
+    delik.absarc(-0.5, 0, 3.6, 0, Math.PI * 2, true);
+    sh.holes.push(delik);
+    halkaGeo = new THREE.ExtrudeGeometry(sh, { depth: 0.7, bevelEnabled: false, curveSegments: 12 });
+  }
+  const halka = new THREE.Mesh(halkaGeo, icAlu());
+  halka.position.set(-8, 0, 118.2);
+  const percin = new THREE.Mesh(new THREE.CylinderGeometry(2.2, 2.2, 1.2, 16).rotateX(Math.PI / 2), alu);
+  percin.position.set(2, 0, 118.6);
+  const agiz = new THREE.Mesh(new THREE.RingGeometry(5.5, 6.4, 24, 1, 0, Math.PI * 2), new THREE.MeshStandardMaterial({ color: 0x8e9296, metalness: 1, roughness: 0.4 }));
+  agiz.scale.set(1.5, 1, 1);
+  agiz.position.set(12, 0, 118.05);
+  g.add(halka, percin, agiz);
   g.traverse((o) => { if (o.isMesh) o.castShadow = true; });
   return g;
 }
-export function camSise(icRenk = 0xc9d36a, kapakRenk = 0xb8372f) {
+export function suSisesi() {
   const g = new THREE.Group();
-  const cam = new THREE.MeshPhysicalMaterial({ color: 0xcfe8d4, roughness: 0.04, transmission: 1, thickness: 3, ior: 1.5, envMapIntensity: 1.2 });
-  const sivi = new THREE.MeshStandardMaterial({ color: icRenk, roughness: 0.2 });
-  g.add(new THREE.Mesh(donme([[0, 0], [28, 0], [30, 4], [30, 140], [26, 165], [15, 195], [13, 228], [0, 228]], 48), cam));
-  g.add(new THREE.Mesh(donme([[0, 3], [27, 3], [28, 6], [28, 138], [24, 162], [12.5, 188], [0, 188]], 48), sivi));
-  g.add(new THREE.Mesh(donme([[0, 238], [14, 238], [14.6, 236], [14.6, 227], [13.6, 226], [0, 226]], 32), new THREE.MeshStandardMaterial({ color: kapakRenk, metalness: 0.6, roughness: 0.35 })));
+  const cam = new THREE.MeshPhysicalMaterial({
+    color: 0xffffff, roughness: 0.03, transmission: 1, thickness: 14, ior: 1.33, envMapIntensity: 1.3,
+    attenuationColor: new THREE.Color(0xbfdff2), attenuationDistance: 90, // içi su dolu: kalın yerde hafif mavi
+  });
+  g.add(new THREE.Mesh(donme([[0, 0], [30, 0], [32, 4], [32, 150], [28, 172], [16, 200], [14, 226], [0, 226]], 48), cam));
+  g.add(new THREE.Mesh(donme([[0, 236], [15.4, 236], [16, 234], [16, 225], [15, 224], [0, 224]], 32), new THREE.MeshStandardMaterial({ color: 0xc9ccd1, metalness: 1, roughness: 0.28 })));
   return g;
+}
+
+// Hasır meyve sepeti (buzdolabı alt rafı): yuvarlak, örgü dokusu tuvalde çizilir; ağız Ø 190, taban Ø 140, boy 70.
+// Orijin tabanın ortası; meyveler içine sahnede konur (tabanın üstü z ≈ 8).
+let orguDoku = null;
+export function meyveSepeti() {
+  if (!orguDoku) {
+    const cv = document.createElement('canvas');
+    cv.width = cv.height = 128;
+    const c = cv.getContext('2d');
+    c.fillStyle = '#8a5f33';
+    c.fillRect(0, 0, 128, 128);
+    for (let y = 0; y < 128; y += 16) for (let x = 0; x < 128; x += 16) { // sepet örgüsü: dama gibi yatay ve dikey şeritler
+      const yatay = ((x + y) / 16) % 2 === 0, gr = c.createLinearGradient(x, y, yatay ? x : x + 16, yatay ? y + 16 : y);
+      gr.addColorStop(0, '#6f4a26'); gr.addColorStop(0.5, '#c9a06a'); gr.addColorStop(1, '#6f4a26');
+      c.fillStyle = gr;
+      c.fillRect(x + 1, y + 1, 14, 14);
+    }
+    orguDoku = new THREE.CanvasTexture(cv);
+    orguDoku.colorSpace = THREE.SRGBColorSpace;
+    orguDoku.wrapS = orguDoku.wrapT = THREE.RepeatWrapping;
+    orguDoku.repeat.set(14, 3);
+  }
+  const m = new THREE.MeshStandardMaterial({ map: orguDoku, bumpMap: orguDoku, bumpScale: 1.2, roughness: 0.85, side: THREE.DoubleSide });
+  const g = new THREE.Group();
+  g.add(new THREE.Mesh(donme([[0, 0], [70, 0], [74, 4], [95, 70], [90, 70], [69, 8], [0, 8]], 48), m));
+  const kenar = new THREE.Mesh(new THREE.TorusGeometry(93, 4, 10, 64), new THREE.MeshStandardMaterial({ color: 0x7a5230, roughness: 0.8 }));
+  kenar.position.z = 70;
+  g.add(kenar);
+  g.traverse((o) => { if (o.isMesh) o.castShadow = o.receiveShadow = true; });
+  return g;
+}
+
+// Pasta tabağı: sırlı porselen, düz orta (üstü z = 4), yükselen kenar; r: dış yarıçap
+export function pastaTabagi(r) {
+  const m = new THREE.MeshPhysicalMaterial({ color: 0xf5f3ee, roughness: 0.16, clearcoat: 1, clearcoatRoughness: 0.06 });
+  const t = new THREE.Mesh(donme([[0, 0], [r - 26, 0], [r - 24, 2], [r - 14, 4], [r - 4, 9], [r, 12], [r - 1.4, 13], [r - 6, 10], [r - 16, 5.5], [r - 26, 4], [0, 4]], 96), m);
+  t.castShadow = t.receiveShadow = true;
+  return t;
 }

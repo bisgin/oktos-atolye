@@ -75,6 +75,11 @@ export function polys2(polygons) {
   return T(new W.CrossSection(polygons, 'EvenOdd'));
 }
 
+// Yazı tipi konturları (yönleri tutarlı): üst üste binen harfler birleşir, iç boşluklar delik kalır (el yazısı)
+export function polysNZ(polygons) {
+  return T(new W.CrossSection(polygons, 'NonZero'));
+}
+
 export function offset2(cs, delta, seg = SEG) {
   return T(cs.offset(delta, 'Round', 2, seg));
 }

@@ -4,29 +4,38 @@
 //   pasta:      yazının arkasında birleştiren zemin (i, ö, ü noktaları kopmasın) ve iki çubuk
 //   miknatis:   harf harf ya da not levhası ya da kalp/yıldız; arkada mıknatıs yuvası
 //   anahtarlik: delikli kulaklı levha, kabarık yazı
-// Yazı tipi Schibsted Grotesk (OFL), Türkçe harflerle (core/font3d.js); ağırlıklar init'te yüklenir.
+// Yazı tipi Schibsted Grotesk ya da el yazısı Dancing Script (OFL), Türkçe harflerle (core/font3d.js); init'te yüklenir.
+// Yazıda '|' alt satıra geçirir (ör. not mıknatısı).
 import * as C from '../../core/csg.js';
 import { loadFont, textPolys } from '../../core/font3d.js';
 
 const AGIRLIK = [500, 700, 900];
 const yazilar = {};
 export async function hazirla() {
-  await Promise.all(AGIRLIK.map(async (w) => { try { yazilar[w] ||= await loadFont(w); } catch (e) { console.warn('yazı tipi', w, e); } }));
+  await Promise.all([...AGIRLIK.map((w) => ['schibsted', w]), ['el', 700]].map(async ([aile, w]) => {
+    try { yazilar[`${aile}|${w}`] ||= await loadFont(w, aile); } catch (e) { console.warn('yazı tipi', aile, w, e); }
+  }));
 }
-const font = (s) => yazilar[s.agirlik] || yazilar[700];
+const font = (s) => (s.yazitipi === 'el' ? yazilar['el|700'] : yazilar[`schibsted|${s.agirlik}`]) || yazilar['schibsted|700'];
 
 // Yazı: ortası x = 0, taban çizgisi y = 0. kesit() katıyı yalnız istenince kurar (scope içinde; ölçüm sızdırmaz).
 // Glifler mıknatıs harfleri için ayrı ayrı; ic: harfin içinde kenarlara en uzak nokta (mıknatıs yuvası, O'nun ortası boş)
 function yazi(s, metin, boy, aralik = s.aralik) {
-  const t = textPolys(font(s), metin, boy, { spacing: aralik * boy });
-  const ox = t.width / 2, kay = (p) => p.map(([x, y]) => [x - ox, y]);
-  return {
-    kesit: () => C.polys2(t.polys.map(kay)), width: t.width, cap: t.cap,
-    glifler: t.glyphs.filter((g) => g.box).map((g) => {
-      const polys = g.polys.map(kay);
-      return { ch: g.ch, kesit: () => C.polys2(polys), ic: icNokta(polys) };
-    }),
-  };
+  // Satırlar ('|'): her biri ortalı, alttaki satırın taban çizgisi y = 0; cap bloğun toplam yüksekliği (ortalama için)
+  const satirlar = String(metin).split('|').map((x) => x.trim()).filter(Boolean);
+  const aral = boy * 1.3, n = Math.max(1, satirlar.length);
+  const ts = (satirlar.length ? satirlar : [' ']).map((m) => textPolys(font(s), m, boy, { spacing: aralik * boy }));
+  const width = Math.max(...ts.map((t) => t.width)), cap = ts[0].cap + (n - 1) * aral;
+  const polys = [], glifler = [];
+  ts.forEach((t, i) => {
+    const ox = t.width / 2, oy = (n - 1 - i) * aral, kay = (p) => p.map(([x, y]) => [x - ox, y + oy]);
+    polys.push(...t.polys.map(kay));
+    for (const g of t.glyphs.filter((x) => x.box)) {
+      const gp = g.polys.map(kay);
+      glifler.push({ ch: g.ch, kesit: () => C.polysNZ(gp), ic: icNokta(gp) });
+    }
+  });
+  return { kesit: () => C.polysNZ(polys), width, cap, glifler }; // NonZero: el yazısında birleşen harfler delik olmasın
 }
 // Çokgen kümesinin içinde (çift-tek) kenarlara en uzak örnek nokta: [x, y, uzaklık]
 function icNokta(polys) {
