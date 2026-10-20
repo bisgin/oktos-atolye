@@ -226,7 +226,10 @@ yok: sayfanın en üstünde yukarı kaydırmak üst kata çıkmak sayılır).
   içinden geçerken karakter seyrelir.
 - **İmleç dairesi (genel plan):** fare kartvizit, kalemlik ya da tuşların üzerindeyse imlecin çevresinde, ürünün
   uzaklığında ~12 cm'lik bir daire karakteri ve koltuğu siler, arkadaki ürün görünür; tıklama ürüne gider
-  (`AYAR.fareDelik`, `AYAR.fareCap`; dokunmatikte yok, yakın planda eski daire geçerli).
+  (`AYAR.fareDelik`, `AYAR.fareCap`; dokunmatikte yok, yakın planda eski daire geçerli). İmleç bu ürünlerde ~0,15 sn
+  durunca karakter koltuğuyla birlikte döner (kalemlik, kartvizit saat yönünün tersine ~35°, tuşlar saat yönünde ~43°;
+  `AYAR.donDurak`), yazmayı bırakıp bekler, fare gidince döner. Ölçüm (2026-10-20): genel plan kamerasından kalemlik ve
+  kartvizit koltuk sırtının (54 cm geniş) tam arkasında; dönüş ürünü açmaz, görünürlüğü daire sağlar.
 - **Oturuş:** ziyaret başına iki klipten biri rastgele: Koltuğa Oturma (`otur`) ya da Oturmaya Geçiş (`otur2`, Mixamo
   "Stand To Sit": koltuğun önünden geri oturur, daha çevik). `otur2`'nin başında kalça kökün ~20 cm önünde: gövde
   `ileri` kadar geri kaydırılır, klip bitince kayma köke aktarılır (görüntü değişmez). Kalça koltuğa indiği karede

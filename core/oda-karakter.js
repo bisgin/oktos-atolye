@@ -26,6 +26,11 @@ export const AYAR = {
   tempo: 1.15,           // karakterin bütün zamanı (klipler, yürüyüş, kayma, iniş) bu kat hızlı akar: ayak kaymaz (2026-10-20)
   fareDelik: ['kartvizit', 'kalemlik', 'klavye'], // genel planda fare bu ürünlerin üzerindeyse imleç dairesi karakteri siler
   fareCap: 125,          // mm: imleç dairesinin çapı (ürünün uzaklığında)
+  // Üzerine gelince dönme: fare bu ürünlerin üzerinde biraz durunca karakter koltuğuyla birlikte döner (rad; + saat
+  // yönünün tersi, yukarıdan bakınca). Ürünü açan yön ve açı genel plan kamerasından ölçüldü
+  donDurak: { kalemlik: 0.6, kartvizit: 0.6, klavye: -0.75 },
+  donBekle: 0.15,        // sn: imleç bu kadar durunca döner (üstünden geçerken dönmesin)
+  donYay: 7,             // rad/sn: dönüşün yayı (kritik sönümlü, ~0,6 sn'de oturur)
   minderEz: 0.13,        // oturuşta minder bu oranda ezilip yaylanarak toparlanır
   donme: 0.2,            // rad: oturuşta oturak (karakterle) kendi ekseninde bu genlikle sönerek sallanır
   hizYuru: 406,         // mm/sn: yürüme döngüsünde basan ayağın hızı (Blender'da ölçüldü: 0,271 m/sn × 1,5)
@@ -688,6 +693,23 @@ export function karakterOlustur(g, { reduce = false, zorla = null } = {}) {
     salin.v += (k * (hedef - salin.a) - c * salin.v) * dt;
     salin.a += salin.v * dt;
   }
+  // Üzerine gelince dönme: genel planda fare masadaki gizli ürünün (kalemlik, kartvizit, tuşlar) üzerinde durunca
+  // karakter koltuğuyla birlikte o ürünü açan yana döner, fare gidince geri döner (tıklama gerekmez). Masadayken
+  // (kenarda ya da kayarken değil), yakın plan yokken; dokunmatikte fare yok
+  const donus = { a: 0, v: 0, zone: null, t0: 0 };
+  function donusHedefi() {
+    if (reduce || !story || story.focusedId || ben.yer !== 'koltuk' || !koltuk.bagli) return 0;
+    if (Math.hypot(ben.x - YER.masa.x, ben.y - YER.masa.y) > 30) return 0;
+    const z = fare.zone;
+    if (z !== donus.zone) { donus.zone = z; donus.t0 = saat; }
+    return z && AYAR.donDurak[z] !== undefined && saat - donus.t0 >= AYAR.donBekle ? AYAR.donDurak[z] : 0;
+  }
+  const donuk = () => donusHedefi() !== 0;
+  function donusHesapla(dt) {
+    const h = donusHedefi(), w = AYAR.donYay;
+    donus.v += (w * w * (h - donus.a) - 2 * w * donus.v) * dt;
+    donus.a += donus.v * dt;
+  }
   // Oturağı kendi ekseninde döndürür; oturan karakter onunla birlikte koltuğun ekseni çevresinde döner
   function oturakDondur(don) {
     if (!koltuk.ust) return;
@@ -783,6 +805,13 @@ export function karakterOlustur(g, { reduce = false, zorla = null } = {}) {
         sonraki = saat + rastgele(AYAR.bosta);
         continue;
       }
+      if (donuk()) { // fare gizli üründe: koltukla dönerken yazmayı bırakır, fare gidince yazmaya döner
+        await oynat('bekle', { tekrar: true, solma: 0.35 });
+        if (!(await kare(() => (!d() || kenarGerek() || !donuk() ? 'uyan' : null))) || !d()) return;
+        if (!kenarGerek()) await oynat('yaz', { solma: 0.4 });
+        sonraki = Math.max(sonraki, saat + 3);
+        continue;
+      }
       const tp = tepkiler.shift();
       if (tp) { if (!(await dizi([tp], dk))) { if (!d()) return; continue; } await oynat('yaz', { solma: 0.5 }); sonraki = saat + rastgele(AYAR.bosta); continue; }
       if (saat >= sonraki) {
@@ -797,7 +826,7 @@ export function karakterOlustur(g, { reduce = false, zorla = null } = {}) {
         sonraki = saat + rastgele(AYAR.bosta);
         continue;
       }
-      const r = await kare(() => (!d() || kenarGerek() || tepkiler.length || saat >= sonraki ? 'uyan' : null));
+      const r = await kare(() => (!d() || kenarGerek() || tepkiler.length || saat >= sonraki || donuk() ? 'uyan' : null));
       if (!r) return;
     }
   }
@@ -1002,13 +1031,14 @@ export function karakterOlustur(g, { reduce = false, zorla = null } = {}) {
       if (koltuk.ust) koltuk.ust.position.z = koltuk.ust0 * koltuk.katlama;
       const sw = etki ? oturmaEtkisiUygula() : 0;
       salinimHesapla(dt);
-      oturakDondur(sw + salin.a);
+      donusHesapla(dt);
+      oturakDondur(sw + salin.a + donus.a);
     }
     kafaCevir(dt);
   }
   // Kafa bakışı: kameraya (dans ederken, üzerine gelinince) ya da yakın plandaki ürüne (kenardayken); klibin üstüne eklenir
   function kafaCevir(dt) {
-    const hedef = reduce || !story ? null : uzerinde ? 'kamera' : bakis;
+    const hedef = reduce || !story ? null : uzerinde && Math.abs(donus.a) < 0.1 ? 'kamera' : bakis; // dönükken kameraya bakmaz
     bak.k += ((hedef ? 1 : 0) - bak.k) * Math.min(1, dt * 3);
     if (!kafa || bak.k < 0.01 || !story) return;
     kafaTaban.copy(kafa.quaternion);
@@ -1226,6 +1256,6 @@ export function karakterOlustur(g, { reduce = false, zorla = null } = {}) {
     yukari() { if (reduce) { nesil++; ben.gorunur = false; ben.yer = 'ust'; return; } yonet('yukari'); },
     masayaKoy,
     get durum() { return { yer: ben.yer, x: Math.round(ben.x), y: Math.round(ben.y), psi: +ben.psi.toFixed(2), arac: ben.arac, klip: simdiki?.clip.name ?? null, koltuk: { katlama: koltuk.katlama, bagli: koltuk.bagli } }; },
-    debug: { ben, koltuk, M, akt, oturAd, engeller, serbest: (a, b, E = engeller()) => serbest(a, b, E, AYAR.pay), yolBul: (a, b, E = engeller()) => yolBul(a, b, E), kenarDuraklari, XR, update },
+    debug: { ben, koltuk, M, akt, oturAd, engeller, serbest: (a, b, E = engeller()) => serbest(a, b, E, AYAR.pay), yolBul: (a, b, E = engeller()) => yolBul(a, b, E), kenarDuraklari, XR, update, fare, donus },
   };
 }
