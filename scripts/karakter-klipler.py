@@ -4,7 +4,7 @@
 # sonra dosyayı kaydet ve scripts/karakter-blender.py ile GLB'yi yeniden çıkar. Kliplerin kare bilgisi aksiyonun
 # "site_meta" özelliğine yazılır, dışa aktarım onu GLB'nin karakter_meta'sına taşır.
 # Koltuğun hareketi core/oda-karakter.js ile aynı formülden: sırt katlılığı (sirt), kökün yürüyüşü (kayma, mm, bakış
-# yönünde), koltuğun köke tutturulduğu aralık (tut) ve tutarken kendi ekseninde dönüşü (don). Referans "Site Koltuk"
+# yönünde), koltuğun köke tutturulduğu aralık (tut) ve tutarken kendi ekseninde dönüşü (don, isteğe bağlı). Referans "Site Koltuk"
 # (oda-esya.glb'den, karakter birimine ölçekli) önizleme için aynı formülle anahtarlanır; dışa aktarılmaz.
 import bpy, math
 from mathutils import Vector, Matrix, Quaternion, Euler
@@ -88,26 +88,33 @@ def yaz(act, seri, kareler):
     return act
 
 # ---------------------------------------------------------------------------------------------------------------
-# Sırt açma: arkada dur → bir adım yaklaş → katlı sırtı arka yüzünden tut, kaldır (oturak kalkar) → koltuğu kendine
-# çekerek geri yürü → koltuğu sağına doğru çevir → bırak. JS meta ile aynı sayılar.
+# Sırt açma: arkada dur → bir adım yaklaş → katlı sırtı arka yüzünden tut → koltuğu masadan düz geri çekerek geri
+# yürü → koltuğu bırakıp bir adım daha geri çekilirken sırtı kaldır (oturak kalkar; dikilen sırt büyük başa çarpmasın)
+# → bırak. Koltuk dönmez: karakter önüne geçip masaya bakarak oturur
+# (2026-10-20; önceki sıra sırtı masanın içinden kaldırıyor, koltuğu yana çevirip oturduktan sonra geri döndürüyordu).
+# JS meta ile aynı sayılar.
 SA = {
-    'son': 140,
-    # mm, bakış yönünde: 10 cm yaklaşır, kaldırırken 12 cm geri (dikilen sırt büyük başa çarpmasın), sonra koltukla 24 cm
-    'kayma': [[1, 0], [14, 100], [24, 100], [56, -60], [64, -60], [100, -300]],
-    'sirt': [[24, 1], [56, 0]],                             # katlılık
-    'tut': [64, 128], 'don': [[100, 0], [126, -math.pi / 2]],
-    'ik': [[1, 0], [6, 0], [16, 1], [110, 1], [122, 0]],    # el IK etkisi
+    'son': 130,
+    # mm, bakış yönünde: 10 cm yaklaşır, tutup 65 cm geri çeker: katlı sırtın ucu menteşeden ~87 cm ileride, masanın
+    # altında; kalkarken masa tablasına değmesin diye menteşe masanın önünden ~90 cm geride olmalı. Bırakınca 16 cm daha
+    'kayma': [[1, 0], [14, 100], [24, 100], [74, -550], [80, -550], [100, -710]],
+    'sirt': [[82, 1], [114, 0]],                            # katlılık: çektikten sonra
+    'tut': [22, 78],
+    'ik': [[1, 0], [6, 0], [16, 1], [114, 1], [126, 0]],    # el IK etkisi
+    'adim': [('L', 26, 38), ('R', 38, 50), ('L', 50, 62), ('R', 62, 74), ('L', 80, 90), ('R', 90, 100)],  # geri adımlar
 }
 KAVRAMA = 600  # mm: kavrama noktası koltuk merkezinin bu kadar arkası
 
 def koltuk_durumu(f, M):
     """Karakterin yerel uzayında koltuk: merkez y, dönüş (rad), katlılık"""
-    kay = anahtar(M['kayma'], f) * S
-    t0 = M['tut'][0]
+    kay = lambda x: anahtar(M['kayma'], x) * S
+    t0, t1 = M['tut']
     if f < t0:
-        y = -KAVRAMA * S + kay           # dünyada duruyor: kök yaklaştıkça yerelde yaklaşır
+        y = -KAVRAMA * S + kay(f)        # dünyada duruyor: kök yaklaştıkça yerelde yaklaşır
+    elif f <= t1:
+        y = -KAVRAMA * S + kay(t0)       # tutunca köke kilitli
     else:
-        y = -KAVRAMA * S + anahtar(M['kayma'], t0) * S  # tutunca köke kilitli
+        y = -KAVRAMA * S + kay(t0) + kay(f) - kay(t1)  # bırakınca yine dünyada: kök geri çekildikçe uzaklaşır
     return y, anahtar(M.get('don', 0), f), anahtar(M['sirt'], f)
 
 def koltuk_kur(y, don, kat):
@@ -135,13 +142,14 @@ def sirt_ac():
         bpy.context.view_layer.update()
         ik = anahtar(SA['ik'], f)
         # Gövde: Durma tabanı + eğilme
-        egil = anahtar([[1, 0], [16, 22], [26, 26], [44, 10], [56, 1], [64, 0], [80, -5], [100, -5], [112, 6], [126, 0], [140, 0]], f)
-        bas = anahtar([[1, 0], [14, 14], [40, 10], [56, 2], [64, 0], [100, 0], [112, 12], [126, 0]], f)
-        dizb = anahtar([[1, 0], [16, 10], [30, 12], [56, 4], [64, 6], [100, 6], [126, 0]], f)
+        # Çekerken katlı sırt alçakta: öne eğik kalır; sırt kalkarken tutma noktası yükselip yaklaşır, gövde doğrulur
+        egil = anahtar([[1, 0], [16, 22], [24, 26], [30, 22], [74, 22], [84, 24], [100, 12], [114, 2], [122, 0]], f)
+        bas = anahtar([[1, 0], [14, 14], [24, 10], [76, 10], [100, 4], [114, 0]], f)
+        dizb = anahtar([[1, 0], [16, 10], [24, 12], [76, 12], [100, 6], [114, 0]], f)
         EK = {'omurga': [(X, egil * 0.5)], 'göğüs': [(X, egil * 0.5)], 'boyun': [(X, bas * 0.4)], 'kafa': [(X, bas * 0.6)],
               'kalça': [(X, dizb * 0.4)]}
-        # Çekerken adım: ayaklar sırayla kalkar (sol 66–76, sağ 78–88, sol 90–100)
-        for taraf, a, b in (('L', 66, 76), ('R', 78, 88), ('L', 90, 100)):
+        # Çekerken adım: ayaklar sırayla kalkar
+        for taraf, a, b in SA['adim']:
             if a <= f <= b:
                 u = math.sin(math.pi * (f - a) / (b - a))
                 EK.setdefault('uyluk.' + taraf, []).append((X, -14 * u))
@@ -177,7 +185,7 @@ def sirt_ac():
     yaz(act, seri, kareler)
     act.frame_range = (1, SA['son'])
     import json
-    act['site_meta'] = json.dumps({'sirt': SA['sirt'], 'kayma': SA['kayma'], 'tut': SA['tut'], 'don': SA['don'], 'kavrama': KAVRAMA})
+    act['site_meta'] = json.dumps({k: SA[k] for k in ('sirt', 'kayma', 'tut', 'don') if k in SA} | {'kavrama': KAVRAMA})
     # Referans koltuğu önizleme için anahtarla
     for o in (KOL, UST, SIRT):
         if o.animation_data: o.animation_data_clear()

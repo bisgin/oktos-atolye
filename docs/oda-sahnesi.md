@@ -209,11 +209,16 @@ yok: sayfanın en üstünde yukarı kaydırmak üst kata çıkmak sayılır).
 - **Gelir:** üst kattan yangın merdiveni ya da ip (her ziyarette rastgele) balkonun arka sağında kayarak iner (giriş
   uçuşu sırasında görünür); karakter ana kadrajda kapı boşluğunun sağ yarısında görünerek yavaşça iner (görünmeyen
   yükseklikte hızlı; ayakları giriş biterken kadraja girer). Sağ duvar şeridinden (kadraj dışı) dolaşıp cephe ile bistro
-  masa arasından kapıya gelir, eşikte rastgele bir dans eder. Açılıştan yazmaya ~50 sn. Dikey telefonda genel plan yalnız
+  masa arasından kapıya gelir, eşikte rastgele bir dans eder (en çok ~4 sn; iniş, dans ve oturuş art arda aynısı
+  gelmez). Açılıştan yazmaya 34–37 sn (2026-10-20; önce ~50). Dikey telefonda genel plan yalnız
   masayı ve sol pencereyi gösterir: iniş ve dans kadraj dışında kalır, karakter sağdan girip oturur.
-- **Koltuk:** masanın altına itilmiş, sırtı öne katlı koltuğu arkadan kendine çeker, sırtını açar (oturak kalkar), sağa
-  çevirir, önünde durup oturur, koltukla dönüp masaya kayar. Masada yazar; 9–18 sn'de bir emote, şablon değişince ara
-  sıra tepki, tıklanınca sevinir; üzerine gelinince kameraya bakar.
+- **Koltuk:** masanın altına itilmiş, sırtı öne katlı koltuğu arkadan tutup 65 cm düz geri çeker (katlı sırt kalkarken
+  masa tablasına değmesin), bırakıp bir adım geri çekilirken sırtını açar (oturak kalkar), koltuğun sağından önüne geçip
+  masaya bakarak oturur ve masaya kayar; koltuk hiç dönmez (2026-10-20; önce yana çevrilip oturduktan sonra kendiliğinden
+  dönüyordu). Masada yazar; 9–18 sn'de bir emote, şablon değişince ara sıra tepki, tıklanınca sevinir; üzerine gelinince
+  kameraya bakar. Oturanın göğsü yana kaydıkça oturak çok hafif döner, yaylanarak durulur (`AYAR.salinim`); inanamama
+  emote'unda kafa sırtın ~45 cm gerisine iner, oyuncu koltuğunun sırtı ~69°'ye kadar yaslanır (`yatir` meta,
+  `AYAR.yatirEnCok`).
 - **Yakın planlar:** kadrajı masa başındaki karakterin kapladığı duraklar kendiliğinden bulunur (şu an kalemlik,
   kartvizit, klavye, modem, çerçeve); kamera bunlara yaklaşırken (varışı tahmin ederek) koltuğuyla kenara (masanın sağ
   ucunun önü, pencere yanı) kayıp müzik dinler, gerek kalmayınca döner. Kenar yeri kadrajına giren durakta (saksılar)
@@ -227,14 +232,15 @@ yok: sayfanın en üstünde yukarı kaydırmak üst kata çıkmak sayılır).
   `ileri` kadar geri kaydırılır, klip bitince kayma köke aktarılır (görüntü değişmez). Kalça koltuğa indiği karede
   (`inis`) minder ezilip yaylanarak toparlanır (karakter onunla çöker), oturak karakterle birlikte kendi ekseninde
   sönerek sallanır (`AYAR.minderEz`, `AYAR.donme`).
-- **Hız:** karakterin bütün zamanı `AYAR.tempo` (1,1) kat hızlı akar: klipler, yürüyüş, kayma ve iniş birlikte
-  hızlanır, ayak kaymaz (2026-10-19, %10).
+- **Hız:** karakterin bütün zamanı `AYAR.tempo` (1,15) kat hızlı akar: klipler, yürüyüş, kayma ve iniş birlikte
+  hızlanır, ayak kaymaz (2026-10-19 %10, 2026-10-20 %15). Yakın plan gelince masadaki emote yarıda kesilir, koltuk
+  ~1,3 sn'de kenara kayar.
 - **Gider:** üst kata dönülünce koltukla oturma yerine kayar, kalkar, aynı yoldan tırmanır; yolda geri dönülürse kaldığı
   yerden döner. Hareket azaltmada masada hareketsiz oturur.
 - **Ölçek ve eşleme:** Blender'da rig 1,5 (boy ~1,4 m). Masa başı klipleri kökü 335 mm kaldırır (eller klavyede,
   kalça yüksek koltuğun oturağında; ayaklar sarkar); oturmada kök kalça inerken yükselir.
-- **Koltuk klipleri:** sırt açma (arkadan kavrar, kaldırır, koltuğu 24 cm çekip sağına çevirir: sırt, kök kayması, tutma
-  ve dönüş GLB meta'sında) ve koltukla kayma (eller kolçakta, bacaklar sallanır: yüksek koltukta ayaklar yere değmez)
+- **Koltuk klipleri:** sırt açma (arkadan kavrar, 65 cm çeker, bırakıp geri adım atarken sırtı kaldırır: sırt, kök
+  kayması ve tutma GLB meta'sında) ve koltukla kayma (eller kolçakta, bacaklar sallanır: yüksek koltukta ayaklar yere değmez)
   sitenin koltuğuna göre Blender'da kurulur (`scripts/karakter-klipler.py`).
 - **Çizim yükü:** aynı malzemeli deri parçaları yüklemede tek ağda birleşir ve tek iskeleti paylaşır (38 çizim → 13),
   merdiven tek ağ; karakter ve merdiven gölgeyle birlikte ~28 çizim, ~150 bin üçgen ekler.

@@ -30,7 +30,7 @@ export const AYAR = {
   donme: 0.2,            // rad: oturuşta oturak (karakterle) kendi ekseninde bu genlikle sönerek sallanır
   hizYuru: 406,         // mm/sn: yürüme döngüsünde basan ayağın hızı (Blender'da ölçüldü: 0,271 m/sn × 1,5)
   donus: 3.2,            // rad/sn: yürürken en hızlı dönüş
-  donusYerinde: 2.6,     // rad/sn: durduğu yerde dönüş
+  donusYerinde: 3.6,     // rad/sn: durduğu yerde dönüş (yavaşı ağır çekim gibi duruyordu)
   hizKaydir: 330,        // mm/sn: koltukla kayma
   donusKaydir: 2.5,      // rad/sn
   pay: 160,              // yürürken engellerden pay (gövde yarıçapı; balkonda cephe ile bistro masa arası ~385 mm)
@@ -44,12 +44,16 @@ export const AYAR = {
   kenarHiz: 3.0,         // kenara kaçarken koltuk bu kat hızlı kayar (dönüşte normal)
   kenarBekle: 1.2,       // gerek kalmayınca masaya dönmeden önce, sn
   dansBekle: [0.3, 0.4], // eşikte dans öncesi ve sonrası duruş, sn
-  dansSure: 4.5,         // dans en fazla bu kadar sürer (karakter saniyesi; uzun dans yarıda yumuşakça biter)
+  dansSure: 4.0,         // dans en fazla bu kadar sürer (karakter saniyesi; uzun dans yarıda yumuşakça biter)
   oturHiz: 1.25,         // uzun oturma klibi (Koltuğa Oturma) bu kat hızlı
   bosta: [9, 18],        // masada iki emote arası, sn (rastgele)
   tepkiAra: 12,          // iki tepki arası en az, sn
   sablonTepki: 0.3,      // şablon değişince tepki olasılığı
   sirtDik: 0.14,         // koltuk sırtı açılınca menteşede bu kadar geriye yatık durur (rad; katlı hâli GLB'de −90°)
+  yatirEnCok: 1.2,       // rad: emote'ta (inanamama) sırtın ek yaslanması en çok (oyuncu koltuğu; kafa sırttan taşmasın)
+  salinim: 0.001,        // rad/mm: oturanın göğsü yana kaydıkça oturağın döndüğü açı (çok hafif)
+  salinimEnCok: 0.05,    // rad
+  salinimYay: [30, 5],   // oturak salınımının yay sertliği ve sönümü (~0,9 Hz, hafif aşar)
   xrRenk: [0.2, 0.22, 0.24], // x-ray dairesinin çizgisi (doğrusal, ton eşlemeden önce)
   isik: 1.6,             // karakter malzemelerinin ortam ışığı çarpanı (loş oda)
 };
@@ -71,12 +75,15 @@ const VARSAYILAN = {
     ip: { dongu: [1, 73], son: [73, 252] },
     yuru: { tekrar: true }, dur: { tekrar: true },
     dans_twist: {}, dans_tavuk: {}, dans_lahana: {}, dans_runningman: {},
-    sirt_ac: { sirt: [[40, 1], [80, 0]], cevir: [10, 110] },
+    sirt_ac: { sirt: [[82, 1], [114, 0]], cevir: [10, 110] },
     otur: { z: [[42, 0], [81, MASA_Z]], koltuk: [[1, 205], [145, 205], [161, 33]] },
     kalk: { z: [[1, MASA_Z], [30, MASA_Z], [72, 0]], koltuk: [[1, 33], [22, 205]] },
     kaydir: { tekrar: true, ...MASA },
     yaz: { tekrar: true, ...MASA }, muzik: { tekrar: true, ...MASA }, bekle: { tekrar: true, ...MASA },
-    kafa_salla: { ...MASA }, sevin: { ...MASA }, inanamama: { ...MASA }, uzan: { ...MASA }, cekil: { ...MASA },
+    // yatir: sırtın ek yaslanması (rad). inanamama'da kafa sırtın ~45 cm gerisine iner (ölçüldü 2026-10-20): sırt
+    // ~69° yatmazsa kafa arkasından taşar
+    inanamama: { ...MASA, yatir: [[16, 0], [28, 0.3], [37, 0.68], [43, 1.0], [48, 1.2], [80, 1.2], [85, 1.0], [91, 0.6], [97, 0.25], [104, 0]] },
+    kafa_salla: { ...MASA }, sevin: { ...MASA }, uzan: { ...MASA }, cekil: { ...MASA },
   },
 };
 const DANSLAR = ['dans_twist', 'dans_tavuk', 'dans_lahana', 'dans_runningman'];
@@ -101,13 +108,15 @@ const YER = {
   // kameralarının görüşü ve aralarındaki uçuşlar dışında (en yakın uçuş ~0,6 m); kenar yeri kadrajına giren bir
   // durakta (saksılar) karakter kenarda beklemez
   kenar: { x: 100, y: 1050, psi: 0.35 },
-  // Oturma yeri: koltuk masadan çekilip yüzü sağa (+x) döner; karakter önünde durup oturur, sonra masaya döner
-  koltuk: { x: CHAIR.x, y: CHAIR.y - 240, rz: -Math.PI / 2 },
+  // Oturma yeri: koltuk masadan düz geri çekilir (sırt açma klibinin çekişi: katlı sırt kalkarken masaya değmesin),
+  // dönmez; karakter önüne geçip masaya bakarak oturur, sonra masaya kayar
+  koltuk: { x: CHAIR.x, y: CHAIR.y - 650, rz: CHAIR.rz },
 };
 // Yol düğümleri: balkon (merdiven önü, cephe ile bistro masa arasındaki geçit, kapı önü), eşik, odanın açık zemini
 const DUGUM = [
   [1780, 3150], [1775, 2260], [1500, 2165], [1150, 2160], [800, 2160], [800, 1560], [450, 1260], [120, 1040], [80, 1380],
   [120, 620], [-200, 380], [-650, 420], [-1150, 560], [600, 520], [1000, 300],
+  [-420, 20], [-480, 560], // geri çekilmiş koltuğun sağından önüne (arkasından oturma yerine)
 ];
 // Engeller: k = kutu [x0, x1, y0, y1], d = daire [x, y, r]. Koltuk ayrıca (yerinde duruyorsa) daire olarak eklenir.
 const CEPHE = ROOM.y1 + ROOM.wall + 45; // duvarın dış yüzü ve önündeki açık sürgü kanatları
@@ -388,6 +397,7 @@ export function karakterOlustur(g, { reduce = false, zorla = null } = {}) {
   const adla = (ad, re) => (ad && model.getObjectByName(ad)) || kemikler.find((b) => re.test(b.name)) || null;
   const kalca = adla(M.kalca, /hips$|kal[cç]a/i) ?? kemikler[0] ?? null;
   const kafa = adla(M.kafa, /head$|kafa$/i);
+  const gogus = adla(null, /chest$|spine2$|g[oö]ğ[uü]s$/i) ?? kafa;
 
   // Klipler
   const mixer = new THREE.AnimationMixer(model);
@@ -491,7 +501,7 @@ export function karakterOlustur(g, { reduce = false, zorla = null } = {}) {
         const e = fark(ben.psi, hedef.psi); // vardı: yerinde döner
         if (Math.abs(e) < 0.04) { ben.psi = hedef.psi; return 'tamam'; }
         ben.psi += kenet(e, -AYAR.donusYerinde * dt, AYAR.donusYerinde * dt);
-        if (a) a.act.timeScale = 0.6;
+        if (a) a.act.timeScale = 0.85;
         return null;
       }
       const e = fark(ben.psi, aciOf(dx, dy));
@@ -657,14 +667,35 @@ export function karakterOlustur(g, { reduce = false, zorla = null } = {}) {
     const ez = t > 1.6 ? 0 : AYAR.minderEz * Math.exp(-t / 0.2) * Math.cos((2 * Math.PI * t) / 0.42) * Math.min(1, t / 0.05);
     const sw = t > 2.6 ? 0 : AYAR.donme * etki.yon * Math.exp(-t / 0.6) * Math.sin((2 * Math.PI * t) / 1.3);
     for (const p of koltuk.minder) { p.m.scale.z = 1 - ez; p.m.position.z = p.z0 + koltuk.minderTaban * ez; } // taban sabit
-    koltuk.ust.rotation.z = sw;
-    if (koltuk.bagli) { // karakter oturakla: çöker ve koltuğun ekseni çevresinde döner
-      govde.position.z -= koltuk.minderBoy * ez;
-      const c = Math.cos(sw), s = Math.sin(sw), px = ben.x - koltuk.x, py = ben.y - koltuk.y;
-      yer.position.set(koltuk.x + c * px - s * py, koltuk.y + s * px + c * py, 0);
-      yer.rotation.z = ben.psi + sw;
-    }
+    if (koltuk.bagli) govde.position.z -= koltuk.minderBoy * ez; // karakter oturakla çöker
     if (t > 2.6) etki = null;
+    return sw;
+  }
+  // Oturak salınımı: oturanın göğsü yana kaydıkça (emote, yazarken kıpırdanma) oturak çok hafif döner, yaylanarak
+  // durulur. Yavaş değişen ortalamaya göre ölçülür: yalnız hareket salındırır, duruş değil. Hareket azaltmada yok
+  const salin = { a: 0, v: 0, taban: null }, gv = new THREE.Vector3();
+  function salinimHesapla(dt) {
+    let hedef = 0;
+    if (koltuk.bagli && gogus && !reduce) {
+      yer.position.set(ben.x, ben.y, 0); // dönmemiş yerden ölç (önceki karenin salınımı ölçüyü kaydırmasın)
+      yer.rotation.z = ben.psi;
+      gogus.getWorldPosition(gv);
+      const [fx, fy] = yon(ben.psi), yan = (gv.x - koltuk.x) * fy - (gv.y - koltuk.y) * fx;
+      salin.taban = salin.taban === null ? yan : salin.taban + (yan - salin.taban) * Math.min(1, dt * 0.7);
+      hedef = kenet((yan - salin.taban) * AYAR.salinim, -AYAR.salinimEnCok, AYAR.salinimEnCok);
+    } else salin.taban = null;
+    const [k, c] = AYAR.salinimYay;
+    salin.v += (k * (hedef - salin.a) - c * salin.v) * dt;
+    salin.a += salin.v * dt;
+  }
+  // Oturağı kendi ekseninde döndürür; oturan karakter onunla birlikte koltuğun ekseni çevresinde döner
+  function oturakDondur(don) {
+    if (!koltuk.ust) return;
+    koltuk.ust.rotation.z = don;
+    if (!koltuk.bagli || Math.abs(don) < 1e-5) return;
+    const c = Math.cos(don), s = Math.sin(don), px = ben.x - koltuk.x, py = ben.y - koltuk.y;
+    yer.position.set(koltuk.x + c * px - s * py, koltuk.y + s * px + c * py, 0);
+    yer.rotation.z = ben.psi + don;
   }
   function oturuYer() { // oturmuşken kökün bulunduğu yer (kalkmadan önce buraya kayar)
     const r = { x: YER.koltuk.x, y: YER.koltuk.y, rz: YER.koltuk.rz }, psi = r.rz + Math.PI, [fx, fy] = yon(psi);
@@ -699,9 +730,9 @@ export function karakterOlustur(g, { reduce = false, zorla = null } = {}) {
           if (!(await bekle(AYAR.dansBekle[1], d))) return;
         }
       }
-      if (koltuk.obj && koltuk.katlama > 0.5) { // katlı: arkasına gidip masadan çeker, sırtını açar, sağa çevirir
+      if (koltuk.obj && koltuk.katlama > 0.5) { // katlı: arkasına gidip masadan düz çeker, sonra sırtını açar
         if (!(await yuru(kavrama(), d))) return;
-        if (var_('sirt_ac')) await kilitli('sirt_ac'); // klip koltuğu kendisi çeker ve çevirir (kayma, tut, don)
+        if (var_('sirt_ac')) await kilitli('sirt_ac'); // klip koltuğu kendisi çeker (kayma, tut)
         else { // klip yoksa: durduğu yerde sırt açılır, koltuk oturma yerine kayıp döner (yer tutucu)
           koltuk.cevir = { x: koltuk.x, y: koltuk.y, rz: koltuk.rz };
           let t = 0;
@@ -903,7 +934,7 @@ export function karakterOlustur(g, { reduce = false, zorla = null } = {}) {
     mixer.update(dt);
     // Kök: zeminde konum ve yön; yükseklik açık kliplerin ağırlıklı ortalaması (masa klipleri kökü koltuk yüksekliğine
     // kaldırır, iniş kendi yüksekliğini verir). Koltuk bağlıysa koltuğu taşıyan kliplerin söylediği yerde
-    let zT = 0, zW = 0, iT = 0, kT = 0, kW = 0, sirtK = null, cevirK = null;
+    let zT = 0, zW = 0, iT = 0, kT = 0, kW = 0, sirtK = null, cevirK = null, yatT = 0;
     for (const [ad, a] of akt) {
       const w = a.oynadi && a.act.enabled ? a.act.getEffectiveWeight() : 0;
       if (w < 1e-3) continue;
@@ -912,6 +943,7 @@ export function karakterOlustur(g, { reduce = false, zorla = null } = {}) {
       zW += w;
       iT += w * (a.ofIleri ?? anahtar(m.ileri ?? 0, f)); // gövdenin köke göre ileri kayması (otur2'nin başı)
       if (m.koltuk !== undefined) { kT += w * (a.ofKoltuk ?? anahtar(m.koltuk, f)); kW += w; }
+      if (m.yatir) yatT += w * anahtar(m.yatir, f);
       if (m.inis && !a.indi && w > 0.5 && f >= m.inis) { a.indi = true; oturmaEtkisi(); } // kalça koltuğa indi
       if (ad === 'sirt_ac' && w > 0.5) { sirtK = anahtar(m.sirt ?? 0, f); cevirK = m.cevir ? aralik(f, m.cevir[0], m.cevir[1]) : 0; }
     }
@@ -964,9 +996,13 @@ export function karakterOlustur(g, { reduce = false, zorla = null } = {}) {
       koltuk.obj.position.y = koltuk.y;
       koltuk.obj.rotation.z = koltuk.rz;
       // Katlı: sırt öne yatık, piston inik (masanın altına sığar); açılınca sırt dikilir, oturak kalkar
-      if (koltuk.sirt) koltuk.sirt.rotation.x = AYAR.sirtDik + (koltuk.sirtKatli - AYAR.sirtDik) * koltuk.katlama;
+      // ... emote'ta sırt geriye yaslanır (katlıyken değil)
+      const yat = Math.min(AYAR.yatirEnCok, yatT) * (1 - koltuk.katlama);
+      if (koltuk.sirt) koltuk.sirt.rotation.x = AYAR.sirtDik + (koltuk.sirtKatli - AYAR.sirtDik) * koltuk.katlama + yat;
       if (koltuk.ust) koltuk.ust.position.z = koltuk.ust0 * koltuk.katlama;
-      if (etki) oturmaEtkisiUygula();
+      const sw = etki ? oturmaEtkisiUygula() : 0;
+      salinimHesapla(dt);
+      oturakDondur(sw + salin.a);
     }
     kafaCevir(dt);
   }
@@ -1190,6 +1226,6 @@ export function karakterOlustur(g, { reduce = false, zorla = null } = {}) {
     yukari() { if (reduce) { nesil++; ben.gorunur = false; ben.yer = 'ust'; return; } yonet('yukari'); },
     masayaKoy,
     get durum() { return { yer: ben.yer, x: Math.round(ben.x), y: Math.round(ben.y), psi: +ben.psi.toFixed(2), arac: ben.arac, klip: simdiki?.clip.name ?? null, koltuk: { katlama: koltuk.katlama, bagli: koltuk.bagli } }; },
-    debug: { ben, koltuk, M, akt, oturAd, engeller, serbest: (a, b, E = engeller()) => serbest(a, b, E, AYAR.pay), yolBul: (a, b) => yolBul(a, b, engeller()), kenarDuraklari, XR, update },
+    debug: { ben, koltuk, M, akt, oturAd, engeller, serbest: (a, b, E = engeller()) => serbest(a, b, E, AYAR.pay), yolBul: (a, b, E = engeller()) => yolBul(a, b, E), kenarDuraklari, XR, update },
   };
 }
