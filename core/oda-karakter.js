@@ -23,7 +23,7 @@ const MASA_Z = 335; // masa başı kliplerinde kök yüksekliği (Blender eşlem
 
 // ---- Ayarlanabilir değerler ----
 export const AYAR = {
-  tempo: 1.1,            // karakterin bütün zamanı (klipler, yürüyüş, kayma, iniş) bu kat hızlı akar: ayak kaymaz (2026-10-19)
+  tempo: 1.15,           // karakterin bütün zamanı (klipler, yürüyüş, kayma, iniş) bu kat hızlı akar: ayak kaymaz (2026-10-20)
   fareDelik: ['kartvizit', 'kalemlik', 'klavye'], // genel planda fare bu ürünlerin üzerindeyse imleç dairesi karakteri siler
   fareCap: 125,          // mm: imleç dairesinin çapı (ürünün uzaklığında)
   minderEz: 0.13,        // oturuşta minder bu oranda ezilip yaylanarak toparlanır
@@ -32,18 +32,20 @@ export const AYAR = {
   donus: 3.2,            // rad/sn: yürürken en hızlı dönüş
   donusYerinde: 2.6,     // rad/sn: durduğu yerde dönüş
   hizKaydir: 330,        // mm/sn: koltukla kayma
-  donusKaydir: 1.5,      // rad/sn
+  donusKaydir: 2.5,      // rad/sn
   pay: 160,              // yürürken engellerden pay (gövde yarıçapı; balkonda cephe ile bistro masa arası ~385 mm)
-  gizliZ: 3400,          // iniş bu kalça yüksekliğinden başlar (üst kat: pencereden görünmez)
-  hizliIn: 2.4,          // görünmeyen yükseklikte iniş/çıkış bu kat hızlı
-  gorunurZ: [1700, 2700],// kalça bu aralıkta normal hızdan hızlıya geçer
+  gizliZ: 3000,          // iniş bu kalça yüksekliğinden başlar (üst kat: pencereden görünmez)
+  hizliIn: 3.5,          // görünmeyen yükseklikte iniş/çıkış bu kat hızlı
+  gorunurZ: [1100, 1900],// kalça bu aralıkta normal hızdan hızlıya geçer (açılıştan klavyeye ~50 → 30'lu sn, 2026-10-20)
   yakin: [850, 560],     // kamera karaktere bu uzaklıktan (mm) yaklaşınca seyrelir, ikincisinde tamamen kaybolur
   kenarYakin: 1250,      // kenara çekilmeyi gerektiren yakın planın kamerasına bu kadar yaklaşınca koltuk çekilir
   kenarOnce: 2.5,        // ya da kamera o durağa bu kadar saniyede varacak hızla yaklaşıyorsa (tıklamayla uçuş)
   kenarPay: 0.85,        // ... ve genel plandaki uzaklığının bu katından yakındaysa
-  kenarHiz: 2.2,         // kenara kaçarken koltuk bu kat hızlı kayar (dönüşte normal)
+  kenarHiz: 3.0,         // kenara kaçarken koltuk bu kat hızlı kayar (dönüşte normal)
   kenarBekle: 1.2,       // gerek kalmayınca masaya dönmeden önce, sn
-  dansBekle: [0.6, 1.0], // eşikte dans öncesi ve sonrası duruş, sn
+  dansBekle: [0.3, 0.4], // eşikte dans öncesi ve sonrası duruş, sn
+  dansSure: 4.5,         // dans en fazla bu kadar sürer (karakter saniyesi; uzun dans yarıda yumuşakça biter)
+  oturHiz: 1.25,         // uzun oturma klibi (Koltuğa Oturma) bu kat hızlı
   bosta: [9, 18],        // masada iki emote arası, sn (rastgele)
   tepkiAra: 12,          // iki tepki arası en az, sn
   sablonTepki: 0.3,      // şablon değişince tepki olasılığı
@@ -104,7 +106,7 @@ const YER = {
 };
 // Yol düğümleri: balkon (merdiven önü, cephe ile bistro masa arasındaki geçit, kapı önü), eşik, odanın açık zemini
 const DUGUM = [
-  [1780, 3085], [1775, 2300], [1500, 2165], [1150, 2160], [800, 2160], [800, 1560], [450, 1260], [120, 1040], [80, 1380],
+  [1780, 3150], [1775, 2260], [1500, 2165], [1150, 2160], [800, 2160], [800, 1560], [450, 1260], [120, 1040], [80, 1380],
   [120, 620], [-200, 380], [-650, 420], [-1150, 560], [600, 520], [1000, 300],
 ];
 // Engeller: k = kutu [x0, x1, y0, y1], d = daire [x, y, r]. Koltuk ayrıca (yerinde duruyorsa) daire olarak eklenir.
@@ -216,7 +218,7 @@ export function yolBul(bas, son, E, pay = AYAR.pay) {
       if (d < uz[v] && serbest(N[u], N[v], E, pay)) { uz[v] = d; once[v] = u; }
     }
   }
-  if (once[n - 1] < 0) return [son]; // yol yok: düz git (engel yanlış tanımlı olabilir; takılıp kalmasın)
+  if (once[n - 1] < 0) { console.warn('karakter: yol bulunamadı, düz gidiyor', bas, son); return [son]; } // takılıp kalmasın
   const yol = [];
   for (let i = n - 1; i > 0; i = once[i]) yol.unshift(N[i]);
   // Kestirme: görebildiği en uzak noktaya doğrudan
@@ -461,6 +463,7 @@ export function karakterOlustur(g, { reduce = false, zorla = null } = {}) {
       if (d && !d()) return 'iptal';
       t += dt;
       if (dongu) return t >= sure ? 'tamam' : null;
+      if (sure && t >= sure) return 'tamam'; // döngüsüz klip yarıda biter (dans)
       return act.paused || act.time >= a.clip.duration - 1e-4 ? 'tamam' : null;
     }).then((r) => r === 'tamam');
   }
@@ -472,7 +475,7 @@ export function karakterOlustur(g, { reduce = false, zorla = null } = {}) {
     return koltuk.bagli || !koltuk.obj ? SABIT_ENGEL : [...SABIT_ENGEL, { d: [koltuk.x, koltuk.y, 300] }];
   }
   async function yuru(hedef, d, { son = 'dur' } = {}) {
-    const yol = yolBul({ x: ben.x, y: ben.y }, hedef, engeller());
+    const E = engeller(), yol = yolBul({ x: ben.x, y: ben.y }, hedef, E);
     await oynat('yuru', { solma: 0.3 });
     const a = akt.get('yuru');
     let i = 0, t = 0;
@@ -480,7 +483,8 @@ export function karakterOlustur(g, { reduce = false, zorla = null } = {}) {
       if (!d()) return 'iptal';
       t += dt;
       const p = yol[i], dx = p.x - ben.x, dy = p.y - ben.y, uz = Math.hypot(dx, dy), sonNokta = i === yol.length - 1;
-      if (!sonNokta && uz < 160) { i++; return null; }
+      // Düğüme varmadan sonrakine dönmek köşeyi keser: yalnız oradan sonraki düğüme yol açıksa (balkondaki dar geçit)
+      if (!sonNokta && (uz < 40 || (uz < 160 && serbest(ben, yol[i + 1], E, AYAR.pay)))) { i++; return null; }
       if (sonNokta && uz < 25) {
         ben.x = p.x; ben.y = p.y;
         if (hedef.psi === undefined) return 'tamam';
@@ -688,7 +692,7 @@ export function karakterOlustur(g, { reduce = false, zorla = null } = {}) {
         ben.dansBorcu = false;
         if (varolan.length) {
           bakis = 'kamera';
-          const ok = await oynat(tekrarsiz('dans', varolan), { solma: 0.4 }, d);
+          const ok = await oynat(tekrarsiz('dans', varolan), { solma: 0.4, sure: AYAR.dansSure }, d);
           bakis = null;
           if (!ok) return;
           await oynat('dur', { tekrar: true, solma: 0.45 });
@@ -712,7 +716,7 @@ export function karakterOlustur(g, { reduce = false, zorla = null } = {}) {
       }
       if (koltuk.obj) {
         if (!(await yuru(oturmaYeri(), d))) return;
-        await kilitli(oturAd, { solma: 0.3, onBasla: () => { koltuk.bagli = true; ben.yer = 'koltuk'; } });
+        await kilitli(oturAd, { solma: 0.3, hiz: oturAd === 'otur' ? AYAR.oturHiz : 1, onBasla: () => { koltuk.bagli = true; ben.yer = 'koltuk'; } });
         govdeyiKokeAktar(oturAd);
         if (!d()) return;
       }
@@ -739,6 +743,8 @@ export function karakterOlustur(g, { reduce = false, zorla = null } = {}) {
   async function masaDongusu(d) {
     await oynat('yaz', { solma: 0.5 });
     let sonraki = saat + rastgele(AYAR.bosta);
+    // Emote ve tepki kenar gereğinde yarıda kesilir (yoksa tıklayınca karakter 10 sn'yi aşan klibi bitirmeden kaçmıyordu)
+    const dk = () => d() && !kenarGerek();
     while (d()) {
       if (kenarGerek()) {
         if (!(await kenaraCekil(d))) return;
@@ -747,7 +753,7 @@ export function karakterOlustur(g, { reduce = false, zorla = null } = {}) {
         continue;
       }
       const tp = tepkiler.shift();
-      if (tp) { if (!(await dizi([tp], d))) return; await oynat('yaz', { solma: 0.5 }); sonraki = saat + rastgele(AYAR.bosta); continue; }
+      if (tp) { if (!(await dizi([tp], dk))) { if (!d()) return; continue; } await oynat('yaz', { solma: 0.5 }); sonraki = saat + rastgele(AYAR.bosta); continue; }
       if (saat >= sonraki) {
         // Ağırlıklı rastgele emote; bir önceki emote art arda gelmez
         const havuz = EMOTE.length > 1 ? EMOTE.filter(([, s]) => s !== sonEmote) : EMOTE;
@@ -755,7 +761,7 @@ export function karakterOlustur(g, { reduce = false, zorla = null } = {}) {
         let r = Math.random() * top, sec = havuz[0][1];
         for (const [w, s] of havuz) { if ((r -= w) < 0) { sec = s; break; } }
         sonEmote = sec;
-        if (!(await dizi(sec, d))) return;
+        if (!(await dizi(sec, dk))) { if (!d()) return; continue; }
         await oynat('yaz', { solma: 0.5 });
         sonraki = saat + rastgele(AYAR.bosta);
         continue;
