@@ -81,6 +81,8 @@ ziyaretçi "Hazır" der, fiyat ve "Sipariş ver" o zaman çıkar; tasarım deği
 Puzzle Maker aracı açıldı (tools/puzzle): fotoğraflı düz yapboz (aile fotoğrafı ya da manzara örneği, kendi fotoğrafı
 yalnız önizlemede, sipariş mesajı fotoğrafın ayrıca gönderileceğini yazar; çerçeveli tabla isteğe bağlı) ve 3B şekil
 yapboz (küre, küp, yumurta, kalp; renkli parçalar). Odadaki yapboz çerçevesi 'picture' şablonuyla araçta açılır.
+2026-10-20: şablonun ve duvardaki yapbozun resmi CC0 bir cüce savaşçı çizimi (Wikimedia Commons, LadyofHats; 4:3
+kırpılıp sıcak çift tona çevrildi, kayıt KAYNAKLAR.md); örnek resimle sipariş verilebilir, aile fotoğrafı araçta seçenek.
 Filament Painter aracı açıldı (tools/painter): fotoğraf ya da örnek manzara → katmanlı rölyef (çerçeveli tablo, pencere
 ışıklığı, A6 kartpostal); beş palet, dört filament rengi, renk değişim yükseklikleri bilgi satırında ve sipariş
 mesajında; katı bir kez kurulup değişim yüksekliklerinden dört renk gövdesine bölünür (csg.scopeMany). Odadaki rölyef

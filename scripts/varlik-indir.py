@@ -95,9 +95,9 @@ def main():
                  'Bu dosya `scripts/varlik-indir.py` ile yazılır, elle düzenleme.\n\n'
                  '| Ham dosya | Kaynak | Yazar | Kullanım |\n|---|---|---|---|\n')
         fh.write('\n'.join(satirlar) + '\n')
-        diger = tum.get('diger', [])  # Poly Haven dışı (CC0 değil): elle indirilir, burada yalnız kaydı yazılır
+        diger = tum.get('diger', [])  # Poly Haven dışı (lisansı satırında): elle indirilir, burada yalnız kaydı yazılır
         if diger:
-            fh.write('\n## Diğer kaynaklar (CC0 değil)\n\n| Dosya | Kaynak | Yazar | Lisans | Kullanım |\n|---|---|---|---|---|\n')
+            fh.write('\n## Diğer kaynaklar (Poly Haven dışı; lisans her satırda)\n\n| Dosya | Kaynak | Yazar | Lisans | Kullanım |\n|---|---|---|---|---|\n')
             fh.write('\n'.join(f"| `{v['dosya']}` | {v['kaynak']} | {v['yazar']} | {v['lisans']} | {v['not']} |" for v in diger) + '\n')
     print('yazıldı:', os.path.relpath(KAYNAKLAR, ROOT))
 

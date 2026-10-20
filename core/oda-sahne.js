@@ -15,7 +15,7 @@ import { OLCU, toSun } from './oda-olcu.js';
 
 const TAU = Math.PI * 2;
 const { ROOM, GLASS, BALCONY, DESK, SILL, SHELF, PEDESTAL, FRIDGE } = OLCU; // GLASS: pencere | kapı | pencere
-const FRAME = { w: 680, h: 520 };      // sağ duvarda, buzdolabının üstünde aile fotoğrafı yapbozu
+const FRAME = { w: 680, h: 520 };      // sağ duvarda, buzdolabının üstünde cüce savaşçı yapbozu
 const FRAME_K = { w: 512, h: 400 };    // sol duvarda rölyef çerçevesi (önceki 320 × 250'nin 1,6 katı)
 const yieldMain = () => globalThis.scheduler?.yield?.() ?? new Promise((r) => setTimeout(r, 0));
 export const options = { pilot: false }; // sayfa sahne kurulmadan önce açar

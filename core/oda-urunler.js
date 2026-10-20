@@ -98,7 +98,7 @@ export const TEMPLATES = {
   buzdolabi: [T('iyi', { tr: '"İyi ki doğdun"', en: '"Happy birthday"' }, 'iyi'), T('mutlu', { tr: '"Mutlu yıllar"', en: '"Happy new year"' }, 'mutlu')],
   flip: ['family', 'us', 'sea'].map((id) => T(id, storyName('flip', id), id)), // Text Flip aracının şablonları
   cerceve: [T('mountain', { tr: 'Gün batımı', en: 'Sunset' }, 'mountain'), T('sea', { tr: 'Deniz', en: 'Sea' }, 'sea'), T('lake', { tr: 'Göl', en: 'Lake' }, 'lake')], // Filament Painter şablonları
-  yapboz: [T('picture', { tr: 'Aile fotoğrafı yapboz', en: 'Family photo puzzle' }, 'picture')], // Puzzle aracının şablonu
+  yapboz: [T('picture', { tr: 'Cüce savaşçı yapboz', en: 'Dwarf warrior puzzle' }, 'picture')], // Puzzle aracının şablonu
 };
 
 // Ölçü farkı olan şablonun araçta birebir açılması için tam durum (mode + şablon değerleri + fark); yoksa null.
@@ -599,8 +599,8 @@ export async function buildTemplate(zone, id, { lang = 'tr', saksi = {}, pasta =
       return g;
     }
     case 'yapboz': {
-      // Aile fotoğrafı (Unsplash, Land O'Lakes, Inc.; kayıt assets/oda/KAYNAKLAR.md)
-      const g = await picturePuzzle({ resim: new URL('../assets/oda/yapboz-aile.webp', import.meta.url).href });
+      // Cüce savaşçı çizimi (CC0, Wikimedia Commons, LadyofHats; kayıt assets/oda/KAYNAKLAR.md)
+      const g = await picturePuzzle({ resim: new URL('../assets/oda/yapboz-cuce.webp', import.meta.url).href });
       g.rotation.x = Math.PI / 2; // resim yüzü −y'ye
       return g;
     }

@@ -27,11 +27,12 @@ Ham dosyalar `kaynak/` altında durur (depoya girmez); sitede yalnız sıkışt�
 | `kaynak/food_kiwi_01/` (model, 1k) | https://polyhaven.com/a/food_kiwi_01 | Oliver Harries | Buzdolabında kivi |
 | `kaynak/food_pomegranate_01/` (model, 1k) | https://polyhaven.com/a/food_pomegranate_01 | Oliver Harries | Buzdolabında nar |
 
-## Diğer kaynaklar (CC0 değil)
+## Diğer kaynaklar (Poly Haven dışı; lisans her satırda)
 
 | Dosya | Kaynak | Yazar | Lisans | Kullanım |
 |---|---|---|---|---|
-| `assets/oda/yapboz-aile.webp` | https://unsplash.com/photos/family-posing-in-a-lush-garden-setting-p6wuN_3Wwqs | Land O'Lakes, Inc. (Unsplash) | Unsplash License (https://unsplash.com/license): ticari kullanım serbest, kaynak belirtmek zorunlu değil; model izni garanti edilmez | Duvardaki resimli yapbozun fotoğrafı (1040 × 780, WebP) |
+| `assets/oda/yapboz-cuce.webp` | https://commons.wikimedia.org/wiki/File:DnD_Dwarf.png | LadyofHats (Wikimedia Commons, kendi eseri, 2016) | CC0 1.0 (https://creativecommons.org/publicdomain/zero/1.0/): yazar kamu malına bağışladı; ticari kullanım ve değiştirme serbest | Puzzle aracının resimli yapboz şablonu (Cüce savaşçı) ve odadaki duvar yapbozu: 4:3 kırpıldı, sıcak çift tona çevrildi (1040 × 780, WebP; 2026-10-20) |
+| `assets/oda/yapboz-aile.webp` | https://unsplash.com/photos/family-posing-in-a-lush-garden-setting-p6wuN_3Wwqs | Land O'Lakes, Inc. (Unsplash) | Unsplash License (https://unsplash.com/license): ticari kullanım serbest, kaynak belirtmek zorunlu değil; model izni garanti edilmez | Puzzle aracında Aile örnek resmi (1040 × 780, WebP; 2026-10-20'ye kadar duvardaki yapbozun fotoğrafıydı) |
 | `assets/oda/anahtarlik-charizard.webp` | https://oktosworkshop.com/charizard-anahtarlik-canta-takisi-pokemon | Kart görseli: kullanıcının verdiği kart taraması (2026-10-20); kart sanatı © Nintendo / Creatures / GAME FREAK | Mağazadaki ürünün yüzünü göstermek için kullanıcı kararıyla; lisanslı kart sanatı (proje kuralında kırmızı listede, kullanıcı bilgilendirildi) | Anahtar tepsisindeki kart anahtarlığın yüzü (600 × 838, WebP) |
 | `assets/oda/anahtarlik-black-lotus.webp` | https://oktosworkshop.com/black-lotus-anahtarlik-canta-takisi-magic-thr-gathering | Oktos Workshop (kendi ürün fotoğrafı) | Oktos'un kendi fotoğrafı; kartın baskısındaki görsel hak sahibine aittir (ürün mağazada satılan haliyle gösterilir, kullanıcı kararı 2026-10-19) | Anahtar tepsisindeki kart anahtarlığın yüzü (ürün fotoğrafından perspektifi düzeltilip kırpıldı, 360 × 503, WebP) |
 | `assets/oda/anahtarlik-venusaur.webp` | https://oktosworkshop.com/venasaur-anahtarlik-canta-takisi-pokemon | Kart görseli: kullanıcının verdiği kart taraması (2026-10-20); kart sanatı © Nintendo / Creatures / GAME FREAK | Mağazadaki ürünün yüzünü göstermek için kullanıcı kararıyla; lisanslı kart sanatı (proje kuralında kırmızı listede, kullanıcı bilgilendirildi) | Anahtar tepsisindeki kart anahtarlığın yüzü (600 × 838, WebP) |

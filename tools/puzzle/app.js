@@ -17,7 +17,7 @@ const strings = {
     'mode.duz': 'Fotoğraf yapboz', 'mode.sekil': '3B şekil yapboz',
     'sec.resim': 'Fotoğraf', 'sec.olcu': 'Ölçü ve parçalar', 'sec.sekil': 'Şekil ve parçalar', 'sec.print': 'Baskı', 'sec.view': 'Görünüm',
     'p.dosya': 'Kendi fotoğrafını seç', 'p.dosya.h': 'Önizleme içindir; siparişte fotoğrafı ayrıca gönderirsin.',
-    'p.resim': 'Örnek resim', 'rs.aile': 'Aile', 'rs.manzara': 'Manzara', 'rs.yok': 'Resimsiz',
+    'p.resim': 'Örnek resim', 'rs.cuce': 'Cüce savaşçı', 'rs.aile': 'Aile', 'rs.manzara': 'Manzara', 'rs.yok': 'Resimsiz',
     'p.genislik': 'Genişlik', 'p.oran': 'Oran', 'or.foto': 'Fotoğraf',
     'p.sutun': 'Sütun', 'p.satir': 'Satır', 'p.cerceve': 'Çerçeveli tabla', 'p.cerceve.h': 'Parçalar bir tablaya oturur, duvara asılır',
     'p.sekil': 'Şekil', 'sk.sphere': 'Küre', 'sk.cube': 'Küp', 'sk.egg': 'Yumurta', 'sk.heart': 'Kalp',
@@ -32,7 +32,8 @@ const strings = {
     'n.sekil': '3B şekilde parçalar desteğe ihtiyaç duyabilir; atölye baskı yönünü ayarlar.',
     'order.foto': 'Fotoğraf: {ad} (mesajla ayrıca göndereceğim)',
     'order.fotoOrnek': 'Fotoğraf: kendi fotoğrafımı mesajla göndereceğim',
-    'pr.picture': 'Aile fotoğrafı', 'pr.relief': 'Manzara', 'pr.sphere': 'Küre', 'pr.cube': 'Küp', 'pr.egg': 'Yumurta', 'pr.heart': 'Kalp',
+    'order.cuce': 'Resim: örnek cüce savaşçı çizimi',
+    'pr.picture': 'Cüce savaşçı', 'pr.relief': 'Manzara', 'pr.sphere': 'Küre', 'pr.cube': 'Küp', 'pr.egg': 'Yumurta', 'pr.heart': 'Kalp',
   },
   en: {
     'puzzle.title': 'Puzzle Maker',
@@ -40,7 +41,7 @@ const strings = {
     'mode.duz': 'Photo puzzle', 'mode.sekil': '3D shape puzzle',
     'sec.resim': 'Photo', 'sec.olcu': 'Size and pieces', 'sec.sekil': 'Shape and pieces', 'sec.print': 'Print', 'sec.view': 'View',
     'p.dosya': 'Choose your photo', 'p.dosya.h': 'For the preview only; you send the photo with your order.',
-    'p.resim': 'Example picture', 'rs.aile': 'Family', 'rs.manzara': 'Landscape', 'rs.yok': 'No picture',
+    'p.resim': 'Example picture', 'rs.cuce': 'Dwarf warrior', 'rs.aile': 'Family', 'rs.manzara': 'Landscape', 'rs.yok': 'No picture',
     'p.genislik': 'Width', 'p.oran': 'Ratio', 'or.foto': 'Photo',
     'p.sutun': 'Columns', 'p.satir': 'Rows', 'p.cerceve': 'Framed tray', 'p.cerceve.h': 'Pieces sit in a tray that hangs on the wall',
     'p.sekil': 'Shape', 'sk.sphere': 'Sphere', 'sk.cube': 'Cube', 'sk.egg': 'Egg', 'sk.heart': 'Heart',
@@ -55,7 +56,8 @@ const strings = {
     'n.sekil': '3D shape pieces may need supports; the workshop sets the print orientation.',
     'order.foto': 'Photo: {ad} (I will send it separately)',
     'order.fotoOrnek': 'Photo: I will send my own photo separately',
-    'pr.picture': 'Family photo', 'pr.relief': 'Landscape', 'pr.sphere': 'Sphere', 'pr.cube': 'Cube', 'pr.egg': 'Egg', 'pr.heart': 'Heart',
+    'order.cuce': 'Picture: the example dwarf warrior drawing',
+    'pr.picture': 'Dwarf warrior', 'pr.relief': 'Landscape', 'pr.sphere': 'Sphere', 'pr.cube': 'Cube', 'pr.egg': 'Egg', 'pr.heart': 'Heart',
   },
 };
 
@@ -64,9 +66,10 @@ const COLORS = [
   ['#3f6fb0', 'col.blue'], ['#2b3036', 'col.ink'], ['#c9b596', 'col.sand'], ['#dcc2a2', 'col.wood'], ['#b38e64', 'col.walnut'],
 ];
 
-// Resimler: örnekler init'te, yüklenen dosya seçilince (yalnız bu sekmede; bağlantıyla taşınmaz)
-const RESIM = { aile: null, manzara: null, yukle: null };
-const ORAN = { aile: 1040 / 780, manzara: 1.5, yukle: 4 / 3 };
+// Resimler: örnekler init'te, yüklenen dosya seçilince (yalnız bu sekmede; bağlantıyla taşınmaz). Cüce savaşçı:
+// CC0 çizim (Wikimedia Commons, LadyofHats; kayıt assets/oda/KAYNAKLAR.md), örnek resimle sipariş verilebilir
+const RESIM = { cuce: null, aile: null, manzara: null, yukle: null };
+const ORAN = { cuce: 1040 / 780, aile: 1040 / 780, manzara: 1.5, yukle: 4 / 3 };
 function dokuYap(kaynak) {
   const tex = kaynak instanceof HTMLCanvasElement ? new THREE.CanvasTexture(kaynak) : new THREE.Texture(kaynak);
   tex.colorSpace = THREE.SRGBColorSpace;
@@ -121,7 +124,7 @@ async function dosyaOku(file, s) {
 }
 
 const defaults = {
-  mode: 'duz', resim: 'aile', fotoAd: '', genislik: 240, oran: 'foto', yukseklik: 180, sutun: 4, satir: 3, cerceve: true,
+  mode: 'duz', resim: 'cuce', fotoAd: '', genislik: 240, oran: 'foto', yukseklik: 180, sutun: 4, satir: 3, cerceve: true,
   kalinlik: 4, bosluk: 0.4, sekil: 'sphere', boy: 90, renkli: true,
   color: '#ece9e2', cerceveRenk: '#b38e64', printer: 'p1s', edges: false,
 };
@@ -129,7 +132,7 @@ const defaults = {
 // Kabuk şablonun color'ını ana renge yazar: values.color ile aynı
 const P = (mode, id, values) => ({ id, mode, label: 'pr.' + id, color: values.color, values });
 const presets = [
-  P('duz', 'picture', { resim: 'aile', genislik: 240, oran: 'foto', sutun: 4, satir: 3, cerceve: true, color: '#ece9e2', cerceveRenk: '#b38e64' }),
+  P('duz', 'picture', { resim: 'cuce', genislik: 240, oran: 'foto', sutun: 4, satir: 3, cerceve: true, color: '#ece9e2', cerceveRenk: '#b38e64' }),
   P('duz', 'relief', { resim: 'manzara', genislik: 240, oran: 'foto', sutun: 4, satir: 3, cerceve: false, color: '#ece9e2' }),
   // 3B şekiller dolu basılır (ağırlık ve fiyat buna göre): varsayılan boylar masa üstü ölçüsünde
   P('sekil', 'sphere', { sekil: 'sphere', boy: 90, sutun: 3, satir: 3, renkli: true, color: '#d4621f' }),
@@ -145,7 +148,7 @@ function schema() {
   return [
     { type: 'section', label: 'sec.resim', show: isDuz },
     { type: 'file', key: 'resim', label: 'p.dosya', hint: 'p.dosya.h', onFile: dosyaOku, show: isDuz },
-    { type: 'segmented', key: 'resim', label: 'p.resim', options: [['aile', 'rs.aile'], ['manzara', 'rs.manzara'], ['yok', 'rs.yok']], show: isDuz },
+    { type: 'segmented', key: 'resim', label: 'p.resim', options: [['cuce', 'rs.cuce'], ['aile', 'rs.aile'], ['manzara', 'rs.manzara'], ['yok', 'rs.yok']], show: isDuz },
 
     { type: 'section', label: 'sec.olcu', show: isDuz },
     { type: 'range', key: 'genislik', label: 'p.genislik', min: 80, max: 400, step: 5, unit: 'mm', show: isDuz },
@@ -180,7 +183,7 @@ function enforce(s) {
   const T = (k, v) => notes.push({ k, v });
   if (s.mode !== 'sekil') s.mode = 'duz';
   if (isDuz(s)) {
-    if (s.resim === 'yukle' && !RESIM.yukle) { s.resim = 'aile'; T('n.foto'); }
+    if (s.resim === 'yukle' && !RESIM.yukle) { s.resim = 'cuce'; T('n.foto'); }
     const oran = s.oran === 'foto' ? (ORAN[s.resim] ?? 4 / 3) : ({ '4:3': 4 / 3, '3:2': 1.5, '1:1': 1, '3:4': 0.75 }[s.oran] ?? 4 / 3);
     s.yukseklik = Math.round(s.genislik / oran);
     const d = Math.min(s.genislik / s.sutun, s.yukseklik / s.satir);
@@ -209,15 +212,19 @@ function build(s) {
 }
 
 const fileName = (s) => `oktos_yapboz_${s.mode === 'duz' ? 'foto' : s.sekil}_${s.sutun}x${s.satir}`;
-const orderLines = (s) => (isDuz(s) && s.resim !== 'yok' ? [s.resim === 'yukle' ? t('order.foto', { ad: s.fotoAd }) : t('order.fotoOrnek')] : []);
+const orderLines = (s) => (isDuz(s) && s.resim !== 'yok'
+  ? [s.resim === 'yukle' ? t('order.foto', { ad: s.fotoAd }) : s.resim === 'cuce' ? t('order.cuce') : t('order.fotoOrnek')] : []);
 
 export const TOOL = {
   id: 'puzzle', strings, defaults, presets, schema, build, fileName, enforce, orderLines,
   modes: [['duz', 'mode.duz'], ['sekil', 'mode.sekil']],
   async init() {
     RESIM.manzara ||= dokuYap(manzaraResmi());
-    // Örnek aile fotoğrafı gelmezse araç yine açılır (resimsiz önizleme)
-    try { RESIM.aile ||= dokuYap(await resimYukle(new URL('../../assets/oda/yapboz-aile.webp', import.meta.url).href)); } catch (e) { console.warn(e); }
+    // Örnek resimler gelmezse araç yine açılır (resimsiz önizleme)
+    const yukle = async (ad, dosya) => {
+      try { RESIM[ad] ||= dokuYap(await resimYukle(new URL(`../../assets/oda/${dosya}`, import.meta.url).href)); } catch (e) { console.warn(e); }
+    };
+    await Promise.all([yukle('cuce', 'yapboz-cuce.webp'), yukle('aile', 'yapboz-aile.webp')]);
   },
 };
 
