@@ -28,7 +28,7 @@ KLIP = {'merdiven': 'Merdivenden İnme', 'ip': 'İpten İnme', 'yuru': 'Yürüme
         'otur': 'Koltuğa Oturma', 'otur2': 'Oturmaya Geçiş', 'kalk': 'Koltuktan Kalkma', 'uzan': 'Klavyeye Uzanma', 'cekil': 'Klavyeden Yaslanma',
         'yaz': 'Klavye Tuşlama', 'kafa_salla': 'Tuşlarken Müziğe Kafa Sallama', 'muzik': 'Taburede Müzik Dinleme',
         'sevin': 'Bilgisayar Başında Sevinme', 'inanamama': 'Ekrana İnanamama', 'bekle': 'Masada Bekleme'}
-# Sonradan eklenecek klipler: dosyada varsa alınır (yoksa core/oda-karakter.js yer tutucuyla oynar)
+# Sonradan eklenecek klipler: dosyada varsa alınır (sırt açma yoksa core/oda-karakter.js koltuğu çekilmiş yerine koyar)
 EK = {'sirt_ac': 'Sırt Açma', 'kaydir': 'Koltukla Kayma'}
 for k, a in EK.items():
     if bpy.data.actions.get('Hareket - ' + a):

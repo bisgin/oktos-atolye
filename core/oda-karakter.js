@@ -24,11 +24,11 @@ const MASA_Z = 335; // masa başı kliplerinde kök yüksekliği (Blender eşlem
 // ---- Ayarlanabilir değerler ----
 export const AYAR = {
   tempo: 1.15,           // karakterin bütün zamanı (klipler, yürüyüş, kayma, iniş) bu kat hızlı akar: ayak kaymaz (2026-10-20)
-  fareDelik: ['kartvizit', 'kalemlik', 'klavye'], // genel planda fare bu ürünlerin üzerindeyse imleç dairesi karakteri siler
-  fareCap: 125,          // mm: imleç dairesinin çapı (ürünün uzaklığında)
-  // Üzerine gelince dönme: fare bu ürünlerin üzerinde biraz durunca karakter koltuğuyla birlikte döner (rad; + saat
-  // yönünün tersi, yukarıdan bakınca). Ürünü açan yön ve açı genel plan kamerasından ölçüldü
+  // Masadaki gizli ürünler (genel planda karakterin ardında kalanlar): fare bunların üzerindeyse imleç dairesi karakteri
+  // siler; biraz durursa karakter koltuğuyla birlikte o ürünü açan yana döner (rad; + saat yönünün tersi, yukarıdan
+  // bakınca). Ürünü açan yön ve açı genel plan kamerasından ölçüldü
   donDurak: { kalemlik: 0.6, kartvizit: 0.6, klavye: -0.75 },
+  fareCap: 125,          // mm: imleç dairesinin çapı (ürünün uzaklığında)
   donBekle: 0.15,        // sn: imleç bu kadar durunca döner (üstünden geçerken dönmesin)
   donBirak: 0.4,         // sn: imleç ürünlerden bu kadar uzak kalınca geri döner (ürünler arası geçişte sallanmasın)
   donYay: 7,             // rad/sn: dönüşün yayı (kritik sönümlü, ~0,6 sn'de oturur)
@@ -55,7 +55,7 @@ export const AYAR = {
   bosta: [9, 18],        // masada iki emote arası, sn (rastgele)
   tepkiAra: 12,          // iki tepki arası en az, sn
   sablonTepki: 0.3,      // şablon değişince tepki olasılığı
-  sirtDik: 0.14,         // koltuk sırtı açılınca menteşede bu kadar geriye yatık durur (rad; katlı hâli GLB'de −90°)
+  // (açık sırtın menteşedeki yatıklığı OLCU.CHAIR.sirtDik: Blender'ın sırt açma klibiyle ortak)
   yatirEnCok: 1.2,       // rad: emote'ta (inanamama) sırtın ek yaslanması en çok (oyuncu koltuğu; kafa sırttan taşmasın)
   salinim: 0.001,        // rad/mm: oturanın göğsü yana kaydıkça oturağın döndüğü açı (çok hafif)
   salinimEnCok: 0.05,    // rad
@@ -67,9 +67,10 @@ export const AYAR = {
 // Varsayılan klip bilgisi (kareler Blender'daki gibi 1'den; GLB'deki karakter_meta bunların üstüne yazar).
 // dongu/son: iniş klibinde döngü ve iniş bitişi; tekrar: döngülü klip; z: kökün yerden yüksekliği (mm, sabit ya da
 // [[kare, değer], ...]); koltuk: koltuk merkezinin kökün kaç mm arkasında olduğu; sirt: sırt katlılığı (1 katlı, 0 dik);
-// cevir: klip yokken koltuğun yer tutucuyla çevrildiği kare aralığı; kayma: kökün klip boyunca bakış yönünde yürüdüğü
-// mm (karakter yerinde canlanır, yerini site kaydırır); tut: koltuğun köke tutturulduğu kare aralığı; don: tutarken
-// koltuğun kendi ekseninde dönüşü (rad); kavrama: sırt açmaya koltuğun kaç mm arkasında başlanır.
+// kayma: kökün klip boyunca bakış yönünde yürüdüğü mm (karakter yerinde canlanır, yerini site kaydırır); tut: koltuğun
+// köke tutturulduğu kare aralığı; don: tutarken koltuğun kendi ekseninde dönüşü (rad); kavrama: sırt açmaya koltuğun
+// kaç mm arkasında başlanır. Sırt açmanın değerleri scripts/karakter-klipler.py SA ve KAVRAMA'dan gelir (GLB meta'sı);
+// buradakiler yalnız meta'sız dosya için. Koltuğun çekildiği yer bunlardan türetilir (cekilmisKoltuk).
 const MASA = { z: MASA_Z, koltuk: 33 };
 const VARSAYILAN = {
   fps: 30,
@@ -81,7 +82,7 @@ const VARSAYILAN = {
     ip: { dongu: [1, 73], son: [73, 252] },
     yuru: { tekrar: true }, dur: { tekrar: true },
     dans_twist: {}, dans_tavuk: {}, dans_lahana: {}, dans_runningman: {},
-    sirt_ac: { sirt: [[82, 1], [114, 0]], cevir: [10, 110] },
+    sirt_ac: { sirt: [[82, 1], [114, 0]], kayma: [[1, 0], [14, 100], [24, 100], [74, -550], [80, -550], [100, -710]], tut: [22, 78], kavrama: 600 },
     otur: { z: [[42, 0], [81, MASA_Z]], koltuk: [[1, 205], [145, 205], [161, 33]] },
     kalk: { z: [[1, MASA_Z], [30, MASA_Z], [72, 0]], koltuk: [[1, 33], [22, 205]] },
     kaydir: { tekrar: true, ...MASA },
@@ -114,17 +115,21 @@ const YER = {
   // kameralarının görüşü ve aralarındaki uçuşlar dışında (en yakın uçuş ~0,6 m); kenar yeri kadrajına giren bir
   // durakta (saksılar) karakter kenarda beklemez
   kenar: { x: 100, y: 1050, psi: 0.35 },
-  // Oturma yeri: koltuk masadan düz geri çekilir (sırt açma klibinin çekişi: katlı sırt kalkarken masaya değmesin),
-  // dönmez; karakter önüne geçip masaya bakarak oturur, sonra masaya kayar
-  koltuk: { x: CHAIR.x, y: CHAIR.y - 650, rz: CHAIR.rz },
 };
+// Oturma yeri: koltuk masadan düz geri çekilir (katlı sırt kalkarken masaya değmesin), dönmez; karakter önüne geçip
+// masaya bakarak oturur, sonra masaya kayar. Çekiş sırt açma klibinden: koltuğun köke tutturulduğu aralıkta (tut) kök
+// bakış yönünde ne kadar yürürse (kayma; geri yürüyüş eksi) koltuk o kadar gelir. Karakter koltuğa arkasından bakar
+function cekilmisKoltuk({ kayma, tut }) {
+  const cek = anahtar(kayma, tut[1]) - anahtar(kayma, tut[0]), [fx, fy] = yon(CHAIR.rz + Math.PI);
+  return { x: CHAIR.x + fx * cek, y: CHAIR.y + fy * cek, rz: CHAIR.rz };
+}
 // Yol düğümleri: balkon (merdiven önü, cephe ile bistro masa arasındaki geçit, kapı önü), eşik, odanın açık zemini
 const DUGUM = [
   [1780, 3150], [1775, 2260], [1500, 2165], [1150, 2160], [800, 2160], [800, 1560], [450, 1260], [120, 1040], [80, 1380],
   [120, 620], [-200, 380], [-650, 420], [-1150, 560], [600, 520], [1000, 300],
-  // Geri çekilmiş koltuğun sağından önüne (arkasından oturma yerine); koltuk dairesine (300 + pay) ~3 cm payla
-  [YER.koltuk.x + 550, YER.koltuk.y - 330], [YER.koltuk.x + 450, YER.koltuk.y + 270],
 ];
+// Geri çekilmiş koltuğun sağından önüne (arkasından oturma yerine); koltuk dairesine (300 + pay) ~3 cm payla
+const koltukDugumleri = (k) => [[k.x + 550, k.y - 330], [k.x + 450, k.y + 270]];
 // Engeller: k = kutu [x0, x1, y0, y1], d = daire [x, y, r]. Koltuk ayrıca (yerinde duruyorsa) daire olarak eklenir.
 const CEPHE = ROOM.y1 + ROOM.wall + 45; // duvarın dış yüzü ve önündeki açık sürgü kanatları
 const SABIT_ENGEL = [
@@ -218,9 +223,10 @@ function serbest(a, b, E, pay) {
   }
   return true;
 }
-export function yolBul(bas, son, E, pay = AYAR.pay) {
+// dugum: [[x, y], ...] (DUGUM ve karakterin koltuk düğümleri)
+export function yolBul(bas, son, E, dugum, pay = AYAR.pay) {
   if (serbest(bas, son, E, pay)) return [son];
-  const N = [bas, ...DUGUM.map(([x, y]) => ({ x, y })), son], n = N.length;
+  const N = [bas, ...dugum.map(([x, y]) => ({ x, y })), son], n = N.length;
   const uz = Array(n).fill(Infinity), once = Array(n).fill(-1), bitti = Array(n).fill(false);
   uz[0] = 0;
   for (;;) {
@@ -374,9 +380,7 @@ export function karakterOlustur(g, { reduce = false, zorla = null } = {}) {
   let ek = {};
   try { ek = JSON.parse(g.scene.userData?.karakter_meta ?? '{}'); } catch (_) { /* bozuk meta: varsayılan */ }
   const M = birlestir(VARSAYILAN, ek), fps = M.fps;
-  // Sırt açma klibinin koltuğu çektiği mesafe (tutulduğu aralıktaki kök kayması) YER.koltuk ile aynı olmalı
-  const sa = M.klip.sirt_ac, cekis = sa?.tut && sa.kayma ? anahtar(sa.kayma, sa.tut[0]) - anahtar(sa.kayma, sa.tut[1]) : null;
-  if (cekis !== null && Math.abs(cekis - (CHAIR.y - YER.koltuk.y)) > 5) console.warn('karakter: koltuk çekişi klip ile uyuşmuyor', cekis, CHAIR.y - YER.koltuk.y);
+  const koltukYeri = cekilmisKoltuk(M.klip.sirt_ac), dugum = [...DUGUM, ...koltukDugumleri(koltukYeri)];
   const kare2sn = (f) => (f - 1) / fps;
 
   // Düğüm ağacı: yer (zeminde konum, ψ) → govde (yükseklik) → model (metre → mm)
@@ -446,7 +450,7 @@ export function karakterOlustur(g, { reduce = false, zorla = null } = {}) {
 
   // ---- durum ----
   const ben = { x: 0, y: 0, psi: 0, yer: 'ust', arac: null, inis: null, dansBorcu: true, gorunur: false };
-  const koltuk = { obj: null, sirt: null, sirtKatli: -Math.PI / 2, ust: null, ust0: 0, katlama: 0, x: CHAIR.x, y: CHAIR.y, rz: CHAIR.rz, bagli: false, cevir: null, cevirK: null, minder: [], minderTaban: 0, minderBoy: 0 };
+  const koltuk = { obj: null, sirt: null, sirtKatli: -Math.PI / 2, ust: null, ust0: 0, katlama: 0, x: CHAIR.x, y: CHAIR.y, rz: CHAIR.rz, bagli: false, minder: [], minderTaban: 0, minderBoy: 0 };
   let story = null, sahne = null, saat = 0, nesil = 0, kilit = Promise.resolve(), simdiki = null;
   let bakis = null; // null | 'kamera' | 'urun': kafa o yana döner
   let tepkiler = [], sonTepki = -99, uzerinde = false;
@@ -500,7 +504,7 @@ export function karakterOlustur(g, { reduce = false, zorla = null } = {}) {
     return koltuk.bagli || !koltuk.obj ? SABIT_ENGEL : [...SABIT_ENGEL, { d: [koltuk.x, koltuk.y, 300] }];
   }
   async function yuru(hedef, d, { son = 'dur' } = {}) {
-    const E = engeller(), yol = yolBul({ x: ben.x, y: ben.y }, hedef, E);
+    const E = engeller(), yol = yolBul({ x: ben.x, y: ben.y }, hedef, E, dugum);
     await oynat('yuru', { solma: 0.3 });
     const a = akt.get('yuru');
     let i = 0, t = 0;
@@ -576,12 +580,12 @@ export function karakterOlustur(g, { reduce = false, zorla = null } = {}) {
     };
     return { ad, a, T, durum, H, tau: 0 };
   }
-  function araciGoster(ad, acik, hemen = false, d = null) { // merdiven / ip üst kattan kayarak iner, toplanırken yukarı çekilir
+  // Merdiven / ip üst kattan kayarak iner, toplanırken yukarı çekilir (hareket azaltmada inip çıkılmaz: hiç çağrılmaz)
+  function araciGoster(ad, acik, d = null) {
     const o = arac[ad];
     if (!o) return Promise.resolve();
     o.visible = true;
     const hedef = acik ? 0 : 2600, z0 = o.position.z;
-    if (hemen || reduce) { o.position.z = hedef; o.visible = acik; return Promise.resolve(); }
     let t = 0;
     return kare((dt) => {
       if (d && !d()) return 'iptal'; // yeni görev aracı yeniden indiriyor: toplama yarıda kalır
@@ -648,7 +652,7 @@ export function karakterOlustur(g, { reduce = false, zorla = null } = {}) {
     ben.yer = 'ust';
     ben.gorunur = false;
     ben.dansBorcu = true;
-    await araciGoster(ben.arac, false, false, d);
+    await araciGoster(ben.arac, false, d);
     if (!d()) return false; // toplanırken geri inmesi istendi: araç ve aracın adı yeni inişin
     ben.arac = null;
     return true;
@@ -657,11 +661,11 @@ export function karakterOlustur(g, { reduce = false, zorla = null } = {}) {
   // ---- koltuk ----
   const koltukYuz = () => koltuk.rz + Math.PI;           // koltuğa oturanın ψ'si (koltuğun önü yerel +y)
   function kavrama() { // katlı koltuğun arkasında, ona bakarak (masaya itilmiş koltuğu kendine çeker)
-    const psi = koltukYuz(), [fx, fy] = yon(psi), g = M.klip.sirt_ac?.kavrama ?? 600;
+    const psi = koltukYuz(), [fx, fy] = yon(psi), g = M.klip.sirt_ac.kavrama;
     return { x: koltuk.x - fx * g, y: koltuk.y - fy * g, psi: fark(0, psi) };
   }
   function oturmaYeri(ad = oturAd) { // koltuk arkasında kalacak şekilde önünde, koltuğun baktığı yöne bakarak (klibin başı)
-    const psi = koltukYuz(), [fx, fy] = yon(psi), g = anahtar(M.klip[ad]?.koltuk ?? M.klip.otur?.koltuk ?? 205, 1);
+    const psi = koltukYuz(), [fx, fy] = yon(psi), g = anahtar(M.klip[ad]?.koltuk ?? M.klip.otur.koltuk, 1);
     return { x: koltuk.x + fx * g, y: koltuk.y + fy * g, psi };
   }
   // Klibin gövde kaymasını ('ileri') köke aktarır: görüntü değişmez, sonraki klipler (kayma, yazma) kendi eşlemesinde
@@ -679,14 +683,14 @@ export function karakterOlustur(g, { reduce = false, zorla = null } = {}) {
   // birlikte kendi ekseninde sönerek sallanır. Yön rastgele; hareket azaltmada yok
   let etki = null;
   function oturmaEtkisi() { if (!reduce && koltuk.ust) etki = { t0: saat, yon: Math.random() < 0.5 ? -1 : 1 }; }
-  function oturmaEtkisiUygula() {
+  // Bu karenin etkisi: ez minderin ezilme oranı, sw oturağın sallanması (rad); etki yoksa null
+  function oturmaEtkisiKaresi() {
+    if (!etki) return null;
     const t = saat - etki.t0;
     const ez = t > 1.6 ? 0 : AYAR.minderEz * Math.exp(-t / 0.2) * Math.cos((2 * Math.PI * t) / 0.42) * Math.min(1, t / 0.05);
     const sw = t > 2.6 ? 0 : AYAR.donme * etki.yon * Math.exp(-t / 0.6) * Math.sin((2 * Math.PI * t) / 1.3);
-    for (const p of koltuk.minder) { p.m.scale.z = 1 - ez; p.m.position.z = p.z0 + koltuk.minderTaban * ez; } // taban sabit
-    if (koltuk.bagli) govde.position.z -= koltuk.minderBoy * ez; // karakter oturakla çöker
     if (t > 2.6) etki = null;
-    return sw;
+    return { ez, sw };
   }
   // Oturak salınımı: oturanın göğsü yana kaydıkça (emote, yazarken kıpırdanma) oturak çok hafif döner, yaylanarak
   // durulur. Yavaş değişen ortalamaya göre ölçülür: yalnız hareket salındırır, duruş değil. Hareket azaltmada yok
@@ -694,8 +698,11 @@ export function karakterOlustur(g, { reduce = false, zorla = null } = {}) {
   function salinimHesapla(dt) {
     let hedef = 0;
     if (koltuk.bagli && gogus && !reduce) {
-      gogus.getWorldPosition(gv); // yer bu karede henüz dönmemiş (oturakDondur sonra)
-      const [fx, fy] = yon(ben.psi), yan = (gv.x - koltuk.x) * fy - (gv.y - koltuk.y) * fx;
+      // Göğsün yana kayması oturak dönüşü katılmadan, bu karenin kökünde ölçülür: yer henüz önceki karenin dönüşümünde,
+      // göğüs yere göre okunup bu karenin köküne taşınır (gövdenin ileri ve yukarı kayması yana etmez)
+      const l = yer.worldToLocal(gogus.getWorldPosition(gv)), c = Math.cos(ben.psi), s = Math.sin(ben.psi);
+      const gx = ben.x + c * l.x - s * l.y, gy = ben.y + s * l.x + c * l.y;
+      const [fx, fy] = yon(ben.psi), yan = (gx - koltuk.x) * fy - (gy - koltuk.y) * fx;
       salin.taban = salin.taban === null ? yan : salin.taban + (yan - salin.taban) * Math.min(1, dt * 0.7);
       hedef = kenet((yan - salin.taban) * AYAR.salinim, -AYAR.salinimEnCok, AYAR.salinimEnCok);
     } else salin.taban = null;
@@ -724,18 +731,8 @@ export function karakterOlustur(g, { reduce = false, zorla = null } = {}) {
     donus.v += (w * w * (h - donus.a) - 2 * w * donus.v) * dt;
     donus.a += donus.v * dt;
   }
-  // Oturağı kendi ekseninde döndürür; oturan karakter onunla birlikte koltuğun ekseni çevresinde döner
-  function oturakDondur(don) {
-    if (!koltuk.ust) return;
-    koltuk.ust.rotation.z = don;
-    if (!koltuk.bagli || Math.abs(don) < 1e-5) return;
-    const c = Math.cos(don), s = Math.sin(don), px = ben.x - koltuk.x, py = ben.y - koltuk.y;
-    yer.position.set(koltuk.x + c * px - s * py, koltuk.y + s * px + c * py, 0);
-    yer.rotation.z = ben.psi + don;
-  }
   function oturuYer() { // oturmuşken kökün bulunduğu yer (kalkmadan önce buraya kayar)
-    const r = { x: YER.koltuk.x, y: YER.koltuk.y, rz: YER.koltuk.rz }, psi = r.rz + Math.PI, [fx, fy] = yon(psi);
-    const g = anahtar(M.klip.otur?.koltuk ?? 205, 1);
+    const r = koltukYeri, psi = r.rz + Math.PI, [fx, fy] = yon(psi), g = anahtar(M.klip.otur.koltuk, 1);
     return { x: r.x + fx * g, y: r.y + fy * g, psi: fark(0, psi) };
   }
 
@@ -769,15 +766,7 @@ export function karakterOlustur(g, { reduce = false, zorla = null } = {}) {
       if (koltuk.obj && koltuk.katlama > 0.5) { // katlı: arkasına gidip masadan düz çeker, sonra sırtını açar
         if (!(await yuru(kavrama(), d))) return;
         if (var_('sirt_ac')) await kilitli('sirt_ac'); // klip koltuğu kendisi çeker (kayma, tut)
-        else { // klip yoksa: durduğu yerde sırt açılır, koltuk oturma yerine kayıp döner (yer tutucu)
-          koltuk.cevir = { x: koltuk.x, y: koltuk.y, rz: koltuk.rz };
-          let t = 0;
-          kilit = kare((dt) => { t += dt; koltuk.katlama = 1 - aralik(t, 0.2, 1.2); koltuk.cevirK = aralik(t, 1.2, 2.0); return t >= 2.0 ? 'tamam' : null; });
-          await kilit;
-          koltuk.cevirK = null;
-          koltuk.cevir = null;
-          Object.assign(koltuk, { x: YER.koltuk.x, y: YER.koltuk.y, rz: YER.koltuk.rz });
-        }
+        else Object.assign(koltuk, koltukYeri); // klip yoksa (eski dosya) koltuk çekilmiş yerinde açılır
         koltuk.katlama = 0;
         if (!d()) return;
       }
@@ -805,7 +794,8 @@ export function karakterOlustur(g, { reduce = false, zorla = null } = {}) {
     await cik(d);
   }
 
-  // Masa başı: yazar; ara ara emote; tepki; kadrajı kaplıyorsa kenara çekilir
+  // Masa başı: yazar; ara ara emote; tepki; kadrajı kaplıyorsa kenara çekilir. Hareket azaltmada başlamaz (masayaKoy,
+  // odayaGel): karakter masada hareketsiz oturur
   let sonEmote = null; // masada art arda aynı emote gelmesin
   async function masaDongusu(d) {
     await oynat('yaz', { solma: 0.5 });
@@ -854,7 +844,7 @@ export function karakterOlustur(g, { reduce = false, zorla = null } = {}) {
   }
   async function kenaraCekil(d) {
     const kk = KENAR_KLIP.find(var_) ?? 'bekle';
-    if (reduce) { yereKoy(YER.kenar); await oynat(kk, { solma: 0.01 }); } else if (!(await kaydir(YER.kenar, d, { hiz: AYAR.kenarHiz }))) return false;
+    if (!(await kaydir(YER.kenar, d, { hiz: AYAR.kenarHiz }))) return false;
     await oynat(kk, { tekrar: true, solma: 0.5 });
     bakis = 'urun';
     let bos = 0, beklemede = true;
@@ -868,7 +858,6 @@ export function karakterOlustur(g, { reduce = false, zorla = null } = {}) {
     beklemede = false;
     bakis = null;
     if (r !== 'tamam') return false;
-    if (reduce) { yereKoy(YER.masa); return true; }
     return kaydir(YER.masa, d);
   }
 
@@ -883,7 +872,6 @@ export function karakterOlustur(g, { reduce = false, zorla = null } = {}) {
     bakis = null; tepkiler = []; etki = null;
     Object.assign(salin, { a: 0, v: 0, taban: null });
     Object.assign(donus, { a: 0, v: 0, hedef: 0 });
-    koltuk.cevir = koltuk.cevirK = null;
     ben.yer = 'koltuk';
     ben.gorunur = true;
     ben.dansBorcu = false;
@@ -964,6 +952,8 @@ export function karakterOlustur(g, { reduce = false, zorla = null } = {}) {
   }
 
   // ---- her kare ----
+  // Sıra: görevler (yürüme, kayma, iniş, klip bitişleri) → klipler → kökün ve koltuğun yeri → oturağın sallanması ve
+  // dönüşü → karakterin ve koltuğun dönüşümleri (karede tek yerde yazılır) → kafa bakışı
   const qTmp = new THREE.Quaternion(), qYaw = new THREE.Quaternion(), qPitch = new THREE.Quaternion(), qPar = new THREE.Quaternion();
   const Z = new THREE.Vector3(0, 0, 1), sag = new THREE.Vector3(), kafaW = new THREE.Vector3(), hedefW = new THREE.Vector3();
   const bak = { k: 0, yaw: 0, pitch: 0 }, kafaTaban = new THREE.Quaternion(), qInv = new THREE.Quaternion();
@@ -973,29 +963,51 @@ export function karakterOlustur(g, { reduce = false, zorla = null } = {}) {
     saat += dt;
     if (kafaDegisti) { kafa.quaternion.copy(kafaTaban); kafaDegisti = false; } // klip kafayı yazmasa da bakış birikmesin
     for (const f of [...kareler]) if (f(dt)) kareler.delete(f);
-    // İnişte klibin zamanını ve kökün ek yüksekliğini biz veririz
-    if (ben.inis && ben.yer === 'merdiven') {
-      const s = ben.inis, r = s.durum(s.tau);
-      s.a.act.time = r.zaman;
-      s.a.ofz = r.ofz;
-    }
+    inisZamani();
     mixer.update(dt);
-    // Kök: zeminde konum ve yön; yükseklik açık kliplerin ağırlıklı ortalaması (masa klipleri kökü koltuk yüksekliğine
-    // kaldırır, iniş kendi yüksekliğini verir). Koltuk bağlıysa koltuğu taşıyan kliplerin söylediği yerde
-    let zT = 0, zW = 0, iT = 0, kT = 0, kW = 0, sirtK = null, cevirK = null, yatT = 0;
+    const k = kliplerdenOku();
+    kokuKaydir();
+    let oe = null, don = 0;
+    if (koltuk.obj) {
+      koltuguTasi(k);
+      oe = oturmaEtkisiKaresi();
+      salinimHesapla(dt);
+      donusHesapla(dt);
+      don = (oe ? oe.sw : 0) + salin.a + donus.a;
+    }
+    karakteriYaz(k, oe, don);
+    if (koltuk.obj) koltuguYaz(k, oe, don);
+    kafaCevir(dt);
+  }
+  // İnişte klibin zamanını ve kökün ek yüksekliğini biz veririz
+  function inisZamani() {
+    if (!ben.inis || ben.yer !== 'merdiven') return;
+    const s = ben.inis, r = s.durum(s.tau);
+    s.a.act.time = r.zaman;
+    s.a.ofz = r.ofz;
+  }
+  // Açık kliplerin ağırlıklı ortalaması: kökün yüksekliği (masa klipleri kökü koltuk yüksekliğine kaldırır, iniş kendi
+  // yüksekliğini verir), gövdenin köke göre ileri kayması (otur2'nin başı), koltuğun kökün kaç mm arkasında olduğu
+  // (koltuğu taşıyan klipler; yoksa null), sırtın katlılığı (sırt açma; yoksa null) ve ek yaslanması (emote). Kalça
+  // koltuğa indiği karede oturuş etkisi başlar
+  function kliplerdenOku() {
+    let zT = 0, zW = 0, iT = 0, kT = 0, kW = 0, sirt = null, yatir = 0;
     for (const [ad, a] of akt) {
       const w = a.oynadi && a.act.enabled ? a.act.getEffectiveWeight() : 0;
       if (w < 1e-3) continue;
       const m = M.klip[ad] || {}, f = a.act.time * fps + 1;
       zT += w * (a.ofz ?? anahtar(m.z ?? 0, f));
       zW += w;
-      iT += w * (a.ofIleri ?? anahtar(m.ileri ?? 0, f)); // gövdenin köke göre ileri kayması (otur2'nin başı)
+      iT += w * (a.ofIleri ?? anahtar(m.ileri ?? 0, f));
       if (m.koltuk !== undefined) { kT += w * (a.ofKoltuk ?? anahtar(m.koltuk, f)); kW += w; }
-      if (m.yatir) yatT += w * anahtar(m.yatir, f);
+      if (m.yatir) yatir += w * anahtar(m.yatir, f);
       if (m.inis && !a.indi && w > 0.5 && f >= m.inis) { a.indi = true; oturmaEtkisi(); } // kalça koltuğa indi
-      if (ad === 'sirt_ac' && w > 0.5) { sirtK = anahtar(m.sirt ?? 0, f); cevirK = m.cevir ? aralik(f, m.cevir[0], m.cevir[1]) : 0; }
+      if (ad === 'sirt_ac' && w > 0.5) sirt = anahtar(m.sirt ?? 0, f);
     }
-    // Kök kayması ve koltuğu tutma (sırt açma): klip yerinde canlanır, yürüyüşü ve koltuğun çekilip dönmesini site verir
+    return { z: zW ? zT / zW : 0, ileri: zW ? iT / zW : 0, koltuk: kW > 0 ? kT / kW : null, sirt, yatir };
+  }
+  // Kök kayması ve koltuğu tutma (sırt açma): klip yerinde canlanır, yürüyüşü ve koltuğun çekilmesini site verir
+  function kokuKaydir() {
     for (const [ad, a] of akt) {
       const m = M.klip[ad];
       if (!m || (!m.kayma && !m.tut) || !a.oynadi || !a.act.enabled) continue; // geçişte de: kayma sıçramasın
@@ -1020,40 +1032,44 @@ export function karakterOlustur(g, { reduce = false, zorla = null } = {}) {
         }
       }
     }
-    yer.position.set(ben.x, ben.y, 0);
-    yer.rotation.z = ben.psi;
-    govde.position.z = zW ? zT / zW : 0;
-    govde.position.y = zW ? -iT / zW : 0; // yerel −y bakış yönü
-    yer.visible = ben.gorunur;
-    if (koltuk.obj) {
-      if (sirtK !== null) koltuk.katlama = sirtK;
-      if (cevirK === null && koltuk.cevirK != null) cevirK = koltuk.cevirK;
-      if (koltuk.cevir && cevirK !== null) { // sırt açılınca koltuğu biraz itip oturma yönüne çevirir
-        const c = koltuk.cevir;
-        koltuk.x = c.x + (YER.koltuk.x - c.x) * cevirK;
-        koltuk.y = c.y + (YER.koltuk.y - c.y) * cevirK;
-        koltuk.rz = c.rz + fark(c.rz, YER.koltuk.rz) * cevirK;
-      }
-      if (koltuk.bagli && kW > 0) {
-        const g = kT / kW, [fx, fy] = yon(ben.psi);
-        koltuk.x = ben.x - fx * g;
-        koltuk.y = ben.y - fy * g;
-        koltuk.rz = ben.psi + Math.PI;
-      }
-      koltuk.obj.position.x = koltuk.x;
-      koltuk.obj.position.y = koltuk.y;
-      koltuk.obj.rotation.z = koltuk.rz;
-      // Katlı: sırt öne yatık, piston inik (masanın altına sığar); açılınca sırt dikilir, oturak kalkar
-      // ... emote'ta sırt geriye yaslanır (katlıyken değil)
-      const yat = Math.min(AYAR.yatirEnCok, yatT) * (1 - koltuk.katlama);
-      if (koltuk.sirt) koltuk.sirt.rotation.x = AYAR.sirtDik + (koltuk.sirtKatli - AYAR.sirtDik) * koltuk.katlama + yat;
-      if (koltuk.ust) koltuk.ust.position.z = koltuk.ust0 * koltuk.katlama;
-      const sw = etki ? oturmaEtkisiUygula() : 0;
-      salinimHesapla(dt);
-      donusHesapla(dt);
-      oturakDondur(sw + salin.a + donus.a);
+  }
+  // Koltuğun yeri: katlılığı sırt açmadan; bağlıyken kökün arkasında, kliplerin söylediği uzaklıkta, oturanın yönünde
+  function koltuguTasi(k) {
+    if (k.sirt !== null) koltuk.katlama = k.sirt;
+    if (koltuk.bagli && k.koltuk !== null) {
+      const [fx, fy] = yon(ben.psi);
+      koltuk.x = ben.x - fx * k.koltuk;
+      koltuk.y = ben.y - fy * k.koltuk;
+      koltuk.rz = ben.psi + Math.PI;
     }
-    kafaCevir(dt);
+  }
+  // Karakterin dönüşümü: kök zeminde (konum, yön); oturan karakter oturakla birlikte koltuğun ekseni çevresinde döner.
+  // Gövde kökün üstünde: kliplerin yüksekliği (oturuşta minderle çöker), ileri kayma yerel −y (bakış yönü)
+  function karakteriYaz(k, oe, don) {
+    if (koltuk.ust && koltuk.bagli && Math.abs(don) >= 1e-5) {
+      const c = Math.cos(don), s = Math.sin(don), px = ben.x - koltuk.x, py = ben.y - koltuk.y;
+      yer.position.set(koltuk.x + c * px - s * py, koltuk.y + s * px + c * py, 0);
+      yer.rotation.z = ben.psi + don;
+    } else {
+      yer.position.set(ben.x, ben.y, 0);
+      yer.rotation.z = ben.psi;
+    }
+    yer.visible = ben.gorunur;
+    govde.position.z = k.z - (oe && koltuk.bagli ? koltuk.minderBoy * oe.ez : 0);
+    govde.position.y = -k.ileri;
+  }
+  // Koltuğun dönüşümü: katlıyken sırt öne yatık, piston inik (masanın altına sığar); açılınca sırt dikilir, oturak
+  // kalkar; emote'ta sırt geriye yaslanır (katlıyken değil); oturak kendi ekseninde döner; oturuşta minder tabanı sabit
+  // ezilir
+  function koltuguYaz(k, oe, don) {
+    const o = koltuk.obj;
+    o.position.x = koltuk.x;
+    o.position.y = koltuk.y;
+    o.rotation.z = koltuk.rz;
+    const yat = Math.min(AYAR.yatirEnCok, k.yatir) * (1 - koltuk.katlama);
+    if (koltuk.sirt) koltuk.sirt.rotation.x = CHAIR.sirtDik + (koltuk.sirtKatli - CHAIR.sirtDik) * koltuk.katlama + yat;
+    if (koltuk.ust) { koltuk.ust.position.z = koltuk.ust0 * koltuk.katlama; koltuk.ust.rotation.z = don; }
+    if (oe) for (const p of koltuk.minder) { p.m.scale.z = 1 - oe.ez; p.m.position.z = p.z0 + koltuk.minderTaban * oe.ez; }
   }
   // Kafa bakışı: kameraya (dans ederken, üzerine gelinince) ya da yakın plandaki ürüne (kenardayken); klibin üstüne eklenir
   function kafaCevir(dt) {
@@ -1084,7 +1100,7 @@ export function karakterOlustur(g, { reduce = false, zorla = null } = {}) {
   const bufBoy = new THREE.Vector2(), pUrun = new THREE.Vector3(), pE = new THREE.Vector3(), pB = new THREE.Vector3(), kutu = new THREE.Box3();
   const xr = { guc: 0, sol: 1, kareNo: -1, urun: null, urunId: null, urunT: -9, t: 0 };
   const fare = { x: 0, y: 0, zone: null, t: 0 }; // genel planda imleç (istemci koordinatı) ve altındaki ürün
-  const fareDelikte = () => !!fare.zone && AYAR.fareDelik.includes(fare.zone);
+  const fareDelikte = () => !!fare.zone && AYAR.donDurak[fare.zone] !== undefined;
   let kareNo = 0;
   function xrayHesapla(cam) {
     if (!story || !ben.gorunur) { XR.xrGuc.value = 0; XR.xrSol.value = 1; return; }
@@ -1276,6 +1292,10 @@ export function karakterOlustur(g, { reduce = false, zorla = null } = {}) {
     yukari() { if (reduce) { nesil++; ben.gorunur = false; ben.yer = 'ust'; return; } yonet('yukari'); },
     masayaKoy,
     get durum() { return { yer: ben.yer, x: Math.round(ben.x), y: Math.round(ben.y), psi: +ben.psi.toFixed(2), arac: ben.arac, klip: simdiki?.clip.name ?? null, koltuk: { katlama: koltuk.katlama, bagli: koltuk.bagli } }; },
-    debug: { ben, koltuk, M, akt, oturAd, engeller, serbest: (a, b, E = engeller()) => serbest(a, b, E, AYAR.pay), yolBul: (a, b, E = engeller()) => yolBul(a, b, E), kenarDuraklari, XR, update, fare, donus },
+    debug: {
+      ben, koltuk, koltukYeri, YER, M, akt, oturAd, engeller, serbest: (a, b, E = engeller()) => serbest(a, b, E, AYAR.pay),
+      yolBul: (a, b, E = engeller()) => yolBul(a, b, E, dugum), kenarDuraklari, XR, update, fare, donus,
+      bekleyen: () => kareler.size, // süren kare işleri (görevlerin bekleyişleri): iptalden sonra birikmemeli
+    },
   };
 }

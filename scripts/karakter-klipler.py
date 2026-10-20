@@ -6,7 +6,7 @@
 # Koltuğun hareketi core/oda-karakter.js ile aynı formülden: sırt katlılığı (sirt), kökün yürüyüşü (kayma, mm, bakış
 # yönünde), koltuğun köke tutturulduğu aralık (tut) ve tutarken kendi ekseninde dönüşü (don, isteğe bağlı). Referans "Site Koltuk"
 # (oda-esya.glb'den, karakter birimine ölçekli) önizleme için aynı formülle anahtarlanır; dışa aktarılmaz.
-import bpy, math
+import bpy, json, math, os
 from mathutils import Vector, Matrix, Quaternion, Euler
 
 rig = bpy.data.objects['bizzikoloşko_rig']
@@ -36,7 +36,14 @@ def koltuk_al(glb):
     kok.scale = (1 / 1500,) * 3   # Z yukarı GLB: içe aktarıcının dönüşü koltuk_kur'da geri alınır (−90° X)
     KOL, SIRT, UST = kok, bpy.data.objects['koltuk_sirt'], bpy.data.objects['koltuk_ust']
 S = 1 / 1500                     # site mm → karakter birimi (rig 1,5 ile dışa aktarılır)
-SIRT_DIK, SIRT_KATLI = 0.14, -math.pi / 2
+
+def olcu_oku():
+    """core/oda-olcu.js'deki OLCU (tarayıcıyla ortak; scripts/oda-blender.py ile aynı okuma)"""
+    kok = globals().get('KOK') or os.getcwd()  # karakter-kaynak-kur.py verir; elle çalıştırmada depo kökü
+    s = open(os.path.join(kok, 'core', 'oda-olcu.js'), encoding='utf-8').read()
+    bas = s.index('\nexport const OLCU = ') + len('\nexport const OLCU = ')
+    return json.loads(s[bas:s.index('\n};', bas) + 2])
+SIRT_DIK, SIRT_KATLI = olcu_oku()['CHAIR']['sirtDik'], -math.pi / 2  # açık sırtın yatıklığı sitedekiyle aynı
 X, Y, Z = Vector((1, 0, 0)), Vector((0, 1, 0)), Vector((0, 0, 1))
 
 def ease(t):
@@ -92,7 +99,7 @@ def yaz(act, seri, kareler):
 # yürü → koltuğu bırakıp bir adım daha geri çekilirken sırtı kaldır (oturak kalkar; dikilen sırt büyük başa çarpmasın)
 # → bırak. Koltuk dönmez: karakter önüne geçip masaya bakarak oturur
 # (2026-10-20; önceki sıra sırtı masanın içinden kaldırıyor, koltuğu yana çevirip oturduktan sonra geri döndürüyordu).
-# JS meta ile aynı sayılar.
+# Sayılar GLB meta'sına yazılır; site koltuğun çekildiği yeri (tutulduğu aralıktaki kayma) ve kavramayı oradan alır.
 SA = {
     'son': 130,
     # mm, bakış yönünde: 10 cm yaklaşır, tutup 65 cm geri çeker: katlı sırtın ucu menteşeden ~87 cm ileride, masanın
@@ -184,7 +191,6 @@ def sirt_ac():
     act = yeni_aksiyon('Hareket - Sırt Açma')
     yaz(act, seri, kareler)
     act.frame_range = (1, SA['son'])
-    import json
     act['site_meta'] = json.dumps({k: SA[k] for k in ('sirt', 'kayma', 'tut', 'don') if k in SA} | {'kavrama': KAVRAMA})
     # Referans koltuğu önizleme için anahtarla
     for o in (KOL, UST, SIRT):
@@ -251,7 +257,6 @@ def kaydir():
     act = yeni_aksiyon('Hareket - Koltukla Kayma')
     yaz(act, seri, kareler)
     act.frame_range = (1, KK['son'])
-    import json
     act['site_meta'] = json.dumps({'tekrar': True})
     # Önizleme: koltuk oturuş yerinde (masa eşlemesinde merkez 7,5 mm önde), sırt dik, oturak kalkık
     for o in (KOL, UST, SIRT):

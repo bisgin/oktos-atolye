@@ -4,6 +4,8 @@
 // Birim mm, Z yukarı; arka duvarın iç yüzü y = ROOM.y1, balkon onun arkasında.
 // SUN: güneşin geldiği yön. azimuth: +y'den (balkon tarafı) +x'e doğru derece; elevation: ufuktan derece. Sabah güneşi
 // balkondan odaya, kameraya doğru girer: huzmeler kameradan görünür, saksılar arkadan ışık alır.
+// CHAIR.sirtDik: oyuncu koltuğunun sırtı açılınca menteşede geriye yatıklığı (rad; katlı hâli −90°). Karakter
+// (core/oda-karakter.js) ve sırt açma klibi (scripts/karakter-klipler.py) aynı değeri okur.
 export const OLCU = {
   "ROOM": { "x0": -2100, "x1": 2100, "y0": -1800, "y1": 1800, "h": 2700, "wall": 120 },
   "GLASS": { "x0": -150, "x1": 1750, "door0": 350, "door1": 1250, "sill": 850, "head": 2300 },
@@ -20,7 +22,7 @@ export const OLCU = {
   "RACEWAY": { "x": -760, "z0": 110, "z1": 980 },
   "SOCKET": { "x": -560, "z": 300 },
   "RUG": { "x": -200, "y": -150, "w": 1700, "d": 2300 },
-  "CHAIR": { "x": -930, "y": 1040, "rz": 0 },
+  "CHAIR": { "x": -930, "y": 1040, "rz": 0, "sirtDik": 0.14 },
   "ROBOT": { "x": 1830, "y": 1460, "rz": 2.4, "r": 170 },
   "SKIRTING": { "h": 80, "t": 14 },
   "SUN": { "azimuth": 25, "elevation": 42, "color": [1.0, 0.93, 0.84], "strength": 4.5 }

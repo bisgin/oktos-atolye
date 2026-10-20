@@ -228,7 +228,7 @@ yok: sayfanın en üstünde yukarı kaydırmak üst kata çıkmak sayılır).
   içinden geçerken karakter seyrelir.
 - **İmleç dairesi (genel plan):** fare kartvizit, kalemlik ya da tuşların üzerindeyse imlecin çevresinde, ürünün
   uzaklığında ~12 cm'lik bir daire karakteri ve koltuğu siler, arkadaki ürün görünür; tıklama ürüne gider
-  (`AYAR.fareDelik`, `AYAR.fareCap`; dokunmatikte yok, yakın planda eski daire geçerli). İmleç bu ürünlerde ~0,15 sn
+  (ürünler `AYAR.donDurak`'ın anahtarları, `AYAR.fareCap`; dokunmatikte yok, yakın planda eski daire geçerli). İmleç bu ürünlerde ~0,15 sn
   durunca karakter koltuğuyla birlikte döner (kalemlik, kartvizit saat yönünün tersine ~35°, tuşlar saat yönünde ~43°;
   `AYAR.donDurak`), yazmayı bırakıp bekler, fare gidince döner. Ölçüm (2026-10-20): genel plan kamerasından kalemlik ve
   kartvizit koltuk sırtının (54 cm geniş) tam arkasında; dönüş ürünü açmaz, görünürlüğü daire sağlar.
@@ -245,8 +245,12 @@ yok: sayfanın en üstünde yukarı kaydırmak üst kata çıkmak sayılır).
 - **Ölçek ve eşleme:** Blender'da rig 1,5 (boy ~1,4 m). Masa başı klipleri kökü 335 mm kaldırır (eller klavyede,
   kalça yüksek koltuğun oturağında; ayaklar sarkar); oturmada kök kalça inerken yükselir.
 - **Koltuk klipleri:** sırt açma (arkadan kavrar, 65 cm çeker, bırakıp geri adım atarken sırtı kaldırır: sırt, kök
-  kayması ve tutma GLB meta'sında) ve koltukla kayma (eller kolçakta, bacaklar sallanır: yüksek koltukta ayaklar yere değmez)
-  sitenin koltuğuna göre Blender'da kurulur (`scripts/karakter-klipler.py`).
+  kayması, tutma ve kavrama GLB meta'sında; site koltuğun çekildiği yeri tutulan aralıktaki kök kaymasından türetir,
+  açık sırtın açısı `OLCU.CHAIR.sirtDik` Blender'la ortak) ve koltukla kayma (eller kolçakta, bacaklar sallanır: yüksek
+  koltukta ayaklar yere değmez) sitenin koltuğuna göre Blender'da kurulur (`scripts/karakter-klipler.py`).
+- **Test:** durum makinesi başsız sınanır: `python scripts/karakter-test.py` (görünmez Edge, `lab/karakter-test.html`;
+  sahte glTF gerçek GLB'nin meta'sı ve klip süreleriyle, sahte kare saati). İniş → masa, kenar ↔ üzerine gelince dönme,
+  iptal, kalk ↔ otur, hareket azaltma.
 - **Çizim yükü:** aynı malzemeli deri parçaları yüklemede tek ağda birleşir ve tek iskeleti paylaşır (38 çizim → 13),
   merdiven tek ağ; karakter ve merdiven gölgeyle birlikte ~28 çizim, ~150 bin üçgen ekler.
 - **Kaynak:** model kullanıcının Tripo hesabından üretilip Blender'da yeniden kuruldu; hareketler Mixamo (Adobe;
