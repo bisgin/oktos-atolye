@@ -19,6 +19,10 @@ function syncLang() {
 }
 
 export async function bootTool({ tool }) {
+  // Önbellekte eski sayfa (sahne katmanlı HTML) kalmışsa atölye gizli kalmasın
+  document.documentElement.classList.remove('story-on');
+  document.getElementById('story')?.remove();
+  document.getElementById('scene-back')?.remove();
   wireLang();
   onLang(syncLang);
   const { createTool } = await import('./tool-shell.js');
