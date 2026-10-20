@@ -225,7 +225,7 @@ function build(s) {
 
 const fileName = (s) => `oktos_vazo_${s.kind}${s.kind === 'poly' ? (s.sides >= SIDES_CIRCLE ? 'cember' : s.sides) : ''}_${s.height}mm`;
 
-// Araç tanımı: atölye (createTool) ve hikâye sahnesi (scene.js) aynı tanımı kullanır.
+// Araç tanımı: atölye (createTool) ve oda sahnesinin ürün modelleri aynı tanımı kullanır.
 export const TOOL = { id: 'vase', strings, defaults, presets, schema, build, fileName, enforce };
 
 export function start() {

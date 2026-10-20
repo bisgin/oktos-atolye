@@ -411,7 +411,7 @@ async function kartAnahtarlik(id, kart) {
 
 // ---- Puzzle: 3B yapbozlar (dikey kesici prizmalarla parçalanmış katılar) ve resimli düz yapboz ----
 async function puzzle3d(id) {
-  const { jigsaw } = await import('../tools/puzzle/scene.js');
+  const { jigsaw } = await import('../tools/puzzle/jigsaw.js');
   const cut = (c) => C.extrude(C.offset2(C.polys2([c.poly]), -0.4), 400, -200);
   const g = new THREE.Group();
   if (id === 'sphere') {
@@ -450,7 +450,7 @@ async function puzzle3d(id) {
 }
 // Resimli düz yapboz: XY'de yatar, w × h mm, kalınlık 6. resim: fotoğrafın adresi (4:3); verilmezse gün batımında dağlar
 export async function picturePuzzle({ cols = 4, rows = 3, cell = 130, resim = null } = {}) {
-  const { jigsaw } = await import('../tools/puzzle/scene.js');
+  const { jigsaw } = await import('../tools/puzzle/jigsaw.js');
   const tex = resim ? await new THREE.TextureLoader().loadAsync(resim) : new THREE.CanvasTexture(manzaraResmi());
   tex.colorSpace = THREE.SRGBColorSpace;
   tex.anisotropy = 8;
@@ -589,7 +589,7 @@ export async function buildTemplate(zone, id, { lang = 'tr', saksi = {}, pasta =
       return g;
     }
     case 'flip': {
-      const { flipSolid } = await import('../tools/flip/scene.js');
+      const { flipSolid } = await import('../tools/flip/geometry.js');
       const [a, b] = (FLIP[lang] || FLIP.tr)[id];
       return smooth(solid(() => flipSolid(fs, a, b, 40), pla(K.sage)));
     }

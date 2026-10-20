@@ -1,12 +1,12 @@
 // Text Flip aracı: iki kelime, tek heykel. Önden birinci, yandan ikinci kelime okunur (her harf çifti, önden ve yandan
-// çekilmiş iki harfin kesişimi; tools/flip/scene.js flipLayout/flipPiece). Harfler ve taban ayrı renk.
+// çekilmiş iki harfin kesişimi; tools/flip/geometry.js flipLayout/flipPiece). Harfler ve taban ayrı renk.
 // Şablon kimlikleri odadaki Flip şablonlarıyla aynı (core/oda-urunler.js), oda ?sablon= ile açar.
 import { createTool, PRINTERS } from '../../core/tool-shell.js';
 import * as C from '../../core/csg.js';
 import { plate } from '../../core/scene-kit.js';
 import { loadFont } from '../../core/font3d.js';
 import { getLang } from '../../core/i18n.js';
-import { flipLayout, flipPiece } from './scene.js';
+import { flipLayout, flipPiece } from './geometry.js';
 
 const mm = (n) => n.toLocaleString(getLang() === 'tr' ? 'tr-TR' : 'en-GB', { maximumFractionDigits: 1 });
 const EN_UZUN = 8; // harf: daha uzun kelime heykeli bölmeli basılacak kadar uzatır, hesap da ağırlaşır

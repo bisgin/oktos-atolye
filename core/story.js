@@ -1,5 +1,6 @@
-// Hikâye sahnesi motoru: her aracın girişindeki 3B sahne, yazı geçişleri ve şablon seçimi.
-// Sahne içeriği araç klasöründeki scene.js'ten gelir (buildScene). Metin ve düğmeler DOM'da kalır
+// Sahne motoru: oda sahnelerinin (lab/oda.html) 3B sahnesi, yazı geçişleri ve şablon seçimi. Araçların kendi hikâye
+// sahneleri 2026-10-20'de kalktı (_silinecek/arac-sahneleri-2026-10-20/); sahne içeriği sceneModule'ün buildScene'inden
+// gelir (oda: core/oda-sahne.js, karakterle sarılı). Metin ve düğmeler DOM'da kalır
 // (SEO ve ekran okuyucu); 3B tuval yalnızca görseldir.
 //
 // Akış modları:  full  → ilk ziyaret: yazı animasyonu + kamera turu
@@ -177,7 +178,8 @@ export async function mountStory(root, { toolId, lang = 'tr', mode = pickMode(to
   scene.add(rim, rim.target);
 
   // ---- sahne içeriği ----
-  const mod = sceneModule || (await import(`../tools/${toolId}/scene.js`));
+  if (!sceneModule) throw new Error(`sahne modülü yok: ${toolId}`); // araç sahneleri kalktı
+  const mod = sceneModule;
   const built = await mod.buildScene({ THREE, scene, P, quality, lang, story });
   const shots = built.shots;
   const lights = built.lights || {};

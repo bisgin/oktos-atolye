@@ -3,7 +3,48 @@
 // açılan renkler). Katı bu yüksekliklerden dört renk bandına bölünür: önizleme baskının kendisini, 3MF renk başına
 // gövdeyi verir. Biçim: çerçeveli tablo (kabarık kenar), pencere ışıklığı (düz kenar, iki asma deliği), kartpostal.
 import * as C from '../../core/csg.js';
-import { landscape } from './scene.js';
+
+// Prosedürel manzara (gri tonlu: 0 koyu, 1 açık): örnek resimler; oda sahnesi de kullanır
+export function landscape(kind, W, H, seed = 1) {
+  const c = document.createElement('canvas');
+  c.width = W; c.height = H;
+  const g = c.getContext('2d');
+  const sky = g.createLinearGradient(0, 0, 0, H);
+  sky.addColorStop(0, '#d8d8d8'); sky.addColorStop(0.55, '#f2f2f2'); sky.addColorStop(1, '#ffffff');
+  g.fillStyle = sky; g.fillRect(0, 0, W, H);
+  const sunX = kind === 'sea' ? W * 0.62 : W * 0.7, sunY = kind === 'sea' ? H * 0.42 : H * 0.36;
+  g.fillStyle = '#ffffff';
+  g.beginPath(); g.arc(sunX, sunY, H * 0.11, 0, Math.PI * 2); g.fill();
+  const ridge = (base, amp, freq, shade, ph) => {
+    g.fillStyle = shade;
+    g.beginPath(); g.moveTo(0, H);
+    for (let x = 0; x <= W; x++) {
+      const y = base - amp * (0.6 * Math.sin(x * freq + ph) + 0.3 * Math.sin(x * freq * 2.7 + ph * 1.9) + 0.15 * Math.sin(x * freq * 6.1 + ph * 0.7));
+      g.lineTo(x, y);
+    }
+    g.lineTo(W, H); g.closePath(); g.fill();
+  };
+  if (kind === 'sea') {
+    g.fillStyle = '#9a9a9a'; g.fillRect(0, H * 0.55, W, H * 0.45);
+    for (let i = 0; i < 9; i++) {
+      g.fillStyle = i % 2 ? '#c8c8c8' : '#7a7a7a';
+      const y = H * 0.58 + i * H * 0.045;
+      g.fillRect(0, y, W, H * 0.012);
+    }
+    g.fillStyle = '#ececec';
+    g.fillRect(sunX - H * 0.04, H * 0.56, H * 0.08, H * 0.4);
+    ridge(H * 0.62, H * 0.05, 0.05, '#4a4a4a', seed);
+  } else {
+    ridge(H * 0.52, H * 0.16, 0.032, '#b4b4b4', seed);
+    ridge(H * 0.64, H * 0.13, 0.045, '#7c7c7c', seed + 2);
+    ridge(H * 0.78, H * 0.1, 0.06, '#3c3c3c', seed + 4);
+    if (kind === 'lake') {
+      g.fillStyle = '#a8a8a8'; g.fillRect(0, H * 0.82, W, H * 0.18);
+      g.fillStyle = '#e6e6e6'; g.fillRect(sunX - H * 0.05, H * 0.84, H * 0.1, H * 0.14);
+    }
+  }
+  return g.getImageData(0, 0, W, H);
+}
 
 // Paletler koyudan açığa (taban rengi ilk); adlar sipariş mesajı ve bilgi satırı için
 export const PALETLER = {

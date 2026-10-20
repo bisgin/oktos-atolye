@@ -1,10 +1,10 @@
 // Puzzle katıları (mm, Z yukarı). İki mod:
 //   duz:   fotoğraflı düz yapboz: W × H levha, sütun × satır mantar tırnaklı parça, isteğe bağlı çerçeveli tabla
 //   sekil: 3B şekil yapboz: küre, küp, yumurta ya da kalp dik prizmalarla parçalara bölünür (tırnaklar kilitlenir)
-// Parça kesimi tools/puzzle/scene.js jigsaw'dan (oda ve hikâye sahnesi de onu kullanır); parçalar arası boşluk
+// Parça kesimi tools/puzzle/jigsaw.js'ten (oda sahnesi de onu kullanır); parçalar arası boşluk
 // her kenardan yarısı kadar içeri çekilerek verilir.
 import * as C from '../../core/csg.js';
-import { jigsaw } from './scene.js';
+import { jigsaw } from './jigsaw.js';
 
 const TOHUM = { sphere: 11, cube: 5, egg: 17, heart: 13, duz: 7 };
 

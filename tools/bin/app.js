@@ -267,7 +267,7 @@ function fileName(s) {
   return s.shape === 'round' ? `oktos_yuvarlak_${s.w}x${s.h}` : `oktos_kutu_${s.w}x${s.d}x${s.h}`;
 }
 
-// Araç tanımı: atölye (createTool) ve hikâye sahnesi (scene.js) aynı tanımı kullanır.
+// Araç tanımı: atölye (createTool) ve oda sahnesinin ürün modelleri aynı tanımı kullanır.
 export const TOOL = {
   id: 'bin', strings, defaults, presets, schema, build, fileName,
   modes: [['custom', 'mode.custom'], ['grid', 'mode.grid'], ['plate', 'mode.plate']],

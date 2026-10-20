@@ -63,7 +63,7 @@
   };
   // Hazır olup olmadığı core/story-data.js'teki live'dan (tek kaynak: araç açılınca yalnız orada değişir)
   const tools = ['bin', 'vase', 'clicker', 'text', 'flip', 'qr', 'painter', 'puzzle'].map((id) => [id, `tools/${id}/index.html`, STORIES[id].live]);
-  // Her araç kendi sayfasına gider: hazır olanlar atölyeye, "Yakında" olanlar hikâye sahnesine.
+  // Her araç kendi atölyesine gider (araç sayfası doğrudan şablon ve düzenleme ekranıyla açılır).
   const render = () => {
     const lang = getLang();
     document.getElementById('tools').innerHTML = tools.map(([id, href, live]) => {
