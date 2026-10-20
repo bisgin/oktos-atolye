@@ -389,11 +389,13 @@ async function kartAnahtarlik(id, kart) {
   g.traverse((o) => {
     if (!o.isMesh) return;
     if (/^kart_yuz/.test(o.name)) {
-      o.material = o.material.clone();
-      o.material.map = yuz;
-      o.material.color.set(0xffffff);
-      if (o.material.clearcoat) o.material.clearcoat = 0.35; // epoksi parlaklığı; tam kaplama kartı sütlü gösterir
-      o.material.needsUpdate = true;
+      // Epoksi: tam parlak, çok ince kaplama (keskin yansıma) ama baskının kendisi mat ve ortamdan az yansıtır
+      // (yansıma rengi soldurmasın); hafif öz ışık loş köşede renkleri canlı tutar
+      o.material = new THREE.MeshPhysicalMaterial({
+        map: yuz, roughness: 0.5, metalness: 0, envMapIntensity: 0.3,
+        clearcoat: 1, clearcoatRoughness: 0.12,
+        emissive: 0xffffff, emissiveMap: yuz, emissiveIntensity: 0.08,
+      });
       o.scale.x *= KART_EN;
     } else if (/^kart_(cerceve|kulak)/.test(o.name)) {
       o.material = o.material.clone();

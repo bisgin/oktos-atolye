@@ -6,8 +6,8 @@
 # ve ölçüler (merdiven, ip, koltuk) sahnenin extras'ında "karakter_meta" (JSON). Dışa aktarımdan sonra hiçbir klipte
 # dinlenme pozundan ayrılmayan kemik kanalları atılır (budama). Draco: Blender'ın Draco kütüphanesi varsa ağlar sıkışır
 # (Python modülü bpy'de yoktur; o zaman çıktı ayrıca sıkıştırılır).
-import bpy, json, sys, math
-from mathutils import Vector
+import bpy, bmesh, json, sys, math
+from mathutils import Matrix, Vector
 
 arg = sys.argv[sys.argv.index('--') + 1:] if '--' in sys.argv else sys.argv[1:]
 GIRDI, CIKTI = arg[0], arg[1]
@@ -127,6 +127,21 @@ for o in karakter:
         d = o.modifiers.new('Web Azalt', 'DECIMATE')
         d.decimate_type = 'COLLAPSE'
         d.ratio = DEC[o.name]
+
+# Aynalı (negatif ölçekli) parçalar: ölçek ağa (şekil anahtarlarıyla) işlenir, yüzler çevrilir. Yoksa glTF'te yüzey ters
+# kalır, ışığı ters alır (sol kaş sağın aynası: diğer saçlardan belirgin açık görünüyordu)
+for o in karakter:
+    s_ = o.scale
+    if s_.x * s_.y * s_.z < 0:
+        o.data = o.data.copy()
+        o.data.transform(Matrix.Diagonal((s_.x, s_.y, s_.z, 1.0)), shape_keys=True)
+        o.scale = (1.0, 1.0, 1.0)
+        bm = bmesh.new()
+        bm.from_mesh(o.data)
+        bmesh.ops.reverse_faces(bm, faces=bm.faces[:])
+        bm.to_mesh(o.data)
+        bm.free()
+        print('AYNA duzeltildi', o.name)
 
 # ---- malzemeler: "İkinci Ton" grubu düz renge (dokusuz, öznitelik yok) ----
 gorulen = set()

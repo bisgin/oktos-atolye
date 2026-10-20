@@ -147,7 +147,14 @@ export async function buildScene({ scene, P, lang = 'tr' }) {
   }
   box(240, 170, 110, -480, 1700, 1718, M.dark, { r: 4 }); // üst rafta kutu (dekor)
   // Lamba: duvar köşesinde, dolabın üstünde dik ve uzun; spot başı masaya bakar
-  place(P.lamp({ a1: 0, l1: 640, a2: 1.45, l2: 240, tilt: -0.5 }), [PEDESTAL.x - PEDESTAL.w / 2 + 85, ROOM.y1 - 95, PEDESTAL.h, -0.24]);
+  const lamba = place(P.lamp({ a1: 0, l1: 640, a2: 1.45, l2: 240, tilt: -0.5 }), [PEDESTAL.x - PEDESTAL.w / 2 + 85, ROOM.y1 - 95, PEDESTAL.h, -0.24]);
+  if (pilot) { // Spot lamba altındaki tepsiye yanar: kart anahtarlıkların epoksisi parlar, loş köşede renkler canlı (yalnız canlı eşyalar)
+    lamba.updateWorldMatrix(true, false);
+    const spot = new THREE.SpotLight(0xffe2b0, 0.9, 0, 0.3, 0.55, 0);
+    spot.position.copy(lamba.localToWorld(lamba.userData.spot.pos.clone()));
+    spot.target.position.set(A.tepsi[0], A.tepsi[1], A.tepsi[2]);
+    scene.add(spot, spot.target);
+  }
 
   // ---- yuvalar: bölgenin ürünü burada; şablon değişince yalnız yuvadaki model değişir ----
   const slots = {};
@@ -582,6 +589,7 @@ export async function buildScene({ scene, P, lang = 'tr' }) {
   function measure(zone) {
     const a = anchors[zone];
     if (!a) return;
+    a.object.updateWorldMatrix(true, false); // üst gruplar (tepsi, anahtarlar…) sahne hiç çizilmeden de doğru yerde
     box3.setFromObject(a.object).getCenter(mid);
     a.v.set(mid.x, mid.y, box3.max.z + 18);
   }

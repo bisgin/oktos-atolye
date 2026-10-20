@@ -135,6 +135,18 @@ const kenet = (v, a, b) => Math.min(b, Math.max(a, v));
 const yumusak = (u) => u * u * (3 - 2 * u);
 const aralik = (v, a, b) => yumusak(kenet((v - a) / (b - a), 0, 1));
 const rastgele = ([a, b]) => a + Math.random() * (b - a);
+// Ziyaret başına seçimler (iniş aracı, dans, oturuş) bir önceki ziyaretin aynısını tekrarlamaz: son seçim tarayıcıda
+// saklanır, seçenek birden çoksa o dışarıda bırakılıp kalanlardan rastgele seçilir (depolama yoksa düz rastgele)
+function tekrarsiz(ad, secenekler) {
+  if (!secenekler.length) return undefined;
+  const k = `oktos.karakter.son.${ad}`;
+  let son = null;
+  try { son = localStorage.getItem(k); } catch { /* gizli pencere ya da kapalı depolama */ }
+  const aday = secenekler.length > 1 ? secenekler.filter((x) => x !== son) : secenekler;
+  const sec = aday[Math.floor(Math.random() * aday.length)];
+  try { localStorage.setItem(k, sec); } catch { /* yoksay */ }
+  return sec;
+}
 // Anahtarlı değer: sayı ya da [[kare, değer], ...] (aralarda yumuşak geçiş, uçlarda sabit)
 function anahtar(k, f) {
   if (k === undefined || k === null) return 0;
@@ -381,7 +393,7 @@ export function karakterOlustur(g, { reduce = false, zorla = null } = {}) {
   for (const clip of g.animations) akt.set(clip.name, { act: mixer.clipAction(clip), clip, oynadi: false, ofz: undefined });
   const var_ = (ad) => akt.has(ad);
   // Oturma klibi ziyaret başına rastgele: Koltuğa Oturma (otur) ya da Oturmaya Geçiş (otur2), dosyada hangisi varsa
-  const oturlar = ['otur', 'otur2'].filter(var_), oturAd = oturlar[Math.floor(Math.random() * oturlar.length)] ?? 'otur';
+  const oturAd = tekrarsiz('otur', ['otur', 'otur2'].filter(var_)) ?? 'otur';
 
   // Kalça yüksekliği tablosu (iniş kliplerinde: döngüde ne kadar indiğini ve görünürlüğü ölçmek için). Ayrı bir mixer
   // klibi kare kare uygular; kök sıfırda olduğundan kalçanın dünya z'si doğrudan mm
@@ -575,7 +587,7 @@ export function karakterOlustur(g, { reduce = false, zorla = null } = {}) {
   }
   async function in_(d) {
     if (ben.yer === 'ust') {
-      const ad = zorla ?? (var_('ip') && var_('merdiven') ? (Math.random() < 0.5 ? 'ip' : 'merdiven') : var_('ip') ? 'ip' : 'merdiven');
+      const ad = zorla ?? tekrarsiz('inis', ['ip', 'merdiven'].filter(var_)) ?? 'merdiven';
       if (!var_(ad)) { yereKoy(inisYeri(ad)); ben.yer = 'zemin'; ben.gorunur = true; return d(); } // klip yoksa yere konur
       ben.arac = ad;
       ben.inis = inisKur(ad);
@@ -676,7 +688,7 @@ export function karakterOlustur(g, { reduce = false, zorla = null } = {}) {
         ben.dansBorcu = false;
         if (varolan.length) {
           bakis = 'kamera';
-          const ok = await oynat(varolan[Math.floor(Math.random() * varolan.length)], { solma: 0.4 }, d);
+          const ok = await oynat(tekrarsiz('dans', varolan), { solma: 0.4 }, d);
           bakis = null;
           if (!ok) return;
           await oynat('dur', { tekrar: true, solma: 0.45 });
@@ -723,6 +735,7 @@ export function karakterOlustur(g, { reduce = false, zorla = null } = {}) {
   }
 
   // Masa başı: yazar; ara ara emote; tepki; kadrajı kaplıyorsa kenara çekilir
+  let sonEmote = null; // masada art arda aynı emote gelmesin
   async function masaDongusu(d) {
     await oynat('yaz', { solma: 0.5 });
     let sonraki = saat + rastgele(AYAR.bosta);
@@ -736,9 +749,12 @@ export function karakterOlustur(g, { reduce = false, zorla = null } = {}) {
       const tp = tepkiler.shift();
       if (tp) { if (!(await dizi([tp], d))) return; await oynat('yaz', { solma: 0.5 }); sonraki = saat + rastgele(AYAR.bosta); continue; }
       if (saat >= sonraki) {
-        const top = EMOTE.reduce((s, [w]) => s + w, 0);
-        let r = Math.random() * top, sec = EMOTE[0][1];
-        for (const [w, s] of EMOTE) { if ((r -= w) < 0) { sec = s; break; } }
+        // Ağırlıklı rastgele emote; bir önceki emote art arda gelmez
+        const havuz = EMOTE.length > 1 ? EMOTE.filter(([, s]) => s !== sonEmote) : EMOTE;
+        const top = havuz.reduce((s, [w]) => s + w, 0);
+        let r = Math.random() * top, sec = havuz[0][1];
+        for (const [w, s] of havuz) { if ((r -= w) < 0) { sec = s; break; } }
+        sonEmote = sec;
         if (!(await dizi(sec, d))) return;
         await oynat('yaz', { solma: 0.5 });
         sonraki = saat + rastgele(AYAR.bosta);
