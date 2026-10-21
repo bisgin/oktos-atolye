@@ -1,5 +1,5 @@
 // Tanıtım filmi animatiği (M1) çekirdeği: sahne, tek zaman çizelgesi, kamera, yazı, balon, karakterler, sayaç.
-// Plan: Documents\Oktos\portfolyo\planlar\2026-10-21_tanitim-filmi-plani-v04.md (26 çekim, 2304 kare, 60 fps).
+// Plan: tanıtım filmi planı v04 (yerel çalışma notları) (26 çekim, 2304 kare, 60 fps).
 // Vinyetler ayrı modüllerdir (lab/tanitim/film/v*.js); her biri `export function kur(ctx)` ile zaman çizelgesine
 // kendi tween'lerini MUTLAK kare zamanlarıyla ekler (ctx.k(kare) → saniye). Bir modül hata verirse yalnız o vinyet düşer.
 // Animatik: gri yer tutucu şekiller, gerçek yazılar; "GERÇEK" anları renkli yer tutucu + etiket (3B sonra gelir).

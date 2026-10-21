@@ -1,0 +1,45 @@
+<!doctype html>
+<html lang="tr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>SÇ1 Kanca Stil Karesi · Oktos Workshop</title>
+<meta name="robots" content="noindex">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Big+Shoulders+Display:wght@300..900&family=Caveat:wght@600&family=Schibsted+Grotesk:wght@400;600;700&display=swap">
+<script type="importmap">
+{ "imports": {
+  "gsap": "https://cdn.jsdelivr.net/npm/gsap@3.15.0/index.js",
+  "gsap/": "https://cdn.jsdelivr.net/npm/gsap@3.15.0/"
+} }
+</script>
+<style>
+  :root { --kagit: #f1ede6; --murekkep: #1d1d20; --vurgu: #bf5519; --vurgu-yazi: #94400f; }
+  html, body { margin: 0; height: 100%; overflow: hidden; background: var(--kagit); }
+  #sahne { position: absolute; left: 0; top: 0; transform-origin: 0 0; overflow: hidden; background: var(--kagit); }
+  #sahne > svg.cizim { position: absolute; left: 0; top: 0; z-index: 1; overflow: visible; }
+  #sahne > .kagit-katman { position: absolute; left: 0; top: 0; z-index: 5; pointer-events: none; }
+  #yazi { position: absolute; inset: 0; z-index: 3; pointer-events: none; }
+  /* Oktos'un sesi: ön cümle Schibsted Grotesk 600, vurgu Big Shoulders Display 900 büyük harf */
+  .blok { position: absolute; margin: 0; color: var(--murekkep); }
+  .blok p { margin: 0; }
+  .blok .on { font: 600 50px/1.1 'Schibsted Grotesk', sans-serif; letter-spacing: -0.012em; }
+  .blok .vur { font: 900 200px/1 'Big Shoulders Display', sans-serif; letter-spacing: 0.004em; }
+  .blok .satir { display: block; white-space: nowrap; }
+  .blok .maske { display: inline-block; overflow: hidden; vertical-align: top; padding: 0.12em 0.05em 0.16em; margin: -0.12em -0.05em -0.16em; }
+  .blok .kelime { display: inline-block; }
+  .blok .istek { position: absolute; left: 0; top: 0; z-index: -1; overflow: visible; pointer-events: none; }
+  .duzen-a .on { margin-bottom: 0.32em; }
+  .duzen-dikey .on { margin-bottom: 0.42em; }
+  #hata { position: absolute; left: 18px; top: 14px; z-index: 30; font: 500 20px/1.3 ui-monospace, Consolas, monospace; color: #94400f; white-space: pre; }
+</style>
+</head>
+<body data-sayfa="sc1">
+<div id="sahne">
+  <div id="yazi" aria-live="polite"></div>
+  <div id="hata" aria-hidden="true"></div>
+</div>
+<script type="module" src="./sc1.js"></script>
+</body>
+</html>
