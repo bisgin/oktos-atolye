@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Çatı Katı Laboratuvarı · Oktos Workshop</title>
 <meta name="robots" content="noindex">
-<meta name="description" content="Oktos Workshop'un çatı katı: İbrahim Arda Bişgin'in portfolyosu. Modern Balbal heykelleri, döküm ve baskı işleri, dijital modelden döküme üretim süreci.">
+<meta name="description" content="Oktos Workshop'un çatı katı: İbrahim Arda Bişgin'in portfolyosu. Fikir rafında kutu oyunları, plakalar, figürler, anahtarlıklar, stant ve vitrinler, ev ürünleri ve endüstriyel ön-mühendislik; dijital modelden döküme üretim süreci.">
 <meta name="theme-color" content="#d5d8dc">
 <link rel="icon" href="../core/icon.svg" type="image/svg+xml">
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -38,7 +38,7 @@
   <div class="oda-scrim" aria-hidden="true"></div>
   <div class="story-pins"></div>
   <div class="story-copy">
-    <h1 class="story-title" id="story-title">Modelden döküme, elimden çıkanlar.</h1>
+    <h1 class="story-title" id="story-title">3B bir fikrin var mı? Gerçeğe dönüştürelim.</h1>
     <p class="story-lede"></p>
     <div class="story-actions">
       <button type="button" class="story-cta"></button>
@@ -50,13 +50,13 @@
   <div class="story-veil"><div class="oda-yukle" role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0"><i></i></div></div>
   <p class="story-live" aria-live="polite"></p>
 </section>
-<noscript><p class="cati-noscript">Oktos Workshop çatı katı: İbrahim Arda Bişgin'in portfolyosu. Modern Balbal serisi (Kapital Kağan, Kadere Kınalı, Akademi Atlısı, Oğuz Kağan), döküm ve baskı işleri, dijital modelden döküme sekiz adımlık üretim süreci. Sahne için JavaScript gerekir.</p></noscript>
+<noscript><p class="cati-noscript">Oktos Workshop çatı katı: İbrahim Arda Bişgin'in portfolyosu. Fikir rafı: kutu oyunları, plakalar, figürler (Modern Balbal serisi), anahtarlıklar, stant ve vitrinler, ev ürünleri, endüstriyel ön-mühendislik ve senin fikrin. Dijital modelden döküme sekiz adımlık üretim süreci. Sahne için JavaScript gerekir.</p></noscript>
 
 <script type="module">
   import * as THREE from 'three';
   import { mountStory } from '../core/story.js';
   import * as catiScene from '../core/cati-sahne.js';
-  import { CATI_STORY, SAYFA } from '../core/cati-veri.js';
+  import { CATI_STORY, SAYFA, ALANLAR } from '../core/cati-veri.js';
   import { catiPanel } from '../core/cati-panel.js';
   import { odaTuru } from '../core/oda-tur.js';
   import { getLang, setLang } from '../core/i18n.js';
@@ -107,10 +107,10 @@
     onActivate: (h) => (h && h.id === story?.focusedId ? false : (tur?.sec(h) ?? false)),
     onCard: panel.onCard,
   });
-  // Kaydırmalı tur: önce gökyüzü (genel plan), sonra çatı ve portfolyo durakları
+  // Kaydırmalı tur: oda içi genel plan, süreç rayı, fikir rafının 8 gözü, pencere köşesi (Biggie), hakkımda, merdiven
   tur = odaTuru(root, story, {
-    duraklar: [null, 'teras', 'eserler', 'galeri', 'surec', 'hakkimda', 'biggie'],
-    metin: { baslik: L(CATI_STORY.name), basla: lang === 'en' ? 'Scroll down to the roof' : 'Aşağı kaydır, çatıya in' },
+    duraklar: [null, 'surec', ...ALANLAR.map((a) => a.id), 'biggie', 'hakkimda', 'merdiven'],
+    metin: { baslik: L(CATI_STORY.name), basla: L(SAYFA.basla) },
     reduce, bekle: !!params.get('odak'),
   });
   if (hazir) tur.hazir();

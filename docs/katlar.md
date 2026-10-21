@@ -4,7 +4,7 @@ Kullanıcı kararı (2026-10-21): site üç katlı bir bina olarak kurulur.
 
 | Kat | Ne | Durum |
 |---|---|---|
-| Gökyüzü + çatı katı | Kullanıcıyı gökyüzü karşılar, aşağı kaydırınca çatı terası: kullanıcının **portfolyosu** (işler, süreç, hakkımda), Biggie | `lab/cati.html` (ilk sürüm, 2026-10-21) |
+| Çatı katı (cam teras odası) | Portfolyo: fikir rafı (7 alan + "Senin fikrin"), süreç, hakkımda, Biggie. Gökyüzü anlatısı ayrı giriş videosuna taşınıyor (başka iş) | `lab/cati.html` (gri kutu teras odası, 2026-10-21) |
 | Orta kat | Mevcut oda (`lab/oda.html`): yalnız şu an satılan ürünlerin (anahtarlık vb.) odası olacak | Bugünkü hâliyle; araçlar ileride bodruma taşınır |
 | Bodrum | Depo gibi bir 3B atölye: çalışan SLA ve FDM yazıcılar, seri üretim makineleri, **araçlar** (hizmet) burada | Sırada (gri kutu, odayla yan yana) |
 
@@ -12,28 +12,40 @@ Kullanıcı kararı (2026-10-21): site üç katlı bir bina olarak kurulur.
 merdivenle, iple ya da yeni hareketlerle (robot süpürgenin üstünde, havada sendeleyerek). Hızla birkaç kat atlanırsa
 Biggie doğrudan hedef kata gider (planlanan; henüz yok).
 
-## Çatı katı (ilk sürüm)
+## Çatı katı: cam teras odası (gri kutu, 2026-10-21)
+
+Plan: çalışma alanının portfolyo planları, "çatı teras planı" bölüm 4 (ölçüler mm, +x doğu, +y kuzey, z yukarı).
 
 - Sahne `core/cati-sahne.js` (motor `core/story.js`, oda ile aynı sahne sözleşmesi), metin ve içerik `core/cati-veri.js`,
   kart içeriği, ışık kutusu ve düz liste `core/cati-panel.js`, görünüm `core/cati.css`, sayfa `lab/cati.html`.
-- **Işık canlı** (pişirme yok, Blender gerekmez): güneş `core/oda-olcu.js` SUN ile aynı (odanın sabahı), gölgeli tek
-  ışık; ortam ışığı gökyüzünün küçük panoramasından (`assets/cati/ortam.webp`). Kare başına ~60–100 çizim, ≤260 bin
-  üçgen (oda ~830 çizim).
-- **Gökyüzü** odanın penceresindeki gökle aynı (Poly Haven 'balcony', CC0): `assets/cati/gok.webp` 6°–90° bandı. Fotoğrafın
-  alt kısmındaki ev, şemsiye ve serviler bir dilimde (u 0,44–0,86); o dilim sahnede güneyde ve batıda terastan 12 m
-  yükselen komşu blokun arkasında kalır. Güneş kuzey-kuzeydoğudan (az 25°, 42°) geldiği için blok terası gölgelemez;
-  gökyüzündeki fotoğraf güneşi de blokun arkasında kalır, sahnenin güneşine hafif bir parlama eklenir (gölgelendirici).
-  Dilim dışındaki ince engeller içten dolduruldu, ufkun altı (19° altı) şehir pusuna çevrildi; uzakta pus içinde
-  boyanmış bir silüet kartı (bloklar, minare).
-- **Teras** (7,2 × 5,2 m, karo, parapet 1,05 m): merdiven kovası (kapısı güneye), üstünde su deposu, güneş kolektörü,
-  TV anteni. Portfolyo: sergi masasında Modern Balbal heykelleri (Kadere Kınalı, Akademi Atlısı, Oğuz Kağan; STL'den
-  `scripts/portfolyo-model.py`), çamaşır ipinde mandallı baskılar (galeri), kovanın duvarında 8 adımlık süreç panosu,
-  şövalede kara tahta (hakkımda), Biggie ve robotu (Biggie'ye yakın planda yeniden tıklamak bir dans oynatır).
-- **Tur:** gökyüzü → teras → eserler → galeri → süreç → hakkımda → Biggie. Kart içeriği kart açılınca iner; süreç
-  kayıtları (animasyonlu WebP) ışık kutusunda oynar. "Listeyi göster" bütün metni düz liste olarak verir; sağ altta
-  "Odaya in" düğmesi odaya (`lab/oda.html`) götürür (şimdilik ayrı sayfa).
-- **Metin** yalnız kullanıcının bitirme projesi sunumundan, ürün inceleme paketlerinden ve ürün görsellerindeki
-  yazılardan (uydurma yok). Biggie için "sculpt" denmez ("kil gibi duruyor").
+- **Işık canlı** (pişirme yok): güneş `core/oda-olcu.js` SUN (kuzey-kuzeydoğu, 42°), gölgeli tek ışık; ortam ışığı
+  gökyüzünün küçük panoramasından. Camlar gölge düşürmez; kiriş gölgeleri kilime ve güney duvarına çizgi düşürür.
+- **Oda:** iç hacim x −3500…3400, y −2500…2400, kirişlerin altı 2750. Güney ve batıda iç duvar; kuzey ve doğuda parapetin
+  üstünde sürgülü pencere (üçer kanat bir yana toplu, açıklıkta cam yok, kuzeydoğu köşesi açık); kirişli cam tavan
+  (iniş bölmesi x 350…1750, y −2500…−1100 açık, camı yandaki bölmenin üstünde). Bütün kasalar ve kirişler tek ağ.
+  Kuzeybatıda merdiven kovası: kapısı açık, kuzeye inen 7 basamak (odaya iniş).
+- **Fikir rafı:** kuzey parapetin önünde 2×4 gözlü vitrin (1900 × 380 × 1000, göz içi 440). Gözler `ALANLAR` sırasıyla:
+  kutu oyunları, plakalar, figürler, anahtarlıklar / stant ve vitrinler, ev ürünleri, endüstriyel ön-mühendislik, senin
+  fikrin. Her gözde kendinden ışıklı başlık kâğıdı, döner kaide (odakta döner) ve titreyen hayalet çizim (3 çeşit,
+  saniyede 10 kez). Kartta alt kalemler, o alandan eski işlerin fotoğrafları ve "Fikrini anlat" (WhatsApp hazır mesajı,
+  `fikirLinki`). **Gerçek ürün gelince yalnız veri değişir:** `ALANLAR[i].yuva.model` = GLB yolu; sahne onu kaideye
+  sığdırır (340 × 300 × 360), hayalet söner. Üstünde süreç rayı (4 ışıklı kart: tasarım, FDM, reçine, kalıp ve döküm).
+- **Köşe ve eşyalar (yer tutucu, dış varlık yok):** kodla Anadolu motifli kilim (elibelinde, koçboynuzu, göz; 12,5 mm
+  ilmek ızgarası, CanvasTexture), armut koltuk (deforme küre) ve üstünde Biggie (`muzik` klibi, kök z 215), 50 cm
+  kitaplık (kitaplar tek InstancedMesh), teleskop (tripod, pirinç tüp; kuzeydoğuya 20° yukarı), kutu oyunu rafı
+  (markasız kutular, kapakta doodle; tek atlas), şövalede kara tahta (hakkımda), iki saksı (aloe, antoryum), kilimin
+  çevresinde tur atan robot süpürge (hareket azaltmada durur).
+- **Kamera:** genel plan oda içinden (güney duvarının önünden kuzeye); telefonda ayrı kadraj (`PORTRE`). Kapalı odada
+  geri çekilecek yer olmadığı için sahne görüş açısını kendisi verir (`fov` 50, `squareFov` 50, `portraitFov` 58) ve
+  kamera sınırı verir (`cameraBounds`: iç hacmin 150 mm içi; motor yakın plan geri çekmesinde ve sürülen kamerada dışarı
+  çıkmaz). Masaüstünde yan kart için motor kamerayı yatayda kaydırır (uzak durakta ~0,5 m): yeni durağı `story.shotOf(id)`
+  ile ölç.
+- **Tur:** genel plan → süreç → 8 göz → pencere köşesi (Biggie; kitaplık ve teleskop da buraya götürür) → hakkımda →
+  merdiven ("Odaya in"). Gözlerin işaretçisi yok (başlık kâğıtta), şeritte ve kaydırmada erişilir.
+- **Metin** yalnız kullanıcının sunumundan, ürün paketlerinden ve çatı planındaki alan listesinden; alan metinlerinde sayı
+  ve iddia yok. Biggie için "sculpt" denmez ("kil gibi duruyor").
+- **Sıradaki (onay bekleyen):** armut, teleskop, raf ve bitkilerin gerçek modelleri (lisans listesi rapor ve plan
+  dosyasında), "basılarak belirme" animasyonu, kendini çizen doodle, gökten iniş (`core/gok-inis.js`).
 - **Portfolyoya girmeyenler:** tasarımı kullanıcıya ait olduğu doğrulanmayan işler, kullanıcı karar verene kadar
   dışarıda kalır (liste yerelde, çalışma alanının portfolyo notlarında).
 

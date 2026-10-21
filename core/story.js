@@ -225,6 +225,22 @@ export async function mountStory(root, { toolId, lang = 'tr', mode = pickMode(to
     };
   });
 
+  // Kamera sınırı (sahne verirse, built.cameraBounds = { min: [x, y, z], max: [x, y, z] }: kapalı odanın iç hacmi). Yakın
+  // plan kadrajı (w) kamerayı geri çekerken ve sayfa kamerayı sürerken (setView) kamera bu kutunun dışına çıkmaz.
+  const sinir = built.cameraBounds ? { min: new THREE.Vector3(...built.cameraBounds.min), max: new THREE.Vector3(...built.cameraBounds.max) } : null;
+  const sinirla = (p) => (sinir ? p.clamp(sinir.min, sinir.max) : p);
+  // Hedeften bakış doğrultusunda (dir birim) kutunun içinde kalınabilecek en uzak mesafe; ışın kutuya hiç girmiyorsa null
+  function sinirMesafe(o, dir) {
+    let t0 = 0, t1 = Infinity;
+    for (const k of ['x', 'y', 'z']) {
+      if (Math.abs(dir[k]) < 1e-9) { if (o[k] < sinir.min[k] || o[k] > sinir.max[k]) return null; continue; }
+      let a = (sinir.min[k] - o[k]) / dir[k], b = (sinir.max[k] - o[k]) / dir[k];
+      if (a > b) [a, b] = [b, a];
+      t0 = Math.max(t0, a); t1 = Math.min(t1, b);
+    }
+    return t1 >= t0 ? t1 : null;
+  }
+
   // ---- dikey ekran kadrajı ----
   // Sahneler yatay ekran için kurgulanır. Dikey ekranda yatay görüş açısı yarıya iner: kamera geri
   // çekilir, şablonların ortasına döner ve nesneler başlığın altına insin diye bakış biraz yükselir.
@@ -244,7 +260,7 @@ export async function mountStory(root, { toolId, lang = 'tr', mode = pickMode(to
       const pos = target.clone().add(p0.clone().sub(t0).multiplyScalar(pull));
       const lift = 0.1 * k * dist * pull;
       target.z += lift; pos.z += lift;
-      shots.main = { pos: pos.toArray(), target: target.toArray() };
+      shots.main = { pos: sinirla(pos).toArray(), target: target.toArray() };
     }
   }
 
@@ -310,7 +326,10 @@ export async function mountStory(root, { toolId, lang = 'tr', mode = pickMode(to
       // o genişlik sığana kadar geri çekilir; geniş ekranda zaten sığar, açı değişmez
       if (custom.w) {
         const gerek = custom.w / 2 / (Math.tan((camera.fov * Math.PI) / 360) * camera.aspect), d = pos.distanceTo(center);
-        if (gerek > d) pos.sub(center).multiplyScalar(gerek / d).add(center);
+        // Sınırlı sahnede geri çekilme kutunun kenarında durur (sığmasa da kamera duvarın dışına çıkmaz)
+        const enCok = sinir ? sinirMesafe(center, pos.clone().sub(center).normalize()) ?? gerek : gerek;
+        const k = Math.max(d, Math.min(gerek, enCok));
+        if (k > d) pos.sub(center).multiplyScalar(k / d).add(center);
       }
     } else {
       const dir = new THREE.Vector3(...shots.main.pos).sub(new THREE.Vector3(...shots.main.target)).normalize();
@@ -344,7 +363,7 @@ export async function mountStory(root, { toolId, lang = 'tr', mode = pickMode(to
       center.addScaledVector(right, shift);
       pos.addScaledVector(right, shift);
     }
-    return { pos: pos.toArray(), target: center.toArray() };
+    return { pos: sinirla(pos).toArray(), target: center.toArray() };
   }
 
   // ---- DOM: işaretçiler, şablon şeridi ve yakın plan kartı ----
@@ -625,8 +644,9 @@ export async function mountStory(root, { toolId, lang = 'tr', mode = pickMode(to
     const w = canvasHost.clientWidth || 1, h = canvasHost.clientHeight || 1;
     viewW = w; viewH = h;
     camera.aspect = w / h;
-    // Dar ekranda geniş sahne sığsın diye görüş açısını büyüt.
-    camera.fov = w / h < 0.8 ? (built.portraitFov || 46) : w / h < 1.2 ? 38 : 30;
+    // Dar ekranda geniş sahne sığsın diye görüş açısını büyüt. Sahne kendi açılarını verebilir (kapalı odada geri
+    // çekilecek yer yok: built.fov yatay, built.squareFov kareye yakın ekranda).
+    camera.fov = w / h < 0.8 ? (built.portraitFov || 46) : w / h < 1.2 ? (built.squareFov || 38) : (built.fov || 30);
     camera.updateProjectionMatrix();
     // Yatay telefonda (kısa ve geniş ekran) alttan açılan kart ekranı kaplıyordu: dokunmatikte de kart yanda
     const kisaYatay = w / h >= 1.4 && h <= 560;
@@ -807,7 +827,7 @@ export async function mountStory(root, { toolId, lang = 'tr', mode = pickMode(to
     hit(x, y) { return hitAt(x, y)?.id ?? null; },
     shotOf(id) { const h = id && hotspots.find((x) => x.id === id); return h ? focusShot(h) : { pos: [...shots.main.pos], target: [...shots.main.target] }; },
     view() { return { pos: rig.pos.toArray(), target: rig.target.toArray() }; },
-    setView(pos, target) { rig.pos.set(...pos); rig.target.set(...target); },
+    setView(pos, target) { sinirla(rig.pos.set(...pos)); rig.target.set(...target); },
     focusTo(id) { const h = hotspots.find((x) => x.id === id); if (h && focused !== h && !busy) focusOn(h, false, false); },
     blur() { if (focused && !busy) unfocus(false, false); },
     get ready() { return intro.progress() >= 1; },
