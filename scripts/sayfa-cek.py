@@ -10,22 +10,25 @@ Girdi:
 Çıktı: .impeccable/review/AD.png (yerel klasör, depoya girmez); --sayfa ile çekimler etiketli tek PNG'de.
   --dry-run: komutları yazar, hiçbir şey çalıştırmaz ve yazmaz. Aynı adla yeniden çalıştırmak dosyanın üstüne yazar.
 Not: sanal zaman glTF dokularının çözülmesini beklemez; hazır model taşıyan sayfayı tarayıcı panelinde doğrula.
-Gereken: yerel sunucu (python scripts/serve.py 8080) ve Microsoft Edge. Kendi geçici Edge profilini kullanır; iş
-bitince yalnız o profille açık kalan Edge süreçlerini kapatır (kullanıcının kendi Edge'ine dokunmaz).
+Gereken: yerel sunucu (python scripts/serve.py 8080; başka çalışma kopyası için --port) ve Microsoft Edge. Her
+çalıştırma kendi geçici Edge profilini kullanır (aynı anda birden çok çekim çakışmaz); iş bitince yalnız o profille açık
+kalan Edge süreçlerini kapatır (kullanıcının kendi Edge'ine dokunmaz).
 """
 import argparse
 import json
 import os
 import subprocess
 import sys
+import shutil
 import tempfile
 import time
 
 EDGE = r'C:\Program Files (x86)\Microsoft\Edge\Application\msedge.exe'
-PROFILE = os.path.join(tempfile.gettempdir(), 'oktos-sayfa-edge')
+PROFILE_AD = f'oktos-sayfa-edge-{os.getpid()}'
+PROFILE = os.path.join(tempfile.gettempdir(), PROFILE_AD)
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 OUT = os.path.join(ROOT, '.impeccable', 'review')
-HOST = 'http://localhost:8080/'
+HOST = 'http://localhost:8080/'  # --port ile değişir
 
 
 def capture(shot, dry):
@@ -64,7 +67,7 @@ def wait_written(path, before, limit=150):
 
 def wait_profile_free(limit=30):
     ps = ("@(Get-CimInstance Win32_Process -Filter \"Name = 'msedge.exe'\" | "
-          "Where-Object { $_.CommandLine -like '*oktos-sayfa-edge*' }).Count")
+          "Where-Object { $_.CommandLine -like '*" + PROFILE_AD + "*' }).Count")
     t0 = time.time()
     while time.time() - t0 < limit:
         out = subprocess.run(['powershell', '-NoProfile', '-Command', ps], capture_output=True, text=True).stdout.strip()
@@ -75,9 +78,10 @@ def wait_profile_free(limit=30):
 
 def cleanup():
     ps = ("Get-CimInstance Win32_Process -Filter \"Name = 'msedge.exe'\" | "
-          "Where-Object { $_.CommandLine -like '*oktos-sayfa-edge*' } | "
+          "Where-Object { $_.CommandLine -like '*" + PROFILE_AD + "*' } | "
           "ForEach-Object { try { Stop-Process -Id $_.ProcessId -Force -ErrorAction Stop } catch {} }")
     subprocess.run(['powershell', '-NoProfile', '-Command', ps], capture_output=True)
+    shutil.rmtree(PROFILE, ignore_errors=True)
 
 
 def sheet(paths, labels, name):
@@ -109,8 +113,11 @@ def main():
     ap.add_argument('--bekle', type=int, default=12000)
     ap.add_argument('--toplu')
     ap.add_argument('--sayfa')
+    ap.add_argument('--port', type=int, default=8080)
     ap.add_argument('--dry-run', action='store_true')
     a = ap.parse_args()
+    global HOST
+    HOST = f'http://localhost:{a.port}/'
     if a.toplu:
         shots = json.load(open(a.toplu, encoding='utf-8'))
     elif a.yol and a.ad:

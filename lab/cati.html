@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Çatı Katı Laboratuvarı · Oktos Workshop</title>
 <meta name="robots" content="noindex">
-<meta name="description" content="Oktos Workshop'un çatı katı: İbrahim Arda Bişgin'in portfolyosu. Fikir rafında kutu oyunları, plakalar, figürler, anahtarlıklar, stant ve vitrinler, ev ürünleri ve endüstriyel ön-mühendislik; dijital modelden döküme üretim süreci.">
+<meta name="description" content="Oktos Workshop'un çatı katı: İbrahim Arda Bişgin'in portfolyosu. Raflarda tasarım çalışmaları ve kutu oyunları (Modern Balbal serisi), ekranda dijital modelden döküme sekiz adımlık üretim süreci.">
 <meta name="theme-color" content="#d5d8dc">
 <link rel="icon" href="../core/icon.svg" type="image/svg+xml">
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -19,8 +19,10 @@
 { "imports": {
   "three": "https://cdn.jsdelivr.net/npm/three@0.162.0/build/three.module.js",
   "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.162.0/examples/jsm/",
+  "manifold-3d": "https://cdn.jsdelivr.net/npm/manifold-3d@2.5.1/manifold.js",
   "gsap": "https://cdn.jsdelivr.net/npm/gsap@3.15.0/index.js",
-  "gsap/": "https://cdn.jsdelivr.net/npm/gsap@3.15.0/"
+  "gsap/": "https://cdn.jsdelivr.net/npm/gsap@3.15.0/",
+  "opentype": "https://cdn.jsdelivr.net/npm/opentype.js@1.3.4/dist/opentype.module.js"
 } }
 </script>
 <noscript><style>.story { display: none !important; } .cati-noscript { color: #ece8e1; background: #15171a; }</style></noscript>
@@ -50,13 +52,13 @@
   <div class="story-veil"><div class="oda-yukle" role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0"><i></i></div></div>
   <p class="story-live" aria-live="polite"></p>
 </section>
-<noscript><p class="cati-noscript">Oktos Workshop çatı katı: İbrahim Arda Bişgin'in portfolyosu. Fikir rafı: kutu oyunları, plakalar, figürler (Modern Balbal serisi), anahtarlıklar, stant ve vitrinler, ev ürünleri, endüstriyel ön-mühendislik ve senin fikrin. Dijital modelden döküme sekiz adımlık üretim süreci. Sahne için JavaScript gerekir.</p></noscript>
+<noscript><p class="cati-noscript">Oktos Workshop çatı katı: İbrahim Arda Bişgin'in portfolyosu. Raflarda tasarım çalışmaları ve kutu oyunları (Modern Balbal serisi), ekranda dijital modelden döküme sekiz adımlık üretim süreci. Sahne için JavaScript gerekir.</p></noscript>
 
 <script type="module">
   import * as THREE from 'three';
   import { mountStory } from '../core/story.js';
   import * as catiScene from '../core/cati-sahne.js';
-  import { CATI_STORY, SAYFA, ALANLAR } from '../core/cati-veri.js';
+  import { CATI_STORY, SAYFA } from '../core/cati-veri.js';
   import { catiPanel } from '../core/cati-panel.js';
   import { odaTuru } from '../core/oda-tur.js';
   import { getLang, setLang } from '../core/i18n.js';
@@ -95,7 +97,7 @@
   listeBtn.hidden = false;
 
   catiScene.options.reduce = reduce;
-  const panel = catiPanel(root, { lang, reduce });
+  const panel = catiPanel(root, { lang, reduce, ekran: () => catiScene.canli.ekran });
   listeBtn.addEventListener('click', () => panel.listeAc());
   let tur = null, hazir = false;
   const story = window.story = await mountStory(root, {
@@ -103,13 +105,13 @@
     ...(params.get('mod') ? { mode: params.get('mod') } : {}),
     onSkip: () => { location.href = '../index.html'; },
     onReady: () => { hazir = true; tur?.hazir(); },
-    // Yakın plandaki bölgeye yeniden tıklamak tura değil sahneye gider (Biggie dansı: onPoke)
+    // Yakın plandaki bölgeye yeniden tıklamak tura değil sahneye gider (TV'de sıradaki adım, Biggie dansı: onPoke)
     onActivate: (h) => (h && h.id === story?.focusedId ? false : (tur?.sec(h) ?? false)),
     onCard: panel.onCard,
   });
-  // Kaydırmalı tur: oda içi genel plan, süreç rayı, fikir rafının 8 gözü, pencere köşesi (Biggie), hakkımda, merdiven
+  // Kaydırmalı tur: oda içi genel plan, TV'de süreç, raflar, armut köşesi (Biggie ve teleskop), hakkımda
   tur = odaTuru(root, story, {
-    duraklar: [null, 'surec', ...ALANLAR.map((a) => a.id), 'biggie', 'hakkimda', 'merdiven'],
+    duraklar: [null, 'ekran', 'kitaplik', 'biggie', 'hakkimda'],
     metin: { baslik: L(CATI_STORY.name), basla: L(SAYFA.basla) },
     reduce, bekle: !!params.get('odak'),
   });
