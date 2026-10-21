@@ -68,12 +68,12 @@ const TAHTA = { x: -2350, y: 1500 };
 const SAKSILAR = [
   [-1150, 2080, 0, 'hex', 0xb8613f, ['kalatya', 'antoryum_a'], { height: 340, dBottom: 240, dTop: 300 }],
   [-4350, 2120, 0, 'organic', 0x8fa58a, ['pachira', 'antoryum_a'], { height: 420, dBottom: 230, dTop: 210, style: 'hollow' }],
-  [3120, -1980, 0, 'twist', 0x2c3e66, ['egrelti', 'menekse'], { height: 300, dBottom: 230, dTop: 230 }],
+  [-1925, -2180, 0, 'twist', 0x2c3e66, ['egrelti', 'menekse'], { height: 300, dBottom: 230, dTop: 230 }], // güney duvarında çerçevelerin arası
   [3150, 1300, 0, 'morph', 0xece9e2, ['antoryum_c'], { height: 360, dBottom: 260, dTop: 240 }],
   [-3000, 2160, 0, 'amphora', 0xc49a3c, ['menekse', 'antoryum_c'], { height: 280, dBottom: 170, dTop: 190 }], // küçük pencerenin altı
 ];
 // Robot süpürgenin turu (odanın açık zemininde; eşyalara ~3 cm payla); hız mm/sn
-const ROBOT = { dur: [-1500, -1500, 0.3], yol: [[-4900, -1800], [-2000, -1950], [200, -1800], [800, -700], [600, 500], [-700, 900], [-3200, 700], [-4950, 300], [-5050, -900]], hiz: 140 };
+const ROBOT = { dur: [-1500, -1500, 0.3], yol: [[-4900, -1800], [-2000, -1680], [200, -1800], [800, -700], [600, 500], [-700, 900], [-3200, 700], [-4950, 300], [-5050, -900]], hiz: 140 };
 
 // ---- kamera ----
 // main: oda içinden genel plan (güney duvarının önünden kuzeye: cam cephe ve karşı binanın çatısı, sağda armut köşesi,

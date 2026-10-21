@@ -18,14 +18,14 @@ from mathutils import Matrix, Vector
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 KAYNAK = os.path.join(ROOT, 'kaynak')
 HEDEF = os.path.join(ROOT, 'assets', 'cati', 'bitkiler.glb')
-# (kaynak, çözünürlük, nesne, yeni ad, en çok üçgen)
+# (kaynak, çözünürlük, nesne(ler), yeni ad, en çok üçgen): birden çok nesne verilirse tek bitkide birleşir (gövde + yaprak)
 BITKILER = [
-    ('anthurium_botany_01', '2k', 'anthurium_botany_01_a', 'antoryum_a', 9000),
-    ('anthurium_botany_01', '2k', 'anthurium_botany_01_c', 'antoryum_c', 6000),
-    ('periwinkle_plant', '2k', 'periwinkle_plant_01_LOD0', 'menekse', 6000),
-    ('calathea_orbifolia_01', '1k', None, 'kalatya', 9000),
-    ('pachira_aquatica_01', '1k', None, 'pachira', 12000),
-    ('fern_02', '1k', None, 'egrelti', 9000),
+    ('anthurium_botany_01', '2k', ['anthurium_botany_01_a'], 'antoryum_a', 9000),
+    ('anthurium_botany_01', '2k', ['anthurium_botany_01_c'], 'antoryum_c', 6000),
+    ('periwinkle_plant', '2k', ['periwinkle_plant_01_LOD0'], 'menekse', 6000),
+    ('calathea_orbifolia_01', '1k', ['calathea_orbifolia_01_a'], 'kalatya', 5000),
+    ('pachira_aquatica_01', '1k', ['pachira_aquatica_01_bark_a', 'pachira_aquatica_01_leaves_a'], 'pachira', 12000),
+    ('fern_02', '1k', ['fern_02_c'], 'egrelti', 2300),
 ]
 DOKU = 1024
 
@@ -51,20 +51,22 @@ def main():
     for kay, res in sorted({(b[0], b[1]) for b in var}):
         once = set(bpy.data.objects)
         bpy.ops.import_scene.gltf(filepath=kaynak_yolu(kay, res))
-        yeni = [o for o in bpy.data.objects if o not in once and o.type == 'MESH']
-        for k2, r2, ad, yad, ucgen in [b for b in var if b[0] == kay]:
-            # Nesne adı verilmediyse en çok üçgenli nesne (tek bitkili kaynaklarda saksı ayrıysa o atlanır: adında pot geçen)
-            if ad:
-                ob = bpy.data.objects.get(ad)
-            else:
-                aday = [o for o in yeni if 'pot' not in o.name.lower() and 'soil' not in o.name.lower()]
-                ob = max(aday, key=lambda o: len(o.data.polygons)) if aday else None
-            if not ob:
-                log('bulunamadı', kay, ad)
+        for k2, r2, adlar, yad, ucgen in [b for b in var if b[0] == kay]:
+            parcalar = [bpy.data.objects.get(ad) for ad in adlar]
+            if not all(parcalar):
+                log('bulunamadı', kay, adlar)
                 continue
-            mw = ob.matrix_world.copy()
-            ob.parent = None
-            ob.matrix_world = Matrix.Scale(1000, 4) @ mw  # metre → mm
+            for ob in parcalar:  # glTF düğüm ağacından çıkar (ebeveyn silinince yeri kaymasın), metre → mm
+                mw = ob.matrix_world.copy()
+                ob.parent = None
+                ob.matrix_world = Matrix.Scale(1000, 4) @ mw
+            ob = parcalar[0]
+            if len(parcalar) > 1:  # gövde ve yaprak tek nesne (malzemeleri ayrı kalır)
+                bpy.ops.object.select_all(action='DESELECT')
+                for p in parcalar:
+                    p.select_set(True)
+                bpy.context.view_layer.objects.active = ob
+                bpy.ops.object.join()
             bpy.context.view_layer.update()
             bb = [ob.matrix_world @ Vector(c) for c in ob.bound_box]
             c = Vector(((min(v.x for v in bb) + max(v.x for v in bb)) / 2, (min(v.y for v in bb) + max(v.y for v in bb)) / 2, min(v.z for v in bb)))

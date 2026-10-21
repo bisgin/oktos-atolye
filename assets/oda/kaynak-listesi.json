@@ -50,6 +50,24 @@
       "not": "Saksıdaki canlı çiçek (cezayir menekşesi); çatı katında küçük saksı (assets/cati/bitkiler.glb)"
     },
     {
+      "id": "calathea_orbifolia_01",
+      "tur": "model",
+      "cozunurluk": "1k",
+      "not": "Çatı katının saksı bitkisi (kalatya; assets/cati/bitkiler.glb, scripts/cati-bitki.py)"
+    },
+    {
+      "id": "pachira_aquatica_01",
+      "tur": "model",
+      "cozunurluk": "1k",
+      "not": "Çatı katının uzun saksı bitkisi (para ağacı; assets/cati/bitkiler.glb)"
+    },
+    {
+      "id": "fern_02",
+      "tur": "model",
+      "cozunurluk": "1k",
+      "not": "Çatı katının saksı bitkisi (eğrelti; assets/cati/bitkiler.glb)"
+    },
+    {
       "id": "strawberry_chocolate_cake",
       "tur": "model",
       "cozunurluk": "1k",
