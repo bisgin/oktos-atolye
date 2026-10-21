@@ -17,10 +17,25 @@ const CIKIS = CustomEase.create('cikis', '0.16,1,0.3,1');      // giriş ve yerl
 const ASMA = CustomEase.create('asma', '0.34,1.56,0.64,1');    // ~%10 aşan beliriş
 const KAMERA = CustomEase.create('kamera', '0.65,0,0.35,1');   // kamera, şekil dönüşümü
 const ZOOM = 'expo.inOut';
-const W = 1920, H = 1080, M = PALET.murekkep, FPS = 60;
-const kr = (n) => n / FPS; // kare → saniye
 const q = new URLSearchParams(location.search);
 const CEKIM = q.has('cek');
+// Yerleşim: yatay 1920×1080 ya da dikey 1080×1920 (?yon=dikey|yatay; verilmezse ekran oranına göre)
+const DIKEY = q.get('yon') === 'dikey' || (!q.has('yon') && !CEKIM && innerHeight > innerWidth);
+const D = DIKEY ? {
+  W: 1080, H: 1920, kisi: [160, -6], BC: [540, 650], BR: [470, 300], yay: 330,
+  nokta: [[612, 1205, 12], [652, 1145, 18], [614, 1068, 26]],
+  tuval: { x: 40, y: 300, en: 1000, boy: 720 }, not: [190, 430], yuz: [540, 1428], montajOlcek: 1.5, yuzHedef: 0.46,
+  zoom: 1.12, zoomMerkez: [540, 820], balonKoken: '55% 98%',
+  etiket: { left: 72, top: 150, width: 640, boyut: 92 },
+} : {
+  W: 1920, H: 1080, kisi: [200, -6], BC: [1360, 330], BR: [450, 266], yay: 330,
+  nokta: [[792, 470, 12], [846, 420, 18], [910, 360, 26]],
+  tuval: { x: 890, y: 40, en: 940, boy: 590 }, not: [1052, 118], yuz: [580, 588], montajOlcek: 1.3, yuzHedef: 0.5,
+  zoom: 1.62, zoomMerkez: [960, 540], balonKoken: '22% 88%',
+  etiket: { left: 120, bottom: 92, width: 1700, boyut: 104 },
+};
+const W = D.W, H = D.H, M = PALET.murekkep, FPS = 60;
+const kr = (n) => n / FPS; // kare → saniye
 
 // ---------- Sahne ölçeği
 const sahne = document.getElementById('sahne');
@@ -31,6 +46,8 @@ function sigdir() {
 addEventListener('resize', sigdir);
 sigdir();
 const kamera = document.getElementById('kamera'), itme = document.getElementById('itme');
+Object.assign(sahne.style, { width: W + 'px', height: H + 'px' });
+document.querySelectorAll('.katman').forEach((k) => { k.setAttribute('viewBox', `0 0 ${W} ${H}`); Object.assign(k.style, { width: W + 'px', height: H + 'px' }); });
 
 // ---------- Kaynama: 8 fps, 4 çizim döngüsü
 let kare = -1;
@@ -46,6 +63,7 @@ const sapma = (tohum, genlik = 1.2) => {
 // ---------- Kişi (tek renkli doodle). Karakter değişimleri 12 fps adımlarında
 const kisiSvg = document.getElementById('kisi');
 kisiSvg.setAttribute('viewBox', `0 0 ${BOY.en} ${BOY.boy}`);
+Object.assign(kisiSvg.style, { left: D.kisi[0] + 'px', bottom: D.kisi[1] + 'px' });
 const kahraman = rastgeleKisi(7, { kadin: true, sacStil: 'kivircik', yas: 'genc', cil: true, gozluk: null, sakal: null, kupe: true, ten: 4, sac: 0, giysi: 3, yaka: 'kapusonlu' });
 // Ardışık iki kişide en çok bir ortak özellik: elle sıralanmış tohumlar
 const montaj = [12, 6, 2, 17, 9, 28, 5, 14, 21, 10, 33].map((t) => rastgeleKisi(t));
@@ -54,7 +72,7 @@ const kisiCiz = () => { kisiSvg.innerHTML = kisiSVG(kisi, { kaynama: kare % 3, i
 kaynayanlar.add(kisiCiz);
 
 // ---------- Düşünce balonu
-const BC = [1360, 330], BR = [450, 266];
+const BC = D.BC, BR = D.BR;
 const bulutSap = sapma(5, 1.6);
 function bulutYolu(k, dx = 0, dy = 0) {
   const n = 11, r = rng(77), w = Array.from({ length: n }, () => 0.75 + r() * 0.5), top = w.reduce((a, b) => a + b, 0);
@@ -79,7 +97,7 @@ function bulutYolu(k, dx = 0, dy = 0) {
   return d + 'Z';
 }
 const balonYol = document.querySelector('.bulut-yol'), balonDolgu = document.querySelector('.bulut-dolgu');
-const nokta = [[792, 470, 12], [846, 420, 18], [910, 360, 26]];
+const nokta = D.nokta;
 const noktaEl = [...document.querySelectorAll('.nokta')];
 function balonCiz(k) {
   const d = bulutYolu(k);
@@ -88,7 +106,7 @@ function balonCiz(k) {
   nokta.forEach(([x, y, r], i) => noktaEl[i].setAttribute('d', yol(oval(x, y, r, r * 0.86, 0, 360, 10), true, sapma(40 + i, 0.8)(k))));
 }
 kaynayanlar.add(balonCiz);
-const TUVAL = { x: 890, y: 40, en: 940, boy: 590 };
+const TUVAL = D.tuval;
 const tuval = document.getElementById('gercek');
 Object.assign(tuval.style, { left: TUVAL.x + 'px', top: TUVAL.y + 'px', width: TUVAL.en + 'px', height: TUVAL.boy + 'px' });
 tuval.style.clipPath = `path('${bulutYolu(null, -TUVAL.x, -TUVAL.y)}')`;
@@ -105,7 +123,7 @@ const ZAR = {
 };
 const SIRA = ['d4', 'd6', 'd8', 'd10', 'd12', 'd20'];
 // Yay dizilimi (gülümseyen yay)
-const YUVA = SIRA.map((_, i) => { const u = (i - 2.5) / 2.5; return [BC[0] + u * 330, BC[1] + 8 + 44 * u * u]; });
+const YUVA = SIRA.map((_, i) => { const u = (i - 2.5) / 2.5; return [BC[0] + u * D.yay, BC[1] + 8 + 44 * u * u]; });
 const NS = 'http://www.w3.org/2000/svg';
 const zarKatman = document.getElementById('zarlar');
 const zarlar = SIRA.map((ad, i) => {
@@ -226,12 +244,19 @@ function gercekCiz(t) {
 // ---------- El yazısı notlar (karakterin sesi, balonun içinde) ve ürün etiketi (Oktos'un sesi)
 const notlar = [...document.querySelectorAll('.not')];
 const etiket = document.getElementById('etiket');
+notlar.forEach((n) => Object.assign(n.style, { left: D.not[0] + 'px', top: D.not[1] + 'px' }));
+for (const k of ['left', 'top', 'bottom', 'width']) if (D.etiket[k] !== undefined) etiket.style[k] = D.etiket[k] + 'px';
+if (D.etiket.top !== undefined) etiket.style.bottom = 'auto';
+etiket.querySelector('.ad').style.fontSize = D.etiket.boyut + 'px';
 
 // ---------- Zaman çizelgesi
 const tl = gsap.timeline({ paused: true });
 function kur() {
   // 0. Kamera her an hareketli: montaj boyunca %3 itiş (60 fps)
-  tl.fromTo(itme, { scale: 1 }, { scale: 1.03, duration: 2.6, ease: 'power1.inOut', transformOrigin: '560px 560px' }, 0);
+  // Montajda kamera yüze yakın ve yüz ortada; kahraman gelince geri çekilir, balona yer açılır
+  const [fx, fy] = D.yuz;
+  tl.fromTo(itme, { scale: D.montajOlcek, x: W / 2 - fx, y: H * D.yuzHedef - fy, transformOrigin: `${fx}px ${fy}px` },
+    { scale: D.montajOlcek * 1.03, duration: 2.6, ease: 'power1.inOut' }, 0);
   // 1. Hızlanan montaj: 3 yüz 18 kare, 5 yüz 12 kare, 3 yüz 8 kare; göz çizgisi sabit, düz kesme
   const sure = [18, 18, 18, 12, 12, 12, 12, 12, 8, 8, 8];
   let t = 0;
@@ -246,10 +271,11 @@ function kur() {
   tl.call(() => { ifade = 'kirp'; kisiCiz(); }, null, T0 + kr(10));
   tl.call(() => { ifade = 'notr'; kisiCiz(); }, null, T0 + kr(17));
   tl.call(() => { ifade = 'merak'; bakis = [1, -1]; kisiCiz(); }, null, T0 + kr(24));
+  tl.to(itme, { scale: 1, x: 0, y: 0, duration: kr(36), ease: KAMERA }, T0 + kr(20));
   // 2. Düşünce balonu: noktalar 4 kare arayla, bulut aşmalı açılır, kendini 22 karede çizer
   const B0 = T0 + kr(30);
   tl.fromTo(noktaEl, { scale: 0, transformOrigin: '50% 50%' }, { scale: 1, duration: kr(10), ease: ASMA, stagger: kr(4) }, B0);
-  tl.fromTo(document.querySelectorAll('.bulut-g'), { scale: 0.3, opacity: 0, transformOrigin: '22% 88%' }, { scale: 1, opacity: 1, duration: kr(26), ease: 'back.out(1.5)' }, B0 + kr(10));
+  tl.fromTo(document.querySelectorAll('.bulut-g'), { scale: 0.3, opacity: 0, transformOrigin: D.balonKoken }, { scale: 1, opacity: 1, duration: kr(26), ease: 'back.out(1.5)' }, B0 + kr(10));
   tl.fromTo(balonYol, { drawSVG: '0%' }, { drawSVG: '100%', duration: kr(22), ease: CIKIS }, B0 + kr(10));
   tl.set(balonYol, { clearProps: 'strokeDasharray,strokeDashoffset' }, B0 + kr(34));
   // 3. d6 doodle: balon yerleştikten 4 kare sonra, ortada büyük
@@ -295,7 +321,7 @@ function kur() {
   // 7. Nefes (24 kare), sonra balonun içine zoom; gerçek zarlar mürekkep yayılır gibi belirir, renk ilk kez girer
   const Z0 = P0 + kr(36) + kr(24);
   ACILIS = Z0 + kr(30);
-  tl.to(kamera, { scale: 1.62, x: W / 2 - BC[0], y: H / 2 - BC[1], duration: kr(66), ease: ZOOM, transformOrigin: `${BC[0]}px ${BC[1]}px` }, Z0);
+  tl.to(kamera, { scale: D.zoom, x: D.zoomMerkez[0] - BC[0], y: D.zoomMerkez[1] - BC[1], duration: kr(66), ease: ZOOM, transformOrigin: `${BC[0]}px ${BC[1]}px` }, Z0);
   tl.to(notlar[2], { opacity: 0, duration: kr(12) }, Z0 + kr(20));
   tl.set(tuval, { opacity: 1 }, ACILIS);
   const acilis = { r: 0 };

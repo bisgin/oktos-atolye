@@ -2,6 +2,8 @@
 # Sayfa ?cek=1 ile açılır; sayfa window.tanitim.kare(t) (t anını eksiksiz kurar) ve tanitim.sure() vermeli,
 # hazır olunca window.tanitimHazir = true yapar. Her kare görüntüsü alınır, ffmpeg H.264 MP4 (+faststart) yazar.
 # Girdi:  python scripts/film-cek.py lab/tanitim/zar.html CIKTI_ADI [--fps 60] [--en 1920 --boy 1080] [--webm] [--gorunur]
+#         [--tavan 1.2M] (bit hızı tavanı, web teslimi) [--olcek 720x1280] (çıktıyı küçült) [--poster] (ilk kare WebP)
+#         Sayfa yolu sorgu içerebilir: "lab/tanitim/zar.html?yon=dikey"
 #         (yerel sunucu açık olmalı: python scripts/serve.py 8080)
 # Çıktı:  .impeccable/film/<CIKTI_ADI>.mp4 (+ .webm), kareler .impeccable/film/<CIKTI_ADI>-kare/ (yerel, depoya girmez)
 # Gerekenler: playwright (pip), kurulu Microsoft Edge (ayrı tarayıcı indirilmez), ffmpeg (winget Gyan.FFmpeg).
@@ -32,12 +34,16 @@ def main():
     a.add_argument("--port", type=int, default=8080)
     a.add_argument("--webm", action="store_true")
     a.add_argument("--gorunur", action="store_true", help="Edge penceresi açık çeksin (ekransız WebGL sorun çıkarırsa)")
+    a.add_argument("--tavan", help="bit hızı tavanı (ör. 1.2M); verilmezse CRF 18")
+    a.add_argument("--olcek", help="çıktı boyutu, ör. 720x1280")
+    a.add_argument("--poster", action="store_true", help="ilk kareyi WebP poster olarak yaz")
     a.add_argument("--dry-run", action="store_true")
     o = a.parse_args()
 
     cikis = os.path.join(KOK, ".impeccable", "film")
     kare_dir = os.path.join(cikis, o.ad + "-kare")
-    url = f"http://127.0.0.1:{o.port}/{o.sayfa.replace(os.sep, '/')}?cek=1"
+    yol = o.sayfa.replace(os.sep, '/')
+    url = f"http://127.0.0.1:{o.port}/{yol}{'&' if '?' in yol else '?'}cek=1"
     if o.dry_run:
         print(f"çekilecek: {url} {o.en}x{o.boy} {o.fps} fps → {kare_dir} → {o.ad}.mp4")
         return
@@ -68,9 +74,16 @@ def main():
     ff = ffmpeg_yolu()
     giris = ["-framerate", str(o.fps), "-i", os.path.join(kare_dir, "k_%05d.png")]
     mp4 = os.path.join(cikis, o.ad + ".mp4")
-    subprocess.run([ff, "-hide_banner", "-loglevel", "error", "-y", *giris, "-c:v", "libx264", "-preset", "slow", "-crf", "18",
-                    "-pix_fmt", "yuv420p", "-movflags", "+faststart", mp4], check=True)
+    vf = ["-vf", "scale=" + o.olcek.replace("x", ":") + ":flags=lanczos"] if o.olcek else []
+    kalite = ["-crf", "20", "-maxrate", o.tavan, "-bufsize", str(float(o.tavan.rstrip("Mm")) * 2) + "M"] if o.tavan else ["-crf", "18"]
+    subprocess.run([ff, "-hide_banner", "-loglevel", "error", "-y", *giris, *vf, "-c:v", "libx264", "-preset", "slow", *kalite,
+                    "-tune", "animation", "-pix_fmt", "yuv420p", "-movflags", "+faststart", mp4], check=True)
     print(f"yazıldı: {mp4} ({os.path.getsize(mp4) / 1024:.0f} KB)")
+    if o.poster:
+        poster = os.path.join(cikis, o.ad + "-poster.webp")
+        subprocess.run([ff, "-hide_banner", "-loglevel", "error", "-y", "-i", os.path.join(kare_dir, "k_00000.png"), *vf,
+                        "-c:v", "libwebp", "-quality", "80", poster], check=True)
+        print(f"yazıldı: {poster} ({os.path.getsize(poster) / 1024:.0f} KB)")
     if o.webm:
         webm = os.path.join(cikis, o.ad + ".webm")
         subprocess.run([ff, "-hide_banner", "-loglevel", "error", "-y", *giris, "-c:v", "libvpx-vp9", "-crf", "30", "-b:v", "0",

@@ -1,0 +1,202 @@
+<!doctype html>
+<html lang="tr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Açılış Denemesi · Oktos Workshop</title>
+<meta name="robots" content="noindex">
+<meta name="theme-color" content="#f1ede6">
+<link rel="icon" href="../core/icon.svg" type="image/svg+xml">
+<style>
+  /* Yan yana deney (çürütme planı, 2026-10-21): A = çatı doğrudan açılır, B = zar filmi oynar, çatı arkada yüklenir.
+     Her açılıştan 10 sn sonra tek soru. Sonuç kartı test eden kişide kalır; isterse kopyalar ya da WhatsApp'tan gönderir. */
+  :root { --kagit: #f1ede6; --murekkep: #1d1d20; --soluk: #5c5a57; --vurgu: #94400f; }
+  * { box-sizing: border-box; }
+  [hidden] { display: none !important; } /* .dugme'nin display değeri gizlemeyi ezmesin */
+  html, body { margin: 0; height: 100%; background: var(--kagit); color: var(--murekkep); font: 17px/1.5 system-ui, -apple-system, "Segoe UI", sans-serif; }
+  .ekran { position: fixed; inset: 0; display: grid; place-items: center; padding: 24px 20px calc(24px + env(safe-area-inset-bottom)); z-index: 30; background: var(--kagit); }
+  .ekran[hidden] { display: none; }
+  .kutu { width: min(100%, 440px); }
+  h1 { font-size: 26px; line-height: 1.2; margin: 0 0 10px; }
+  p { margin: 8px 0; }
+  .soluk { color: var(--soluk); font-size: 15px; }
+  .dugme { display: inline-flex; align-items: center; justify-content: center; min-height: 48px; padding: 0 22px; border-radius: 999px; border: 0; background: var(--murekkep); color: var(--kagit); font: 600 17px system-ui, sans-serif; cursor: pointer; text-decoration: none; }
+  .dugme.ikincil { background: transparent; color: var(--murekkep); border: 1.5px solid var(--murekkep); }
+  .dugmeler { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 16px; }
+  textarea { width: 100%; min-height: 96px; padding: 12px; border: 1.5px solid var(--murekkep); border-radius: 10px; background: #fbf9f5; color: var(--murekkep); font: 17px/1.4 system-ui, sans-serif; resize: vertical; }
+  fieldset { border: 0; padding: 0; margin: 16px 0 0; }
+  legend { padding: 0; margin-bottom: 8px; }
+  .secenek { display: flex; flex-wrap: wrap; gap: 8px; }
+  .secenek label { display: inline-flex; align-items: center; gap: 6px; min-height: 44px; padding: 0 14px; border: 1.5px solid var(--murekkep); border-radius: 999px; cursor: pointer; }
+  .secenek input { accent-color: var(--vurgu); }
+  #sahne { position: fixed; inset: 0; background: var(--kagit); }
+  #sahne iframe { position: absolute; inset: 0; width: 100%; height: 100%; border: 0; }
+  #film { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: contain; background: var(--kagit); transition: opacity 300ms ease; z-index: 5; }
+  #film.bitti { opacity: 0; pointer-events: none; }
+  #atla { position: absolute; right: max(16px, env(safe-area-inset-right)); bottom: calc(16px + env(safe-area-inset-bottom)); z-index: 6; min-height: 44px; padding: 0 18px; border-radius: 999px; border: 1.5px solid var(--murekkep); background: rgba(241, 237, 230, 0.9); color: var(--murekkep); font: 600 16px system-ui, sans-serif; cursor: pointer; }
+  #oynat { position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%); z-index: 6; }
+  #sonuc { white-space: pre-wrap; font: 14px/1.5 ui-monospace, Consolas, monospace; background: #fbf9f5; border: 1px solid #ddd5c8; border-radius: 10px; padding: 12px; max-height: 40vh; overflow: auto; }
+</style>
+</head>
+<body>
+<section class="ekran" id="giris">
+  <div class="kutu">
+    <h1>Kısa bir deneme</h1>
+    <p>Bir sitenin iki farklı açılışını göreceksin. Her birinden sonra tek bir soru var.</p>
+    <p class="soluk">Ses gerekmez. Yaklaşık 1 dakika sürer.</p>
+    <div class="dugmeler"><button class="dugme" id="basla" type="button">Başla</button></div>
+  </div>
+</section>
+
+<div id="sahne" hidden>
+  <video id="film" muted playsinline preload="auto" disablepictureinpicture aria-hidden="true"></video>
+  <button id="oynat" class="dugme" type="button" hidden>Oynat</button>
+  <button id="atla" type="button" hidden>Atla</button>
+</div>
+
+<section class="ekran" id="soru" hidden>
+  <form class="kutu" id="soruForm">
+    <h1>Bu sitedeki atölye ne yapıyor?</h1>
+    <p class="soluk">Tek cümleyle, aklına geldiği gibi yaz.</p>
+    <textarea id="cevap" required aria-label="Cevabın"></textarea>
+    <fieldset id="bozulmaSoru" hidden>
+      <legend>Videoda çizgilerde bozulma, bulanıklık ya da takılma gördün mü?</legend>
+      <div class="secenek">
+        <label><input type="radio" name="bozulma" value="evet"> Evet</label>
+        <label><input type="radio" name="bozulma" value="hayır"> Hayır</label>
+        <label><input type="radio" name="bozulma" value="fark etmedim"> Fark etmedim</label>
+      </div>
+    </fieldset>
+    <div class="dugmeler"><button class="dugme" type="submit">Devam</button></div>
+  </form>
+</section>
+
+<section class="ekran" id="son" hidden>
+  <div class="kutu">
+    <h1>Teşekkürler</h1>
+    <p>Sonucu aşağıya yazdım. Kopyalayıp gönderebilirsin.</p>
+    <div id="sonuc"></div>
+    <div class="dugmeler">
+      <button class="dugme" id="kopyala" type="button">Kopyala</button>
+      <a class="dugme ikincil" id="wa" target="_blank" rel="noopener">WhatsApp ile gönder</a>
+    </div>
+  </div>
+</section>
+
+<script type="module">
+  import { ORDER } from '../core/order-config.js';
+  const $ = (id) => document.getElementById(id);
+  const q = new URLSearchParams(location.search);
+  const sira = /^(AB|BA)$/.test(q.get('sira') || '') ? q.get('sira') : (Math.random() < 0.5 ? 'AB' : 'BA');
+  const dikey = matchMedia('(orientation: portrait)').matches;
+  const FILM = dikey ? '../assets/tanitim/deneme/zar-v04-dikey' : '../assets/tanitim/deneme/zar-v04-yatay';
+  const KESIF = 10;           // çatı hazır olduktan sonra soruya kadar geçen süre
+  const sonuclar = { sira, cihaz: `${innerWidth}×${innerHeight} @${devicePixelRatio}x, ${dikey ? 'dikey' : 'yatay'}`, baglanti: navigator.connection?.effectiveType || '?', A: {}, B: {} };
+  const bekle = (sn) => new Promise((r) => setTimeout(r, sn * 1000));
+  const sahne = $('sahne'), film = $('film'), atla = $('atla'), oynat = $('oynat');
+
+  // Çatıyı yeni bir çerçevede aç; çatının kendi girişi bitince (story.ready) çözülür. İki açılış da ilk ziyaret gibi
+  // başlasın: motorun "görüldü" işareti silinir (yoksa ikinci açılış kısa girişle gelir)
+  function catiAc() {
+    sahne.querySelector('iframe')?.remove();
+    try { localStorage.removeItem('oktos.story.cati'); } catch { /* gizli pencere */ }
+    const f = document.createElement('iframe');
+    f.title = 'Oktos çatı katı';
+    f.src = `cati.html?ab=${Date.now()}`;
+    sahne.prepend(f);
+    const t0 = performance.now();
+    return new Promise((coz) => {
+      const yokla = setInterval(() => {
+        try {
+          // window.story, #story kimlikli öğeyi de gösterir (id → window): sahne nesnesi olmalı, HTML öğesi değil
+          const s = f.contentWindow?.story;
+          if (s && !(s instanceof f.contentWindow.HTMLElement) && s.ready) { clearInterval(yokla); coz((performance.now() - t0) / 1000); }
+        } catch { /* aynı köken */ }
+      }, 150);
+      setTimeout(() => { clearInterval(yokla); coz(null); }, 40000);
+    });
+  }
+
+  async function sor(ac) {
+    $('cevap').value = '';
+    $('bozulmaSoru').hidden = ac !== 'B';
+    $('soru').hidden = false;
+    $('cevap').focus();
+    await new Promise((coz) => $('soruForm').onsubmit = (e) => { e.preventDefault(); coz(); });
+    sonuclar[ac].cevap = $('cevap').value.trim();
+    if (ac === 'B') sonuclar.B.bozulma = new FormData($('soruForm')).get('bozulma') || 'cevapsız';
+    $('soru').hidden = true;
+  }
+
+  async function acilisA() {
+    film.hidden = true; atla.hidden = true;
+    sahne.hidden = false;
+    const hazir = await catiAc();
+    sonuclar.A.yukleme = hazir;
+    await bekle(KESIF);
+    await sor('A');
+  }
+
+  async function acilisB() {
+    film.hidden = false; film.classList.remove('bitti');
+    film.poster = FILM + '-poster.webp';
+    film.src = FILM + '.mp4';
+    sahne.hidden = false;
+    const hazirSoz = catiAc();     // çatı film oynarken arkada yüklenir
+    let hazir = null; hazirSoz.then((h) => { hazir = h; });
+    atla.hidden = false;
+    const t0 = performance.now();
+    const bitis = new Promise((coz) => {
+      film.onended = () => coz('sonuna kadar');
+      atla.onclick = () => coz('atladı');
+      addEventListener('keydown', function esc(e) { if (e.key === 'Escape') { removeEventListener('keydown', esc); coz('atladı'); } });
+    });
+    try { await film.play(); sonuclar.B.kendiOynadi = 'evet'; }
+    catch {
+      sonuclar.B.kendiOynadi = 'hayır (Oynat düğmesi)';
+      oynat.hidden = false;
+      await new Promise((coz) => oynat.onclick = coz);
+      oynat.hidden = true;
+      await film.play().catch(() => {});
+    }
+    const nasil = await bitis;
+    sonuclar.B.film = nasil === 'atladı' ? `atladı, ${film.currentTime.toFixed(1)}. sn` : `sonuna kadar izledi (${film.duration.toFixed(1)} sn)`;
+    sonuclar.B.gecen = ((performance.now() - t0) / 1000).toFixed(1);
+    film.pause();
+    film.classList.add('bitti'); atla.hidden = true;
+    // Solma bitince video tamamen kalkar (afiş ilk kareyi çatının üstünde göstermesin), indirme durur
+    setTimeout(() => { film.hidden = true; film.removeAttribute('poster'); film.removeAttribute('src'); film.load(); }, 350);
+    if (hazir === null) hazir = await hazirSoz;
+    sonuclar.B.yukleme = hazir;
+    await bekle(KESIF);
+    await sor('B');
+  }
+
+  function rapor() {
+    const s = (v) => (v === null || v === undefined ? 'zaman aşımı' : `${v.toFixed(1)} sn`);
+    return [
+      'Oktos açılış denemesi',
+      `Sıra: ${sira[0]} → ${sira[1]}`,
+      `Cihaz: ${sonuclar.cihaz}, bağlantı ${sonuclar.baglanti}`,
+      `A (çatı doğrudan): çatı hazır ${s(sonuclar.A.yukleme)}`,
+      `  Cevap: ${sonuclar.A.cevap || '-'}`,
+      `B (film + çatı): film ${sonuclar.B.film}, kendiliğinden oynadı: ${sonuclar.B.kendiOynadi}, çatı hazır ${s(sonuclar.B.yukleme)}`,
+      `  Bozulma: ${sonuclar.B.bozulma}`,
+      `  Cevap: ${sonuclar.B.cevap || '-'}`,
+    ].join('\n');
+  }
+
+  $('basla').onclick = async () => {
+    $('giris').hidden = true;
+    for (const ac of sira) await (ac === 'A' ? acilisA() : acilisB());
+    sahne.hidden = true;
+    sahne.querySelector('iframe')?.remove();
+    const metin = rapor();
+    $('sonuc').textContent = metin;
+    $('wa').href = `https://wa.me/${ORDER.whatsapp}?text=${encodeURIComponent(metin)}`;
+    $('son').hidden = false;
+    $('kopyala').onclick = async () => { try { await navigator.clipboard.writeText(metin); $('kopyala').textContent = 'Kopyalandı'; } catch { $('kopyala').textContent = 'Kopyalanamadı, elle seç'; } };
+  };
+</script>
+</body>
+</html>
