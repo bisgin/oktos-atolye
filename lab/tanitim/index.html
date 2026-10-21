@@ -1,0 +1,38 @@
+<!doctype html>
+<html lang="tr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Tanıtım Filmi Denemesi · Oktos Workshop</title>
+<meta name="robots" content="noindex">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Big+Shoulders+Display:wght@700;900&family=Schibsted+Grotesk:wght@400;600;700&display=swap">
+<style>
+  :root { --kagit: #f1ede6; --murekkep: #1d1d20; --vurgu: #d4621f; }
+  html, body { margin: 0; background: var(--kagit); color: var(--murekkep); font-family: 'Schibsted Grotesk', system-ui, sans-serif; }
+  .izgara { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 8px; padding: 16px; }
+  .izgara figure { margin: 0; background: #fbf9f5; border-radius: 8px; }
+  .izgara svg { display: block; width: 100%; height: auto; }
+  .izgara figcaption { font-size: 11px; padding: 0 8px 6px; opacity: 0.6; }
+</style>
+</head>
+<body>
+<main id="kok"></main>
+<script type="module">
+  import { kisiSVG, rastgeleKisi, BOY } from './insan.js';
+  const q = new URLSearchParams(location.search);
+  const kok = document.getElementById('kok');
+  const svg = (ic) => `<svg viewBox="0 0 ${BOY.en} ${BOY.boy}" xmlns="http://www.w3.org/2000/svg">${ic}</svg>`;
+  if ((q.get('mod') || 'izgara') === 'izgara') {
+    // Çeşitlilik kontrolü: 24 rastgele kişi (tohum q.bas'tan)
+    const bas = +(q.get('bas') || 1);
+    kok.className = 'izgara';
+    kok.innerHTML = Array.from({ length: +(q.get('n') || 24) }, (_, i) => {
+      const p = rastgeleKisi(bas + i);
+      return `<figure>${svg(kisiSVG(p, { ifade: q.get('ifade') || p.ifade }))}<figcaption>${bas + i} · ${p.yas} · ${p.sacStil}${p.gozluk ? ' · gözlük' : ''}${p.sakal ? ' · ' + p.sakal : ''}</figcaption></figure>`;
+    }).join('');
+  }
+</script>
+</body>
+</html>

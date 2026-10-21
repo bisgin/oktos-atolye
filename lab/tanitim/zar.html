@@ -1,0 +1,74 @@
+<!doctype html>
+<html lang="tr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Zar Vuruşu Denemesi · Oktos Workshop</title>
+<meta name="robots" content="noindex">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Big+Shoulders+Display:wght@300..900&family=Caveat:wght@600&family=Schibsted+Grotesk:wght@400;600;700&display=swap">
+<script type="importmap">
+{ "imports": {
+  "three": "https://cdn.jsdelivr.net/npm/three@0.162.0/build/three.module.js",
+  "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.162.0/examples/jsm/",
+  "gsap": "https://cdn.jsdelivr.net/npm/gsap@3.15.0/index.js",
+  "gsap/": "https://cdn.jsdelivr.net/npm/gsap@3.15.0/"
+} }
+</script>
+<style>
+  :root { --kagit: #f1ede6; --murekkep: #1d1d20; --vurgu: #d4621f; }
+  html, body { margin: 0; height: 100%; overflow: hidden; background: var(--kagit); }
+  #sahne { position: absolute; left: 0; top: 0; width: 1920px; height: 1080px; transform-origin: 0 0; overflow: hidden; background: var(--kagit); }
+  /* Kâğıt dokusu: sabit gürültü, çok hafif (kameradan bağımsız) */
+  #sahne::after { content: ''; position: absolute; inset: 0; opacity: 0.35; pointer-events: none; z-index: 9;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='300' height='300'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='3' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 0.45 0 0 0 0 0.4 0 0 0 0 0.32 0 0 0 0.10 0'/%3E%3C/filter%3E%3Crect width='300' height='300' filter='url(%23n)'/%3E%3C/svg%3E"); }
+  #kamera, #itme { position: absolute; inset: 0; transform-origin: 0 0; will-change: transform; }
+  .katman { position: absolute; left: 0; top: 0; width: 1920px; height: 1080px; overflow: visible; }
+  #kisi { position: absolute; left: 200px; bottom: -6px; width: 760px; height: 836px; overflow: visible; }
+  #gercek { position: absolute; display: block; --r: 0%;
+    -webkit-mask-image: radial-gradient(ellipse 60% 70% at 50% 52%, #000 calc(var(--r) - 25%), transparent var(--r));
+            mask-image: radial-gradient(ellipse 60% 70% at 50% 52%, #000 calc(var(--r) - 25%), transparent var(--r)); }
+  .bulut-dolgu { fill: #fbf9f5; }
+  .bulut-yol { fill: none; stroke: var(--murekkep); stroke-width: 5; stroke-linecap: round; stroke-linejoin: round; }
+  .nokta { fill: #fbf9f5; stroke: var(--murekkep); stroke-width: 4.5; }
+  #zarlar path { fill: none; stroke: var(--murekkep); stroke-width: 0.036; stroke-linecap: round; stroke-linejoin: round; }
+  /* Karakterin sesi: el yazısı, balonun içinde */
+  .not { position: absolute; left: 1052px; top: 118px; margin: 0; font: 600 62px/1 'Caveat', cursive; color: var(--murekkep); transform: rotate(-3deg); white-space: nowrap; opacity: 0; }
+  .not b { font-weight: 600; color: var(--vurgu); }
+  /* Oktos'un sesi: düz, keskin ürün etiketi (kameradan bağımsız) */
+  #etiket { position: absolute; left: 120px; bottom: 92px; z-index: 8; opacity: 0; color: var(--murekkep); }
+  #etiket .maske { overflow: hidden; }
+  #etiket .ust { display: block; font: 700 22px/1.4 'Schibsted Grotesk', sans-serif; letter-spacing: 0.16em; text-transform: uppercase; color: var(--vurgu); }
+  #etiket .ad { display: block; font: 900 104px/0.98 'Big Shoulders Display', sans-serif; text-transform: uppercase; letter-spacing: 0.005em; }
+  #etiket .cizgi { display: block; height: 4px; width: 420px; margin-top: 14px; background: var(--murekkep); border-radius: 2px; }
+  #tekrar { position: fixed; right: 16px; bottom: 16px; z-index: 20; min-height: 40px; padding: 0 16px; border: 1.5px solid var(--murekkep); border-radius: 999px; background: transparent; font: 600 14px 'Schibsted Grotesk', sans-serif; cursor: pointer; }
+</style>
+</head>
+<body>
+<div id="sahne">
+  <div id="kamera"><div id="itme">
+    <svg class="katman" viewBox="0 0 1920 1080">
+      <path class="nokta"/><path class="nokta"/><path class="nokta"/>
+      <g class="bulut-g"><path class="bulut-dolgu"/></g>
+    </svg>
+    <canvas id="gercek"></canvas>
+    <svg class="katman" id="balon" viewBox="0 0 1920 1080">
+      <g class="bulut-g"><path class="bulut-yol"/></g>
+      <g id="zarlar"></g>
+    </svg>
+    <p class="not">bir zar…</p>
+    <p class="not">çok yüzlü olsun!</p>
+    <p class="not"><b>şeffaf</b> olsun.</p>
+    <svg id="kisi" xmlns="http://www.w3.org/2000/svg"></svg>
+  </div></div>
+  <div id="etiket" aria-live="polite">
+    <div class="maske"><span class="ust">Fikirden gerçeğe</span></div>
+    <div class="maske"><span class="ad">Şeffaf reçine FRP zar seti</span></div>
+    <i class="cizgi"></i>
+  </div>
+</div>
+<button id="tekrar" type="button">Tekrar oynat</button>
+<script type="module" src="./zar.js"></script>
+</body>
+</html>
