@@ -125,7 +125,7 @@ export function kisiSVG(p, { kaynama = 0, ifade = p.ifade, bakis = p.bakis, mono
 
   // --- Gövde ve yaka
   const omuzY = ceneY + 40;
-  const govde = [[cx - hw * 0.5, ceneY + 14], [cx - 118, omuzY + 14], [cx - 162, omuzY + 52], [cx - 172, BOY.boy + 10], [cx + 172, BOY.boy + 10], [cx + 162, omuzY + 52], [cx + 118, omuzY + 14], [cx + hw * 0.5, ceneY + 14]];
+  const govde = [[cx - hw * 0.5, ceneY + 14], [cx - 118, omuzY + 14], [cx - 162, omuzY + 52], [cx - 176, BOY.boy + 170], [cx + 176, BOY.boy + 170], [cx + 162, omuzY + 52], [cx + 118, omuzY + 14], [cx + hw * 0.5, ceneY + 14]];
   // Boyun önce, gövde üstüne biner
   parca.push(sekil([[cx - hw * 0.38, ceneY - 18], [cx - hw * 0.42, ceneY + 22], [cx + hw * 0.42, ceneY + 22], [cx + hw * 0.38, ceneY - 18]], ten));
   if (p.sacStil !== 'basortusu' || true) parca.push(sekil(govde, giysi));
@@ -139,8 +139,8 @@ export function kisiSVG(p, { kaynama = 0, ifade = p.ifade, bakis = p.bakis, mono
   }
   if (p.ceket) {
     // Blazer yakaları ve düğme
-    parca.push(cizgi(yol([[cx - hw * 0.62, ceneY + 28], [cx - 34, ceneY + 104], [cx - 8, BOY.boy + 8]], false, s())));
-    parca.push(cizgi(yol([[cx + hw * 0.62, ceneY + 28], [cx + 34, ceneY + 104], [cx + 8, BOY.boy + 8]], false, s())));
+    parca.push(cizgi(yol([[cx - hw * 0.62, ceneY + 28], [cx - 34, ceneY + 104], [cx - 8, BOY.boy + 170]], false, s())));
+    parca.push(cizgi(yol([[cx + hw * 0.62, ceneY + 28], [cx + 34, ceneY + 104], [cx + 8, BOY.boy + 170]], false, s())));
     parca.push(`<circle cx="${cx + 4}" cy="${ceneY + 128}" r="4.5" fill="${M}"/>`);
   }
   if (yaka === 'kapusonlu') {
@@ -149,8 +149,8 @@ export function kisiSVG(p, { kaynama = 0, ifade = p.ifade, bakis = p.bakis, mono
     parca.push(cizgi(yol([[cx + 16, ceneY + 34], [cx + 20, ceneY + 82]], false, s()), 3.4));
   }
   if (p.yelek) {
-    parca.push(sekil([[cx - 150, omuzY + 40], [cx - 70, ceneY + 30], [cx - 30, BOY.boy + 10], [cx - 160, BOY.boy + 10]], VURGU2));
-    parca.push(sekil([[cx + 150, omuzY + 40], [cx + 70, ceneY + 30], [cx + 30, BOY.boy + 10], [cx + 160, BOY.boy + 10]], VURGU2));
+    parca.push(sekil([[cx - 150, omuzY + 40], [cx - 70, ceneY + 30], [cx - 30, BOY.boy + 170], [cx - 168, BOY.boy + 170]], VURGU2));
+    parca.push(sekil([[cx + 150, omuzY + 40], [cx + 70, ceneY + 30], [cx + 30, BOY.boy + 170], [cx + 168, BOY.boy + 170]], VURGU2));
     parca.push(cizgi(yol([[cx - 140, omuzY + 92], [cx - 52, omuzY + 92]], false, s()), 6, '#f1ede6'));
     parca.push(cizgi(yol([[cx + 52, omuzY + 92], [cx + 140, omuzY + 92]], false, s()), 6, '#f1ede6'));
   }
@@ -198,7 +198,7 @@ export function kisiSVG(p, { kaynama = 0, ifade = p.ifade, bakis = p.bakis, mono
     parca.push(cizgi(yol([[cx - 20, tepe + 22], [cx - 6, tepe + 16]], false, s()), 2.6));
   }
   if (p.sacStil === 'bere') {
-    parca.push(sekil([[cx - hw - 10, cy - hh * 0.3], [cx - hw - 8, cy - hh * 0.75], [cx - hw * 0.4, tepe - 26], [cx + hw * 0.4, tepe - 26], [cx + hw + 8, cy - hh * 0.75], [cx + hw + 10, cy - hh * 0.3]], giysi === PALET.giysi[1] ? PALET.giysi[2] : PALET.giysi[1]));
+    parca.push(sekil([[cx - hw - 10, cy - hh * 0.3], [cx - hw - 8, cy - hh * 0.75], [cx - hw * 0.4, tepe - 26], [cx + hw * 0.4, tepe - 26], [cx + hw + 8, cy - hh * 0.75], [cx + hw + 10, cy - hh * 0.3]], giysi === PL.giysi[1] ? PL.giysi[2] : PL.giysi[1]));
     parca.push(cizgi(yol([[cx - hw - 9, cy - hh * 0.5], [cx, cy - hh * 0.6], [cx + hw + 9, cy - hh * 0.5]], false, s())));
   }
   if (p.sacStil === 'basortusu') {
@@ -231,11 +231,12 @@ export function kisiSVG(p, { kaynama = 0, ifade = p.ifade, bakis = p.bakis, mono
   // --- Gözler, kaşlar, burun, ağız (ifadeye göre)
   const [bx, by] = bakis;
   const gozX = hw * 0.38;
-  const kas = { notr: [0, 0], merak: [-5, 3], kizgin: [4, -6], sikkin: [3, 4], mutlu: [-3, 0], saskin: [-8, 0] }[ifade] || [0, 0];
+  const kas = { notr: [0, 0], merak: [-5, 3], kizgin: [4, -6], sikkin: [3, 4], mutlu: [-3, 0], saskin: [-8, 0], kisik: [3, -2] }[ifade] || [0, 0];
   for (const yon of [-1, 1]) {
     const gx = cx + yon * gozX;
     if (ifade === 'mutlu') parca.push(cizgi(yol([[gx - 7, GOZ_Y + 2], [gx, GOZ_Y - 4], [gx + 7, GOZ_Y + 2]], false, s()), 3.6));
     else if (ifade === 'kirp') parca.push(cizgi(yol([[gx - 7, GOZ_Y + 1], [gx, GOZ_Y + 3], [gx + 7, GOZ_Y + 1]], false, s()), 3.6));
+    else if (ifade === 'kisik') { parca.push(cizgi(yol([[gx - 8, GOZ_Y - 1], [gx, GOZ_Y - 3], [gx + 8, GOZ_Y - 1]], false, s()), 3.6)); parca.push(`<ellipse cx="${(gx + bx * 3).toFixed(1)}" cy="${(GOZ_Y + 1).toFixed(1)}" rx="4.2" ry="2.4" fill="${M}"/>`); }
     else parca.push(`<ellipse cx="${(gx + bx * 3).toFixed(1)}" cy="${(GOZ_Y + by * 2).toFixed(1)}" rx="4.6" ry="${ifade === 'saskin' ? 6.2 : 5.2}" fill="${M}"/>`);
     if (ifade === 'sikkin') parca.push(cizgi(yol([[gx - 9, GOZ_Y - 3], [gx + 9, GOZ_Y - 3]], false, s()), 3.2));
     // Kaş: iç uç (merkeze yakın) kas[1] ile, dış uç kas[0] ile oynar
@@ -262,6 +263,8 @@ export function kisiSVG(p, { kaynama = 0, ifade = p.ifade, bakis = p.bakis, mono
     sikkin: [[cx - 16, ay + 4], [cx, ay - 1], [cx + 16, ay + 4]],
     kizgin: [[cx - 14, ay + 4], [cx, ay], [cx + 14, ay + 4]],
     saskin: null,
+    kirp: [[cx - 14, ay], [cx, ay + 2], [cx + 14, ay]],
+    kisik: [[cx - 18, ay + 1], [cx + 2, ay + 6], [cx + 20, ay - 5]],
   }[ifade];
   if (agiz) parca.push(cizgi(yol(agiz, false, s()), 3.8));
   else parca.push(sekil(oval(cx, ay + 2, 8, 10, 0, 360, 10), mono ? '#5f5a53' : '#7a3b2e', 3.4));
