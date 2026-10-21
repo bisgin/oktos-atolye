@@ -1,0 +1,115 @@
+<!doctype html>
+<html lang="tr" class="story-on">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Çatı Katı Laboratuvarı · Oktos Workshop</title>
+<meta name="robots" content="noindex">
+<meta name="description" content="Oktos Workshop'un çatı katı: İbrahim Arda Bişgin'in portfolyosu. Modern Balbal heykelleri, döküm ve baskı işleri, dijital modelden döküme üretim süreci.">
+<meta name="theme-color" content="#d5d8dc">
+<link rel="icon" href="../core/icon.svg" type="image/svg+xml">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Big+Shoulders+Display:wght@700&family=Schibsted+Grotesk:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<link rel="stylesheet" href="../core/style.css">
+<link rel="stylesheet" href="../core/story.css">
+<link rel="stylesheet" href="../core/oda.css">
+<link rel="stylesheet" href="../core/cati.css">
+<script type="importmap">
+{ "imports": {
+  "three": "https://cdn.jsdelivr.net/npm/three@0.162.0/build/three.module.js",
+  "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.162.0/examples/jsm/",
+  "gsap": "https://cdn.jsdelivr.net/npm/gsap@3.15.0/index.js",
+  "gsap/": "https://cdn.jsdelivr.net/npm/gsap@3.15.0/"
+} }
+</script>
+</head>
+<body>
+<header class="topbar">
+  <a class="brand" href="../index.html"><img src="../core/logo-beyaz.svg" alt="" width="36" height="28"><span>Oktos Workshop</span></a>
+  <span class="spacer"></span>
+  <button type="button" class="cati-liste-ac" id="liste-ac"></button>
+  <div class="lang" role="group" aria-label="Dil / Language"><button type="button" data-lang="tr">TR</button><button type="button" data-lang="en">EN</button></div>
+</header>
+
+<section class="story oda cati" id="story" aria-labelledby="story-title">
+  <div class="story-canvas"></div>
+  <div class="oda-scrim" aria-hidden="true"></div>
+  <div class="story-pins"></div>
+  <div class="story-copy">
+    <h1 class="story-title" id="story-title"></h1>
+    <p class="story-lede"></p>
+    <div class="story-actions">
+      <button type="button" class="story-cta"></button>
+      <span class="story-hint"></span>
+    </div>
+  </div>
+  <nav class="story-strip"></nav>
+  <a class="cati-asagi" id="asagi" href="oda.html"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 4v15M6 13l6 6 6-6"/></svg><span></span></a>
+  <div class="story-veil"><div class="oda-yukle" role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0"><i></i></div></div>
+  <p class="story-live" aria-live="polite"></p>
+</section>
+<noscript><p class="cati-noscript">Oktos Workshop çatı katı: İbrahim Arda Bişgin'in portfolyosu. Modern Balbal serisi (Kapital Kağan, Kadere Kınalı, Akademi Atlısı), döküm ve baskı işleri, dijital modelden döküme sekiz adımlık üretim süreci. Sahne için JavaScript gerekir.</p></noscript>
+
+<script type="module">
+  import * as THREE from 'three';
+  import { mountStory } from '../core/story.js';
+  import * as catiScene from '../core/cati-sahne.js';
+  import { CATI_STORY, SAYFA } from '../core/cati-veri.js';
+  import { catiPanel } from '../core/cati-panel.js';
+  import { odaTuru } from '../core/oda-tur.js';
+  import { getLang, setLang } from '../core/i18n.js';
+
+  const params = new URLSearchParams(location.search);
+  if (params.has('cek')) {
+    document.head.insertAdjacentHTML('beforeend', '<style>*, *::before, *::after { transition: none !important; }</style>');
+    (await import('gsap')).gsap.ticker.lagSmoothing(0);
+  }
+  const lang = getLang();
+  const L = (o) => o[lang] ?? o.tr;
+  document.documentElement.lang = lang;
+  document.querySelectorAll('.lang button').forEach((b) => {
+    b.classList.toggle('on', b.dataset.lang === lang);
+    b.addEventListener('click', () => { setLang(b.dataset.lang); location.reload(); });
+  });
+  const root = document.getElementById('story');
+  const reduce = matchMedia('(prefers-reduced-motion: reduce)').matches || params.get('mod') === 'still';
+  // Yükleme perdesi: dosyaların yüklenme oranı (three.js yükleme yöneticisi)
+  {
+    const veil = root.querySelector('.story-veil'), cubuk = veil.querySelector('.oda-yukle');
+    veil.dataset.loading = L(SAYFA.yukleniyor);
+    cubuk.setAttribute('aria-label', L(SAYFA.yukleniyor));
+    THREE.DefaultLoadingManager.onProgress = (_, y, t) => {
+      const p = Math.max(0.06, t ? y / t : 0);
+      cubuk.style.setProperty('--ilerleme', p.toFixed(3));
+      cubuk.setAttribute('aria-valuenow', String(Math.round(p * 100)));
+    };
+  }
+  const asagi = document.getElementById('asagi');
+  asagi.querySelector('span').textContent = L(SAYFA.asagiKat);
+  const listeBtn = document.getElementById('liste-ac');
+  listeBtn.textContent = L(SAYFA.liste);
+
+  catiScene.options.reduce = reduce;
+  const panel = catiPanel(root, { lang });
+  listeBtn.addEventListener('click', () => panel.listeAc());
+  let tur = null, hazir = false;
+  const story = window.story = await mountStory(root, {
+    toolId: 'cati', lang, story: CATI_STORY, sceneModule: catiScene,
+    ...(params.get('mod') ? { mode: params.get('mod') } : {}),
+    onSkip: () => { location.href = '../index.html'; },
+    onReady: () => { hazir = true; tur?.hazir(); },
+    onActivate: (h) => tur?.sec(h) ?? false,
+    onCard: panel.onCard,
+  });
+  // Kaydırmalı tur: önce gökyüzü (genel plan), sonra çatı ve portfolyo durakları
+  tur = odaTuru(root, story, {
+    duraklar: [null, 'teras', 'eserler', 'galeri', 'surec', 'hakkimda', 'biggie'],
+    metin: { baslik: L(CATI_STORY.name), basla: lang === 'en' ? 'Scroll down to the roof' : 'Aşağı kaydır, çatıya in' },
+    reduce, bekle: !!params.get('odak'),
+  });
+  if (hazir) tur.hazir();
+  if (params.get('odak')) story.focus(params.get('odak'));
+</script>
+</body>
+</html>

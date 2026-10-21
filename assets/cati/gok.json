@@ -1,0 +1,16 @@
+{
+ "kaynak": "Poly Haven balcony (CC0), 4k HDR",
+ "altKenar": 6.0,
+ "ustKenar": 90,
+ "gunesU": 0.4946,
+ "gunesYukseklik": 26.0,
+ "genislik": 4096,
+ "yukseklik": 956,
+ "ortamAltKenar": 6.0,
+ "not": "Dilim dışında 12–36° ince engeller içten dolduruldu, okaliptüs puslandı; dilim (ev, şemsiye, servi) sahnedeki yüksek komşu blokun arkasında kalır",
+ "blokDilim": [
+  0.44,
+  0.86
+ ],
+ "blokTepe": 42.5
+}

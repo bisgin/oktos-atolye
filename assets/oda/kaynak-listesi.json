@@ -184,6 +184,27 @@
       "yazar": "Oktos Workshop (model), Adobe Mixamo (hareketler)",
       "lisans": "Model: Tripo AI, ücretli plan aktifken üretildi (ticari kullanım hakkı; kullanıcı beyanı 2026-10-19). Hareketler: Mixamo, projede telifsiz kullanım; ham karakter ve hareket dosyalarının tek başına dağıtımı yasak (Adobe Mixamo SSS)",
       "not": "Odadaki karakter (bizzikoloşko); core/oda-karakter.js okur (2,2 MB, Draco)"
+    },
+    {
+      "dosya": "assets/cati/gok.webp, assets/cati/ortam.webp",
+      "kaynak": "https://polyhaven.com/a/balcony",
+      "yazar": "Poly Haven (balcony HDRI)",
+      "lisans": "CC0 (https://polyhaven.com/license): kamu malı",
+      "not": "Çatı katının gökyüzü (6°–90° bandı, 4096 px) ve ortam ışığı (1024 × 512): 4k HDR'den ton eşlenip türetildi; ufkun altı şehir pusuna çevrildi, ince engeller içten dolduruldu (2026-10-21)"
+    },
+    {
+      "dosya": "assets/cati/portfolyo/*.webp",
+      "kaynak": "Oktos Workshop'un kendi fotoğrafları ve süreç kayıtları (ürün master kareleri ve bitirme projesi sunumu)",
+      "yazar": "İbrahim Arda Bişgin / Oktos Workshop",
+      "lisans": "Tüm hakları saklıdır (kullanıcının kendi işi ve fotoğrafı); yalnız bu sitede",
+      "not": "Çatı katı portfolyosu: Modern Balbal serisi, döküm ve baskı işleri, 8 adımlık süreç kayıtları (2026-10-21)"
+    },
+    {
+      "dosya": "assets/cati/modeller/*.glb",
+      "kaynak": "Kullanıcının kendi heykel STL'leri (scripts/portfolyo-model.py ile hafifletildi)",
+      "yazar": "İbrahim Arda Bişgin / Oktos Workshop",
+      "lisans": "Tüm hakları saklıdır (kullanıcının kendi tasarımı); yalnız bu sitede",
+      "not": "Çatı katındaki sergi masasında Kadere Kınalı, Akademi Atlısı, Oğuz Kağan (60 bin üçgen, girinti yıkamalı vertex rengi)"
     }
   ]
 }

@@ -1,0 +1,58 @@
+/* Çatı katı (portfolyo) ekleri: oda.css'in üstüne. Kart içi küçük resim ızgarası, süreç adımları, ışık kutusu,
+   düz liste katmanı, "Odaya in" düğmesi. Renkler oda.css'teki koyu panel diliyle aynı. */
+.cati .story-card { max-height: min(78svh, 680px); overflow-y: auto; overscroll-behavior: contain; }
+.cati-ek { margin: 10px 0 12px; }
+.cati-izgara { display: grid; grid-template-columns: repeat(auto-fill, minmax(92px, 1fr)); gap: 8px; }
+.cati-k {
+  display: flex; flex-direction: column; gap: 4px; padding: 0; border: 0; background: none; color: inherit;
+  font: 500 12px/1.25 'Schibsted Grotesk', system-ui, sans-serif; text-align: left; cursor: zoom-in;
+}
+.cati-k img { width: 100%; aspect-ratio: 4 / 5; object-fit: cover; border-radius: 6px; background: rgba(255, 255, 255, 0.08); }
+.cati-k.yok { cursor: default; padding: 8px; border-radius: 6px; background: rgba(255, 255, 255, 0.06); }
+.cati-k.yok small { opacity: 0.75; font-size: 11px; }
+@media (hover: hover) and (pointer: fine) {
+  .cati-k[data-src] img { transition: transform 160ms cubic-bezier(0.23, 1, 0.32, 1), opacity 160ms ease; }
+  .cati-k[data-src]:hover img { transform: scale(1.03); }
+}
+.cati-k:focus-visible { outline: 2px solid #e8c48c; outline-offset: 2px; border-radius: 6px; }
+.cati-adimlar { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(auto-fill, minmax(104px, 1fr)); gap: 8px; }
+.cati-adimlar .cati-k img { aspect-ratio: 4 / 3; cursor: pointer; }
+.cati-yazi p { margin: 0 0 8px; font-size: 14px; line-height: 1.5; }
+
+.cati-kutu {
+  position: fixed; inset: 0; z-index: 60; display: grid; place-items: center; padding: 24px;
+  background: rgba(12, 13, 15, 0.86);
+}
+.cati-kutu[hidden] { display: none; }
+.cati-kutu figure { margin: 0; max-width: min(92vw, 980px); color: #f1ede6; }
+.cati-kutu img { display: block; max-width: 100%; max-height: 74svh; margin: 0 auto; border-radius: 8px; }
+.cati-kutu figcaption { margin-top: 12px; font: 400 15px/1.45 'Schibsted Grotesk', system-ui, sans-serif; }
+.cati-kutu figcaption b { display: block; font-weight: 600; margin-bottom: 2px; }
+.cati-kapat {
+  position: absolute; top: max(14px, env(safe-area-inset-top)); right: max(16px, env(safe-area-inset-right));
+  min-height: 44px; padding: 0 16px; border: 1px solid rgba(255, 255, 255, 0.3); border-radius: 999px;
+  background: rgba(20, 21, 24, 0.7); color: #f1ede6; font: 600 14px 'Schibsted Grotesk', system-ui, sans-serif; cursor: pointer;
+}
+
+.cati-liste-ac {
+  min-height: 36px; padding: 0 14px; margin-right: 10px; border: 1px solid rgba(255, 255, 255, 0.35); border-radius: 999px;
+  background: rgba(20, 21, 24, 0.35); color: #fff; font: 600 13px 'Schibsted Grotesk', system-ui, sans-serif; cursor: pointer;
+}
+.cati-liste { position: fixed; inset: 0; z-index: 55; overflow-y: auto; background: #15171a; color: #ece8e1; }
+.cati-liste[hidden] { display: none; }
+.cati-liste-ic { max-width: 720px; margin: 0 auto; padding: 72px 20px 48px; font: 400 15px/1.55 'Schibsted Grotesk', system-ui, sans-serif; }
+.cati-liste h2 { font: 700 34px/1.1 'Big Shoulders Display', 'Schibsted Grotesk', sans-serif; margin: 0 0 18px; }
+.cati-liste h3 { font-size: 18px; margin: 28px 0 6px; }
+.cati-liste ul, .cati-liste ol { padding-left: 20px; }
+.cati-liste small { opacity: 0.7; }
+.cati-liste .cati-kapat { position: fixed; }
+
+.cati-asagi {
+  position: absolute; right: max(16px, env(safe-area-inset-right)); bottom: calc(18px + env(safe-area-inset-bottom)); z-index: 6;
+  display: inline-flex; align-items: center; gap: 8px; min-height: 44px; padding: 0 16px 0 12px; border-radius: 999px;
+  background: rgba(20, 21, 24, 0.62); color: #fff; text-decoration: none; font: 600 14px 'Schibsted Grotesk', system-ui, sans-serif;
+  backdrop-filter: blur(6px);
+}
+.cati-asagi svg { width: 18px; height: 18px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+.cati-noscript { padding: 80px 20px; max-width: 640px; margin: 0 auto; }
+@media (prefers-reduced-motion: reduce) { .cati-k[data-src] img { transition: none; } }
