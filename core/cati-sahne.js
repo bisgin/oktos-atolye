@@ -211,6 +211,8 @@ function sehir(cepheMat, catiMat) {
   const cephe = [], cati = [], r = rnd(11);
   const renkler = [[1, 0.97, 0.92], [0.98, 0.9, 0.82], [0.93, 0.93, 0.95], [1, 0.93, 0.86], [0.9, 0.86, 0.82], [0.96, 0.95, 0.9]];
   const renk = () => renkler[Math.floor(r() * renkler.length)];
+  // Kendi binamızın gövdesi: döşemenin 10 mm altında biter (dar ekranda kamera terasın dışına çekilince altı boş görünmesin)
+  bina(-3600, 3600, -2600, 2600, -15000, -10, [0.96, 0.94, 0.9], cephe, cati);
   // Yüksek komşu blok (L): güney ve batı; tabanı terasın 15 m altı
   bina(-14000, 7000, -12000, -2600, -15000, CATI.blokUst, [0.95, 0.93, 0.88], cephe, cati);
   bina(-14000, -3600, -2600, 12000, -15000, CATI.blokUst, [0.93, 0.91, 0.87], cephe, cati);
@@ -255,6 +257,7 @@ function teras(siva, beton) {
   zemin.position.set((x0 + x1) / 2, (y0 + y1) / 2, 0);
   zemin.receiveShadow = true;
   zemin.name = 'zemin';
+  zemin.raycast = () => {}; // teras durağı yalnız işaretçi ve şeritten: boş zemine tıklamak oraya uçurmasın
   g.add(zemin);
   // Parapet (kuzey, doğu) ve başlığı
   const kuzey = kutu(x1 - x0, t, h, siva); kuzey.position.set((x0 + x1) / 2, y1 - t / 2, 0);
@@ -372,8 +375,15 @@ async function galeri() {
   return g;
 }
 
+// Kanvasa yazmadan önce sayfanın yazı tipleri (en çok 1,5 sn beklenir; gelmezse yedek yazı tipi)
+const yaziTipleri = () => Promise.race([
+  Promise.all(['700 74px "Big Shoulders Display"', '600 38px "Schibsted Grotesk"', '500 30px "Schibsted Grotesk"'].map((f) => document.fonts?.load(f))),
+  new Promise((r) => setTimeout(r, 1500)),
+]).catch(() => {});
+
 // Süreç panosu: mantar levha, sekiz kaydın ilk karesi polaroid gibi, altında adım adı (tek doku)
 async function pano(lang) {
+  await yaziTipleri();
   const [c, g] = kanvas(2048, 1204), r = rnd(5);
   g.fillStyle = '#b8895a'; g.fillRect(0, 0, 2048, 1204);
   for (let i = 0; i < 9000; i++) { g.fillStyle = r() < 0.5 ? 'rgba(90,55,25,0.18)' : 'rgba(240,210,170,0.16)'; g.fillRect(r() * 2048, r() * 1204, 2 + r() * 4, 2 + r() * 4); }
@@ -413,6 +423,7 @@ async function pano(lang) {
 
 // Hakkımda: kaldırımda duran A tipi kara tahta; logo ve 'Oktos Workshop · Ankara' tebeşirle
 async function karaTahta(lang) {
+  await yaziTipleri();
   const [c, g] = kanvas(768, 1024), r = rnd(9);
   g.fillStyle = '#20282a'; g.fillRect(0, 0, 768, 1024);
   for (let i = 0; i < 2500; i++) { g.fillStyle = `rgba(255,255,255,${r() * 0.05})`; g.fillRect(r() * 768, r() * 1024, 1 + r() * 30, 1 + r() * 3); }
@@ -466,7 +477,7 @@ async function karaTahta(lang) {
 // Yerleşim grubu hemen döner (hotspot); model arkadan gelir. Görünmez vekil kutu tıklama ve kadraj için
 function biggieGrubu() {
   const g = new THREE.Group();
-  const vekil = new THREE.Mesh(new THREE.BoxGeometry(520, 420, 1400).translate(0, 0, 700), new THREE.MeshBasicMaterial({ visible: false }));
+  const vekil = new THREE.Mesh(new THREE.BoxGeometry(520, 420, 1500).translate(0, 0, 750), new THREE.MeshBasicMaterial({ visible: false }));
   g.add(vekil);
   g.position.set(BIGGIE.x, BIGGIE.y, 0);
   g.rotation.z = BIGGIE.psi;
@@ -477,7 +488,8 @@ async function biggieyiYukle(g, durum) {
     const k = await gltf(KOK + 'oda/karakter.glb');
     const model = k.scene;
     model.scale.setScalar(1000);
-    model.traverse((o) => { if (o.isMesh) { o.castShadow = true; o.receiveShadow = true; o.frustumCulled = false; } });
+    // Tıklama ve üzerine gelme vekil kutudan: derili ağ her pointermove'da üçgen üçgen ışınlanmasın (geç gelen ağda etiket de yok)
+    model.traverse((o) => { if (o.isMesh) { o.castShadow = true; o.receiveShadow = true; o.frustumCulled = false; o.raycast = () => {}; } });
     g.add(model);
     const mixer = new THREE.AnimationMixer(model);
     const klip = (ad) => k.animations.find((a) => a.name === ad);
@@ -556,7 +568,7 @@ export async function buildScene({ scene, lang = 'tr' }) {
     outlineFocus: false,
     lights: {
       center: merkez,
-      key: merkez.map((m, i) => m + s[i] * 7000),
+      key: merkez.map((m, i) => m + s[i] * 4500), // motorun gölge kamerası near 100 / far 8000: 4500'de bütün teras içeride
       keyColor: OLCU.SUN.color, keyIntensity: 3.4,
       hemi: 0.45, fillIntensity: 0, rimIntensity: 0,
       shadowSpan: 5200,
@@ -564,7 +576,7 @@ export async function buildScene({ scene, lang = 'tr' }) {
     },
     hotspots: [
       { id: 'teras', object: zemin, preset: undefined, noLift: true, anchor: [600, -200, 40] },
-      { id: 'eserler', object: kaide, noLift: true, preset: 'magaza', disari: 'https://oktosworkshop.com', cta: { tr: 'Mağazada gör', en: 'See in the shop' } },
+      { id: 'eserler', object: kaide, noLift: true, preset: 'magaza', disari: 'https://oktosworkshop.com/biblolar', cta: { tr: 'Mağazada gör', en: 'See in the shop' } },
       { id: 'galeri', object: gal, noLift: true },
       { id: 'surec', object: panoM, noLift: true },
       { id: 'hakkimda', object: tahta, noLift: true },
@@ -575,18 +587,18 @@ export async function buildScene({ scene, lang = 'tr' }) {
       durum.onceki = time;
       durum.biggie?.mixer.update(dt);
       // Baskılar rüzgârda hafifçe sallanır
-      for (const b of durum.galeri?.userData.baskilar || []) if (b) b.rotation.x = Math.sin(time * 1.3 + b.userData.faz) * 0.05 + Math.sin(time * 0.37 + b.userData.faz) * 0.03;
+      if (!options.reduce) for (const b of durum.galeri?.userData.baskilar || []) if (b) b.rotation.x = Math.sin(time * 1.3 + b.userData.faz) * 0.05 + Math.sin(time * 0.37 + b.userData.faz) * 0.03;
       // Robotun ışıkları: sarı 6 sn'de bir iki kez çakar, mavi 9 sn'de bir yavaşça yanıp söner (odadaki gibi)
-      if (durum.ledler.length === 2) {
+      if (durum.ledler.length === 2 && options.reduce) { durum.ledler[0].emissiveIntensity = 0; durum.ledler[1].emissiveIntensity = 2; } else if (durum.ledler.length === 2) {
         const a = time % 6, b = time % 9;
         durum.ledler[0].emissiveIntensity = (a < 0.18 || (a > 0.36 && a < 0.54)) ? 6 : 0;
         durum.ledler[1].emissiveIntensity = b > 4 && b < 5.6 ? 5 * Math.sin(((b - 4) / 1.6) * Math.PI) : 0;
       }
     },
     // Biggie'ye yeniden tıklamak: bir dans, sonra durmaya döner
-    onPoke(id) {
+    onPoke(id, { reduced = options.reduce } = {}) {
       const bg = durum.biggie;
-      if (id !== 'biggie' || !bg) return;
+      if (id !== 'biggie' || !bg || reduced) return;
       const adlar = ['dans_twist', 'dans_tavuk', 'dans_lahana', 'dans_runningman'].filter((a) => bg.klip(a));
       if (!adlar.length || bg.aktif !== bg.dur) return;
       const dans = bg.mixer.clipAction(bg.klip(adlar[Math.floor(Math.random() * adlar.length)]));

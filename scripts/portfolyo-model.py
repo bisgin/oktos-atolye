@@ -2,20 +2,22 @@
 # döküm görünümü için girintilere koyu yıkama (vertex rengi, "dirty vertex colors") işler. Model mm, Z yukarı, tabanı
 # z = 0'da ve XY'de ortalı; GLB Draco ile sıkışık, malzeme tek: taban rengi vertex renginden (tarayıcı tonla çarpar).
 # Kullanım (depo kökünden; girdi yolu yerel, depoya yazılmaz):
-#   blender -b --factory-startup --python scripts/portfolyo-model.py -- <girdi.stl> <cikti.glb> [--ucgen 60000] [--onizleme kare.png]
+#   blender -b --factory-startup --python scripts/portfolyo-model.py -- <girdi.stl> <cikti.glb> [--ucgen 12000] [--onizleme kare.png]
 # Tekrar çalıştırmak güvenli: çıktının üzerine yazar (kaynak STL'e dokunmaz).
-import bpy, bmesh, sys, math
+import bpy, bmesh, sys, math, os
 from mathutils import Vector
 
 arg = sys.argv[sys.argv.index('--') + 1:] if '--' in sys.argv else []
 GIRDI, CIKTI = arg[0], arg[1]
-UCGEN = int(arg[arg.index('--ucgen') + 1]) if '--ucgen' in arg else 60000
+UCGEN = int(arg[arg.index('--ucgen') + 1]) if '--ucgen' in arg else 12000  # sergi masasında ~13 cm görünür: 12 bin yeter
 ONIZLEME = arg[arg.index('--onizleme') + 1] if '--onizleme' in arg else None
 
 for o in list(bpy.data.objects):
     bpy.data.objects.remove(o, do_unlink=True)
 bpy.ops.wm.stl_import(filepath=GIRDI)
 ob = bpy.context.selected_objects[0]
+# Kaynak STL'in adı GLB'ye girmesin: nesne ve örgü çıktının adını alır
+ob.name = ob.data.name = os.path.splitext(os.path.basename(CIKTI))[0]
 bpy.context.view_layer.objects.active = ob
 me = ob.data
 ilk = len(me.polygons)

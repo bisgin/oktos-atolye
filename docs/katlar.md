@@ -6,7 +6,7 @@ Kullanıcı kararı (2026-10-21): site üç katlı bir bina olarak kurulur.
 |---|---|---|
 | Gökyüzü + çatı katı | Kullanıcıyı gökyüzü karşılar, aşağı kaydırınca çatı terası: kullanıcının **portfolyosu** (işler, süreç, hakkımda), Biggie | `lab/cati.html` (ilk sürüm, 2026-10-21) |
 | Orta kat | Mevcut oda (`lab/oda.html`): yalnız şu an satılan ürünlerin (anahtarlık vb.) odası olacak | Bugünkü hâliyle; araçlar ileride bodruma taşınır |
-| Bodrum | Depo gibi bir 3B atölye: çalışan SLA ve FDM yazıcılar, **araçlar** (hizmet) burada | Sırada (gri kutu, odayla yan yana) |
+| Bodrum | Depo gibi bir 3B atölye: çalışan SLA ve FDM yazıcılar, seri üretim makineleri, **araçlar** (hizmet) burada | Sırada (gri kutu, odayla yan yana) |
 
 **Temel ilke:** Biggie her zaman kullanıcının bulunduğu kata gelir. Aşağı kaydırınca iner, yukarı kaydırınca çıkar:
 merdivenle, iple ya da yeni hareketlerle (robot süpürgenin üstünde, havada sendeleyerek). Hızla birkaç kat atlanırsa
@@ -34,8 +34,8 @@ Biggie doğrudan hedef kata gider (planlanan; henüz yok).
   "Odaya in" düğmesi odaya (`lab/oda.html`) götürür (şimdilik ayrı sayfa).
 - **Metin** yalnız kullanıcının bitirme projesi sunumundan, ürün inceleme paketlerinden ve ürün görsellerindeki
   yazılardan (uydurma yok). Biggie için "sculpt" denmez ("kil gibi duruyor").
-- **Portfolyoya girmeyenler** (kullanıcı kararına kadar): Warhammer tarzı minyatürler (kırmızı liste), kaynağı belirsiz
-  ejderha, köpekbalığı, şeffaf figürler, kafatası maske (satın alınmış STL olabilir).
+- **Portfolyoya girmeyenler:** tasarımı kullanıcıya ait olduğu doğrulanmayan işler, kullanıcı karar verene kadar
+  dışarıda kalır (liste yerelde, çalışma alanının portfolyo notlarında).
 
 ## Sıradaki aşamalar (plan: çatı katı iş akışı, 2026-10-21)
 

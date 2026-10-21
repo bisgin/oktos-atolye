@@ -1,14 +1,27 @@
 // Çatı katı (portfolyo) kart içeriği ve ışık kutusu. Motorun yakın plan kartına (core/story.js onCard) bölgeye göre
 // ek içerik koyar: eserlerin fotoğrafları ve ölçüleri, galeri baskıları, süreç adımları (kayıt ışık kutusunda oynar),
 // hakkımda yazısı. Ayrıca bütün içeriği düz liste olarak veren erişilebilir bir katman (sahnesiz okunur).
-// Görseller ve kayıtlar yalnız kart açılınca iner (loading="lazy" ve ışık kutusunda istenince).
+// Görseller ve kayıtlar yalnız kart açılınca iner (loading="lazy"; kayıt ışık kutusunda istenince). Işık kutusu ve
+// liste kipli: arkadaki sahne ve üst çubuk etkisiz (inert), sayfa kaydırması kilitli, kapanınca odak geri döner.
+// Hareket azaltmada süreç kayıtları yerine ilk kareleri gösterilir.
 import { ESERLER, GALERI, SUREC, HAKKIMDA, SAYFA, CATI_STORY } from './cati-veri.js';
 
 const esc = (s) => String(s ?? '').replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
 
-export function catiPanel(root, { lang = 'tr' } = {}) {
+export function catiPanel(root, { lang = 'tr', reduce = false } = {}) {
   const L = (o) => (o ? o[lang] ?? o.tr ?? '' : '');
-  let ek = null;
+  let ek = null, sonId = null;
+  const ust = () => document.querySelector('.topbar');
+  // Kipli katman açıkken arkası etkisiz ve kaydırılamaz (tur ilerlemesin)
+  let kipSayisi = 0;
+  const kip = (ac) => {
+    kipSayisi = Math.max(0, kipSayisi + (ac ? 1 : -1));
+    const on = kipSayisi > 0;
+    if (ust()) ust().inert = on;
+    root.inert = on;
+    document.documentElement.style.overflow = on ? 'hidden' : '';
+  };
+  const odakla = (el) => { if (el?.isConnected && !el.closest('[inert]')) { el.focus({ preventScroll: true }); return true; } return false; };
 
   // ---- ışık kutusu ----
   const kutu = document.createElement('div');
@@ -16,7 +29,8 @@ export function catiPanel(root, { lang = 'tr' } = {}) {
   kutu.hidden = true;
   kutu.setAttribute('role', 'dialog');
   kutu.setAttribute('aria-modal', 'true');
-  kutu.innerHTML = `<figure><img alt=""><figcaption><b></b><span></span></figcaption></figure>
+  kutu.setAttribute('aria-labelledby', 'cati-kutu-ad');
+  kutu.innerHTML = `<figure><img alt=""><figcaption><b id="cati-kutu-ad"></b><span></span></figcaption></figure>
     <button type="button" class="cati-kapat">${esc(L(SAYFA.listeKapat))}</button>`;
   document.body.appendChild(kutu);
   const kImg = kutu.querySelector('img'), kB = kutu.querySelector('figcaption b'), kS = kutu.querySelector('figcaption span');
@@ -25,19 +39,23 @@ export function catiPanel(root, { lang = 'tr' } = {}) {
   function kutuAc(src, baslik, yazi) {
     onceOdak = document.activeElement;
     kImg.src = src;
-    kImg.alt = baslik;
     kB.textContent = baslik;
     kS.textContent = yazi || '';
     kutu.hidden = false;
+    kip(true);
     kapatBtn.focus();
   }
   function kutuKapat() {
+    if (kutu.hidden) return;
     kutu.hidden = true;
     kImg.removeAttribute('src'); // kayıt oynamayı bıraksın
-    onceOdak?.focus?.();
+    kip(false);
+    odakla(onceOdak) || odakla(root.querySelector('.story-card:not([hidden]) .cati-k[data-src]')) || odakla(document.getElementById('liste-ac'));
   }
   kapatBtn.addEventListener('click', kutuKapat);
   kutu.addEventListener('click', (e) => { if (e.target === kutu) kutuKapat(); });
+  // Odak kutuda kalır (tek odaklanabilir öğe: Kapat)
+  kutu.addEventListener('keydown', (e) => { if (e.key === 'Tab') { e.preventDefault(); kapatBtn.focus(); } });
   // Escape önce ışık kutusunu kapatır (motor Escape'te yakın plandan çıkar: o dinleyiciye gitmesin)
   addEventListener('keydown', (e) => { if (e.key === 'Escape' && !kutu.hidden) { e.stopImmediatePropagation(); kutuKapat(); } }, true);
 
@@ -55,16 +73,28 @@ export function catiPanel(root, { lang = 'tr' } = {}) {
     if (id === 'surec') {
       return `<ol class="cati-adimlar">${SUREC.map((s, i) => {
         const ad = `${String(i + 1).padStart(2, '0')} ${L(s.ad)}`;
-        return `<li>${kucuk(s.kayit, ad, ad, L(s.desc), 'kayit', s.poster)}</li>`;
+        return `<li>${kucuk(reduce ? s.poster : s.kayit, ad, ad, L(s.desc), 'kayit', s.poster)}</li>`;
       }).join('')}</ol>`;
     }
     if (id === 'hakkimda') return `<div class="cati-yazi">${HAKKIMDA[lang === 'en' ? 'en' : 'tr'].map((p) => `<p>${esc(p)}</p>`).join('')}</div>`;
     return '';
   }
   function onCard(h, card) {
+    const kartta = card.contains(document.activeElement);
     ek?.remove();
     ek = null;
-    if (!h) return;
+    if (!h) {
+      kutuKapat(); // kart kapanırken ışık kutusu açık kalmasın
+      // Odak kartın içindeydiyse boşa düşmesin: o bölgenin şerit çipine, yoksa liste düğmesine
+      if (kartta && sonId) {
+        const ad = L(CATI_STORY.hotspots[sonId]);
+        const cip = [...root.querySelectorAll('.story-strip .chip')].find((c) => c.offsetParent && c.querySelector('.chip-name')?.textContent === ad);
+        odakla(cip) || odakla(document.getElementById('liste-ac'));
+      }
+      sonId = null;
+      return;
+    }
+    sonId = h.id;
     // Portfolyoda 'atölyede hazırlanıyor' notu yok; düğme yalnız mağazadaki eserlerde (Mağazada gör)
     const soon = card.querySelector('.sc-soon');
     if (soon) soon.hidden = true;
@@ -84,10 +114,12 @@ export function catiPanel(root, { lang = 'tr' } = {}) {
   const liste = document.createElement('section');
   liste.className = 'cati-liste';
   liste.hidden = true;
+  liste.setAttribute('role', 'dialog');
+  liste.setAttribute('aria-modal', 'true');
   liste.setAttribute('aria-labelledby', 'cati-liste-baslik');
   const bolum = (id, govde) => `<section><h3>${esc(L(CATI_STORY.hotspots[id]))}</h3><p>${esc(L(CATI_STORY.hotspots[id].desc))}</p>${govde}</section>`;
   liste.innerHTML = `<div class="cati-liste-ic">
-    <h2 id="cati-liste-baslik">${esc(L(SAYFA.listeBaslik))}</h2>
+    <h2 id="cati-liste-baslik" tabindex="-1">${esc(L(SAYFA.listeBaslik))}</h2>
     ${bolum('hakkimda', `<div class="cati-yazi">${HAKKIMDA[lang === 'en' ? 'en' : 'tr'].map((p) => `<p>${esc(p)}</p>`).join('')}</div>`)}
     ${bolum('eserler', `<ul>${ESERLER.map((e) => `<li><b>${esc(L(e.ad))}</b>: ${esc(L(e.desc))}${e.olcu ? ` <small>${esc(L(e.olcu))}</small>` : ''}</li>`).join('')}</ul>`)}
     ${bolum('galeri', `<ul>${GALERI.map((g) => `<li><b>${esc(L(g.baslik))}</b>: ${esc(L(g.desc))}</li>`).join('')}</ul>`)}
@@ -95,9 +127,28 @@ export function catiPanel(root, { lang = 'tr' } = {}) {
     ${bolum('biggie', '')}
     <button type="button" class="cati-kapat">${esc(L(SAYFA.listeKapat))}</button></div>`;
   document.body.appendChild(liste);
-  const listeAc = () => { liste.hidden = false; liste.querySelector('h2').setAttribute('tabindex', '-1'); liste.querySelector('h2').focus(); };
-  liste.querySelector('.cati-kapat').addEventListener('click', () => { liste.hidden = true; });
-  addEventListener('keydown', (e) => { if (e.key === 'Escape' && !liste.hidden) { e.stopImmediatePropagation(); liste.hidden = true; } }, true);
+  const listeKapatBtn = liste.querySelector('.cati-kapat');
+  const listeAc = () => {
+    if (!liste.hidden) return;
+    liste.hidden = false;
+    kip(true);
+    liste.querySelector('h2').focus();
+  };
+  const listeKapat = () => {
+    if (liste.hidden) return;
+    liste.hidden = true;
+    kip(false);
+    odakla(document.getElementById('liste-ac'));
+  };
+  listeKapatBtn.addEventListener('click', listeKapat);
+  // Sekme listenin içinde döner (başlık → Kapat)
+  liste.addEventListener('keydown', (e) => {
+    if (e.key !== 'Tab') return;
+    const ilk = liste.querySelector('h2');
+    if (!e.shiftKey && document.activeElement === listeKapatBtn) { e.preventDefault(); ilk.focus(); }
+    if (e.shiftKey && document.activeElement === ilk) { e.preventDefault(); listeKapatBtn.focus(); }
+  });
+  addEventListener('keydown', (e) => { if (e.key === 'Escape' && !liste.hidden) { e.stopImmediatePropagation(); listeKapat(); } }, true);
 
   return { onCard, listeAc };
 }

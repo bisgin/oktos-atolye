@@ -1,6 +1,16 @@
 /* Çatı katı (portfolyo) ekleri: oda.css'in üstüne. Kart içi küçük resim ızgarası, süreç adımları, ışık kutusu,
    düz liste katmanı, "Odaya in" düğmesi. Renkler oda.css'teki koyu panel diliyle aynı. */
-.cati .story-card { max-height: min(78svh, 680px); overflow-y: auto; overscroll-behavior: contain; }
+/* Kart: koyu perde üstünde açık yazı (oda.css'te --c araç rengi; çatıda sıcak kum), kaydırılabilir; masaüstünde şeridin
+   üstünde biter, dikey telefonda ekranın yarısını geçmez (Geri düğmesi görünür kalsın) */
+.cati .story-card { --c: #e8c48c; color: var(--sc-ink); max-height: min(78svh, 680px); overflow-y: auto; overscroll-behavior: contain; }
+.cati[data-panel="side"] .story-card { max-height: calc(100% - max(72px, 50% - 210px) - 96px); }
+.cati[data-panel="bottom"] .story-card { max-height: 52svh; overscroll-behavior: auto; }
+.cati[data-panel="bottom"] .cati-adimlar, .cati[data-panel="bottom"] .cati-izgara { grid-template-columns: repeat(auto-fill, minmax(72px, 1fr)); }
+/* Ekran dışına düşen işaretler sahneyi taşırır; odak oraya gidince tarayıcı sahneyi kaydırmasın (hidden kaydırılabilir) */
+.story.cati { overflow: clip; }
+/* Motorun araç metinleri portfolyoda yok: çipte 'Yakında', dokunmatikte 'sürükle' ipucu */
+.cati .chip-act { display: none; }
+@media (pointer: coarse) { .cati .sc-hint { display: none; } }
 .cati-ek { margin: 10px 0 12px; }
 .cati-izgara { display: grid; grid-template-columns: repeat(auto-fill, minmax(92px, 1fr)); gap: 8px; }
 .cati-k {
@@ -38,7 +48,7 @@
   min-height: 36px; padding: 0 14px; margin-right: 10px; border: 1px solid rgba(255, 255, 255, 0.35); border-radius: 999px;
   background: rgba(20, 21, 24, 0.35); color: #fff; font: 600 13px 'Schibsted Grotesk', system-ui, sans-serif; cursor: pointer;
 }
-.cati-liste { position: fixed; inset: 0; z-index: 55; overflow-y: auto; background: #15171a; color: #ece8e1; }
+.cati-liste { position: fixed; inset: 0; z-index: 55; overflow-y: auto; overscroll-behavior: contain; background: #15171a; color: #ece8e1; }
 .cati-liste[hidden] { display: none; }
 .cati-liste-ic { max-width: 720px; margin: 0 auto; padding: 72px 20px 48px; font: 400 15px/1.55 'Schibsted Grotesk', system-ui, sans-serif; }
 .cati-liste h2 { font: 700 34px/1.1 'Big Shoulders Display', 'Schibsted Grotesk', sans-serif; margin: 0 0 18px; }
@@ -53,6 +63,7 @@
   background: rgba(20, 21, 24, 0.62); color: #fff; text-decoration: none; font: 600 14px 'Schibsted Grotesk', system-ui, sans-serif;
   backdrop-filter: blur(6px);
 }
+@media (pointer: fine) and (min-width: 721px) { .cati-asagi { bottom: 96px; } } /* masaüstünde şeridin üstünde */
 .cati-asagi svg { width: 18px; height: 18px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
 .cati-noscript { padding: 80px 20px; max-width: 640px; margin: 0 auto; }
 @media (prefers-reduced-motion: reduce) { .cati-k[data-src] img { transition: none; } }

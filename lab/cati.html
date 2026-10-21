@@ -23,12 +23,13 @@
   "gsap/": "https://cdn.jsdelivr.net/npm/gsap@3.15.0/"
 } }
 </script>
+<noscript><style>.story { display: none !important; } .cati-noscript { color: #ece8e1; background: #15171a; }</style></noscript>
 </head>
 <body>
 <header class="topbar">
   <a class="brand" href="../index.html"><img src="../core/logo-beyaz.svg" alt="" width="36" height="28"><span>Oktos Workshop</span></a>
   <span class="spacer"></span>
-  <button type="button" class="cati-liste-ac" id="liste-ac"></button>
+  <button type="button" class="cati-liste-ac" id="liste-ac" hidden>Listeyi göster</button>
   <div class="lang" role="group" aria-label="Dil / Language"><button type="button" data-lang="tr">TR</button><button type="button" data-lang="en">EN</button></div>
 </header>
 
@@ -37,7 +38,7 @@
   <div class="oda-scrim" aria-hidden="true"></div>
   <div class="story-pins"></div>
   <div class="story-copy">
-    <h1 class="story-title" id="story-title"></h1>
+    <h1 class="story-title" id="story-title">Modelden döküme, elimden çıkanlar.</h1>
     <p class="story-lede"></p>
     <div class="story-actions">
       <button type="button" class="story-cta"></button>
@@ -45,11 +46,11 @@
     </div>
   </div>
   <nav class="story-strip"></nav>
-  <a class="cati-asagi" id="asagi" href="oda.html"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 4v15M6 13l6 6 6-6"/></svg><span></span></a>
+  <a class="cati-asagi" id="asagi" href="oda.html"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 4v15M6 13l6 6 6-6"/></svg><span>Odaya in</span></a>
   <div class="story-veil"><div class="oda-yukle" role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0"><i></i></div></div>
   <p class="story-live" aria-live="polite"></p>
 </section>
-<noscript><p class="cati-noscript">Oktos Workshop çatı katı: İbrahim Arda Bişgin'in portfolyosu. Modern Balbal serisi (Kapital Kağan, Kadere Kınalı, Akademi Atlısı), döküm ve baskı işleri, dijital modelden döküme sekiz adımlık üretim süreci. Sahne için JavaScript gerekir.</p></noscript>
+<noscript><p class="cati-noscript">Oktos Workshop çatı katı: İbrahim Arda Bişgin'in portfolyosu. Modern Balbal serisi (Kapital Kağan, Kadere Kınalı, Akademi Atlısı, Oğuz Kağan), döküm ve baskı işleri, dijital modelden döküme sekiz adımlık üretim süreci. Sahne için JavaScript gerekir.</p></noscript>
 
 <script type="module">
   import * as THREE from 'three';
@@ -68,6 +69,7 @@
   const lang = getLang();
   const L = (o) => o[lang] ?? o.tr;
   document.documentElement.lang = lang;
+  document.title = L({ tr: 'Çatı Katı Laboratuvarı · Oktos Workshop', en: 'Top Floor Lab · Oktos Workshop' });
   document.querySelectorAll('.lang button').forEach((b) => {
     b.classList.toggle('on', b.dataset.lang === lang);
     b.addEventListener('click', () => { setLang(b.dataset.lang); location.reload(); });
@@ -79,8 +81,9 @@
     const veil = root.querySelector('.story-veil'), cubuk = veil.querySelector('.oda-yukle');
     veil.dataset.loading = L(SAYFA.yukleniyor);
     cubuk.setAttribute('aria-label', L(SAYFA.yukleniyor));
+    let enCok = 0; // yeni dosya kuyruğa girince oran düşer: çubuk geri gitmesin
     THREE.DefaultLoadingManager.onProgress = (_, y, t) => {
-      const p = Math.max(0.06, t ? y / t : 0);
+      const p = enCok = Math.max(enCok, 0.06, t ? y / t : 0);
       cubuk.style.setProperty('--ilerleme', p.toFixed(3));
       cubuk.setAttribute('aria-valuenow', String(Math.round(p * 100)));
     };
@@ -89,9 +92,10 @@
   asagi.querySelector('span').textContent = L(SAYFA.asagiKat);
   const listeBtn = document.getElementById('liste-ac');
   listeBtn.textContent = L(SAYFA.liste);
+  listeBtn.hidden = false;
 
   catiScene.options.reduce = reduce;
-  const panel = catiPanel(root, { lang });
+  const panel = catiPanel(root, { lang, reduce });
   listeBtn.addEventListener('click', () => panel.listeAc());
   let tur = null, hazir = false;
   const story = window.story = await mountStory(root, {
@@ -99,7 +103,8 @@
     ...(params.get('mod') ? { mode: params.get('mod') } : {}),
     onSkip: () => { location.href = '../index.html'; },
     onReady: () => { hazir = true; tur?.hazir(); },
-    onActivate: (h) => tur?.sec(h) ?? false,
+    // Yakın plandaki bölgeye yeniden tıklamak tura değil sahneye gider (Biggie dansı: onPoke)
+    onActivate: (h) => (h && h.id === story?.focusedId ? false : (tur?.sec(h) ?? false)),
     onCard: panel.onCard,
   });
   // Kaydırmalı tur: önce gökyüzü (genel plan), sonra çatı ve portfolyo durakları
@@ -109,6 +114,7 @@
     reduce, bekle: !!params.get('odak'),
   });
   if (hazir) tur.hazir();
+  root.querySelector('.story-strip').setAttribute('aria-label', L({ tr: 'Çatı katındaki bölümler', en: 'Sections of the top floor' }));
   if (params.get('odak')) story.focus(params.get('odak'));
 </script>
 </body>
