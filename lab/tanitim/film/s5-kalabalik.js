@@ -1,4 +1,4 @@
-// Sahne 5, KALABALIK "KEŞKE" (#5.1–#5.4, k2016–2351). Kalıp: v1-kanca.js (kur(ctx), MUTLAK kare zamanları).
+// Sahne 5, KALABALIK "KEŞKE" (#5.1–#5.4, k2016–2375). Kalıp: v1-kanca.js (kur(ctx), MUTLAK kare zamanları).
 // Mekân yok, düz kâğıt. Kamera kadrajın ALT kenarına kilitli: kafalar hep alttan çıkar; yakından (yatay 1,8, dikey 1,75)
 // 1,1'e geri çekilir (sine.out: sahne doldukça açılır), devirde 1'e oturur. Kişiler iki sıra (arka sıra küçük, kâğıda doğru
 // açılmış: opak soluk filtre). Herkesin bir düşünce balonu var, çoğu yalnız çizim.
@@ -17,23 +17,29 @@
 //      fikirlerine bakar. Son gelenler: N6 (Wi-Fi plakası ~0,3 sn, sonra telefon standı), D (saksı), B3 (3B isim → kapı
 //      plakası), E2 (kutu oyunu), Garson (kupa altlığı). Fikir değişir: zar kulesi → deste kutusu, Text Flip → fidget,
 //      kulaklık askısı → kablo klipsi.
-// #5.4 DEVİR (k2312–2351): yedi balon söner; sekiz balon (qrStandi, organizer, saksi, d20, piyon, kutuOyunu, yapboz,
-//      telefonStandi; cizimler.js) kadraj kenarlarına süzülüp son boyuna büyür (39 k), noktaları dışa (kadraj içinde)
-//      döner; ortası logoya boş kalır. Kişiler fikirlerine bakarak aşağı iner (k2324, 30 fps) ve solar. k2351'de kamera
-//      odak(0,0,1): dünya = ekran. Son yerleşim SON_BALONLAR (s6 bunu okur).
+// #5.4 DEVİR (k2312–2375, 64 k; kadro.json'daki 40 k'dan uzun, ARALIK): yedi balon söner; kalabalık kaybolmaz, ortadan
+//      ikiye ayrılıp ritimle kenarlara çekilir (30 fps, küçük adım sekmeleri; yatayda sol/sağ alt köşeler, dikeyde altta
+//      iki köşe, biraz geri çekilerek). Önce yürüdükleri yana, varınca yukarı bakarlar (merak). Sekiz balon (qrStandi,
+//      organizer, saksi, d20, piyon, kutuOyunu, yapboz, telefonStandi; cizimler.js) sahiplerinin başlarının üstüne süzülüp
+//      son boyuna büyür: alt kat bağlı kuyrukla, üst kat kısa kuyrukla sahibine doğru. Orta logoya, OKTOS'a, slogana boş.
+//      k2375'te kamera odak(0,0,1): dünya = ekran. Son yerleşim SON_BALONLAR ve SON_KISILER (s6 bunları okur).
 // Ölçek: her balon kendi tasarım boyunda (anahtar balonlarda SON boyunda) yerel (0,0) merkezli kurulur; kalabalıkta bir
 // sarmalayıcı onu küçültür (kontur kalınlıkları tutarlı kalır), devirde sarmalayıcı birim dönüşüme gider. Balonun yeri,
 // ölçeği ve kuyruğu tek bir vekil nesnede (pr) durur; itme ve devir tween'leri onu sürer, uygula() çizer.
 // Gövde uzatma: insan.js gövdesi kutunun 860 birim altında biter; üst sıralarda bu kenar görünmesin diye gövde aşağı uzatılır.
 // Sorgu: ?yalniz=s5-kalabalik  ?yon=dikey  ?dil=en
 import { cizimKur, CIZIMLER } from './cizimler.js';
-import { oval, MONO, YAPI, rng } from '../insan.js';
+import { oval, MONO, YAPI, rng, rastgeleKisi, boyKaymasi, BOY } from '../insan.js';
 
 // Caveat ancak bir öğe kullanınca indirilir; document.fonts.ready onu beklemez. Konuşma balonu ve el yazısı genişliği
 // ölçülerek yerleşir: ölçüm yedek yazı tipiyle yapılırsa kutu ve yer kayar. Bu yüzden modül yüklenirken yazı tipini iste.
 try { await document.fonts.load('600 62px Caveat', 'Bunu canlandırabilir miyiz? Keşke şöyle olsa… Can we bring this to life?'); } catch { /* yoksa yedekle sürer */ }
+// Kişi parametreleri modül düzeyinde de gerekir (son yerleşim, SON_KISILER, balon kuyrukları kurulumdan önce hesaplanır)
+const KADRO = await (await fetch(new URL('./kadro.json', import.meta.url))).json();
 
-const BAS = 2016, SON = 2351, DEVIR = 2312, INIS = 2324;
+// Devir 64 k (kadro.json'daki 40 k'dan uzun: kalabalık kenarlara ritimle çekilsin); s6 bir sonraki karede başlar
+const BAS = 2016, SON = 2375, DEVIR = 2312;
+export const ARALIK = [BAS, SON];
 // Okunan üç satır: her biri yazılmaya başladığı andan silinmeye dek en az 90 k (tam yazılı ~70 k) ekranda
 const SOZ1 = [2026, 2120], SATIR2 = 2126, SATIR2_SIL = 2218, KESKE = 2226, KESKE_SIL = 2316;
 const KALINLIK = 4.4; // balon içi çizim konturu (tasarım boyunda)
@@ -203,47 +209,150 @@ const IKINCI_BOY = { desteKutusu: 200, fidget: 205, kabloKlipsi: 215, kapiPlakas
 // Kalabalıkta balon boyu çarpanı: hepsi aynı boyda olunca ikon duvarı gibi okunuyordu
 const BOY_CARPAN = { N1: 1.12, E: 1.02, N2: 1.06, B: 0.96, E4: 0.94, A: 1.0, N4: 0.92, E3: 1.04, N5: 0.95, N3: 1.0, N6: 0.97, D: 1.03, B3: 0.93, E2: 0.98, Garson: 0.94 };
 
-// ---------- DEVİR: k2351'deki son yerleşim (dünya koordinatı; kamera odak(0,0,1), dünya = ekran). kaynak: noktaların
-// baktığı yön (dışa, en yakın köşeye doğru; sahip kadraj dışında). Noktalar da kadraj İÇİNDE kalır: kenarda yarım kesik
-// nokta hata gibi okunuyordu. Bulutun tümsekleri yatayda r'nin ~20 px, dikeyde ~36 px dışına taşar; balon ve noktalar
-// kenara en az 40 px pay bırakır. Çizimler iç elipse köşeleri değecek boyda (logo inşasına uzun, okunur çizgi kalsın).
-// Ortası logoya boş: yerleşim stil/logo2.js denemesindeki halkayla aynı (yatay logo 960,412; dikey 540,840, ×1,3).
-// Dikeyde hangi balonun nereye gittiği yığındaki yerine göre (en kısa yol, yollar kesişmez).
+// ---------- Kalabalığın yerleşimi (iki yön; kurulum yön seçer). Sıra: ölçek o, yüz merkezi cy ('orta' boylu), soluk alfa,
+// balon bandı (y, yalnız yatay). kod: [sıra, x, yatayda balon kayması [dx, dy] | dikeyde şerit (0 sol, 1 orta, 2 sağ)]
+// Yatay kaymalar elle: bantlar düz bir sıra gibi değil, sık bir bulut gibi dursun; uçtakiler kadraja girsin.
+const SIRA_T = {
+  yatay: {
+    on: { o: 0.86, cy: 880, alfa: 1, bant: 618 },
+    arka: { o: 0.66, cy: 760, alfa: 0.76, bant: 398 },
+  },
+  // Dikey: iki sıra sık ve alçak (arka sıranın yüzleri ön sıranın başları arasından görünür): gökyüzü yığına kalır
+  dikey: {
+    on: { o: 0.86, cy: 1738, alfa: 1 },
+    arka: { o: 0.68, cy: 1628, alfa: 0.76 },
+  },
+};
+const SIRA_DIZI = ['arka', 'on']; // arkadan öne (z sırası)
+const YERLER_T = {
+  yatay: {
+    E2: ['on', 175, [58, 34]], B: ['on', 400, [-2, -30]], D: ['on', 625, [-6, 30]], N1: ['on', 850, [0, -8]],
+    E: ['on', 1075, [12, 22]], N2: ['on', 1300, [-6, -18]], A: ['on', 1525, [-10, 26]], Garson: ['on', 1750, [-48, -26]],
+    N4: ['arka', 287, [18, 22]], E4: ['arka', 512, [-12, -28]], E3: ['arka', 737, [10, 8]], N3: ['arka', 962, [0, -34]],
+    N6: ['arka', 1187, [-12, 16]], B3: ['arka', 1412, [12, -18]], N5: ['arka', 1637, [4, 26]],
+  },
+  // Doğum sırasıyla şeritler dönüşümlü dolar (N2 sol, N1 orta, E sağ; sonra B, E4, A, N4, E3, N5…): üç sütun birlikte büyür
+  dikey: {
+    B: ['on', 105, 0], N3: ['on', 255, 0], E2: ['on', 400, 1], N1: ['on', 540, 1], A: ['on', 690, 2], E: ['on', 840, 2], Garson: ['on', 985, 2],
+    B3: ['arka', 70, 0], N4: ['arka', 190, 0], N2: ['arka', 320, 0], E4: ['arka', 450, 1], N6: ['arka', 570, 1], E3: ['arka', 690, 1], N5: ['arka', 830, 2], D: ['arka', 970, 2],
+  },
+};
+const KONUSAN = new Set(['N1', 'N2']); // konuşanlar her sırada tam koyu
+
+// ---------- DEVİR (k2312–SON): kalabalık ortadan ikiye ayrılıp kenarlara çekilir (kaybolmaz); sekiz büyük balon
+// sahiplerinin başlarının üstünde, sahiplerine bağlı kalır. Son karedeki yerleşim (dünya koordinatı; kamera odak(0,0,1),
+// dünya = ekran) s6'ya geçer: SON_BALONLAR (balonlar) ve SON_KISILER (kişiler). Orta logoya, OKTOS'a ve slogana boş
+// (s6 FINAL_YER: yatay logo x 663–1257, y 186–638, yazı y ≤ 955, satır 2 x 703–1217; dikey logo y 396–984, yazı y ≤ 1420).
+//   Kişiler: sıraları (ölçek, soluk filtre) aynı kalır, sıra içi soldan sağa düzen korunur (kimse kimsenin içinden
+//   geçmez). m: ölçek çarpanı (1: yalnız kayma). satir: son yüz merkezi ('orta' boylu). x: son göğüs ortası.
+//   Balonlar iki katta: alt kat (önde) sahibine BAĞLI kuyrukla (noktalar başa iner); üst kat (arkada) kısa kuyrukla,
+//   sahibine doğru (s5 dikey yığınındaki itilmiş balonlar gibi). Liste sırası z sırasıdır: önce üst kat. Aynalı çiftler
+//   x = W/2'ye göre simetrik (s6 dalgaları çift çift hasat eder). r: son boy; rKal: kalabalıktaki boy (eski tasarım
+//   boyu: kalabalık görüntüsü değişmesin). Tümsekler yatayda r'nin ~20 px, dikeyde ~36 px dışına taşar; kenar payı ≥ 35 px.
 const SON_YER = {
-  yatay: { nokta: 0.9, balonlar: [
-    { kod: 'E3', cizim: 'piyon', c: [672, 188], r: [142, 108], icBoy: 205, kaynak: [400, 120] },
-    { kod: 'N6', cizim: 'telefonStandi', c: [1250, 184], r: [146, 106], icBoy: 192, kaynak: [1520, 116] },
-    { kod: 'B', cizim: 'organizer', c: [262, 322], r: [156, 104], icBoy: 218, kaynak: [160, 140] },
-    { kod: 'N2', cizim: 'yapboz', c: [1658, 322], r: [150, 108], icBoy: 200, kaynak: [1760, 140] },
-    { kod: 'E2', cizim: 'kutuOyunu', c: [262, 758], r: [152, 106], icBoy: 222, kaynak: [160, 940] },
-    { kod: 'A', cizim: 'qrStandi', c: [1658, 758], r: [146, 110], icBoy: 192, kaynak: [1760, 940] },
-    { kod: 'D', cizim: 'saksi', c: [672, 894], r: [144, 104], icBoy: 196, kaynak: [400, 962] },
-    { kod: 'E', cizim: 'd20', c: [1250, 894], r: [148, 102], icBoy: 186, kaynak: [1520, 962] },
-  ] },
-  // Dikey: iki üst sıra (N2, E; B, A) ve iki alt sıra (N6, E3; E2, D); ortadaki bant (y ~880–1140) ve orta sütun boş.
-  // Yığının sol şeridi (N2, B) sola, sağ şeridi (E, A, D) sağa; orta şeritten N6 sola, E3 sağa, E2 sola iner.
-  dikey: { nokta: 1.1, balonlar: [
-    { kod: 'N2', cizim: 'yapboz', c: [300, 218], r: [160, 116], icBoy: 214, kaynak: [40, 110] },
-    { kod: 'E', cizim: 'd20', c: [784, 256], r: [156, 114], icBoy: 205, kaynak: [1040, 150] },
-    { kod: 'B', cizim: 'organizer', c: [232, 690], r: [160, 110], icBoy: 230, kaynak: [140, 480] },
-    { kod: 'A', cizim: 'qrStandi', c: [848, 722], r: [154, 120], icBoy: 210, kaynak: [940, 510] },
-    { kod: 'N6', cizim: 'telefonStandi', c: [232, 1292], r: [156, 116], icBoy: 205, kaynak: [140, 1500] },
-    { kod: 'E3', cizim: 'piyon', c: [848, 1326], r: [154, 120], icBoy: 220, kaynak: [940, 1540] },
-    { kod: 'E2', cizim: 'kutuOyunu', c: [316, 1716], r: [168, 116], icBoy: 238, kaynak: [60, 1830] },
-    { kod: 'D', cizim: 'saksi', c: [766, 1720], r: [160, 120], icBoy: 220, kaynak: [1020, 1834] },
-  ] },
+  yatay: {
+    m: 1, satir: { on: 880, arka: 760 },
+    x: {
+      E2: 70, B: 215, D: 362, N1: 505, N4: 140, E4: 288, E3: 432, N3: 566,
+      E: 1415, N2: 1560, A: 1705, Garson: 1850, N6: 1356, B3: 1495, N5: 1640,
+    },
+    balonlar: [
+      { kod: 'E2', cizim: 'kutuOyunu', c: [222, 186], r: [130, 94], icBoy: 190, rKal: 152, kisa: true },
+      { kod: 'E3', cizim: 'piyon', c: [560, 192], r: [124, 96], icBoy: 180, rKal: 142, kisa: true },
+      { kod: 'N6', cizim: 'telefonStandi', c: [1360, 192], r: [126, 94], icBoy: 172, rKal: 146, kisa: true },
+      { kod: 'N2', cizim: 'yapboz', c: [1698, 186], r: [128, 96], icBoy: 176, rKal: 150, kisa: true },
+      { kod: 'B', cizim: 'organizer', c: [190, 484], r: [134, 92], icBoy: 190, rKal: 156 },
+      { kod: 'D', cizim: 'saksi', c: [470, 494], r: [124, 94], icBoy: 172, rKal: 144 },
+      { kod: 'E', cizim: 'd20', c: [1450, 494], r: [128, 92], icBoy: 166, rKal: 148 },
+      { kod: 'A', cizim: 'qrStandi', c: [1730, 484], r: [126, 96], icBoy: 170, rKal: 146 },
+    ],
+  },
+  // Dikey: kalabalık altta kalır, ortadan açılıp köşelere yığılır (sol 8, sağ 7; N6 sola, N1 sağa geçer: sahipler 4/4) ve
+  // biraz geri çekilir (m 0,9: ortada ~180 px boşluk). Balonlar kalabalığın üstünde iki kat (logonun altı ile başlar
+  // arası; OKTOS ve slogan o bantta balonlar söndükten sonra gelir); ızgara gibi durmasın diye yer ve boy elle kaydırıldı.
+  dikey: {
+    m: 0.9, satir: { on: 1752, arka: 1640 },
+    x: {
+      B3: 35, N4: 135, N2: 235, E4: 335, N6: 430, B: 85, N3: 228, E2: 368,
+      N1: 680, A: 805, E: 925, Garson: 1030, E3: 742, N5: 866, D: 985,
+    },
+    balonlar: [
+      { kod: 'N2', cizim: 'yapboz', c: [168, 1110], r: [114, 82], icBoy: 162, rKal: 160, kisa: true },
+      { kod: 'N6', cizim: 'telefonStandi', c: [410, 1124], r: [108, 80], icBoy: 150, rKal: 156, kisa: true },
+      { kod: 'A', cizim: 'qrStandi', c: [670, 1124], r: [108, 84], icBoy: 152, rKal: 154, kisa: true },
+      { kod: 'E', cizim: 'd20', c: [912, 1110], r: [114, 82], icBoy: 150, rKal: 156, kisa: true },
+      { kod: 'B', cizim: 'organizer', c: [176, 1392], r: [118, 80], icBoy: 168, rKal: 160 },
+      { kod: 'E2', cizim: 'kutuOyunu', c: [416, 1372], r: [112, 82], icBoy: 164, rKal: 168 },
+      { kod: 'E3', cizim: 'piyon', c: [664, 1372], r: [110, 84], icBoy: 160, rKal: 154 },
+      { kod: 'D', cizim: 'saksi', c: [904, 1392], r: [114, 84], icBoy: 160, rKal: 160 },
+    ],
+  },
 };
 const yuvarla = (v) => Math.round(v * 10) / 10;
-// Noktalar: [uzak (küçük), orta, yakın (büyük)] (ctx.balon sırası: ilki önce belirir); kenardan uzaklık × ölçek
-function sonNoktalar(b, s) {
-  const dx = b.kaynak[0] - b.c[0], dy = b.kaynak[1] - b.c[1], l = Math.hypot(dx, dy), u = [dx / l, dy / l];
-  const ek = 1 / Math.hypot(u[0] / b.r[0], u[1] / b.r[1]);
-  return [[98, 8], [66, 11], [30, 15]].map(([d, r]) => [yuvarla(b.c[0] + u[0] * (ek + d * s)), yuvarla(b.c[1] + u[1] * (ek + d * s)), yuvarla(r * s)]);
+const yonu = (a, b) => Math.sign(Math.round((b - a) / 40)); // bakış yönü (-1, 0, 1)
+// Kişi parametresi (film.js kisiParam ile aynı: kadro.json kisiler.<kod>.p; yeni yüzler YENI_YUZ)
+const kisiP = (kod) => (YENI_YUZ[kod] ? rastgeleKisi(YENI_YUZ[kod].tohum, YENI_YUZ[kod]) : rastgeleKisi(KADRO.kisiler[kod].p.tohum, KADRO.kisiler[kod].p));
+// Kişinin sahnedeki yeri (film.js kisi() ile aynı hesap: hiza = cy + (BOY.boy − 176)·o, alt = hiza + boyKaymasi·o)
+function kisiYeri(p, x, cy, o) {
+  const alt = cy + (BOY.boy - 176) * o + boyKaymasi(p) * o, y0 = alt - BOY.boy * o;
+  return { x, alt, o, ust: y0 + basUstu(p) * o, yuz: [x, y0 + 176 * o] };
 }
-export const SON_BALONLAR = Object.fromEntries(Object.entries(SON_YER).map(([yon, Y0]) => [yon, Y0.balonlar.map((b) => ({
-  cizim: b.cizim, c: b.c, r: b.r, icBoy: b.icBoy, noktalar: sonNoktalar(b, Y0.nokta),
+// Kuyruk noktaları, balonun yerel koordinatında (ölçek s ile bölünmüş): c balon merkezi, r tasarım yarıçapı, bas sahibin
+// baş tepesi [x, y]. m: 0 bağlı (noktalar başa iner) … 1 kısa (balonun dibinde, başa doğru). yan: dikey yığında kısa
+// kuyruğun döndüğü yön (dışa-aşağı), yanAg ağırlığıyla. Sıra [uzak (küçük), orta, yakın (büyük)]: ctx.balon ilkini önce açar.
+function kuyruk(c, r, s, bas, m, yan = null, yanAg = 1) {
+  const rc = [r[0] * s, r[1] * s];
+  const hedef = [bas[0] + (c[0] - bas[0]) * 0.25, bas[1] - 10]; // başın tepesi (sahibe doğru biraz kayık)
+  const dx = hedef[0] - c[0], dy = hedef[1] - c[1], l = Math.hypot(dx, dy) || 1;
+  let u = [dx / l, dy / l];
+  // Dikey yığın: yukarı itilen balonun kısa kuyruğu yan şeritlerde dışa-aşağı döner (sahiplerin yanı; dik inen nokta
+  // alttaki balona değip "düşünce zinciri" gibi okunuyordu). Orta şerit aşağı bakar.
+  const ag = yan ? m * yanAg : 0;
+  if (ag > 0) { const v = [u[0] + (yan[0] - u[0]) * ag, u[1] + (yan[1] - u[1]) * ag], lv = Math.hypot(v[0], v[1]); u = [v[0] / lv, v[1] / lv]; }
+  const ek = 1 / Math.hypot(u[0] / rc[0], u[1] / rc[1]), Lk = Math.max(60, l - ek);
+  const buyut = Math.min(1.5, Math.max(1, Lk / 170)); // uzun izde noktalar iri: seyrek ve küçükken asılı leke gibi
+  const bagli = [[0.84 * Lk, 5.5 * buyut], [0.53 * Lk, 8 * buyut], [0.22 * Lk, 11 * buyut]], kisa = [[46, 4.5], [29, 6.5], [13, 9]];
+  return bagli.map(([d0, r0], j) => {
+    const d = d0 + (kisa[j][0] - d0) * m, rad = r0 + (kisa[j][1] - r0) * m;
+    return [u[0] * (ek + d) / s, u[1] * (ek + d) / s, rad / s];
+  });
+}
+// Son yerleşim (yön başına): kişiler (ilk ve son yer) ve balonlar
+const SON_HESAP = Object.fromEntries(Object.keys(SON_YER).map((yon) => {
+  const Y0 = SON_YER[yon], S = SIRA_T[yon], W = yon === 'dikey' ? 1080 : 1920;
+  const kisiler = {};
+  for (const sira of SIRA_DIZI) {
+    for (const [kod, [s, x0]] of Object.entries(YERLER_T[yon])) {
+      if (s !== sira) continue;
+      const p = kisiP(kod), o = S[s].o;
+      kisiler[kod] = { kod, p, sira: s, alfa: KONUSAN.has(kod) ? 1 : S[s].alfa, ilk: kisiYeri(p, x0, S[s].cy, o), son: kisiYeri(p, Y0.x[kod], Y0.satir[s], o * Y0.m) };
+    }
+  }
+  const balonlar = Y0.balonlar.map((b) => {
+    const K = kisiler[b.kod].son;
+    const noktalar = kuyruk(b.c, b.r, 1, [K.x, K.ust], b.kisa ? 1 : 0).map(([x, y, rad]) => [yuvarla(b.c[0] + x), yuvarla(b.c[1] + y), yuvarla(rad)]);
+    return { ...b, noktalar };
+  });
+  // Son bakış (k SON, s6 bununla başlar): sahip kendi balonuna, ötekiler ortaya (logonun geleceği yere) yukarı bakar
+  for (const K of Object.values(kisiler)) {
+    const bal = balonlar.find((b) => b.kod === K.kod);
+    K.ifade = 'merak';
+    K.bakis = [yonu(K.son.x, bal ? bal.c[0] : W / 2), -1];
+  }
+  return [yon, { kisiler, balonlar }];
+}));
+export const SON_BALONLAR = Object.fromEntries(Object.entries(SON_HESAP).map(([yon, Y0]) => [yon, Y0.balonlar.map((b) => ({
+  cizim: b.cizim, c: b.c, r: b.r, icBoy: b.icBoy, noktalar: b.noktalar,
   // Son çizim balonun ikinci fikriyse (degis) tohumu +10 (kurulumdaki fikirCiz ile aynı): finalde kayma olmasın
   tohum: TOHUM[b.kod].balon, cizimTohum: TOHUM[b.kod].cizim + (AKIS[b.kod]?.degis?.[1] === b.cizim ? 10 : 0), kalinlik: KALINLIK, kod: b.kod,
+  kat: b.kisa ? 'ust' : 'alt',
+}))]));
+// s6 kişileri aynı yerde kurar (z sırası: dizi sırası = s5'teki DOM sırası, arkadan öne). x, alt, olcek: film.js kisi()
+// girdileri (hiza değil, alt verilir); alfa < 1: kâğıda açma filtresi (solgun); ifade ve bakış: s5'in son pozu; ust: baş
+// tepesi; yuz: yüz merkezi. Kol pozu yok (s5'te kol kullanılmıyor). govdeUzat: s6 da gövdeyi aşağı uzatır (aşağıda).
+export const SON_KISILER = Object.fromEntries(Object.entries(SON_HESAP).map(([yon, Y0]) => [yon, Object.values(Y0.kisiler).map((K) => ({
+  kod: K.kod, p: K.p, sira: K.sira, x: K.son.x, alt: K.son.alt, olcek: K.son.o, alfa: K.alfa, // yuvarlanmaz: devirde piksel aynı
+  ifade: K.ifade, bakis: K.bakis, ust: yuvarla(K.son.ust), yuz: K.son.yuz.map(yuvarla),
 }))]));
 
 // ---------- Kişi geometrisi (kutu birimi; insan.js ile aynı ölçüler)
@@ -256,12 +365,28 @@ function basUstu(p) {
   return tepe - Math.max(sac, sapka);
 }
 
+// ---------- Gövde uzatma: insan.js gövdesi kutu y 860'ta biter; üst sıralarda kenar görünmesin diye aşağı sürer.
+// h: film.js kisi() dönüşü. s6 da aynı kişileri bununla kurar (devirde görüntü birebir aynı kalsın).
+export function govdeUzat(ctx, h) {
+  const { el } = ctx;
+  const p = h.p, o = h.olcek, Ex = (YAPI[p.yapi] || YAPI.orta).en, cx = 200;
+  const g = el(h.g, 'g', { transform: `translate(${(h.x - BOY.en * o / 2).toFixed(1)} ${(h.alt - BOY.boy * o).toFixed(1)}) scale(${o})` });
+  const deri = p.ceket === 'deri', blazer = !!p.ceket && !deri;
+  const renk = deri ? '#46423d' : MONO.giysi[p.giysi];
+  const sol = cx - 176 * Ex - 2, sag = cx + 176 * Ex + 2, ust = 850, alt = 2600;
+  el(g, 'path', { d: `M${sol + 3} ${ust}L${sag + 3} ${ust}L${sag + 3} ${alt}L${sol + 3} ${alt}Z`, fill: renk });
+  const cizgi = (x, w = 4.2, ek = {}) => el(g, 'path', { d: `M${x} ${ust + 8}L${x} ${alt}`, fill: 'none', stroke: ctx.PALET.murekkep, 'stroke-width': w, 'stroke-linecap': 'round', ...ek });
+  cizgi(sol); cizgi(sag);
+  if (blazer) { cizgi(cx - 9); cizgi(cx + 9); }
+  if (deri) cizgi(cx + 16, 7, { 'stroke-dasharray': '1.6 4.4' });
+}
+
 export function kur(ctx) {
   const { k, E, tl, gsap, el, kisi, balon, odak, W, H, yer, metin, adim, BOY, DIKEY } = ctx;
   ctx.vurus('5.1', 'Kafalar alttan çıkar: "Bunu canlandırabilir miyiz?"', BAS, SATIR2 - 1);
   ctx.vurus('5.2', 'Kalabalık dolar: yapboz', SATIR2, KESKE - 1);
   ctx.vurus('5.3', '"Keşke şöyle olsa…"', KESKE, DEVIR - 1);
-  ctx.vurus('5.4', 'Devir: sekiz balon kenarda', DEVIR, SON);
+  ctx.vurus('5.4', 'Devir: kalabalık kenarlara çekilir, sekiz balon sahiplerinin üstünde', DEVIR, SON);
   ctx.isaret(BAS, 'kesme');
 
   // Katmanlar: kişiler, balonlar (kişilerin üstünde), sözler (en üstte)
@@ -270,36 +395,16 @@ export function kur(ctx) {
     gsap.set(K.div, { autoAlpha: 0 });
     tl.set(K.div, { autoAlpha: 0 }, 0);
     tl.set(K.div, { autoAlpha: 1 }, k(BAS));
-    tl.set(K.div, { autoAlpha: 0 }, k(SON + 1));
+    tl.set(K.div, { autoAlpha: 0 }, k(SON + 1)); // s6 aynı karede aynı kişileri ve balonları kendi katmanında kurar
   }
-  tl.set(LK.div, { autoAlpha: 0 }, k(SON)); // kişiler k2351'de görünmez (devirde zaten inip solmuş olurlar)
 
   // Hızlı aksiyon 30 fps: eğriyi 2 karelik adımlara oturt
   const adimli = (ease, kare) => { const f = gsap.parseEase(ease), n = Math.max(1, Math.round(kare / 2)); return (p) => f(Math.round(p * n) / n); };
 
-  // ---------- Yerleşim (yön başına). Sıra: ölçek o, yüz merkezi cy ('orta' boylu), soluk alfa, balon bandı (y, yalnız yatay)
+  // ---------- Yerleşim (yön başına; tablolar modül düzeyinde: SIRA_T, YERLER_T, SON_YER)
+  const yonAd = DIKEY ? 'dikey' : 'yatay';
   const SB = yer(0.6, 0.56); // kalabalıkta balon sarmalayıcısının ölçeği
-  const SIRA = yer({
-    on: { o: 0.86, cy: 880, alfa: 1, bant: 618 },
-    arka: { o: 0.66, cy: 760, alfa: 0.76, bant: 398 },
-  }, {
-    // Dikey: iki sıra sık ve alçak (arka sıranın yüzleri ön sıranın başları arasından görünür): gökyüzü yığına kalır
-    on: { o: 0.86, cy: 1738, alfa: 1 },
-    arka: { o: 0.68, cy: 1628, alfa: 0.76 },
-  });
-  const SIRA_DIZI = ['arka', 'on']; // arkadan öne (z sırası)
-  // kod: [sıra, x, yatayda balon kayması [dx, dy] | dikeyde şerit (0 sol, 1 orta, 2 sağ)]
-  // Yatay kaymalar elle: bantlar düz bir sıra gibi değil, sık bir bulut gibi dursun; uçtakiler kadraja girsin.
-  const YERLER = yer({
-    E2: ['on', 175, [58, 34]], B: ['on', 400, [-2, -30]], D: ['on', 625, [-6, 30]], N1: ['on', 850, [0, -8]],
-    E: ['on', 1075, [12, 22]], N2: ['on', 1300, [-6, -18]], A: ['on', 1525, [-10, 26]], Garson: ['on', 1750, [-48, -26]],
-    N4: ['arka', 287, [18, 22]], E4: ['arka', 512, [-12, -28]], E3: ['arka', 737, [10, 8]], N3: ['arka', 962, [0, -34]],
-    N6: ['arka', 1187, [-12, 16]], B3: ['arka', 1412, [12, -18]], N5: ['arka', 1637, [4, 26]],
-  }, {
-    // Doğum sırasıyla şeritler dönüşümlü dolar (N2 sol, N1 orta, E sağ; sonra B, E4, A, N4, E3, N5…): üç sütun birlikte büyür
-    B: ['on', 105, 0], N3: ['on', 255, 0], E2: ['on', 400, 1], N1: ['on', 540, 1], A: ['on', 690, 2], E: ['on', 840, 2], Garson: ['on', 985, 2],
-    B3: ['arka', 70, 0], N4: ['arka', 190, 0], N2: ['arka', 320, 0], E4: ['arka', 450, 1], N6: ['arka', 570, 1], E3: ['arka', 690, 1], N5: ['arka', 830, 2], D: ['arka', 970, 2],
-  });
+  const SIRA = SIRA_T[yonAd], YERLER = YERLER_T[yonAd], SONH = SON_HESAP[yonAd];
   // Dikey yığın: şerit x'leri, doğum (yuva 0) y'si, basamak; orta şerit yarım basamak yukarıda (petek)
   const SERIT_X = [290, 545, 800], DOGUM_Y = 1395, BASAMAK = 198, SERIT_KAY = [0, 97, 0];
   const yuvaY = (c, j) => (j === 0 ? DOGUM_Y : DOGUM_Y - j * BASAMAK - SERIT_KAY[c]);
@@ -308,9 +413,7 @@ export function kur(ctx) {
   // katılır. Söz biterken kuyruğu kısalır: başa uzanan seyrek nokta izi kadrajın ortasında asılı kalmasın.
   const N1_DIKEY = { dogum: [455, 1060], yuksel: [2026, 2190, 820], olc: 1.5, kisal: 2104 };
 
-  const KONUSAN = new Set(['N1', 'N2']); // konuşanlar her sırada tam koyu
-  const SON_L = SON_YER[DIKEY ? 'dikey' : 'yatay'];
-  const ANAHTAR = Object.fromEntries(SON_L.balonlar.map((b, i) => [b.kod, { ...b, noktalar: SON_BALONLAR[DIKEY ? 'dikey' : 'yatay'][i].noktalar }]));
+  const ANAHTAR = Object.fromEntries(SONH.balonlar.map((b) => [b.kod, b])); // sekiz büyük balon (son yer, boy, kuyruk)
   const TB = DIKEY ? 1.12 : 1; // tasarım boyu çarpanı (dikeyde balonlar daha büyük)
 
   // ---------- Fikir çizimi: cizimler.js'te varsa cizimKur (s6 ile aynı çizgiler), yoksa bu modülün çizimleri
@@ -319,20 +422,6 @@ export function kur(ctx) {
     if (CIZIMLER[ad]) return cizimKur(ctx, ust, ad, { c: [0, 0], boy, kalinlik: KALINLIK, tohum });
     const tanim = ad === 'figur' ? FIGUR : YENI[ad];
     return tanim.map((c, i) => ctx.cizgi(ust, c.p.map(([x, y]) => [x * boy, y * boy]), { kapali: !!c.kapali, kalinlik: KALINLIK, tohum: tohum + i, genlik: 1.0 }));
-  }
-
-  // ---------- Gövde uzatma: insan.js gövdesi kutu y 860'ta biter; üst sıralarda kenar görünmesin diye aşağı sürer
-  function govdeUzat(h) {
-    const p = h.p, o = h.olcek, Ex = (YAPI[p.yapi] || YAPI.orta).en, cx = 200;
-    const g = el(h.g, 'g', { transform: `translate(${(h.x - BOY.en * o / 2).toFixed(1)} ${(h.alt - BOY.boy * o).toFixed(1)}) scale(${o})` });
-    const deri = p.ceket === 'deri', blazer = !!p.ceket && !deri;
-    const renk = deri ? '#46423d' : MONO.giysi[p.giysi];
-    const sol = cx - 176 * Ex - 2, sag = cx + 176 * Ex + 2, ust = 850, alt = 2600;
-    el(g, 'path', { d: `M${sol + 3} ${ust}L${sag + 3} ${ust}L${sag + 3} ${alt}L${sol + 3} ${alt}Z`, fill: renk });
-    const cizgi = (x, w = 4.2, ek = {}) => el(g, 'path', { d: `M${x} ${ust + 8}L${x} ${alt}`, fill: 'none', stroke: ctx.PALET.murekkep, 'stroke-width': w, 'stroke-linecap': 'round', ...ek });
-    cizgi(sol); cizgi(sag);
-    if (blazer) { cizgi(cx - 9); cizgi(cx + 9); }
-    if (deri) cizgi(cx + 16, 7, { 'stroke-dasharray': '1.6 4.4' });
   }
 
   // ---------- Soluk figüran: saydamlık yerine kâğıda doğru açma filtresi (opak kalır; üst üste binen figüranlar birbirinin
@@ -354,15 +443,15 @@ export function kur(ctx) {
     for (const [kod, [s, x, kay]] of Object.entries(YERLER)) {
       if (s !== sira) continue;
       const S = SIRA[s];
-      const p = YENI_YUZ[kod] ? ctx.rastgeleKisi(YENI_YUZ[kod].tohum, YENI_YUZ[kod]) : ctx.kisiParam(kod);
-      const alfa = KONUSAN.has(kod) ? 1 : S.alfa;
+      const { p, alfa, son } = SONH.kisiler[kod]; // p: ctx.kisiParam(kod) ya da YENI_YUZ ile aynı
       const kap = el(LK.svg, 'g', alfa < 1 ? { filter: solgun(alfa) } : {});
       const h = kisi(kap, p, { x, olcek: S.o, hiza: S.cy + (BOY.boy - 176) * S.o });
-      govdeUzat(h);
+      govdeUzat(ctx, h);
       const y0 = h.alt - BOY.boy * S.o; // kutunun üst kenarı (dünya)
       const ust = y0 + basUstu(p) * S.o, agizY = y0 + (182 + 0.52 * p.yuzBoy) * S.o;
       const yuzYari = p.yuzEn * (YAPI[p.yapi] || YAPI.orta).yuz * (1 + 0.1 * (p.yanak || 0)) * S.o;
-      KISI[kod] = { kod, h, p, x, sira: s, S, kay: kay ?? [0, 0], ust, agiz: [x, agizY], yuzYari, yuzY: y0 + 176 * S.o };
+      // cur: devirde kabın canlı dönüşümü (öteleme + ölçek); balon kuyrukları başın o anki yerine bakar
+      KISI[kod] = { kod, h, p, kap, son, x, sira: s, S, kay: kay ?? [0, 0], ust, agiz: [x, agizY], yuzYari, yuzY: y0 + 176 * S.o, cur: { tx: 0, ty: 0, m: 1 } };
     }
   }
 
@@ -377,24 +466,11 @@ export function kur(ctx) {
   // ---------- Balonlar. Vekil pr = { x, y (dünya merkezi), s (sarmalayıcı ölçeği), m (kuyruk: 0 başa bağlı, 1 kısa),
   // d (devir: 0 → 1 son noktalara) }; uygula(b) sarmalayıcıyı, kuyruğu ve bulutu ondan kurar.
   const BALON = {};
+  // Kuyruk: başın o anki yerine (devirde sahibi kayarken izler); dikey yığında kısa kuyruk dışa-aşağı döner (devirde söner)
   const kuyrukYerel = (b) => {
-    const { pr, K } = b, c = [pr.x, pr.y], rc = [b.r[0] * pr.s, b.r[1] * pr.s];
-    const hedef = [K.x + (c[0] - K.x) * 0.25, K.ust - 10]; // başın tepesi (sahibe doğru biraz kayık)
-    const dx = hedef[0] - c[0], dy = hedef[1] - c[1], l = Math.hypot(dx, dy) || 1;
-    let u = [dx / l, dy / l];
-    // Dikey yığın: yukarı itilen balonun kısa kuyruğu yan şeritlerde dışa-aşağı döner (sahiplerin yanı; dik inen nokta
-    // alttaki balona değip "düşünce zinciri" gibi okunuyordu). Orta şerit aşağı bakar.
-    if (DIKEY && b.serit !== 1 && b.serit != null && pr.m > 0) {
-      const yan = [b.serit === 0 ? -0.72 : 0.72, 0.69], v = [u[0] + (yan[0] - u[0]) * pr.m, u[1] + (yan[1] - u[1]) * pr.m], lv = Math.hypot(v[0], v[1]);
-      u = [v[0] / lv, v[1] / lv];
-    }
-    const ek = 1 / Math.hypot(u[0] / rc[0], u[1] / rc[1]), Lk = Math.max(60, l - ek);
-    const buyut = Math.min(1.5, Math.max(1, Lk / 170)); // uzun izde noktalar iri: seyrek ve küçükken asılı leke gibi
-    const bagli = [[0.84 * Lk, 5.5 * buyut], [0.53 * Lk, 8 * buyut], [0.22 * Lk, 11 * buyut]], kisa = [[46, 4.5], [29, 6.5], [13, 9]];
-    return bagli.map(([d0, r0], j) => {
-      const d = d0 + (kisa[j][0] - d0) * pr.m, rad = r0 + (kisa[j][1] - r0) * pr.m;
-      return [u[0] * (ek + d) / pr.s, u[1] * (ek + d) / pr.s, rad / pr.s];
-    });
+    const { pr, K } = b, c = K.cur;
+    const yan = DIKEY && b.serit !== 1 && b.serit != null ? [b.serit === 0 ? -0.72 : 0.72, 0.69] : null;
+    return kuyruk([pr.x, pr.y], b.r, pr.s, [c.m * K.x + c.tx, c.m * K.ust + c.ty], pr.m, yan, 1 - pr.d);
   };
   const uygula = (b) => {
     const { pr } = b;
@@ -413,7 +489,8 @@ export function kur(ctx) {
     const K = KISI[kod], a = AKIS[kod], an = ANAHTAR[kod];
     const r = an ? an.r : TASARIM[a.cizim].r.map((v) => v * TB);
     const icBoy = an ? an.icBoy : TASARIM[a.cizim].ic * TB;
-    const s = SB * (DIKEY && kod === 'N1' ? N1_DIKEY.olc : BOY_CARPAN[kod]), rc = [r[0] * s, r[1] * s];
+    // Büyük balonlar son boylarında kurulur; kalabalıkta eski tasarım boyları (rKal) kadar görünsün diye ölçek düzeltilir
+    const s = SB * (DIKEY && kod === 'N1' ? N1_DIKEY.olc : BOY_CARPAN[kod]) * (an ? an.rKal / an.r[0] : 1), rc = [r[0] * s, r[1] * s];
     let x, y, serit = null, kayD = [0, 0];
     if (DIKEY) {
       serit = K.kay;
@@ -554,8 +631,13 @@ export function kur(ctx) {
     const t = Math.max(KESKE + 4 + (Math.round(K.x / 37) % 3) * 5, AKIS[K.kod].balon + 16);
     pz(K.kod, t, { ifade: 'ozlem', bakis: [yon(K.x, sonYer(BALON[K.kod])[0]), -1] });
   }
-  // Devir: fikirleri uzaklaşırken yukarı bakmayı sürdürürler (çözüm yok, gülümseme yok)
-  for (const K of Object.values(KISI)) pz(K.kod, DEVIR + 3, { ifade: 'ozlem', bakis: [yon(K.x, W / 2), -1] });
+  // Devir: kalabalık ortadan açılır. Önce yürüdükleri yana bakarlar (merak), varınca yukarı: sahipler kendi balonuna,
+  // ötekiler ortaya (logonun geleceği yer). Son poz SON_KISILER'de (s6 aynısıyla başlar); gülümseme s6'da
+  for (const K of Object.values(KISI)) {
+    const sn = SONH.kisiler[K.kod];
+    pz(K.kod, DEVIR + 3, { ifade: 'merak', bakis: [Math.sign(Math.round((sn.son.x - K.x) / 40)), 0] });
+    pz(K.kod, DEVIR + 34 + (Math.round(K.x / 53) % 3) * 5, { ifade: sn.ifade, bakis: sn.bakis });
+  }
 
   const kirpKare = new Map(); // aynı 12 fps adımında en çok iki kişi göz kırpar
   for (const K of Object.values(KISI)) {
@@ -587,8 +669,8 @@ export function kur(ctx) {
     const boyut = yer(44, 36), [w, h] = olc(m, boyut);
     const x = yer(K.x - K.yuzYari - 56 - 26 - w, K.x + 34);
     const y = yer(K.yuzY - h - 6, K.ust - 64 - h);
-    const kuyruk = yer([K.x - K.yuzYari - 10, K.agiz[1] - 6], [K.x + K.yuzYari * 1.05, K.ust + 50]);
-    const kb = ctx.konus(LY, m, { x: sigdir(x, w, 2034, 50), y, kuyruk, boyut, tohum: 571, aci: yer(-2, -3) });
+    const kuyrukUc = yer([K.x - K.yuzYari - 10, K.agiz[1] - 6], [K.x + K.yuzYari * 1.05, K.ust + 50]);
+    const kb = ctx.konus(LY, m, { x: sigdir(x, w, 2034, 50), y, kuyruk: kuyrukUc, boyut, tohum: 571, aci: yer(-2, -3) });
     kb.g.setAttribute('data-s5soz', 'konusma');
     kb.ac(SOZ1[0], 16);
     ctx.isaret(SOZ1[0], 'konusma');
@@ -630,25 +712,50 @@ export function kur(ctx) {
     tl.to(altG, { autoAlpha: 0, y: -18, duration: k(14), ease: E.EI }, k(KESKE_SIL));
   }
 
-  // ---------- DEVİR (k2312–2351)
+  // ---------- DEVİR (k2312–SON): kalabalık ortadan ikiye ayrılır, kenarlara çekilir (kaybolmaz); sekiz balon sahiplerinin
+  // başının üstünde kalır. k SON'da kamera odak(0,0,1): dünya = ekran; s6 aynı yerleşimi kendi katmanında kurar.
   ctx.isaret(DEVIR, 'vurgu');
   const merkez = [W / 2, H / 2];
-  const anahtarlar = Object.values(BALON).filter((b) => b.an);
+  const anahtarlar = SONH.balonlar.map((an) => BALON[an.kod]); // z sırası: önce üst kat (arkada), sonra alt kat (önde)
   const digerleri = Object.values(BALON).filter((b) => !b.an)
     .sort((x, y) => Math.hypot(sonYer(x)[0] - merkez[0], sonYer(x)[1] - merkez[1]) - Math.hypot(sonYer(y)[0] - merkez[0], sonYer(y)[1] - merkez[1]));
-  // Yedi balon söner (ortadan dışa, yarım k arayla, 12 k): anahtarlar yavaş kalkar (power3.inOut), yollarına girmeden biterler
+  // Yedi balon söner (ortadan dışa, yarım k arayla, 12 k): sahipleri kalır, ortaya bakar
   digerleri.forEach((b, i) => b.bal.kapat(DEVIR + Math.floor(i / 2), 12));
-  // Anahtar balonlar en üste alınır; sarmalayıcı yığındaki yerinden son yere (ölçek → 1), noktalar sahibe değil kadraj dışına döner
-  tl.call(() => anahtarlar.forEach((b) => LB.svg.appendChild(b.sar)), null, k(DEVIR));
-  for (const b of anahtarlar) {
-    tl.to(b.pr, { x: b.an.c[0], y: b.an.c[1], s: 1, d: 1, duration: k(SON - DEVIR), ease: 'power3.inOut', onUpdate: () => uygula(b) }, k(DEVIR));
-  }
-  // Kişiler aşağı iner (30 fps), ortadan dışa yarım kare arayla; katman bir bütün olarak solar (kişiler tek tek saydamlaşınca
-  // üst üste binenler birbirinin içinden görünürdü)
-  const inis = Object.values(KISI).sort((x, y) => Math.abs(x.x - W / 2) - Math.abs(y.x - W / 2));
-  inis.forEach((K, i) => {
-    const t = INIS + i * 0.5, dy = H + 80 - K.ust;
-    tl.to(K.h.g, { y: dy, duration: k(18), ease: adimli('power2.in', 18) }, k(t));
+  // Anahtar balonlar en üste (son z sırasıyla). İkinci kalem geçişinin (kontur2) kesik çizgisi s6'daki gibi kaynama 0'ın yol
+  // boyuyla yeniden kurulur: açılışta başka bir kaynama karesinde ölçülmüştü, devirde ince çizgi birkaç px kayıyordu
+  tl.call(() => anahtarlar.forEach((b) => {
+    LB.svg.appendChild(b.sar);
+    b.bal.ciz(0); gsap.set(b.bal.kontur2, { drawSVG: '4% 92%' }); b.bal.ciz();
+  }), null, k(DEVIR));
+  // Kişiler (30 fps): ortadakiler önce kalkar (yer açılsın), dışa doğru 0,6 k arayla; hepsi son 6 k'dan önce durur (devir
+  // anında herkes yerinde). Ritim: yol boyunca ~170 px'te bir küçük sekme (adım); yerinde kalan da bir kez kıpırdar.
+  // Dönüşüm kabın üstünde (öteleme + ölçek m): çıkış tween'i h.g'de, filtre kapta (renk; dönüşümden bağımsız).
+  const Y0 = SON_YER[yonAd];
+  const kayanlar = Object.values(KISI).sort((x, y) => Math.abs(x.x - W / 2) - Math.abs(y.x - W / 2));
+  kayanlar.forEach((K, i) => {
+    const sn = K.son, m = Y0.m;
+    K.hedef = { tx: sn.x - m * K.h.x, ty: (sn.alt - BOY.boy * sn.o) - m * (K.h.alt - BOY.boy * K.h.olcek), m };
+    K.t0 = DEVIR + 2 + Math.round(i * 0.6);
+    K.D = SON - 6 - K.t0;
+    K.adimSay = Math.max(1, Math.round(Math.abs(K.hedef.tx) / 170));
   });
-  tl.fromTo(LK.div, { opacity: 1 }, { opacity: 0, duration: k(18), ease: 'power1.in', immediateRender: false }, k(INIS + 2));
+  const P2IO = gsap.parseEase('power2.inOut');
+  const kis = (v) => Math.max(0, Math.min(1, v));
+  const yurut = (fHam) => {
+    const f = Math.max(DEVIR, Math.min(SON, fHam));
+    for (const K of kayanlar) {
+      const n = Math.max(1, Math.round(K.D / 2)), uq = Math.round(kis((f - K.t0) / K.D) * n) / n, u = P2IO(uq), h = K.hedef;
+      const sek = -Math.abs(Math.sin(Math.PI * K.adimSay * uq)) * 7 * K.S.o;
+      K.cur = { tx: h.tx * u, ty: h.ty * u + sek, m: 1 + (h.m - 1) * u };
+      K.kap.setAttribute('transform', `translate(${K.cur.tx.toFixed(2)} ${K.cur.ty.toFixed(2)}) scale(${K.cur.m.toFixed(4)})`);
+    }
+    for (const b of anahtarlar) uygula(b);
+  };
+  const dv = { f: DEVIR - 1 };
+  tl.fromTo(dv, { f: DEVIR - 1 }, { f: SON + 1, duration: k(SON + 2 - DEVIR), ease: 'none', immediateRender: false, onUpdate: () => yurut(dv.f) }, k(DEVIR - 1));
+  // Balonlar sahiplerinin üstüne süzülür (6 k geç kalkar: sahiplerini izler, onlardan önce durur). Alt kat bağlı kuyrukla
+  // (m 0), üst kat kısa kuyrukla (m 1) sahibine doğru; ölçek → 1 (son boy), noktalar SON_BALONLAR'a (d → 1)
+  for (const b of anahtarlar) {
+    tl.to(b.pr, { x: b.an.c[0], y: b.an.c[1], s: 1, d: 1, m: b.an.kisa ? 1 : 0, duration: k(SON - 10 - DEVIR), ease: 'power2.inOut', onUpdate: () => uygula(b) }, k(DEVIR + 6));
+  }
 }

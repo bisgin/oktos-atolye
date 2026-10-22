@@ -1,8 +1,12 @@
-// Sahne 6, FİNAL (#6.1–#6.3, k2352–2879). Kalıp: s5-kalabalik.js (kur(ctx), MUTLAK kare zamanları).
-// DEVİR (kesme yok): s5'in son karesindeki (k2351) sekiz balon SON_BALONLAR'dan (s5-kalabalik.js) aynı yerde, aynı boyda,
-// aynı bulutla (ctx.balon, aynı tohum) ve aynı çizgilerle (cizimKur, aynı çizim tohumu ve kalınlık) AÇIK hâlde kurulur.
-// s5 katmanları k2352'de kapanır, bu katman açılır. Kamera odak(0,0,1) (dünya = ekran) ve sona dek sabit.
-// #6.1 HASAT (k2352–2645): stil/logo2.js'teki inşa filme uyarlandı (biçim dönüşümü değil yapım; logo2.js'e dokunulmaz).
+// Sahne 6, FİNAL (#6.1–#6.3, iç kare k2376–2997). Kalıp: s5-kalabalik.js (kur(ctx), MUTLAK kare zamanları).
+// DEVİR (kesme yok): s5'in son karesindeki (k2375) sekiz balon SON_BALONLAR'dan (s5-kalabalik.js) aynı yerde, aynı boyda,
+// aynı bulutla (ctx.balon, aynı tohum) ve aynı çizgilerle (cizimKur, aynı çizim tohumu ve kalınlık) AÇIK hâlde kurulur;
+// kenarlara çekilmiş kalabalık da SON_KISILER'den aynı yerde, aynı ölçek ve pozla (s5'in gövde uzatmasıyla) kurulur.
+// s5 katmanları k2376'da kapanır, bu katman açılır. Kamera odak(0,0,1) (dünya = ekran) ve sona dek sabit.
+// KİŞİLER final boyunca ekranda kalır, hafifçe yaşar (12 fps: göz kırpma, baş sallama, sevinç sekmesi, omuz kıpırtısı):
+// balonu sönen ortaya, inşaya bakar; ~30 k sonra gülümser; logo tamamlanınca gülümseme büyür (gözler de güler), sonra
+// OKTOS'a ve slogana bakarlar; slogan oturunca yine. Ayrıntı: 13) Kişilerin takvimi.
+// #6.1 HASAT (k2376–2669): stil/logo2.js'teki inşa filme uyarlandı (biçim dönüşümü değil yapım; logo2.js'e dokunulmaz).
 //   - Logo 29 dışbükey parça (stil/logo-veri.js); kenarlar aynı doğrudaki "çubuk"lara toplanır, çok uzun çubuk aynalı
 //     çiftiyle T-eklemden bölünür. Çubuklar logo2 sırasıyla gelir: dıştan içe (köşe, yan, alt kancalar, çarpı, halka),
 //     aynalı çiftler aynı karede; son parça halkanın içindeki küçük karo (kaynak noktaları vurgu renginde).
@@ -22,37 +26,41 @@
 //     kısa kirişli eğri büzülmez); kenara parçanın dışından dikine gelir, hafifçe taşar, oturur, uçlar eklemlere
 //     uzanır, eklemde kaynak noktası. Parça kapanınca mürekkep kenardan içe dolar (9 k), sonra kenar çizgisi incelir.
 //   - Dalgalar üst üste biner (bir dalga inerken sonraki çift söner): inşa boyunca boş an kalmaz.
-// #6.2 LOGO TAMAM (k2646): dikişler kalkar, tek logo yolu, %2 "tık" ('vurgu' doruk). k2652–2698 OKTOS (Big Shoulders
-//      Display 900) harf harf maskeden yükselir (6 k arayla, 22 k EO). Yer ve boy logo2 ile aynı (FINAL_YER).
-// #6.3 SLOGAN (k2700–2939): stil/slogan.js filme uyarlandı (o dosyaya dokunulmaz; aşağıda sloganKur). Mürekkep logonun
+// #6.2 LOGO TAMAM (k2670): dikişler kalkar, tek logo yolu, %2 "tık" ('vurgu' doruk). k2676–2722 OKTOS (Big Shoulders
+//      Display 900) harf harf maskeden yükselir (6 k arayla, 22 k EO). Yer ve boy FINAL_YER (yatay logo2 ile aynı).
+// #6.3 SLOGAN (k2724–2997): stil/slogan.js filme uyarlandı (o dosyaya dokunulmaz; aşağıda sloganKur). Mürekkep logonun
 //      ve OKTOS'un alt kenarlarından damla gibi kopar, düşer, harfe dönüşüp konar; bütün harfler Big Shoulders 900.
-//      EN "OKAY TO DO'S", TR "OLASILIKTAN GERÇEĞE" (iki satır); dil ctx.DIL. Slogan ≤240 k sürer (akış + ≥1,5 sn bekleme),
-//      bu yüzden sahne k2939'a uzar (ARALIK). Sona dek kararma yok: son kare logo + OKTOS + slogan.
+//      EN "OKAY TO DO'S", TR "YAPILABİLİR “ŞÖYLE BİR ŞEY”LER" (iki satır; tırnaklar vurgu renginde, sonda iki İ esner);
+//      dil ctx.DIL. Slogan 274 k (TR akış ~181 k + ≥90 k son tutuş). Sona dek kararma yok: son kare logo + OKTOS +
+//      slogan + gülümseyen kalabalık.
 // SES İŞARETLERİ YÖNDEN BAĞIMSIZ (müzik tek ses dosyası): çubuk sırası ve bölünmesi yalnız logonun geometrisine bağlı,
 // ilk varış sabit karede; parça kapanışları ve grup 'tik'leri iki yönde aynı karede. Slogan damlalarının konma kareleri
 // iki yön birlikte planlanır (her damla yatayda ve dikeyde aynı karede konar).
 // Bütün durum karenin saf işlevi (ciz(f)); tek bir vekil tween'in onUpdate'i çağırır: ileri ve geri sarma güvenli.
 // Sorgu: ?yalniz=s5-kalabalik,s6-final&ic=1  ?yon=dikey  ?dil=en
 import { CustomEase } from 'gsap/CustomEase.js';
-import { SON_BALONLAR } from './s5-kalabalik.js';
+import { SON_BALONLAR, SON_KISILER, govdeUzat, ARALIK as S5_ARALIK } from './s5-kalabalik.js';
 import { CIZIMLER, cizimKur, duz } from './cizimler.js';
 import { LOGO_D, LOGO_ORTA, LOGO_EKSEN, PARCA } from '../stil/logo-veri.js';
+import { kisiSVG, YAPI } from '../insan.js';
 
-const BAS = 2352;
-const BEKLE = 22;     // devirden sonra sekiz fikir yerinde okunur; ilk çift ~k2370'te söner
-const TAKAS = 2646;   // logo tamam: dikişler kalkar, tek yol, %2 tık ('vurgu' doruk)
-const AD = 2652;      // OKTOS harf harf (son harf k2698'de oturur)
-const SLOGAN = 2700;  // sloganın 0. karesi (logo2'nin son karesiyle aynı durgun kare)
-const SLOGAN_SURE = 240; // slogan.js'in en uzun süresi (akış + ≥1,5 sn bekleme)
+// Bütün kareler s5'in son karesinden sonra (s5 devri 2351'den 2375'e uzadı: s6 iç kareleri de 24 k kaydı)
+const BAS = S5_ARALIK[1] + 1; // 2376
+const BEKLE = 22;     // devirden sonra sekiz fikir yerinde okunur; ilk çift ~BAS+19'da söner
+const TAKAS = BAS + 294;   // logo tamam: dikişler kalkar, tek yol, %2 tık ('vurgu' doruk)
+const AD = BAS + 300;      // OKTOS harf harf (son harf AD+46'da oturur)
+const SLOGAN = BAS + 348;  // sloganın 0. karesi (logo2'nin son karesiyle aynı durgun kare)
+const SLOGAN_SURE = 274; // akış + İ esnemesi (TR hareket ~181 k) + ≥90 k son tutuş (iki dilde aynı: müzik tek)
 const SON = SLOGAN + SLOGAN_SURE - 1;
-export const ARALIK = [BAS, SON]; // kadro.json'daki [2352, 2879]'dan uzun: slogan sığsın (çekirdek sonraki sahneleri kaydırır)
+export const ARALIK = [BAS, SON]; // kadro.json'daki aralıktan uzun: s5 uzadı, slogan sığsın (çekirdek sonrakileri kaydırır)
 const ILK_VARIS = BAS + BEKLE + 8 + 48; // ilk çubuğun varışı: yönden bağımsız (dalga planı yöne göre değişse de)
 const LBOL = 165; // logo biriminde: bundan uzun çubuk aynalı çiftiyle bölünür (yönden bağımsız)
 
-// Yerleşim: logo2.js ile aynı yer ve boy (OKTOS'un altında slogana bir satır boş kalır)
+// Yerleşim: yatay logo2.js ile aynı yer ve boy (OKTOS'un altında slogana bir satır boş kalır). Dikey 150 px yukarıda
+// (logo y 396–984, slogan ≤ ~1420): alt banttaki kalabalığa ve üstündeki balonlara yer kalsın (s5 SON_YER).
 export const FINAL_YER = {
   yatay: { logo: { cx: 960, cy: 412, s: 1.0 }, ad: { top: 676, boyut: 132 } },
-  dikey: { logo: { cx: 540, cy: 840, s: 1.3 }, ad: { top: 1196, boyut: 176 } },
+  dikey: { logo: { cx: 540, cy: 690, s: 1.3 }, ad: { top: 1046, boyut: 176 } },
 };
 const INCE = { yatay: 2.8, dikey: 3.4 }, OLCU = { yatay: 1, dikey: 1.25 };
 
@@ -197,18 +205,38 @@ export function kur(ctx) {
   const GERI = gsap.parseEase('back.out(1.7)'), GERI3 = gsap.parseEase('back.out(3)');
   const logoNokta = ([x, y]) => [D.logo.cx + (x - LOGO_ORTA[0]) * D.logo.s, D.logo.cy + (y - LOGO_ORTA[1]) * D.logo.s];
 
-  // Katman: k2352'de açılır (s5'inkiler aynı karede kapanır); kamera devirdeki gibi
+  // Katman: BAS'ta açılır (s5'inkiler aynı karede kapanır); kamera devirdeki gibi
   const L = ctx.katman('s6-final', 13);
   gsap.set(L.div, { autoAlpha: 0 });
   tl.set(L.div, { autoAlpha: 0 }, 0);
   tl.set(L.div, { autoAlpha: 1 }, k(BAS));
   ctx.kameraKoy(BAS, { x: 0, y: 0, scale: 1 });
   const tanim = el(L.svg, 'defs');
+  const kisiKat = el(L.svg, 'g'); // kişiler en altta (s5'teki gibi: balonlar ve uçan çizgiler üstlerinden geçer)
   const balonKat = el(L.svg, 'g'), logoKap = el(L.svg, 'g'), dolguKat = el(logoKap, 'g'), dikisKat = el(logoKap, 'g');
   const cizgiKat = el(L.svg, 'g'), kaynakKat = el(L.svg, 'g');
   const logoYol = el(logoKap, 'path', { fill: M, 'fill-rule': 'evenodd', d: LOGO_D.replace(/(-?[\d.]+),(-?[\d.]+)/g, (_, x, y) => logoNokta([+x, +y]).map(f1).join(',')) });
 
-  // ---------- 1) Balonlar: s5'in k2351'deki hâli. s5 balonu yerel (0,0)'da kurup sarmalayıcıyla taşır; aynısı.
+  // ---------- 0) Kişiler: s5'in son karesindeki kalabalık aynı yerde, aynı ölçekte, aynı pozla (SON_KISILER); final boyunca
+  // ekranda kalır. Çizim bu modülde (saf: kisiCiz(f)); film.js'in kaynatması kapalı (donuk), kaynama aynı tabloyla.
+  const solgun = (a) => {
+    const id = `s6-solgun-${Math.round(a * 100)}`;
+    if (!tanim.querySelector(`#${id}`)) {
+      const fl = el(tanim, 'filter', { id, 'color-interpolation-filters': 'sRGB', x: '-5%', y: '-5%', width: '110%', height: '110%' });
+      const tr = el(fl, 'feComponentTransfer');
+      [0xf1, 0xed, 0xe6].forEach((v, i) => el(tr, `feFunc${'RGB'[i]}`, { type: 'linear', slope: a, intercept: ((1 - a) * v / 255).toFixed(4) }));
+    }
+    return `url(#${id})`;
+  };
+  const kisiler = SON_KISILER[yonAd].map((s) => {
+    const kap = el(kisiKat, 'g', s.alfa < 1 ? { filter: solgun(s.alfa) } : {});
+    const h = ctx.kisi(kap, s.p, { x: s.x, alt: s.alt, olcek: s.olcek });
+    h.donuk = true;
+    govdeUzat(ctx, h);
+    return { ...s, h, anahtar: '', olaylar: [], kirpmalar: [], hareket: [] };
+  });
+
+  // ---------- 1) Balonlar: s5'in son karesindeki hâli. s5 balonu yerel (0,0)'da kurup sarmalayıcıyla taşır; aynısı.
   const SB = SON_BALONLAR[yonAd];
   const balonlar = SB.map((s, bi) => {
     const sar = el(balonKat, 'g', { transform: `translate(${s.c[0].toFixed(2)} ${s.c[1].toFixed(2)}) scale(${(1).toFixed(4)})`, 'data-s6': s.kod });
@@ -607,6 +635,97 @@ export function kur(ctx) {
   // ---------- 12) Slogan: harfler OKTOS'un altında (HTML), damlalar logonun üstünde (SVG)
   const slogan = sloganKur(ctx, L.div, ad, L.svg);
 
+  // ---------- 13) Kişilerin takvimi (12 fps ızgarası; yön ve dil değiştirmez, kare kare saf). İfadeler:
+  //   merak: gözler açık, inşaya bakar | gülümse: yüz 'mutlu', gözler 'kisik' (açık, bakan) | mutlu: gözler de güler.
+  //   'gülümse' iki çizimin birleşimi: göz bölgesi (iki küçük dikdörtgen) 'kisik' çiziminden, gerisi 'mutlu'dan. İkisinde
+  //   kaynama ve sapma sırası göze dek aynı (göz başına bir yol), yani dikiş görünmez; kırpma da aynı yolla ('kirp').
+  // Akış: s5'in son pozu (sahip kendi balonuna, öteki ortaya bakar) → balonu söner (ötekiler ilk sönmede) → ortaya, inşaya
+  // bakar → ~30 k sonra gülümser → logo tamam (TAKAS): gülümseme büyür (mutlu) + sevinç sekmesi, ortadan dışa dalga →
+  // OKTOS harfleri: çoğu harflere döner (gülümse), baş sallar → slogan: slogana bakar → slogan oturur: yine mutlu + sekme
+  // → son tutuş: yarısı gülümseyerek bakar (göz kırpar), yarısı mutlu; arada küçük omuz kıpırtısı.
+  const adimla = (n) => ctx.adim(n);
+  const OD = [D.logo.cx, D.logo.cy];
+  const yaziY = D.ad.top + D.ad.boyut * 0.55, sloganY = D.ad.top + D.ad.boyut * 1.55;
+  const bak = (K, h) => { const dx = h[0] - K.yuz[0], dy = h[1] - K.yuz[1]; return [Math.abs(dx) < 50 ? 0 : Math.sign(dx), dy < -90 ? -1 : dy > 90 ? 1 : 0]; };
+  const ilkSonme = Math.min(...balonlar.map((b) => b.sonme));
+  const sloganIs = slogan.isaretler.map((i) => ({ ...i, kare: SLOGAN + i.kare }));
+  const OTUR = sloganIs.find((i) => i.ek?.ad === 'slogan-otur').kare;
+  const ESNE = sloganIs.filter((i) => i.ek?.ad === 'slogan-i').map((i) => i.kare);
+  const dalga = (K, yay) => Math.round((Math.abs(K.x - W / 2) / (W / 2)) * yay); // ortadan dışa
+  for (const K of kisiler) {
+    const r = ctx.rng(K.p.tohum * 7 + 3), gec = Math.floor(r() * 3) * 5;
+    const bal = balonlar.find((b) => b.s.kod === K.kod);
+    const gul = (hedef) => ({ ifade: 'mutlu', goz: 'kisik', bakis: bak(K, hedef) });
+    const O = K.olaylar;
+    O.push([BAS - 1, { ifade: K.ifade, goz: null, bakis: K.bakis }]);
+    const izle = bal ? bal.sonme + 4 : ilkSonme + 10 + gec;
+    O.push([izle, { ifade: 'merak', goz: null, bakis: bak(K, OD) }]);
+    O.push([izle + 26 + gec, gul(OD)]);
+    const tamam = T.takas + 2 + dalga(K, 12);
+    O.push([tamam, { ifade: 'mutlu', goz: null }]);
+    K.hareket.push([tamam, 'sek']);
+    // mutlu en az ~30 k sürsün (OKTOS'un ilk harfleri gülerek), sonra çoğu harflere döner, kimi baş sallar
+    if (r() < 0.65) { O.push([AD + 30 + gec, gul([W / 2, yaziY])]); if (r() < 0.6) K.hareket.push([AD + 40 + gec * 2, 'bas']); }
+    O.push([SLOGAN + 6 + gec, gul([W / 2, sloganY])]);
+    const otur = OTUR + 2 + dalga(K, 10);
+    O.push([otur, { ifade: 'mutlu', goz: null }]);
+    K.hareket.push([otur, 'sek']);
+    if (ESNE.length && r() < 0.5) K.hareket.push([ESNE[Math.floor(r() * ESNE.length)] + 4, 'bas']);
+    if (r() < 0.5) O.push([otur + 34 + gec * 2, gul([W / 2, sloganY])]);
+    K.hareket.push([otur + 70 + Math.floor(r() * 50), 'omuz']);
+    K.olaylar = O.map(([f, d]) => [adimla(f), d]).sort((a, b) => a[0] - b[0]);
+    K.hareket = K.hareket.map(([f, t]) => [adimla(f), t]).sort((a, b) => a[0] - b[0]);
+    // Göz kırpma (yalnız açık gözle: merak, gülümse): 55–100 k arayla, bir ifade değişimine 10 k'dan yakın değil
+    for (let f = BAS + 20 + Math.floor(r() * 40); f < SON - 8; f += 55 + Math.floor(r() * 45)) {
+      const fa = adimla(f);
+      if (K.olaylar.some(([kk]) => Math.abs(kk - fa) < 10)) continue;
+      K.kirpmalar.push(fa);
+    }
+  }
+  // Kare f'deki durum (12 fps): ifade, göz katmanı, bakış; kırpma; hareket (sekme, baş sallama, omuz) → dönüşüm
+  const HAREKET = {
+    sek: [[0, -9, 0], [5, -3, 0], [10, 0, 0]],          // sevinç: hafif sıçrar
+    bas: [[0, 2, 1.6], [5, 1, -0.8], [10, 0, 0]],        // baş sallama: öne eğilir, geri gelir (boyun çevresinde)
+    omuz: [[0, -4, 0], [5, 0, 0]],                       // omuz kıpırtısı
+  };
+  function kisiDurum(K, f) {
+    const fq = adimla(f);
+    let d = K.olaylar[0][1];
+    for (const [kk, dd] of K.olaylar) { if (kk <= fq) d = dd; else break; }
+    d = { ...d };
+    const acik = d.goz === 'kisik' || (!d.goz && d.ifade !== 'mutlu');
+    if (acik && K.kirpmalar.some((kk) => fq >= kk && fq < kk + 5)) { if (d.goz) d.goz = 'kirp'; else d.ifade = 'kirp'; }
+    let dy = 0, don = 0;
+    for (const [kk, tur] of K.hareket) {
+      if (fq < kk) break;
+      const adimlar = HAREKET[tur], j = fq - kk;
+      for (const [a, y, r] of adimlar) if (j >= a) { dy = y; don = r; }
+      if (j >= adimlar[adimlar.length - 1][0]) { dy = 0; don = 0; }
+    }
+    return { ...d, dy: dy * K.olcek, don };
+  }
+  const gozKutusu = (p) => {
+    const gx = 0.38 * p.yuzEn * (YAPI[p.yapi] || YAPI.orta).yuz, G = ctx.GOZ_Y;
+    return [-1, 1].map((y) => `M${(200 + y * gx - 14).toFixed(1)} ${G - 11}h28v20h-28Z`).join('');
+  };
+  function kisiCiz(K, f, ki) {
+    const d = kisiDurum(K, f);
+    const anahtar = `${d.ifade}|${d.goz}|${d.bakis}|${ki}`;
+    if (anahtar !== K.anahtar) {
+      K.anahtar = anahtar;
+      const ciz = (ifade, bakis) => kisiSVG(K.p, { kaynama: ki, ifade, bakis: bakis || [0, 0], mono: true });
+      if (!d.goz) K.h.svg.innerHTML = ciz(d.ifade, d.bakis);
+      else {
+        // Alttaki 'mutlu' çizim kırpılmaz; göz bölgesi üstüne biner (iki tümleyen kırpma kenarda kâğıt rengi dikiş bırakıyordu)
+        const id = `s6k-${K.kod}`;
+        K.h.svg.innerHTML = `<defs><clipPath id="${id}-g"><path d="${gozKutusu(K.p)}"/></clipPath></defs>`
+          + `${ciz(d.ifade)}<g clip-path="url(#${id}-g)">${ciz(d.goz, d.bakis)}</g>`;
+      }
+    }
+    const boyun = [K.x, K.yuz[1] + 70 * K.olcek];
+    K.h.g.setAttribute('transform', d.dy || d.don ? `translate(0 ${d.dy.toFixed(1)}) rotate(${d.don} ${boyun[0].toFixed(1)} ${boyun[1].toFixed(1)})` : '');
+  }
+
   // ---------- Kare kurulumu (saf: yalnız f'ye bağlı)
   function balonCiz(b, f) {
     const s = f - b.sonme, { bal } = b;
@@ -631,6 +750,7 @@ export function kur(ctx) {
   }
   function ciz(fHam) {
     const f = Math.max(BAS, fHam), ki = kaynaIndis(f + KAYDIR); // kaynama film karesiyle (balonlar ve cizimKur gibi)
+    for (const K of kisiler) kisiCiz(K, f, ki);
     for (const b of balonlar) balonCiz(b, f);
     for (const h of cizgiler) cizgiCiz(h, f, ki);
     for (const y of yetim) {
@@ -699,6 +819,7 @@ export function kur(ctx) {
       atanan: w.cift.uyeler.reduce((a, b) => a + b.cizgiler.filter((h) => h.cubuk).length, 0) })),
     plan: { maliyet: Math.round(plan.maliyet), kesisme: plan.kesisme }, planlar: planlar.sort((a, b) => a[1] - b[1]).slice(0, 10), T, kapanis: parcalar.map((p) => p.kapanis),
     slogan: slogan.durum,
+    kisiler: kisiler.map((K) => ({ kod: K.kod, olay: K.olaylar.map(([f, d]) => `${f}:${d.goz ? 'gulumse' : d.ifade}`), kirp: K.kirpmalar, hareket: K.hareket.map(([f, t]) => `${f}:${t}`) })),
   };
 }
 
@@ -729,6 +850,17 @@ function adKur(D, W, renk) {
 //   2. Akış GSAP tween'i değil, sloganın yerel karesinin saf işlevi (damlanın yaşı = yerel kare − başlangıcı).
 // Dönüş: { ciz(a) (a = yerel kare), isaretler (yerel kare), durum }.
 const SL = { ORAN: 0.46, IZ: 0.06, SATIR: 1.3, Z: { topla: 8, ak: 11, sark: 7, cicek: 7, kayGec: 3 } };
+// TR slogan (büyük harf, Türkçe noktalı İ; tipografik tırnaklar). Kullanıcı "Yapılabiiir" yazdı: standart yazım, İ'ler esner
+const SATIR1 = 'YAPILABİLİR', SATIR2 = '“ŞÖYLE BİR ŞEY”LER';
+// İ esnemesi (yerel kare, 2. satırın konmasından sonra): gec k bekler, kalk k'da %30 uzar (taban çizgisinden yukarı, %7
+// incelir), sonra sönümlü yayla oturur (sure k'da biter); ikinci İ ara k sonra. Okunurluk: harf yerinde, yalnız boyu oynar
+const ESNEME = { gec: 22, ara: 7, kalk: 7, sure: 26, boy: 0.3, en: 0.07 };
+function esneme(t) {
+  if (t <= 0 || t >= ESNEME.sure) return [1, 1];
+  const P2O = (x) => 1 - (1 - x) * (1 - x);
+  const u = t < ESNEME.kalk ? P2O(t / ESNEME.kalk) : Math.exp(-(t - ESNEME.kalk) / 3.2) * Math.cos((t - ESNEME.kalk) * 0.75);
+  return [1 - ESNEME.en * u, 1 + ESNEME.boy * u];
+}
 function sloganKur(ctx, kat, onune, svgUst) {
   const { gsap, DIKEY, DIL } = ctx;
   const M = ctx.PALET.murekkep, VURGU = ctx.VURGU, YAZI = '"Big Shoulders Display"', NS = 'http://www.w3.org/2000/svg';
@@ -964,10 +1096,11 @@ function sloganKur(ctx, kat, onune, svgUst) {
     dol.y.slice(0, 3).forEach((d) => isaretler.push({ kare: d.inis, tur: 'tik', ek: { ad: 'slogan' } }));
     isaretler.push({ kare: dol.y[dol.y.length - 1].inis, tur: 'tik', ek: { ad: 'slogan-otur' } });
   } else {
-    // TR "OLASILIKTAN GERÇEĞE": OLASILIKTAN harfleri logonun iki ayağının kenarlarından karışık sırayla damlar, iki yandan
-    // ortaya sıraya girer; GERÇEĞE tek parça 1. satırın altından sıyrılır, tek düşüşle 2. satıra oturur
+    // TR "YAPILABİLİR “ŞÖYLE BİR ŞEY”LER": YAPILABİLİR'in 11 harfi logonun iki ayağının kenarlarından karışık sırayla
+    // damlar, iki yandan ortaya sıraya girer; 2. satır tek parça 1. satırın altından sıyrılır, tek düşüşle oturur (tırnaklar
+    // vurgu renginde). Sonra iki noktalı İ sırayla yukarı esner ve yaylanıp oturur: "yapılabiiir" (ses vurgusu)
     const planTR = (g) => {
-      const L1 = diz('OLASILIKTAN', g.B, SL.IZ * g.B), capH = BUYUK * g.B;
+      const L1 = diz(SATIR1, g.B, SL.IZ * g.B), capH = BUYUK * g.B;
       const taban1 = g.adTaban + g.ARA * capH + capH, taban2 = taban1 + SL.SATIR * g.B, sol1 = g.adOrta - L1.en / 2;
       const yuva = L1.h.map((c, i) => ({ c, x: sol1 + L1.x[i] + L1.adv[i] / 2 }));
       const solSira = [5, 4, 3, 2, 1, 0], sagSira = [6, 7, 8, 9, 10];
@@ -987,8 +1120,8 @@ function sloganKur(ctx, kat, onune, svgUst) {
     const ty = planTR(GY), td = planTR(GD);
     const dol = planlaOrtak(ty.istek.map((r, i) => ({ y: r, d: td.istek[i] })), 38, 4, { y: [], d: [] });
     planlar = DIKEY ? dol.d : dol.y;
-    // GERÇEĞE: iki yönde aynı tam karede konar (son harf konduktan sonra, satırın son kayması biterken)
-    const k2 = 'GERÇEĞE';
+    // 2. satır: iki yönde aynı tam karede konar (son harf konduktan sonra, satırın son kayması biterken)
+    const k2 = SATIR2;
     const gerHesap = (g, t, pl) => {
       const mk = murekkep(k2, g.B), bas = t.taban1 - mk.alt - 1, tf = Math.sqrt(2 * (t.taban2 - bas) / g.G);
       const sonKonma = Math.max(...pl.map((d) => d.t0 + d.tland)), sonKayma = Math.max(...pl.map((d) => d.kay + d.Ds));
@@ -997,17 +1130,20 @@ function sloganKur(ctx, kat, onune, svgUst) {
     const hy = gerHesap(GY, ty, dol.y), hd = gerHesap(GD, td, dol.d), h = DIKEY ? hd : hy, t = DIKEY ? td : ty;
     const inisG = Math.round(Math.max(hy.iste, hd.iste));
     ger = { taban1: t.taban1, bas: h.bas, tf: h.tf, t0: inisG - h.tf, tland: inisG, sure: h.tf + 18 };
-    // 'tik': OLASILIKTAN'ın 11 konmasından eşit aralıklı 8'i; GERÇEĞE'nin konması 'slogan-otur'
+    // İ esnemesi: 2. satır oturup ezilmesi bitince, soldaki İ önce, sağdaki ESNEME.ara k sonra (iki yönde aynı karede)
+    planlar.filter((d) => d.c === 'İ').sort((a, b) => a.hedefX - b.hedefX).forEach((d, j) => { d.esne = inisG + ESNEME.gec + j * ESNEME.ara; });
+    // 'tik': YAPILABİLİR'in 11 konmasından eşit aralıklı 8'i; 2. satırın konması 'slogan-otur'; İ'lerin esneme doruğu 'slogan-i'
     const konma = dol.y.map((d) => d.inis).sort((a, b) => a - b);
     [...new Set(Array.from({ length: 8 }, (_, j) => Math.round((j * (konma.length - 1)) / 7)))].forEach((i) => isaretler.push({ kare: konma[i], tur: 'tik', ek: { ad: 'slogan' } }));
     isaretler.push({ kare: inisG, tur: 'tik', ek: { ad: 'slogan-otur' } });
+    planlar.filter((d) => d.esne != null).forEach((d) => isaretler.push({ kare: d.esne + ESNEME.kalk, tur: 'tik', ek: { ad: 'slogan-i' } }));
   }
 
   // ---------- DOM (bu yön): harfler OKTOS'un altında, damlalar logonun üstünde
   const sk = document.createElement('div');
   sk.dataset.s6 = 'slogan';
   sk.setAttribute('role', 'img');
-  sk.setAttribute('aria-label', DIL === 'en' ? "Okay to do's" : 'Olasılıktan gerçeğe');
+  sk.setAttribute('aria-label', DIL === 'en' ? "Okay to do's" : 'Yapılabilir “şöyle bir şey”ler');
   Object.assign(sk.style, { position: 'absolute', left: '0px', top: '0px', width: g.W + 'px', height: g.H + 'px', pointerEvents: 'none' });
   kat.insertBefore(sk, onune);
   const damlaKat = svgEl(svgUst, 'g');
@@ -1044,7 +1180,9 @@ function sloganKur(ctx, kat, onune, svgUst) {
     ger.seritUst = ger.taban1 + 1;
     Object.assign(serit.style, { position: 'absolute', left: '0px', top: f1(ger.seritUst) + 'px', width: g.W + 'px', height: f1(g.H - ger.seritUst) + 'px', overflow: 'hidden' });
     sk.appendChild(serit);
-    ger.e = harfEl(serit, 'GERÇEĞE');
+    // Tırnaklar vurgu renginde (filmin tek vurgu rengi: dilek alt çizgisi, son parça kaynakları)
+    ger.e = harfEl(serit, '');
+    ger.e.innerHTML = SATIR2.replace(/[“”]/g, (q) => `<span style="color:${VURGU}">${q}</span>`);
     ger.e.style.letterSpacing = f1(SL.IZ * g.B) + 'px';
     ger.orta = g.adOrta + SL.IZ * g.B / 2;
   }
@@ -1060,7 +1198,10 @@ function sloganKur(ctx, kat, onune, svgUst) {
       yolYaz(d.asili, s.asili && asiliD(d.ax, d.ay, s.asili.wn, s.asili.L, s.asili.r));
       yolYaz(d.kalan, s.kalan && asiliD(d.ax, d.ay, s.kalan.wn, s.kalan.L, s.kalan.r));
       yolYaz(d.dusen, s.dusen && dusenD(s.dusen.x, s.dusen.yb, s.dusen.r, s.dusen.T));
-      if (s.harf) koy(d.harf, s.harf.x, s.harf.taban, s.harf.sx, s.harf.sy, d.oy); else koy(d.harf, 0, 0, 1, 1, 0, false);
+      if (s.harf) {
+        const [ex, ey] = d.esne != null ? esneme(a - d.esne) : [1, 1];
+        koy(d.harf, s.harf.x, s.harf.taban, s.harf.sx * ex, s.harf.sy * ey, d.oy);
+      } else koy(d.harf, 0, 0, 1, 1, 0, false);
     }
     if (ger) {
       const ya = Math.max(0, Math.min(ger.sure, a - ger.t0));
@@ -1072,7 +1213,7 @@ function sloganKur(ctx, kat, onune, svgUst) {
     }
   };
   // Hareketin sonu (iki yön): ondan sonra en az 90 k durgun bekleme kalmalı
-  const hareketSonu = Math.max(...planlar.map((d) => d.t0 + d.sure), ger ? ger.t0 + ger.sure : 0);
+  const hareketSonu = Math.max(...planlar.map((d) => (d.esne != null ? Math.max(d.t0 + d.sure, d.esne + ESNEME.sure) : d.t0 + d.sure)), ger ? ger.t0 + ger.sure : 0);
   const durum = { dil: DIL, hareketSonu: +hareketSonu.toFixed(1), bekleme: +(SLOGAN_SURE - hareketSonu).toFixed(1), konma: planlar.map((d) => [d.c, d.inis]), ger: ger && ger.tland };
   return { ciz, isaretler, durum };
 }
