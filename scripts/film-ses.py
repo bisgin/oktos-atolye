@@ -92,7 +92,7 @@ NESNE_TIP = {
     'metal':   dict(mod=[(1250, .070, .45), (1830, .050, .22), (2560, .030, .06), (420, .020, .55)], gur=(2200, .0020, .5), db=-3, bant=1000),
     'cam':     dict(mod=[(1420, .090, .40), (2050, .060, .12), (610, .020, .60)], gur=(2300, .0020, .4), db=-3, bant=1000),
     'toprak':  dict(mod=[(140, .060, 1.0), (310, .030, .45), (620, .015, .20)], gur=(900, .0200, .7), db=1, bant=300),
-    'kumas':   dict(mod=[(250, .025, .50), (680, .012, .25)], gur=(1300, .0120, .9), db=-4, bant=300),
+    'kumas':   dict(mod=[(250, .025, .50), (680, .012, .25)], gur=(1300, .0120, .9), db=-4, bant=300),   # v2'de bant 1000 (tiz susturulmuş nota)
     'darbe':   dict(mod=[(82, .130, 1.0), (131, .090, .70), (226, .050, .40), (480, .022, .18)], gur=(700, .0200, .6), db=3, bant=300),
     'kemik':   dict(mod=[(960, .009, 1.0), (1480, .006, .55), (2150, .004, .20), (320, .014, .45)], gur=(1900, .0020, .8), db=1, bant=1000),
     'pit':     dict(mod=[(1480, .010, 1.0), (2220, .005, .20), (740, .012, .40)], gur=(1900, .0015, .5), db=-6, bant=1000),  # ölçü "pıt"
@@ -102,6 +102,35 @@ NESNE_TIP['zar'] = dict(NESNE_TIP['kemik'], db=2)    # zar: kemik tıkırtılar�
 # bir notaya eşlik ediyorsa 4 dB altı; hazır düzeyden hiç kısılmaz, en çok +15 dB açılır.
 NESNE_FARK = dict(tek=6.0, eslik=-4.0)
 NESNE_EN_COK_DB = 15.0
+
+# ----- v2: doku katmanı (ses dokusu) ve piyanodan türetilen nesne sesleri -----------------------------------------------
+# "Keçe piyano": yumuşak çekiç, düşük parlaklık, una corda (iki tel, geniş akort farkı), yumuşak atak; düşük hızda çalınır.
+PIYANO_KECE = dict(PIYANO, f_tavan=4000.0, parlaklik=0.45, fc_taban=500.0, fc_tavan=2200.0, tavan_f=3500.0,
+                   cekic_db=-44.0, cekic_f=0.6, vuruntu_db=-38.0, atak_ms=9.0, tel_max=2, akort_sent=(0.6, 1.3),
+                   pan_genislik=0.25, yavas_pay=0.40)
+PIYANO_SUSTUR = dict(PIYANO_KECE, parlaklik=0.7, fc_tavan=3000.0, atak_ms=2.5, damper_kat=0.35, cekic_db=-38.0)  # susturulmuş nota
+PIYANO_HAZIR = dict(PIYANO_SUSTUR, inh_a=2.5e-3, damper_kat=0.2, atak_ms=1.5)   # hazırlanmış piyano tıkırtısı (uyumsuz kısmiler)
+PIYANO_TURU = dict(kece=PIYANO_KECE, sustur=PIYANO_SUSTUR, hazir=PIYANO_HAZIR)
+NESNE_PIYANO = False       # main() açar: nesne sesleri susturulmuş piyano notası + çok kısa gövde (gürültü payı kısık)
+NESNE_NOTA = {             # tip → (nota, susturma ms, piyano, hız, gövde dB): nota çalan akorun en yakın tonuna kayabilir
+    'tok': ('G3', 35, 'sustur', 0.32, -9), 'plastik': ('D4', 30, 'sustur', 0.32, -10), 'kulp': ('A4', 25, 'sustur', 0.30, -12),
+    'metal': ('C#6', 90, 'sustur', 0.24, -16), 'cam': ('F#6', 100, 'sustur', 0.20, -16), 'toprak': ('D3', 45, 'sustur', 0.32, -6),
+    'kumas': ('E5', 30, 'sustur', 0.20, -14), 'darbe': ('D2', 70, 'sustur', 0.36, -6), 'kemik': ('A5', 22, 'hazir', 0.30, -14),
+    'zar': ('A5', 22, 'hazir', 0.30, -14), 'pit': ('A5', 22, 'sustur', 0.28, -18),
+}
+NESNE_SABIT_PERDE = {'kemik', 'zar', 'darbe', 'toprak'}   # vurmalı: akora kaydırılmaz
+
+# Keman (ambiyans): yaylı tel modeli. Harmonik dizi, gövde rezonansları (A0 hava, B1-/B1+ gövde, köprü tepesi), geç başlayan
+# vibrato, yavaş atak/bırakış, legato, çok az yay sürtmesi. flautando: az harmonik, havadar; sordino: köprü tepesi bastırılmış.
+KEMAN_GOVDE = [(275, 7.0, 10), (460, 4.0, 9), (540, 5.0, 9), (700, 2.0, 5), (1150, 3.0, 4), (2600, 4.0, 2.5)]  # (Hz, dB, Q)
+KEMAN_TEKNIK = dict(
+    flautando=dict(harm=5, egim=2.7, sordino_db=12.0, nefes_db=-36.0, atak_ms=240, birak_ms=450, vib=0.0045, gecikme=0.28),
+    sordino=dict(harm=8, egim=2.0, sordino_db=15.0, nefes_db=-42.0, atak_ms=110, birak_ms=260, vib=0.005, gecikme=0.22),
+)
+DOKU_HEDEF_DB = {'s1-kafe': -13.0, 's2-atolye': -13.0, 's3-balkon': -12.0, 's4-frp': -14.0, 's5-kalabalik': -13.0, 's6-final': -14.0}
+DOKU_CEKIL_DB = -6.0       # kanca notaları ve önemli vurgularda doku çekilir
+DOKU_SESSIZ_DB = -14.0     # sessizliklerde doku incelir (susmaz)
+DOKU_ISLAK_DB = -9.0       # doku aynı odada, biraz daha yankılı (uzun rezonans)
 
 KOK = Path(__file__).resolve().parent.parent
 CIKIS = KOK / '.impeccable' / 'ses'
@@ -150,6 +179,14 @@ def adim_yukari(m):
     m += 1
     while m % 12 not in _RE_MAJOR:
         m += 1
+    return m
+
+
+def dizi_asagi(m):
+    """Re majör dizisinde bir alt derece."""
+    m -= 1
+    while m % 12 not in _RE_MAJOR:
+        m -= 1
     return m
 
 
@@ -898,7 +935,7 @@ def partisyon(isaretler, final_bilgi):
     return dict(notalar=N, nesneler=NES, pedal=pedal, susturma=SUS, capa=CAPA, kesme_birlesen=kesme_birlesen,
                 yapisan=yapisan, dusen=dusen, genel=genel,
                 kanca=dict(kesmeler=yuzler, a_karesi=a_k, kaynak=kaynak, isaret_kesmeleri=kanca_isaret,
-                           isaretle_uyumlu=kanca_isaret == kesmeler),
+                           isaretle_uyumlu=[k for k in kanca_isaret if k != 0] == kesmeler),   # k0: ilk yüz (açılış kesmesi)
                 final=dict(final_bilgi, doruk=doruk, slogan=slogan, gruplar=gruplar))
 
 
@@ -933,8 +970,9 @@ def birakma_karesi(p, pedal, susturma):
 # =====================================================================================================
 # PİYANO SENTEZİ
 # =====================================================================================================
-def nota_ciz(m, v, birak, uzunluk_max, rng, P, hizli=False):
-    """Tek nota, t=0'dan; dönüş (2, L). birak: damper anı (örnek) ya da None (damper yok)."""
+def nota_ciz(m, v, birak, uzunluk_max, rng, P, hizli=False, pan_ek=0.0):
+    """Tek nota, t=0'dan; dönüş (2, L). birak: damper anı (örnek) ya da None (damper yok). P'nin isteğe bağlı anahtarları
+    (parlaklik, fc_taban, fc_tavan, tavan_f, tel_max, damper_kat, cekic_f) yoksa ana piyano davranışı aynen kalır."""
     f0 = 440.0 * 2 ** ((m - 69) / 12)
     B = P['inh_a'] * math.exp(P['inh_b'] * (m - 48))
     kmax = 10 if hizli else P['kismi_max']
@@ -945,9 +983,9 @@ def nota_ciz(m, v, birak, uzunluk_max, rng, P, hizli=False):
     # Tayf: çekiç yeri tarağı × hızla açılan eğim × hıza bağlı yumuşak alçak geçiren × sabit tavan
     tarak = 0.3 + 0.7 * np.abs(np.sin(np.pi * n * P['cekic_yeri']))
     egim = n ** -(1.15 - 0.55 * v)
-    fc = min(5200.0, max(1200.0, f0 * (4.0 + 16.0 * v ** 1.4)))
+    fc = min(P.get('fc_tavan', 5200.0), max(P.get('fc_taban', 1200.0), f0 * (4.0 + 16.0 * v ** 1.4) * P.get('parlaklik', 1.0)))
     alcak = 1 / np.sqrt(1 + (fn / fc) ** 4)
-    tavan = 1 / np.sqrt(1 + (fn / 6500.0) ** 6)
+    tavan = 1 / np.sqrt(1 + (fn / P.get('tavan_f', 6500.0)) ** 6)
     a = tarak * egim * alcak * tavan
     if m < 48:   # baslarda temel ses zayıf, gövde 2.–4. kısmide (tok ama gümbürtüsüz)
         a[0] *= min(1.0, max(0.35, 0.35 + (m - 24) * 0.03))
@@ -963,7 +1001,7 @@ def nota_ciz(m, v, birak, uzunluk_max, rng, P, hizli=False):
     w_y = P['yavas_pay'] * np.clip(1.2 - fn / 4000, 0.4, 1.0)
     # Damper (tizde damper yok: F6 ve üstü)
     damper = birak is not None and m < 89
-    td = np.clip(0.09 * (300.0 / fn) ** 0.25, 0.025, 0.25) * (1.8 if m < 40 else 1.0)
+    td = np.clip(0.09 * (300.0 / fn) ** 0.25, 0.025, 0.25) * (1.8 if m < 40 else 1.0) * P.get('damper_kat', 1.0)
     # Kısmi başına uzunluk: -80 dB'ye inene dek (damperli ise bırakma + 9·td)
     L_k = np.minimum(uzunluk_max, (9.2 * tau_y * SR).astype(int))
     if damper:
@@ -971,11 +1009,11 @@ def nota_ciz(m, v, birak, uzunluk_max, rng, P, hizli=False):
     L = int(max(L_k.max(), 1))
     sol = np.zeros(L); sag = np.zeros(L)
     # Teller: 1–3, hafif akort farkı; her tel biraz farklı yerde (stereo genişlik)
-    tel = 1 if m < 30 else (2 if m < 45 else 3)
+    tel = min(P.get('tel_max', 3), 1 if m < 30 else (2 if m < 45 else 3))
     yay = rng.uniform(*P['akort_sent'])
     sapma = {1: [0.0], 2: [-0.5, 0.5], 3: [-1.0, 0.07, 1.0]}[tel]
     sapma = [s * yay + rng.normal(0, 0.06) for s in sapma]
-    pan0 = np.clip((m - 64) / 40, -1, 1) * P['pan_genislik']
+    pan0 = float(np.clip(np.clip((m - 64) / 40, -1, 1) * P['pan_genislik'] + pan_ek, -0.95, 0.95))
     tel_pan = [pan0 + (i - (tel - 1) / 2) * 0.08 for i in range(tel)]
     tel_g = [(math.cos((p + 1) * math.pi / 4), math.sin((p + 1) * math.pi / 4)) for p in tel_pan]
     t_tum = np.arange(L) / SR
@@ -1000,7 +1038,7 @@ def nota_ciz(m, v, birak, uzunluk_max, rng, P, hizli=False):
     th = t_tum[:Lh]
     gur = rng.standard_normal(Lh)
     X = np.fft.rfft(gur); fr = np.fft.rfftfreq(Lh, 1 / SR)
-    fh = min(3200.0, max(900.0, f0 * 5))
+    fh = min(3200.0, max(900.0, f0 * 5)) * P.get('cekic_f', 1.0)
     H = np.exp(-0.5 * (np.log2(np.maximum(fr, 1) / fh) / 0.9) ** 2)
     gur = np.fft.irfft(X * H, Lh)
     gur /= (np.sqrt(np.mean(gur ** 2)) + 1e-12)
@@ -1053,18 +1091,34 @@ def _vurus_sesi(P, rng, jitter=0.03):
     return y
 
 
-def nesne_ciz(tip, rng):
+def _piyano_tik(tip, rng, nota=None):
+    """v2 nesne sesi: susturulmuş (ya da hazırlanmış) piyano notası + çok kısa modal gövde; gürültü payı dörtte bir."""
+    ad, ms, tur, v, govde_db = NESNE_NOTA[tip]
+    m = midi(nota if nota is not None else ad)
+    y = nota_ciz(m, v, int(ms * SR / 1000), int(0.8 * SR), rng, PIYANO_TURU[tur]).mean(axis=0)
     P = NESNE_TIP[tip]
-    if tip == 'zar':                     # iki-beş seken kemik tıkırtısı, giderek yakın ve kısık
+    fc, tn, pay = P['gur']
+    g = _vurus_sesi(dict(P, gur=(fc, tn, pay * 0.25)), rng)
+    g *= np.max(np.abs(y)) * 10 ** (govde_db / 20)
+    L = max(len(y), len(g))
+    out = np.zeros(L)
+    out[:len(y)] += y
+    out[:len(g)] += g
+    return out
+
+
+def nesne_ciz(tip, rng, nota=None):
+    P = NESNE_TIP[tip]
+    if tip == 'zar':                     # iki-beş seken tıkırtı, giderek yakın ve kısık
         L = int(0.45 * SR)
         y = np.zeros(L)
         for t0, a in zip((0.0, 0.038, 0.070, 0.095, 0.113), (1.0, 0.5, 0.32, 0.18, 0.09)):
-            c = _vurus_sesi(P, rng, jitter=0.07)
+            c = _piyano_tik(tip, rng, nota) if NESNE_PIYANO else _vurus_sesi(P, rng, jitter=0.07)
             j = int(t0 * SR)
             m = min(len(c), L - j)
             y[j:j + m] += a * c[:m]
     else:
-        y = _vurus_sesi(P, rng)
+        y = _piyano_tik(tip, rng, nota) if NESNE_PIYANO else _vurus_sesi(P, rng)
     L = len(y)
     fr = np.fft.rfftfreq(L, 1 / SR)
     y = np.fft.irfft(np.fft.rfft(y) / np.sqrt(1 + (fr / 3000.0) ** 4), L)       # 3 kHz yumuşak kesim
@@ -1077,6 +1131,11 @@ def nesne_ciz(tip, rng):
     return np.vstack([y * math.cos((pan + 1) * math.pi / 4), y * math.sin((pan + 1) * math.pi / 4)])
 
 
+def nesne_bandi(tip):
+    """Düzey ve başlangıç ölçümünün bandı: v2'de kumaş tiz susturulmuş nota olduğu için 1 kHz."""
+    return 1000 if NESNE_PIYANO and tip == 'kumas' else NESNE_TIP[tip]['bant']
+
+
 def _nesne_ref(hizli=False):
     return float(np.max(np.abs(nota_ciz(62, 0.40, None, SR, np.random.default_rng(1), PIYANO, hizli))))
 
@@ -1087,7 +1146,7 @@ def nesne_cal(nesneler, rng, hizli=False):
     N = kare_ornek(TOPLAM_KARE)
     kuru = np.zeros((2, N))
     for e in nesneler:
-        y = nesne_ciz(e['tip'], rng) * ref * 10 ** (e['db'] / 20)
+        y = nesne_ciz(e['tip'], rng, e.get('nota')) * ref * 10 ** (e['db'] / 20)
         bas = kare_ornek(e['kare'])
         L = min(y.shape[1], N - bas)
         kuru[:, bas:bas + L] += y[:, :L]
@@ -1106,10 +1165,10 @@ def nesne_duzeyle(nesneler, yatak, rng, hizli=False):
     15 ms'si, müziğin sesten önceki 30 ms'siyle karşılaştırılır. nesneler yerinde güncellenir (db, db_ayar)."""
     ref = _nesne_ref(hizli)
     mono = yatak.mean(axis=0)
-    bantli = {k: _yuksek_gecir(mono, k) for k in {NESNE_TIP[e['tip']]['bant'] for e in nesneler}}
+    bantli = {k: _yuksek_gecir(mono, k) for k in {nesne_bandi(e['tip']) for e in nesneler}}
     for e in nesneler:
-        kesim = NESNE_TIP[e['tip']]['bant']
-        y = _yuksek_gecir(nesne_ciz(e['tip'], rng).mean(axis=0) * ref * 10 ** (e['db'] / 20), kesim)
+        kesim = nesne_bandi(e['tip'])
+        y = _yuksek_gecir(nesne_ciz(e['tip'], rng, e.get('nota')).mean(axis=0) * ref * 10 ** (e['db'] / 20), kesim)
         kendi = 10 * math.log10(np.mean(y[:int(0.015 * SR)] ** 2) + 1e-20)
         s = kare_ornek(e['kare'])
         once = bantli[kesim][max(0, s - int(0.030 * SR)):max(1, s - int(0.002 * SR))]
@@ -1118,6 +1177,523 @@ def nesne_duzeyle(nesneler, yatak, rng, hizli=False):
         e['db_ayar'] = round(ayar, 1)
         e['db'] = round(e['db'] + ayar, 1)
     return nesneler
+
+
+# =====================================================================================================
+# DOKU KATMANI (v2): keman ambiyansları + keçe piyano dokusu; piyanodan türetilen nesne sesleri
+# =====================================================================================================
+def _yavas_gurultu(L, hz, rng):
+    """hz hızında rastgele noktalar arası doğrusal: yavaş dalgalanma (vibrato hızı, perde kayması), ortalama 0, ±1."""
+    n = max(2, int(L / SR * hz) + 2)
+    return np.interp(np.arange(L), np.linspace(0, L, n), rng.uniform(-1, 1, n))
+
+
+_GOVDE = {}
+
+
+def keman_govde(teknik):
+    """Keman gövdesi + teknik: frekans (Hz) → dB tablosu. Sordino köprü tepesini ve 2–5 kHz'i yumuşatır."""
+    if teknik not in _GOVDE:
+        f = np.arange(0.0, 12001.0, 5.0)
+        db = np.zeros_like(f)
+        for fr, g, q in KEMAN_GOVDE:
+            db += g / (1 + ((f - fr) / (fr / q)) ** 2)
+        fl = np.log2(np.maximum(f, 1.0))
+        db -= KEMAN_TEKNIK[teknik]['sordino_db'] * np.exp(-0.5 * ((fl - math.log2(3200)) / 0.7) ** 2)
+        db -= 24 * np.clip(fl - math.log2(4500), 0, None)
+        db -= 12 * np.clip(math.log2(200) - fl, 0, None)
+        _GOVDE[teknik] = (f, db)
+    return _GOVDE[teknik]
+
+
+def keman_cumle(notlar, teknik, pan, rng, hizli=False):
+    """Legato keman cümlesi (yaylı tel modeli). notlar: [(kare, midi, süre_kare, hız, kayma_ms)]. Ardışık notalar
+    (boşluk ≤ 2 kare) bağlanır: perde kısa (ya da kayma_ms kadar uzun) bir kaymayla değişir, yay değişiminde hafif çukur;
+    daha uzun boşlukta yay kalkar. Vibrato her notada gecikmeyle (teknik 'gecikme' sn) başlar. Dönüş: (başlangıç örneği, (2, L))."""
+    T = KEMAN_TEKNIK[teknik]
+    fg, dbg = keman_govde(teknik)
+    s0 = kare_ornek(notlar[0][0])
+    R = int(T['birak_ms'] * SR / 1000)
+    L = kare_ornek(notlar[-1][0] + notlar[-1][2]) - s0 + R
+    f = np.zeros(L); A = np.zeros(L); vd = np.zeros(L)
+    cf = int(0.05 * SR)
+    sinir = [(kare_ornek(k) - s0, kare_ornek(k + d) - s0) for k, _, d, _, _ in notlar]
+    for i, (k, m, d, v, kay) in enumerate(notlar):
+        a, e = sinir[i]
+        bagli_once = i > 0 and a - sinir[i - 1][1] <= kare_ornek(2)
+        bagli_sonra = i + 1 < len(notlar) and sinir[i + 1][0] - e <= kare_ornek(2)
+        f0 = 440.0 * 2 ** ((m - 69) / 12)
+        f[a:] = f0
+        if bagli_once:
+            g = max(cf, int(kay * SR / 1000))
+            f_once = 440.0 * 2 ** ((notlar[i - 1][1] - 69) / 12)
+            u = 0.5 - 0.5 * np.cos(np.linspace(0, np.pi, g))
+            j1 = min(L, a + g)
+            f[a:j1] = f_once * (f0 / f_once) ** u[:j1 - a]
+        # Genlik penceresi: yükseliş (atak ya da bağ), içte hafif şişme (messa di voce), iniş (bırakış ya da bağ)
+        rise = cf if bagli_once else int(T['atak_ms'] * SR / 1000)
+        fall = cf if bagli_sonra else R
+        r0 = a - cf // 2 if bagli_once else a
+        w = np.zeros(L)
+        j0, j1 = max(0, r0), min(L, r0 + rise)
+        w[j0:j1] = 0.5 - 0.5 * np.cos(np.linspace(0, np.pi, rise))[j0 - r0:j1 - r0]
+        e0 = e - cf // 2 if bagli_sonra else e
+        w[j1:max(j1, e0)] = 1.0
+        k0, k1 = max(0, e0), min(L, e0 + fall)
+        if k1 > k0:
+            w[k0:k1] = (0.5 + 0.5 * np.cos(np.linspace(0, np.pi, fall)))[:k1 - k0]
+        if e > a:
+            u = np.clip((np.arange(L) - a) / (e - a), 0, 1)
+            w *= 0.82 + 0.18 * np.sin(np.pi * u)
+        A += (v ** 1.6) * w
+        # Geç vibrato: notanın başından 'gecikme' sn sonra 0,3 sn'de açılır
+        vb = a + int(T['gecikme'] * SR)
+        if vb < e:
+            ramp = np.clip((np.arange(L) - vb) / (0.3 * SR), 0, 1)
+            sec = slice(a, min(L, (sinir[i + 1][0] if i + 1 < len(notlar) else L)))
+            vd[sec] = np.maximum(vd[sec], T['vib'] * ramp[sec])
+    # Bağlarda yay değişimi: kısa, hafif çukur
+    for i in range(1, len(notlar)):
+        a = sinir[i][0]
+        if a - sinir[i - 1][1] <= kare_ornek(2):
+            j0, j1 = max(0, a - cf // 2), min(L, a + cf // 2)
+            A[j0:j1] *= 1 - 0.15 * np.sin(np.linspace(0, np.pi, j1 - j0))
+    hiz = 5.4 + 0.35 * _yavas_gurultu(L, 1.5, rng)
+    vib = vd * np.sin(2 * np.pi * np.cumsum(hiz) / SR + rng.uniform(0, 2 * np.pi))
+    kayma = 0.0009 * _yavas_gurultu(L, 0.7, rng)
+    fi = f * (1 + vib) * (1 + kayma)
+    faz = 2 * np.pi * np.cumsum(fi) / SR
+    y = np.zeros(L)
+    norm = 0.0
+    f_ort = float(np.median(f[f > 0])) if np.any(f > 0) else 440.0
+    H = 3 if hizli else T['harm']
+    for n in range(1, H + 1):
+        if n * f_ort > 5500:
+            break
+        an = n ** -T['egim']
+        y += an * 10 ** (np.interp(n * fi, fg, dbg) / 20) * np.sin(n * faz + rng.uniform(0, 2 * np.pi))
+        norm += (an * 10 ** (np.interp(n * f_ort, fg, dbg) / 20)) ** 2 / 2
+    y /= math.sqrt(norm) + 1e-12
+    # Çok az yay sürtmesi: geniş bantlı, yumuşak gürültü, genliği izler
+    nz = rng.standard_normal(L)
+    fr = np.fft.rfftfreq(L, 1 / SR)
+    nz = np.fft.irfft(np.fft.rfft(nz) * np.exp(-0.5 * (np.log2(np.maximum(fr, 1) / 2200) / 1.0) ** 2), L)
+    nz /= np.sqrt(np.mean(nz ** 2)) + 1e-12
+    y = (y + nz * 10 ** (T['nefes_db'] / 20)) * A * 0.1
+    return s0, np.vstack([y * math.cos((pan + 1) * math.pi / 4), y * math.sin((pan + 1) * math.pi / 4)])
+
+
+def keman_pizz(m, v, pan, rng):
+    """Yumuşak pizzicato (parmakla, sordino gövdesi): kısmiler tize doğru hızlı söner, 3 ms yumuşak atak."""
+    fg, dbg = keman_govde('sordino')
+    f0 = 440.0 * 2 ** ((m - 69) / 12)
+    L = int(0.8 * SR)
+    t = np.arange(L) / SR
+    y = np.zeros(L)
+    for n in range(1, 13):
+        fn = n * f0
+        if fn > 5000:
+            break
+        a = abs(math.sin(n * math.pi * 0.2)) / n ** 1.3
+        tau = 0.5 / (1 + 0.35 * (n - 1)) * (440.0 / f0) ** 0.3
+        y += a * 10 ** (np.interp(fn, fg, dbg) / 20) * np.exp(-t / tau) * np.sin(2 * np.pi * fn * t + rng.uniform(0, 2 * np.pi))
+    La = int(0.003 * SR)
+    y[:La] *= 0.5 - 0.5 * np.cos(np.linspace(0, np.pi, La))
+    y /= np.sqrt(np.mean(y[:int(0.15 * SR)] ** 2)) + 1e-12
+    y *= 0.14 * v ** 1.6
+    return np.vstack([y * math.cos((pan + 1) * math.pi / 4), y * math.sin((pan + 1) * math.pi / 4)])
+
+
+def ses_haritasi(notalar, pedal, susturma):
+    """Her kare için çalan (tuşta ya da pedalda) müzik notaları: dokunun akora uyması için."""
+    H = [set() for _ in range(TOPLAM_KARE + 1)]
+    for p in notalar:
+        bk = min(TOPLAM_KARE, birakma_karesi(p, pedal, susturma))
+        for f in range(max(0, p['kare']), bk):
+            H[f].add(p['m'])
+    return H
+
+
+def doku_kur(P, isaretler, nesneler):
+    """Sahne başına doku: keman ambiyansları (cümle, pizzicato) ve keçe piyano olayları; nesne seslerine perde verir.
+    Bütün kareler işaretlerden ve vuruşlardan; doku notaları işaretlerin ±3 karesinde başlamaz (doğrulama ve flam)."""
+    S, V = SAHNELER, VURUSLAR
+    rng = np.random.default_rng(TOHUM + 11)
+    H = ses_haritasi(P['notalar'], P['pedal'], P['susturma'])
+    CAPA, SUS = P['capa'], P['susturma']
+    PD, KM, PZ, PED = [], [], [], []
+
+    def uygun(f, kendi=None):
+        return all(abs(c - f) > CAPA_YARICAP or c == f or c == kendi for c in CAPA)
+
+    def sessizde(f):
+        return any(s <= f < e for s, e in SUS)
+
+    def pcs(f):
+        for g in range(min(f, TOPLAM_KARE), max(-1, f - 120), -1):
+            if H[g]:
+                return {m % 12 for m in H[g]}
+        return {2, 4, 6, 9, 11}
+
+    def bas_nota(f):
+        for g in range(min(f, TOPLAM_KARE), max(-1, f - 120), -1):
+            if H[g]:
+                return min(H[g])
+        return midi('D2')
+
+    def akor_tonu(f, lo, hi, yakin=None):
+        aday = [m for m in range(lo, hi + 1) if m % 12 in pcs(f)] or [m for m in range(lo, hi + 1) if m % 12 in _RE_MAJOR]
+        if yakin is None:
+            return int(rng.choice(aday))
+        return min(aday, key=lambda m: (abs(m - yakin), m))
+
+    def isr(tur, sahne, anahtar=None):
+        a, b = S[sahne]
+        return sorted(i['kare'] for i in isaretler if i['tur'] == tur and a <= i['kare'] <= b
+                      and (anahtar is None or anahtar in ek_metni(i)))
+
+    def pn(k, m, v, d, tur, pan, et, kendi=None):
+        k = int(k)
+        if 0 <= k < TOPLAM_KARE and uygun(k, kendi):
+            PD.append(dict(kare=k, m=int(m), hiz=round(float(v), 3), sure=max(1, int(d)), tur=tur, pan=round(float(pan), 2), etiket=et))
+
+    def cumle(bas, son, lo, hi, ritim, hiz, teknik, pan, et, ilk=None, yon=1, adimli=0.55):
+        notlar, f, i = [], int(bas), 0
+        m = ilk if ilk is not None else akor_tonu(f, lo, hi)
+        while f < son - 3:
+            d = int(min(ritim[i % len(ritim)], son - f))
+            notlar.append((f, int(m), d, float(hiz), 0))
+            f += d
+            i += 1
+            if rng.random() < adimli:
+                m2 = adim_yukari(m) if yon > 0 else dizi_asagi(m)
+            else:
+                aday = [x for x in range(m - 5, m + 6) if x != m and x % 12 in pcs(f) and lo <= x <= hi]
+                yonlu = [x for x in aday if (x - m) * yon > 0]
+                m2 = min(yonlu or aday or [m], key=lambda x: abs(x - m))
+            if not lo <= m2 <= hi:
+                yon = -yon
+                m2 = adim_yukari(m) if yon > 0 else dizi_asagi(m)
+            m = int(np.clip(m2, lo, hi))
+            if rng.random() < 0.25:
+                yon = -yon
+        if notlar:
+            KM.append(dict(teknik=teknik, pan=round(float(pan), 2), notlar=notlar, etiket=et))
+
+    # ------------------------------------------------------------------ KAFE
+    a, b = S['s1-kafe']
+    k4 = V.get('4', (a + 108, 0))[0]
+    k5 = V.get('5', (a + 240, 0))[0]
+    kon = isr('konusma', 's1-kafe')
+    dus_k = (isr('dusunce', 's1-kafe') or [k5 + 48])[0]
+    sus_k = [(s, e) for s, e in SUS if a <= s <= b]
+    son_k = min(b - 40, dus_k + 90)
+    # Kalabalık uğultusu: üç keman (divisi), sordino, konuşma ritminde kısa ve birbirine karışan cümleler, sağa sola yayılmış;
+    # yüz asılınca (sessizlik) yalnız biri kısık sürer; düşüncede kafe kâğıda doğru solarken söner
+    for ses, (pan, lo, hi) in enumerate([(-0.55, 69, 79), (0.05, 71, 81), (0.55, 74, 84)]):
+        f = a + 20 + ses * 9
+        while f < son_k:
+            ritim = [int(x) for x in rng.choice([6, 8, 10, 12, 16], int(rng.integers(3, 7)))]
+            sure = sum(ritim)
+            sessiz = any(s - 12 <= f <= e for s, e in sus_k)
+            if not (sessiz and ses > 0):
+                sol = 1.0 if f < k5 else max(0.0, 1 - (f - k5) / max(1, son_k - k5))
+                hiz = (0.13 if sessiz else 0.21) * (0.4 + 0.6 * sol) * (1.0 - 0.08 * ses)
+                if hiz >= 0.08:
+                    cumle(f, f + sure, lo, hi, ritim, hiz, 'sordino', pan, 'kafe: kalabalık uğultusu (keman divisi)', yon=int(rng.choice([-1, 1])))
+            f += sure + int(rng.integers(14, 40))
+    # Fincan ve kaşık: seyrek, çok hafif tiz notalar (susturulmuş keçe piyano)
+    f = a + 30
+    while f < k5:
+        pn(f, akor_tonu(f, 85, 93), 0.11, 3, 'sustur', rng.uniform(-0.6, 0.6), 'kafe: fincan, kaşık')
+        f += int(rng.integers(45, 110))
+    # Garsonun kahkahası: küçük tril (keçe)
+    for k0 in [k4 - 30] + ([kon[1] + 32] if len(kon) > 1 else []):
+        ust = akor_tonu(k0, 86, 90)
+        for q in range(6):
+            pn(k0 + 3 * q, ust if q % 2 == 0 else dizi_asagi(ust), 0.12 - 0.008 * q, 3, 'kece', 0.45, 'garson kahkahası: tril')
+
+    # ------------------------------------------------------------------ ATÖLYE
+    a, b = S['s2-atolye']
+    k8 = V.get('8', (a + 264, 0))[0]
+    k9 = V.get('9', (a + 596, 0))[0]
+    # Atölye nabzı: susturulmuş bas tekrarları (keçe piyano), dörtlük; çalan akorun kökü
+    f = a + 12
+    while f < k9 - 6:
+        if not sessizde(f):
+            m = bas_nota(f)
+            while m < 38:
+                m += 12
+            while m > 50:
+                m -= 12
+            pn(f, m, 0.16, 5, 'sustur', -0.1, 'atölye nabzı (susturulmuş bas)')
+        f += VURUS
+    t_kulp = (isr('tik', 's2-atolye', 'kulp') or [None])[0]
+    t_day = (isr('tik', 's2-atolye', 'çekmece') or [None])[0]
+    t_vida = (isr('tik', 's2-atolye', 'vida') or [None])[0]
+    t_pit = isr('tik', 's2-atolye', 'pıt')
+    # Çekmece açılışı: keman flautando glissando (kulptan dayanağa yumuşak kayış)
+    if t_kulp is not None and t_day is not None and t_day - t_kulp > 20:
+        KM.append(dict(teknik='flautando', pan=0.25, etiket='çekmece açılır: yumuşak glissando (keman)',
+                       notlar=[(t_kulp + 4, midi('A4'), 6, 0.20, 0),
+                               (t_kulp + 10, akor_tonu(t_day, 84, 88), t_day - t_kulp - 4, 0.22, (t_day - t_kulp - 16) * 1000 / FPS)]))
+    # Vidalar yuvarlanır: inen pizzicato figürü (Re majör, giderek seyrek, sağa sola)
+    if t_vida is not None:
+        son_v = (t_pit[0] if t_pit else t_vida + 60) - 5
+        m, f, ara = akor_tonu(t_vida, 84, 88), t_vida + 4, 3.0
+        while f < son_v and m >= 64:
+            if uygun(f):
+                PZ.append(dict(kare=int(f), m=int(m), hiz=round(0.30 - 0.10 * (f - t_vida) / max(1, son_v - t_vida), 3),
+                               pan=round(float(rng.uniform(-0.45, 0.45)), 2), etiket='vidalar yuvarlanır: inen pizzicato'))
+            m = dizi_asagi(m)
+            ara *= 1.15
+            f += int(round(ara))
+    # Ölçü "pıt"ları: her parça susturulmuş bir nota, cetvel gibi yükselir (iki koşu: iki kenar)
+    pitler = sorted((e for e in nesneler if e['tip'] == 'pit'), key=lambda e: e['kare'])
+    kosu, onceki = 0, None
+    for e in pitler:
+        if onceki is None or e['kare'] - onceki > 8:
+            m = midi('D5') if kosu == 0 else midi('B4')
+            kosu += 1
+        e['nota'] = nota_adi(m)
+        m = adim_yukari(m)
+        onceki = e['kare']
+
+    # ------------------------------------------------------------------ BALKON
+    a, b = S['s3-balkon']
+    k11 = V.get('11', (a + 144, 0))[0]
+    v_isik = (isr('vurgu', 's3-balkon', 'ışık') or [k11 + 42])[0]
+    v_gunes = (isr('vurgu', 's3-balkon', 'güneş') or [k11 + 72])[0]
+    v_sik = (isr('vurgu', 's3-balkon', 'sıkıl') or [b - 100])[0]
+    # İçeride sakin, sıcak alt doku: keçe piyano, çalan akorun kökü ve beşlisi, yarım ölçüde bir, pedallı
+    f = a
+    while f < v_isik - 8:
+        r = bas_nota(f)
+        while r < 50:
+            r += 12
+        while r > 61:
+            r -= 12
+        pn(f, r, 0.15, 48, 'kece', -0.2, 'balkon: içeride sıcak alt doku')
+        pn(f + 12, r + 7, 0.12, 36, 'kece', 0.2, 'balkon: içeride sıcak alt doku')
+        PED.append((f, min(f + 47, v_isik - 1)))
+        f += 48
+    # Hava: uzun, yavaş şişip sönen tiz flautando çizgisi; güneş vurunca bir basamak yükselir; sıkılınca iner ve söner
+    m1 = akor_tonu(v_isik, 79, 83)
+    notlar = [(v_isik, m1, v_gunes - v_isik, 0.19, 0)]
+    m, f, i = adim_yukari(m1), v_gunes, 0
+    uzun = [72, 96, 60, 108, 84, 96]
+    while f < v_sik - 24:
+        d = int(min(uzun[i % len(uzun)], v_sik - f))
+        notlar.append((f, m, d, 0.22 if i == 0 else 0.18, 140 if i else 90))
+        f += d
+        i += 1
+        aday = [x for x in range(m - 4, m + 5) if x != m and x % 12 in pcs(f) and 76 <= x <= 86]
+        m = int(rng.choice(aday)) if aday else m
+    notlar.append((v_sik, dizi_asagi(m), max(24, min(90, b - v_sik - 20)), 0.13, 160))
+    KM.append(dict(teknik='flautando', pan=0.35, notlar=notlar, etiket='balkon: hava (flautando), güneşte bir basamak yükselir'))
+    # Esinti: ikinci keman, alçakta aralıklı, yavaş şişip sönen uzun notalar (karşı yanda)
+    f = v_gunes + 40
+    while f < v_sik - 80:
+        d = int(rng.integers(60, 90))
+        KM.append(dict(teknik='flautando', pan=-0.35, notlar=[(f, akor_tonu(f, 69, 76), d, 0.15, 0)], etiket='balkon: esinti şişmesi'))
+        f += d + int(rng.integers(40, 80))
+    # Güneş: parıldayan yüksek arpej (keçe, pedallı), ışıltılarla eş: çıkıp iner
+    tonlar = sorted({akor_tonu(v_gunes, lo, lo + 4) for lo in (78, 81, 84, 87)})
+    desen = tonlar + tonlar[-2:0:-1]
+    for q in range(10):
+        k = v_gunes + 6 + 6 * q
+        pn(k, desen[q % len(desen)], 0.13 - 0.006 * q, 10, 'kece', 0.5 * math.sin(q * 1.3), 'güneş: parıldayan arpej')
+    PED.append((v_gunes, v_gunes + 80))
+
+    # ------------------------------------------------------------------ FRP
+    a, b = S['s4-frp']
+    kay4 = SAHNE_KAYDIR.get('s4-frp', 0)
+    k16 = V.get('16', (a + 264, 0))[0]
+    k17 = V.get('17', (a + 504, 0))[0]
+    k_salla = 1611 + kay4
+    # Sohbet: kısa, neşeli staccato kümeler (susturulmuş keçe)
+    f = a + 8
+    while f < k_salla - 10:
+        m = akor_tonu(f, 74, 83)
+        for q in range(int(rng.integers(2, 4))):
+            pn(f + 3 * q, m, 0.13, 3, 'sustur', float(rng.uniform(-0.5, 0.5)), 'FRP sohbet: neşeli staccato')
+            m = adim_yukari(m) if rng.random() < 0.6 else dizi_asagi(m)
+        f += int(rng.integers(16, 26))
+    # "Keşke…" dileklerinin altında ölçülü bir keman çizgisi (flautando)
+    cumle(k16 + 12, k17 - 6, 74, 83, [48, 36, 60, 48], 0.16, 'flautando', -0.3, 'FRP: dileklerin altında keman', yon=1, adimli=0.6)
+    d17 = (isr('dusunce', 's4-frp') or [k17 + 6])[0]
+    sonra = [v for v in isr('vurgu', 's4-frp') if v > d17]
+    v_tas = sonra[0] if sonra else None
+    v_rec = sonra[1] if len(sonra) > 1 else None
+    # Dönen zarlar: hafif dönen arpej (keçe), taşa dek
+    f, q = d17 + 12, 0
+    son_d = v_tas if v_tas else b
+    while f < son_d - 4:
+        m = akor_tonu(f, [74, 78, 81, 78][q % 4], [74, 78, 81, 78][q % 4] + 3)
+        pn(f, m, 0.11, 4, 'kece', 0.4 * math.sin(q * 0.9), 'dönen zarlar: arpej')
+        f += 4
+        q += 1
+    if v_tas:
+        pn(v_tas, akor_tonu(v_tas, 38, 45), 0.24, 30, 'sustur', -0.1, 'taş: tok alçak nota', kendi=v_tas)
+    if v_rec:
+        for q in range(6):
+            k = v_rec + 14 + 6 * q
+            pn(k, akor_tonu(k, 83 + q, 86 + q), 0.11 - 0.01 * q, 10, 'kece', 0.5 * math.cos(q), 'reçine: berrak tiz parıltı')
+        PED.append((v_rec, b))
+        if b - v_rec > 60:
+            KM.append(dict(teknik='flautando', pan=0.3, notlar=[(v_rec + 20, akor_tonu(v_rec, 81, 86), b - v_rec - 30, 0.14, 0)],
+                           etiket='reçine: havada keman'))
+
+    # ------------------------------------------------------------------ KALABALIK
+    a, b = S['s5-kalabalik']
+    vur5 = isr('vurgu', 's5-kalabalik')
+    keske = (isr('vurgu', 's5-kalabalik', 'dilek') or vur5[:1] or [a + 210])[0]
+    devir = next((v for v in vur5 if v > keske), b - 39)
+    # Fikirlerin uğultusu: iki keman, sordino, kısa cümleler; "keşke"ye doğru sıklaşır
+    for ses, (pan, lo, hi) in enumerate([(-0.5, 71, 81), (0.5, 74, 84)]):
+        f = a + 40 + 13 * ses
+        while f < keske - 20:
+            u = (f - a) / max(1, keske - a)
+            ritim = [int(x) for x in rng.choice([6, 8, 10, 12], int(rng.integers(3, 6)))]
+            sure = min(sum(ritim), keske - 8 - f)
+            if sure > 12:
+                cumle(f, f + sure, lo, hi, ritim, 0.12 + 0.08 * u, 'sordino', pan, 'kalabalık: fikirlerin uğultusu (keman)',
+                      yon=int(rng.choice([-1, 1])))
+            f += sum(ritim) + int(rng.integers(int(30 - 18 * u), int(50 - 25 * u)))
+    # Keşke: uğultu toplanır; üç keman akorun tonlarında bir araya gelir, şişip söner
+    for ses, (pan, lo, hi) in enumerate([(-0.4, 74, 79), (0.0, 78, 83), (0.4, 81, 86)]):
+        KM.append(dict(teknik='flautando', pan=pan, notlar=[(keske + 6, akor_tonu(keske + 6, lo, hi), max(24, min(60, devir - keske - 6)), 0.20, 0)],
+                       etiket='keşke: uğultu toplanır'))
+
+    # ------------------------------------------------------------------ FİNAL
+    a, b = S['s6-final']
+    gruplar = sorted(i['kare'] for i in isaretler if i['tur'] == 'tik' and a <= i['kare'] <= b and i.get('grup'))
+    damla = sorted(i['kare'] for i in isaretler if i['tur'] == 'tik' and a <= i['kare'] <= b and i.get('ad') == 'slogan')
+    # Logo inşası: çizgilerin oturuşlarına çok kısa yumuşak notalar (çizgi başına işaret yok: her gruba doğru sıklaşan ritim)
+    onceki = a + 30
+    for g in gruplar:
+        f = onceki
+        while f < g - 6:
+            u = (f - onceki) / max(1, g - onceki)
+            pn(f, akor_tonu(f, 74, 86), 0.10 + 0.04 * u, 3, 'sustur', float(rng.uniform(-0.6, 0.6)), 'logo: çizgi oturur')
+            f += int(max(5, 18 - 12 * u + int(rng.integers(-2, 3))))
+        onceki = g + 6
+    # Slogan damlaları: su damlası gibi yumuşak tiz yankı (keçe), damladan 6 kare sonra, bir oktav üstte (E6'yı aşmadan)
+    muz = {p['kare']: p['m'] for p in P['notalar'] if 'slogan damlası' in p['etiket']}
+    for j, k in enumerate(damla):
+        m = muz.get(k, midi('A5'))
+        pn(k + 6, m + 12 if m + 12 <= midi('E6') else m, 0.10, 8, 'kece', 0.5 if j % 2 else -0.5, 'slogan damlası: yankı')
+
+    # ------------------------------------------------------------------ Nesne seslerine perde: çalan akorun en yakın tonu
+    for e in nesneler:
+        if e['tip'] in NESNE_SABIT_PERDE or 'nota' in e:
+            continue
+        taban = midi(NESNE_NOTA[e['tip']][0])
+        aday = [m for m in range(taban - 5, taban + 7) if m % 12 in pcs(e['kare'])]
+        e['nota'] = nota_adi(min(aday, key=lambda m: (abs(m - taban), m)) if aday else taban)
+
+    PD.sort(key=lambda p: (p['kare'], p['m']))
+    ozet = {}
+    for ad, (sa, sb) in S.items():
+        ozet[ad] = dict(piyano=sum(sa <= p['kare'] <= sb for p in PD), keman_cumle=sum(sa <= c['notlar'][0][0] <= sb for c in KM),
+                        keman_nota=sum(len(c['notlar']) for c in KM if sa <= c['notlar'][0][0] <= sb),
+                        pizzicato=sum(sa <= z['kare'] <= sb for z in PZ))
+    return dict(piyano=PD, keman=KM, pizz=PZ, pedal=sorted(PED), ozet=ozet)
+
+
+def doku_cal(D, rng, hizli=False):
+    """Doku: (keçe piyano stem, keman stem) kuru. Keman düzeyi keçe piyanoya ayarlı (aynı hızda eşit RMS)."""
+    N = kare_ornek(TOPLAM_KARE)
+    piy = np.zeros((2, N))
+    for p in D['piyano']:
+        Pp = PIYANO_TURU[p['tur']]
+        bas = kare_ornek(p['kare'])
+        bk = p['kare'] + p['sure'] if p['tur'] == 'sustur' else birakma_karesi(p, D['pedal'], [])
+        y = nota_ciz(p['m'], p['hiz'], kare_ornek(bk) - bas, N - bas, rng, Pp, hizli, pan_ek=p['pan'])
+        L = min(y.shape[1], N - bas)
+        piy[:, bas:bas + L] += y[:, :L]
+    # Ayar: aynı hızda (0,2) keçe D5 ile keman D5'in RMS'i eşit olsun
+    rp = nota_ciz(74, 0.2, None, SR, np.random.default_rng(1), PIYANO_KECE, hizli)[:, int(0.05 * SR):int(0.5 * SR)]
+    _, rk = keman_cumle([(0, 74, 60, 0.2, 0)], 'flautando', 0.0, np.random.default_rng(2), hizli)
+    olcek = float(np.sqrt(np.mean(rp ** 2)) / (np.sqrt(np.mean(rk[:, int(0.3 * SR):int(0.8 * SR)] ** 2)) + 1e-12))
+    kem = np.zeros((2, N))
+    for c in D['keman']:
+        s0, y = keman_cumle(c['notlar'], c['teknik'], c['pan'], rng, hizli)
+        L = min(y.shape[1], N - s0)
+        if L > 0:
+            kem[:, s0:s0 + L] += y[:, :L] * olcek
+    for z in D['pizz']:
+        y = keman_pizz(z['m'], z['hiz'], z['pan'], rng)
+        s0 = kare_ornek(z['kare'])
+        L = min(y.shape[1], N - s0)
+        kem[:, s0:s0 + L] += y[:, :L] * olcek
+    return piy, kem
+
+
+def doku_zarfi(n_ornek, onemli, susturma):
+    """Doku çekilmesi: önemli anlarda (kanca, işaret notaları) −6 dB (3 kare önce iner, 18 kare tutar, 18 karede döner);
+    sessizlikte −10 dB (incelir, susmaz)."""
+    g = np.zeros(n_ornek)                     # dB
+    t = np.arange(n_ornek)
+    for k in onemli:
+        a0, a, b, c = (int(np.clip(kare_ornek(x), 0, n_ornek)) for x in (k - 6, k - 3, k + 18, k + 36))
+        if a > a0:
+            g[a0:a] = np.minimum(g[a0:a], DOKU_CEKIL_DB * (t[a0:a] - a0) / (a - a0))
+        g[a:b] = np.minimum(g[a:b], DOKU_CEKIL_DB)
+        if c > b:
+            g[b:c] = np.minimum(g[b:c], DOKU_CEKIL_DB * (1 - (t[b:c] - b) / (c - b)))
+    for s, e in susturma:
+        a, b = kare_ornek(s), kare_ornek(e)
+        g[a:b] = np.minimum(g[a:b], DOKU_SESSIZ_DB)
+    g = kutu(g, kare_ornek(4))                              # yumuşat (tıkırtısız geçiş; kayan ortalama)
+    return 10 ** (g / 20)
+
+
+def sahne_kazanci(n_ornek, kazanc_db):
+    """Sahne başına sabit kazanç (dB), sınırlarda 24 karelik yumuşak geçiş; sözlükte olmayan sahne 0 (sessiz)."""
+    g = np.zeros(n_ornek)
+    for ad, (a, b) in SAHNELER.items():
+        if ad in kazanc_db:
+            g[kare_ornek(a):kare_ornek(b + 1)] = 10 ** (kazanc_db[ad] / 20)
+    return kutu(g, kare_ornek(24))
+
+
+def sert_atak_say(x, esik_db=12.0, taban_dbfs=-45.0):
+    """Ani sert atak: 2–5 kHz bandında 2 ms RMS zarfı 4 ms içinde ≥ esik_db yükselir ve taban_dbfs'yi aşar (50 ms bekleme).
+    Dönüş: sayı ve en yüksek 10 anın saniyesi ve düzeyi."""
+    mono = x.mean(axis=0)
+    N = len(mono)
+    nf = _fft_boy(N)
+    fr = np.maximum(np.fft.rfftfreq(nf, 1 / SR), 1e-3)
+    H = (fr / 2000) ** 4 / (1 + (fr / 2000) ** 4) / (1 + (fr / 5000) ** 4)
+    bnt = np.fft.irfft(np.fft.rfft(mono, nf) * H, nf)[:N]
+    h, w = SR // 1000, 2 * SR // 1000
+    c2 = np.concatenate([[0.0], np.cumsum(bnt ** 2)])
+    son = np.arange(w, N, h)
+    db = 10 * np.log10((c2[son] - c2[son - w]) / w + 1e-18)
+    yuks = np.full_like(db, -99.0)
+    yuks[4:] = db[4:] - db[:-4]
+    aday = np.where((yuks >= esik_db) & (db >= taban_dbfs))[0]
+    olay, son_i = [], -10 ** 9
+    for i in aday:
+        if i - son_i >= 50:
+            olay.append(i)
+            son_i = i
+    en = sorted(olay, key=lambda i: -db[i])[:10]
+    return dict(sayi=len(olay), esik_db=esik_db, taban_dbfs=taban_dbfs,
+                en_yuksek=[dict(sn=round(son[i] / SR, 3), dbfs=round(float(db[i]), 1)) for i in sorted(en)])
+
+
+def wav24_oku(yol):
+    with wave.open(str(yol)) as w:
+        kanal, gen = w.getnchannels(), w.getsampwidth()
+        b = np.frombuffer(w.readframes(w.getnframes()), np.uint8)
+    if gen != 3:
+        raise ValueError('yalnız 24 bit')
+    b = b.reshape(-1, 3)
+    x = (b[:, 0].astype(np.int32) | (b[:, 1].astype(np.int32) << 8) | (b[:, 2].astype(np.int32) << 16))
+    x = np.where(x >= 1 << 23, x - (1 << 24), x).astype(float) / 8388607.0
+    return x.reshape(-1, kanal).T
 
 
 # =====================================================================================================
@@ -1405,7 +1981,12 @@ def main():
     ap.add_argument('--bindirme-yok', action='store_true', help='videolara ses bindirme')
     ap.add_argument('--video', action='append', help='sesin bindirileceği mp4 (birden çok verilebilir); varsayılan animatik-v06-{yatay,dikey}.mp4')
     ap.add_argument('--isaretler', default=str(ISARET_JSON), help='işaret dosyası (film-isaret.py çıktısı)')
+    ap.add_argument('--ek', default='', help='çıktı adı eki: --ek v2 → film-ses-v2.wav, doku-v2.wav, cizelge-v2.json, <video>-sesli-v2.mp4')
+    ap.add_argument('--doku-yok', action='store_true', help='doku katmanı yok, nesne sesleri eski modal sentez (v1 karışımı)')
     arg = ap.parse_args()
+    global NESNE_PIYANO
+    NESNE_PIYANO = not arg.doku_yok
+    sonek = f'-{arg.ek}' if arg.ek else ''
     t0 = time.time()
     ff = ffmpeg_bul()
     rng = np.random.default_rng(TOHUM)
@@ -1418,6 +1999,7 @@ def main():
         print('UYARI:', u)
     P = partisyon(isaretler, final_bilgi)
     notalar, nesneler, pedal, susturma = P['notalar'], P['nesneler'], P['pedal'], P['susturma']
+    D = None if arg.doku_yok else doku_kur(P, isaretler, nesneler)     # nesne seslerine perde de verir
 
     # Çalım: kanca (kesme), fon (muzik), işaret notaları, serbest notalar (sessizlikte de çalar), nesne sesleri
     kuru = dict(
@@ -1438,6 +2020,36 @@ def main():
     karisim = sum(islak.values())
     Lk = int(SON_KARARMA_SN * SR)
     son_zarf = np.ones(karisim.shape[1]); son_zarf[-Lk:] = 0.5 + 0.5 * np.cos(np.linspace(0, np.pi, Lk))
+    # Doku (v2): keçe piyano + keman, aynı oda (biraz daha yankılı). Sahne başına müziğin DOKU_HEDEF_DB altına ayarlanır,
+    # kanca ve işaret notalarında çekilir, sessizlikte incelir.
+    doku_bilgi = None
+    if D is not None:
+        piy_k, kem_k = doku_cal(D, np.random.default_rng(TOHUM + 12), arg.hizli)
+        piy_w = eq_uygula(yanki_uygula(piy_k, ir, DOKU_ISLAK_DB), EQ)
+        kem_w = eq_uygula(yanki_uygula(kem_k, ir, DOKU_ISLAK_DB), EQ)
+        onemli = sorted({p['kare'] for p in notalar if p['parca'] in ('kesme', 'isaret')})
+        cekil = doku_zarfi(karisim.shape[1], onemli, susturma)
+        piy_w *= cekil
+        kem_w *= cekil
+        mk, dk = k_agirlikli(karisim), k_agirlikli(piy_w + kem_w)
+        kaz, goreli0 = {}, {}
+        for ad, hedef in DOKU_HEDEF_DB.items():
+            a, b = kare_ornek(SAHNELER[ad][0]), kare_ornek(SAHNELER[ad][1] + 1)
+            em, ed = float(np.sum(mk[:, a:b] ** 2)), float(np.sum(dk[:, a:b] ** 2))
+            if ed > 0 and em > 0:
+                goreli0[ad] = 10 * math.log10(ed / em)
+                kaz[ad] = float(np.clip(hedef - goreli0[ad], -30.0, 24.0))
+        zarf = sahne_kazanci(karisim.shape[1], kaz)
+        piy_w *= zarf
+        kem_w *= zarf
+        doku = (piy_w + kem_w) * son_zarf
+        dk = k_agirlikli(doku)
+        goreli = {}
+        for ad in kaz:
+            a, b = kare_ornek(SAHNELER[ad][0]), kare_ornek(SAHNELER[ad][1] + 1)
+            goreli[ad] = round(10 * math.log10(float(np.sum(dk[:, a:b] ** 2)) / float(np.sum(mk[:, a:b] ** 2)) + 1e-20), 1)
+        doku_bilgi = dict(sahne_kazanci_db={k: round(v, 1) for k, v in kaz.items()}, goreli_db=goreli, hedef_db=DOKU_HEDEF_DB, ozet=D['ozet'])
+        karisim = karisim + piy_w + kem_w
     karisim *= son_zarf
     kesme = islak['kesme'] * son_zarf
     muzik_bus = (islak['kesme'] + islak['muzik'] + islak['isaret']) * son_zarf
@@ -1485,6 +2097,29 @@ def main():
                                        karisim_rms_dbfs=round(20 * math.log10(np.sqrt(np.mean(cikti[:, a:b] ** 2)) + 1e-12), 1))
         olcum['sessizlik'] = ses
 
+        # "Kulak tırmalamasın": en sert 100 ms (2–5 kHz payı), 5–10 kHz, ani sert atak sayısı; doku ve keman ayrıca.
+        # Karşılaştırma için önceki karışım (ek yoksa yazılmadan önceki film-ses.wav) ve cizelge.json
+        olcum['sert_atak'] = dict(karisim=sert_atak_say(cikti))
+        onceki = dict()
+        if sonek and (CIKIS / 'film-ses.wav').exists():
+            try:
+                x1 = wav24_oku(CIKIS / 'film-ses.wav')
+                t1 = tayf_olc(x1)
+                onceki = dict(dosya='film-ses.wav', sertlik_en_kotu_db=t1['sertlik_en_kotu_db'], sertlik_en_kotu_sn=t1['sertlik_en_kotu_sn'],
+                              bant_5_10k_db=t1['bant_db']['5-10k'], sert_atak=sert_atak_say(x1)['sayi'])
+            except (OSError, ValueError) as e:
+                onceki = dict(hata=str(e))
+        olcum['onceki_karisim'] = onceki
+        if doku_bilgi:
+            kaz_lin = 10 ** (kazanc_db / 20)
+            doku_c = doku * kaz_lin
+            keman_c = kem_w * son_zarf * kaz_lin
+            dt, kt = tayf_olc(doku_c), tayf_olc(keman_c)
+            olcum['doku'] = dict(doku_bilgi, tayf_doku=dt, tayf_keman=kt,
+                                 keman_2_5k_db=kt['bant_db']['2-5k (sertlik)'], keman_5_10k_db=kt['bant_db']['5-10k'],
+                                 sert_atak_doku=sert_atak_say(doku_c), sert_atak_keman=sert_atak_say(keman_c))
+            olcum['sert_atak'].update(doku=olcum['doku']['sert_atak_doku']['sayi'], keman=olcum['doku']['sert_atak_keman']['sayi'])
+
         # Doruk: finalin (ve filmin) vuruşları içinde en yüksek mi (400 ms pencere, yaklaşık K ağırlıklı)
         fa, fb = SAHNELER['s6-final']
         doruk = P['final']['doruk']
@@ -1501,7 +2136,8 @@ def main():
                               final_vuruslari=vf)
 
         # İşaret doğrulaması: her çapa karesinde karışımda nota başlangıcı (±1 kare). Pencere komşu başlangıca göre daralır.
-        baslangiclar = sorted({p['kare'] for p in notalar} | {e['kare'] for e in nesneler})
+        baslangiclar = sorted({p['kare'] for p in notalar} | {e['kare'] for e in nesneler}
+                              | ({p['kare'] for p in D['piyano']} | {z['kare'] for z in D['pizz']} if D else set()))
         capa_ses = {}
         for p in notalar:
             if p['kare'] in P['capa']:
@@ -1512,7 +2148,7 @@ def main():
         hedef = {1000: ([], []), 300: ([], [])}
         zar_kare = {e['kare'] for e in nesneler if e['tip'] == 'zar'}
         nota_kare = {p['kare'] for p in notalar}
-        nesne_bant = {e['kare']: NESNE_TIP[e['tip']]['bant'] for e in nesneler}
+        nesne_bant = {e['kare']: nesne_bandi(e['tip']) for e in nesneler}
         for c in P['capa']:
             if c not in capa_ses:
                 continue
@@ -1575,6 +2211,20 @@ def main():
                                                 hedef=f'k{doruk}', tamam=en_f['kare'] == doruk),
             isaret_sapmasi_kare=dict(deger=en_sapma, hedef='≤ 1', tamam=dogrulama['tum_isaretler_1_kare_icinde']),
         )
+        t2 = olcum['tayf']
+        if onceki.get('sertlik_en_kotu_db') is not None:
+            hedefler['en_sert_100ms_2_5k_db'] = dict(deger=f'{t2["sertlik_en_kotu_db"]} ({t2["sertlik_en_kotu_sn"]} sn)',
+                                                     hedef=f'≤ önceki {onceki["sertlik_en_kotu_db"]} ({onceki["sertlik_en_kotu_sn"]} sn)',
+                                                     tamam=t2['sertlik_en_kotu_db'] <= onceki['sertlik_en_kotu_db'] + 0.05)
+            hedefler['bant_5_10k_db'] = dict(deger=t2['bant_db']['5-10k'], hedef=f'düşük (önceki {onceki["bant_5_10k_db"]})',
+                                             tamam=t2['bant_db']['5-10k'] <= onceki['bant_5_10k_db'] + 1.0)
+            hedefler['ani_sert_atak'] = dict(deger=olcum['sert_atak'], hedef=f'rapor (önceki {onceki["sert_atak"]})',
+                                             tamam=olcum['sert_atak']['karisim']['sayi'] <= onceki['sert_atak'])
+        if doku_bilgi:
+            hedefler['keman_2_5k_db'] = dict(deger=olcum['doku']['keman_2_5k_db'], hedef='rapor (karışım hedefi ≤ -18)',
+                                             tamam=olcum['doku']['keman_2_5k_db'] <= -18)
+            hedefler['doku_goreli_db'] = dict(deger=doku_bilgi['goreli_db'], hedef='-10…-14 (sahne başına)',
+                                              tamam=all(-14.5 <= v <= -9.5 for v in doku_bilgi['goreli_db'].values()))
 
         cizelge = dict(
             meta=dict(sr=SR, fps=FPS, toplam_kare=TOPLAM_KARE, sure_sn=TOPLAM_KARE / FPS, bpm=BPM, vurus_kare=VURUS,
@@ -1591,10 +2241,21 @@ def main():
             notalar=[dict(kare=p['kare'], sn=round(kare_sn(p['kare']) + p['ofset_ms'] / 1000, 4), ofset_ms=p['ofset_ms'], nota=nota_adi(p['m']), midi=p['m'],
                           hiz=p['hiz'], tus_kare=p['sure'], birakma_kare=p.get('birakma_kare'), parca=p['parca'], serbest=p['serbest'], etiket=p['etiket'])
                      for p in notalar],
-            nesne_sesleri=[dict(kare=e['kare'], sn=round(kare_sn(e['kare']), 4), tip=e['tip'], rol=e['rol'], db=e['db'],
-                                db_ayar=e.get('db_ayar'), etiket=e['etiket']) for e in nesneler],
+            nesne_sesleri=[dict(kare=e['kare'], sn=round(kare_sn(e['kare']), 4), tip=e['tip'], nota=e.get('nota') if NESNE_PIYANO else None,
+                                rol=e['rol'], db=e['db'], db_ayar=e.get('db_ayar'), etiket=e['etiket']) for e in nesneler],
             olcum=olcum, dogrulama=dogrulama,
         )
+        if D is not None:
+            cizelge['meta']['sentez'] += ('; v2 doku: keçe piyano (yumuşak çekiç, una corda, düşük parlaklık, yumuşak atak) ve keman '
+                                          '(harmonik dizi, gövde rezonansları, geç vibrato, legato, flautando ve con sordino, pizzicato); '
+                                          'nesne sesleri susturulmuş/hazırlanmış piyano notası + kısa gövde')
+            cizelge['doku'] = dict(
+                piyano=[dict(kare=p['kare'], nota=nota_adi(p['m']), hiz=p['hiz'], sure=p['sure'], tur=p['tur'], pan=p['pan'], etiket=p['etiket'])
+                        for p in D['piyano']],
+                keman=[dict(teknik=c['teknik'], pan=c['pan'], etiket=c['etiket'], kare=[c['notlar'][0][0], c['notlar'][-1][0] + c['notlar'][-1][2]],
+                            notalar=[(k, nota_adi(m), d, v) for k, m, d, v, _ in c['notlar']]) for c in D['keman']],
+                pizzicato=[dict(kare=z['kare'], nota=nota_adi(z['m']), hiz=z['hiz'], etiket=z['etiket']) for z in D['pizz']],
+                pedal=D['pedal'])
         ozet = dict(hedefler={k: (v['deger'], 'TAMAM' if v['tamam'] else 'KALDI') for k, v in hedefler.items()},
                     bant_db=olcum['tayf']['bant_db'], sinirlayici=(olcum['sinirlayici_en_cok_db'], olcum['sinirlayici_en_cok_sn']),
                     sessizlik=olcum['sessizlik'],
@@ -1603,14 +2264,26 @@ def main():
                                 zayif=dogrulama['yukselisi_3_dbden_az'], yapisan=len(P['yapisan']), dusen=len(P['dusen']), genel=P['genel']),
                     kanca_isaretle_uyumlu=P['kanca']['isaretle_uyumlu'], final=final_bilgi['kaynak'],
                     nota_sayisi=len(notalar), nesne_sayisi=len(nesneler), sure_sn=round(time.time() - t0, 1))
+        if doku_bilgi:
+            ozet['doku'] = dict(goreli_db=doku_bilgi['goreli_db'], kazanc_db=doku_bilgi['sahne_kazanci_db'], ozet=D['ozet'],
+                                keman_bant_db=olcum['doku']['tayf_keman']['bant_db'], doku_bant_db=olcum['doku']['tayf_doku']['bant_db'])
+        ozet['sert_atak'] = olcum['sert_atak']
+        ozet['onceki'] = onceki
+        ozet['en_sert_100ms'] = (olcum['tayf']['sertlik_en_kotu_db'], olcum['tayf']['sertlik_en_kotu_sn'])
         print(json.dumps(ozet, ensure_ascii=False, indent=1, default=_json_tip))
 
+        dosya = dict(karisim=CIKIS / f'film-ses{sonek}.wav', kesme=CIKIS / f'kesme-notalari{sonek}.wav', cizelge=CIKIS / f'cizelge{sonek}.json')
+        if doku_bilgi:
+            dosya.update(doku=CIKIS / f'doku{sonek}.wav', keman=CIKIS / f'keman{sonek}.wav')
         if arg.dry_run:
-            print('dry-run: dosya yazılmadı. Yazılacaklar:', CIKIS / 'film-ses.wav', CIKIS / 'kesme-notalari.wav', CIKIS / 'cizelge.json')
+            print('dry-run: dosya yazılmadı. Yazılacaklar:', *[p.name for p in dosya.values()])
             return
         CIKIS.mkdir(parents=True, exist_ok=True)
-        wav24_yaz(CIKIS / 'film-ses.wav', cikti)
-        wav24_yaz(CIKIS / 'kesme-notalari.wav', kesme_c)
+        wav24_yaz(dosya['karisim'], cikti)
+        wav24_yaz(dosya['kesme'], kesme_c)
+        if doku_bilgi:
+            wav24_yaz(dosya['doku'], doku_c)
+            wav24_yaz(dosya['keman'], keman_c)
         if not arg.bindirme_yok:
             bind = {}
             if not videolar:
@@ -1619,16 +2292,16 @@ def main():
                 if not kay.exists():
                     bind[kay.name] = 'kaynak yok'
                     continue
-                hedef_mp4 = kay.with_name(kay.stem + '-sesli.mp4')
-                subprocess.run([ff, '-hide_banner', '-loglevel', 'error', '-y', '-i', str(kay), '-i', str(CIKIS / 'film-ses.wav'),
+                hedef_mp4 = kay.with_name(kay.stem + '-sesli' + sonek + '.mp4')
+                subprocess.run([ff, '-hide_banner', '-loglevel', 'error', '-y', '-i', str(kay), '-i', str(dosya['karisim']),
                                 '-map', '0:v:0', '-map', '1:a:0', '-c:v', 'copy', '-c:a', 'aac', '-b:a', '192k', '-ar', str(SR),
                                 '-movflags', '+faststart', str(hedef_mp4)], check=True)
                 lag, sure = gecikme_olc(ff, hedef_mp4, cikti, gecici)
                 bind[kay.name] = dict(dosya=hedef_mp4.name, ses_kaymasi_ms=lag, ses_suresi_sn=sure, video_suresi_sn=video_suresi(ff, kay))
             cizelge['bindirme'] = bind
             print(json.dumps(dict(bindirme=bind), ensure_ascii=False))
-        (CIKIS / 'cizelge.json').write_text(json.dumps(cizelge, ensure_ascii=False, indent=1, default=_json_tip), encoding='utf-8')
-        print('yazıldı:', CIKIS)
+        dosya['cizelge'].write_text(json.dumps(cizelge, ensure_ascii=False, indent=1, default=_json_tip), encoding='utf-8')
+        print('yazıldı:', *[p.name for p in dosya.values()])
 
 
 if __name__ == '__main__':
