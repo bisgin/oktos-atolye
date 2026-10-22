@@ -1,14 +1,15 @@
 {
   "_aciklama": "Tanıtım filmi v06 kadrosu ve sahne aralıkları: tek kaynak. film.js kişi parametrelerini (kisiler.<kod>.p) ve kanca yüzlerini (montaj) buradan okur; sahne modülleri aralıklarını (sahneler), scripts/film-ses.py müziği sahne sınırlarına ve tanitim.isaretler'e oturtur. Kare = 60 fps. Kadro genç (16–30): kısa/orta/uzun, zayıf/orta/tosun, yanaklı, sakallı, küpeli, birkaç punk; mono (fikir dünyası). Arka plan kişileri (figüranlar) sahne modülünde rastgeleKisi(tohum, {...}) ile, daha açık gri ve az detaylı kurulur.",
-  "toplam": 2880,
+  "toplam": 3670,
+  "_sahneler": "İÇ kare aralıkları (modül export ARALIK verirse o geçerlidir). film.js sahneleri arka arkaya dizer: uzayan sahne sonrakileri kaydırır. Film karesi yerleşimi sayfada tanitim.sahneler(); toplam tanitim.sure() × 60.",
   "sahneler": {
     "v1-kanca": [0, 191],
-    "s1-kafe": [192, 575],
-    "s2-atolye": [576, 1055],
-    "s3-balkon": [1056, 1535],
-    "s4-frp": [1536, 2015],
+    "s1-kafe": [192, 647],
+    "s2-atolye": [576, 1355],
+    "s3-balkon": [1056, 1683],
+    "s4-frp": [1536, 2225],
     "s5-kalabalik": [2016, 2351],
-    "s6-final": [2352, 2879]
+    "s6-final": [2352, 2939]
   },
   "kisiler": {
     "A": { "sahne": "s1-kafe", "rol": "kafedeki kız; garsona seslenir, görülmez; QR standı ister", "nota": "D4",

@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 """
-film-ses.py: Oktos tanıtım filmi (v06, 48 sn, 2880 kare) için müzik ve nesne sesleri; tamamen kendi sentezimiz.
+film-ses.py: Oktos tanıtım filmi (v06; süre ve sahne aralıkları sayfadan, ~61 sn) için müzik ve nesne sesleri; tamamen kendi sentezimiz.
 
 Amaç
   - Kanca: her yüz değişiminde bir piyano notası ("dın"), notalar v1-kanca.js `sure` dizisinden; A'da Dmaj9'a çözülür.
@@ -10,8 +10,10 @@ Amaç
     lisans derdi yok): piyano ve nesne sesleri sayısal olarak üretilir.
 
 Girdi
-  - lab/tanitim/film/kadro.json : toplam kare, sahne aralıkları, karakter notaları (kisiler.<kod>.nota)
-  - .impeccable/ses/isaretler.json : sayfanın ses işaretleri (python scripts/film-isaret.py yazar; yoksa önce onu çalıştırın)
+  - .impeccable/ses/isaretler.json : sayfanın ses işaretleri, toplam kare, sahne aralıkları (FİLM kareleri), kaymalar ve
+    vuruşlar (python scripts/film-isaret.py yazar; yoksa önce onu çalıştırın). Sahneler uzayabilir: müzik vuruş ve işaret
+    karelerine oturur, işaretsiz anlar sahnenin iç karesi + kaydir ile bulunur.
+  - lab/tanitim/film/kadro.json : karakter notaları (kisiler.<kod>.nota); toplam ve sahneler İÇ karedir, yalnız yedek
   - lab/tanitim/film/v1-kanca.js : `sure = [...]` (kanca yüzleri), lab/tanitim/film/s5-kalabalik.js : balon sahipleri (varsa)
   - s6-final işaret bırakmazsa final plan varsayımlarıyla doldurulur (FINAL_VARSAYIM; cizelge.json'da "varsayim": true).
   - Bindirme için video: --video <mp4> (birden çok verilebilir); verilmezse .impeccable/film/animatik-v06-{yatay,dikey}.mp4 (varsa).
@@ -93,6 +95,7 @@ NESNE_TIP = {
     'kumas':   dict(mod=[(250, .025, .50), (680, .012, .25)], gur=(1300, .0120, .9), db=-4, bant=300),
     'darbe':   dict(mod=[(82, .130, 1.0), (131, .090, .70), (226, .050, .40), (480, .022, .18)], gur=(700, .0200, .6), db=3, bant=300),
     'kemik':   dict(mod=[(960, .009, 1.0), (1480, .006, .55), (2150, .004, .20), (320, .014, .45)], gur=(1900, .0020, .8), db=1, bant=1000),
+    'pit':     dict(mod=[(1480, .010, 1.0), (2220, .005, .20), (740, .012, .40)], gur=(1900, .0015, .5), db=-6, bant=1000),  # ölçü "pıt"
 }
 NESNE_TIP['zar'] = dict(NESNE_TIP['kemik'], db=2)    # zar: kemik tıkırtılarından seken bir öbek
 # Nesne sesi çevresindeki müziğe göre ayarlanır (miks): işareti tek başına taşıyorsa kendi bandında müziğin 6 dB üstü,
@@ -111,11 +114,15 @@ ISARET_JSON = CIKIS / 'isaretler.json'
 VARSAYILAN_VIDEOLAR = [FILM / 'animatik-v06-yatay.mp4', FILM / 'animatik-v06-dikey.mp4']
 
 KADRO = json.loads(KADRO_JSON.read_text(encoding='utf-8'))
-TOPLAM_KARE = int(KADRO['toplam'])                                   # 2880 = 48 sn
+# Film kareleri sayfadan gelir (isaretler.json: toplam_kare, sahneler = FİLM kareleri, sahne_yerlesimi.kaydir, vuruslar);
+# sahneler uzayabildiği için kadro.json'daki toplam ve sahneler İÇ karelerdir ve yalnız yedektir. isaretleri_oku() günceller.
+TOPLAM_KARE = int(KADRO['toplam'])
 SAHNELER = {ad: (int(a), int(b)) for ad, (a, b) in KADRO['sahneler'].items()}
-# s6-final işaret bırakmazsa plan varsayımları: logo inşası k2352–2652 (motif grupları, aynalı çiftler aynı karede: köşe,
-# yan, alt, çarpı, halka), doruk ~k2652 logo tamamlanınca, OKTOS k2652–2700, slogan k2700–2820, tutuş sona dek.
-FINAL_VARSAYIM = dict(gruplar=[2436, 2484, 2532, 2580, 2628], doruk=2652, slogan=2700)
+SAHNE_KAYDIR = {}          # modül → iç kare + kaydir = film karesi
+VURUSLAR = {}              # vuruş no → (k0, k1) film karesi
+# s6-final işaret bırakmazsa plan varsayımları (finalin başına göre): logo grupları (köşe, yan, alt, çarpı, halka; aynalı
+# çiftler aynı karede), doruk logo tamamlanınca, OKTOS, slogan; tutuş sona dek.
+FINAL_VARSAYIM = dict(gruplar=[84, 132, 180, 228, 276], doruk=300, slogan=348)
 CAPA_YARICAP = 3           # bir işaretin ±3 karesinde başka nota başlamaz (flam olmasın, doğrulama karışmasın)
 BASLANGIC_SAPMA_MS = {3: 1.4, 8: 1.2}   # başlangıç ölçerinin sabit gecikmesi (zarf penceresi ms → ms), 13 yalıtılmış sesle ölçüldü
 
@@ -170,6 +177,7 @@ def isaretleri_oku(yol):
         print(f'İşaret dosyası yok: {yol.relative_to(KOK) if yol.is_relative_to(KOK) else yol}\n'
               'Önce sayfanın ses işaretlerini okuyun:  python scripts/film-isaret.py')
         sys.exit(2)
+    global TOPLAM_KARE, SAHNELER, SAHNE_KAYDIR, VURUSLAR
     veri = json.loads(yol.read_text(encoding='utf-8'))
     uyarilar = []
     # Sahne modülleri işaret dosyasından yeniyse işaretler eskimiş olabilir
@@ -177,11 +185,24 @@ def isaretleri_oku(yol):
     yeni = [p.name for p in kaynaklar if p.exists() and p.stat().st_mtime > yol.stat().st_mtime]
     if yeni:
         uyarilar.append(f'işaretler eskimiş olabilir ({", ".join(yeni)} daha yeni): python scripts/film-isaret.py')
-    if int(veri.get('toplam_kare', TOPLAM_KARE)) != TOPLAM_KARE:
-        uyarilar.append(f'isaretler.json toplam {veri.get("toplam_kare")} kare, kadro.json {TOPLAM_KARE}')
+    # Film kareleri sayfadan (sahneler uzayabilir); sayfa vermediyse kadro.json yedeği
+    if veri.get('toplam_kare') and veri.get('sahne_yerlesimi'):
+        TOPLAM_KARE = int(veri['toplam_kare'])
+        SAHNELER = {ad: (int(a), int(b)) for ad, (a, b) in veri['sahneler'].items()}
+        SAHNE_KAYDIR = {s['m']: int(s.get('kaydir') or 0) for s in veri['sahne_yerlesimi']}
+    else:
+        uyarilar.append('isaretler.json sahne yerleşimi vermiyor (eski film-isaret.py?): kadro.json yedeği kullanıldı')
+    VURUSLAR = {str(v['no']): (int(v['k0']), int(v['k1'])) for v in veri.get('vuruslar', [])}
     for u in veri.get('uyarilar', []):
         uyarilar.append('film-isaret: ' + u)
-    isaretler = [dict(i) for i in veri['isaretler'] if 0 <= int(i['kare']) < TOPLAM_KARE]
+    isaretler = []
+    for i in veri['isaretler']:
+        if not 0 <= int(i['kare']) < TOPLAM_KARE:
+            continue
+        if i['tur'] == 'sessizlik' and int(i.get('bitis', i['kare'] + 1)) <= i['kare']:
+            uyarilar.append(f'k{i["kare"]} sessizlik bitişi ({i.get("bitis")}) başlangıçtan önce: yok sayıldı')
+            continue
+        isaretler.append(dict(i))
     return isaretler, veri, uyarilar
 
 
@@ -190,13 +211,13 @@ def final_tamamla(isaretler):
     a, b = SAHNELER['s6-final']
     s6 = [i for i in isaretler if a <= i['kare'] <= b]
     eklenen = []
-    doruk = next((i['kare'] for i in s6 if i['tur'] == 'vurgu' and i.get('ad') == 'doruk'), FINAL_VARSAYIM['doruk'])
+    doruk = next((i['kare'] for i in s6 if i['tur'] == 'vurgu' and i.get('ad') == 'doruk'), a + FINAL_VARSAYIM['doruk'])
     if not any(i['tur'] == 'tik' and i['kare'] < doruk for i in s6):
-        eklenen += [dict(kare=g, tur='tik', ad='logo grubu', varsayim=True) for g in FINAL_VARSAYIM['gruplar'] if g < doruk]
+        eklenen += [dict(kare=a + g, tur='tik', ad='logo grubu', varsayim=True) for g in FINAL_VARSAYIM['gruplar'] if a + g < doruk]
     if not any(i['tur'] == 'vurgu' and i.get('ad') == 'doruk' for i in s6):
-        eklenen.append(dict(kare=FINAL_VARSAYIM['doruk'], tur='vurgu', ad='doruk', varsayim=True))
+        eklenen.append(dict(kare=a + FINAL_VARSAYIM['doruk'], tur='vurgu', ad='doruk', varsayim=True))
     if not any(i['tur'] == 'vurgu' and i.get('ad') == 'slogan' for i in s6):
-        eklenen.append(dict(kare=FINAL_VARSAYIM['slogan'], tur='vurgu', ad='slogan', varsayim=True))
+        eklenen.append(dict(kare=a + FINAL_VARSAYIM['slogan'], tur='vurgu', ad='slogan', varsayim=True))
     if not s6:
         kaynak = 'varsayım (s6-final işaret bırakmadı): kadro.json + plan v06'
     elif eklenen:
@@ -208,12 +229,14 @@ def final_tamamla(isaretler):
 
 
 def kalabalik_sahipleri():
-    """s5-kalabalik.js'teki fikir tablosundan balon karesi → (kişi, çizim). Okunamazsa boş (motifler sırayla döner)."""
+    """s5-kalabalik.js'teki fikir tablosundan balon FİLM karesi → (kişi, çizim) (tablo iç karede, kaydir eklenir).
+    Okunamazsa boş (motifler sırayla döner)."""
     try:
         metin = KALABALIK_JS.read_text(encoding='utf-8')
     except OSError:
         return {}
-    return {int(m.group(2)): (m.group(1), m.group(3))
+    kay = SAHNE_KAYDIR.get('s5-kalabalik', 0)
+    return {int(m.group(2)) + kay: (m.group(1), m.group(3))
             for m in re.finditer(r"(\w+):\s*\{\s*cik:\s*\d+,\s*balon:\s*(\d+)[^}]*?cizim:\s*'(\w+)'", metin)}
 
 
@@ -314,7 +337,7 @@ def partisyon(isaretler, final_bilgi):
 
     def tik_tipi(i, yedek='tok'):
         e = ek_metni(i).lower()
-        for anahtar, tip in (('kulp', 'kulp'), ('çekmece', 'tok'), ('vida', 'metal'), ('organizer', 'plastik'),
+        for anahtar, tip in (('pıt', 'pit'), ('kulp', 'kulp'), ('kapı', 'kulp'), ('çekmece', 'tok'), ('vida', 'metal'), ('organizer', 'plastik'),
                              ('ceket', 'kumas'), ('giyin', 'kumas'), ('küpe', 'metal'), ('toprak', 'toprak'), ('bardak', 'cam')):
             if anahtar in e:
                 return tip
@@ -341,17 +364,32 @@ def partisyon(isaretler, final_bilgi):
     isr('kesme', 'v1-kanca')
     kanca_isaret = sorted(i['kare'] for i in isaretler if i['tur'] == 'kesme' and S['v1-kanca'][0] <= i['kare'] <= S['v1-kanca'][1])
 
-    # =========================================================================== KAFE: hafif, şık; asılı sesleniş; Bm9
+    def vk(no, yedek):
+        """Vuruşun (k0, k1) FİLM kareleri (sayfanın tanitim.vuruslar'ı); yoksa yedek."""
+        return VURUSLAR.get(str(no), yedek)
+
+    def adim_asagi(m):
+        m = midi(m) - 1
+        while m % 12 not in _RE_MAJOR:
+            m -= 1
+        return m
+
+    # =========================================================================== KAFE: kalabalık, garson sohbette, asılı sesleniş, yüz asılır, Bm9
     a, b = S['s1-kafe']
     kon, dus, vur, tik = isr('konusma', 's1-kafe'), isr('dusunce', 's1-kafe'), isr('vurgu', 's1-kafe'), isr('tik', 's1-kafe')
     A_NOTA = midi(kisi_notasi('A', 'D4')) + 12
-    # #3 genel plan: kancanın Dmaj9'u üstünde hafif bir dokunuş ve A'nın sekme motifi (8-16-16-4)
+    k4 = vk(4, (a + 108, a + 239))[0]
+    # #3 kalabalık kafe: kancanın Dmaj9'u üstünde hafif dokunuş ve A'nın sekme motifi (8-16-16-4); garson sohbette güler
     n(a + 24, 'A4', 0.26, 10, 'kafe: hafif')
     n(a + 48, 'A4', 0.36, 12, 'A motifi (kafe)'); n(a + 60, 'F#4', 0.30, 6, 'A motifi (kafe)')
     n(a + 66, 'A4', 0.32, 6, 'A motifi (kafe)'); n(a + 72, 'D5', 0.38, 20, 'A motifi (kafe)')
-    # #4 el kalkar: Em9 (ii); her seslenişte asılı nota (A'nın notası), ikincisi bir adım yüksek ve V üstünde
-    akor(a + 96, ['E2', 'B2'], 0.34, 80, 'Em9: el kalkar'); akor(a + 96, ['G3', 'D4'], 0.26, 80, 'Em9')
-    PEDAL.append((a + 96, (kon[1]['kare'] - 1) if len(kon) > 1 else a + 179))
+    for j, (o, ad) in enumerate(zip((0, 6, 12), MOTIF['garson'][1])):
+        if uygun(k4 - 24 + o):
+            n(k4 - 24 + o, ad, 0.28 - 0.02 * j, 5, 'garson sohbette: güler')
+    # #4 el kalkar: Em9 (ii); her seslenişte asılı nota (A'nın notası), ikincisi bir adım yüksek ve V üstünde; garson kahkaha atar
+    son4 = kon[1]['kare'] if len(kon) > 1 else k4 + 80
+    akor(k4, ['E2', 'B2'], 0.34, son4 - k4, 'Em9: el kalkar'); akor(k4, ['G3', 'D4'], 0.26, son4 - k4, 'Em9')
+    PEDAL.append((k4, son4 - 1))
     m_sesle = A_NOTA
     for j, i in enumerate(kon):
         k = i['kare']
@@ -363,219 +401,319 @@ def partisyon(isaretler, final_bilgi):
             akor(k, ['A1', 'E2'], 0.38, 40, 'A7sus4: yanıt gelmez'); akor(k, ['D4', 'G4'], 0.30, 40, 'A7sus4')
             n(k, m_sesle, 0.48, son - k, '"Bakar mısınız?!": asılı, bir adım yüksek', 'isaret')
             PEDAL.append((k, k + 59))
+            for q, ad in enumerate(['D5', 'B4', 'D5', 'B4']):          # garson müşterinin şakasına kahkaha atar
+                if uygun(k + 14 + 6 * q):
+                    n(k + 14 + 6 * q, ad, 0.26, 4, 'garson kahkaha atar (A\'ya dönmez)')
+    # El iner; sessizlikte yüz asılır (müzik susar); dirsek masaya, yanak avuçta: yalnız yumuşak tıklar
     for j, i in enumerate(tik):
-        nesne(i['kare'], tik_tipi(i, 'cam' if j == 0 else 'tok'), 'kafe: ' + ('tepsideki bardaklar' if j == 0 else 'el masaya iner'))
-    # #5 düşünce: noktalar (sessizlikte de), bulut açılınca Bm9; sorun asılı kalır (çözülmez)
+        nesne(i['kare'], tik_tipi(i, 'tok'), 'kafe: ' + ('el masaya iner' if j == 0 else 'dirsek masaya, yanak avuçta'), -3.0 * min(j, 1))
+    # #5 düşünce: noktalar (sessizlikte de), bulut açılınca Bm9; iç ses; sorun asılı kalır (çözülmez)
     if dus:
         k = dus[0]['kare']
         bulut = max(dusunce_motifi(k, ['F#5', 'A5', 'C#6']), sus_bitisi(k))
         akor(bulut, ['B1', 'F#2'], 0.34, b - bulut + 1, 'Bm9: QR olsa…'); akor(bulut, ['D4', 'A4', 'C#5'], 0.27, b - bulut + 1, 'Bm9')
         PEDAL.append((bulut, b))
-        n(a + 264, 'F#4', 0.28, 22, 'iç ses'); n(a + 288, 'E4', 0.26, 20, 'iç ses')
+        n(bulut + 14, 'F#4', 0.28, 22, 'iç ses'); n(bulut + 38, 'E4', 0.26, 20, 'iç ses')
     for i in vur:
         n(i['kare'], 'E5', 0.40, b - i['kare'] + 1, 'dilek halkası: asılı (Bm üstünde 11.)', 'isaret')
 
-    # =========================================================================== ATÖLYE: D4 girişi, cetvel, yarım tempo, pp staccato, sus4
+    # =========================================================================== ATÖLYE: D4 girişi, cetvel; grup gider; kuş bakışı, 3B vidalar, "pıt pıt"; parmakla biçimlendirme
     a, b = S['s2-atolye']
     kes, kon, tik = isr('kesme', 's2-atolye'), isr('konusma', 's2-atolye'), isr('tik', 's2-atolye')
     dus, vur = isr('dusunce', 's2-atolye'), isr('vurgu', 's2-atolye')
     B_NOTA = midi(kisi_notasi('B', 'D4'))
+    k7 = vk(7, (a + 184, a + 263))[0]
+    k8 = vk(8, (a + 264, a + 595))[0]
+    k9 = vk(9, (a + 596, b))[0]
     giris = kon[0]['kare'] if kon and kon[0]['kare'] - a <= CAPA_YARICAP else a
-    # #6–#7 pedalsız "cetvel" sekizlikleri (B motifi D F# E A), tuş kısa: ölçen, düzenli; bas her yarım ölçüde
-    cetvel = ['D4', 'F#4', 'E4', 'A4'] * 2 + ['E4', 'G4', 'F#4', 'B4', 'A3', 'D4', 'E4', 'G4']
-    for j, ad in enumerate(cetvel):
-        n(giris if j == 0 else a + 12 * j, ad if j else B_NOTA, 0.38 if j % 2 == 0 else 0.32, 8, 'cetvel sekizlikleri (pedalsız)')
-    n(giris, 'D2', 0.38, 44, 'D: atölye girişi'); n(a + 48, 'G2', 0.34, 44, 'G')
-    n(a + 96, 'E2', 0.34, 44, 'Em'); n(a + 144, 'A1', 0.36, 44, 'A7sus4')
-    for j, i in enumerate(kon):
-        k = i['kare']
-        if k == giris:
-            continue                                      # sohbet: D4 girişi
-        if 'Geliyor' in ek_metni(i) or j == 1:
-            n(k, B_NOTA + 12, 0.46, 20, '"Geliyorum!" (B\'nin notası)', 'isaret')
+    k_git = next((i['kare'] for i in kon if 'Yazıcı' in ek_metni(i)), a + 96)
+    k_gel = next((i['kare'] for i in kon if 'Geliyor' in ek_metni(i)), a + 162)
+    # #6–#7 pedalsız "cetvel" sekizlikleri (B motifi D F# E A); grup yürüyüp giderken inen, kısılan bir yürüyüş;
+    # "Geliyorum!"dan sonra B dolaba yürür (cetvel geri gelir)
+    yuruyus = ['B4', 'A4', 'G4', 'F#4', 'E4', 'D4', 'C#4', 'B3']
+    dolap = ['E4', 'G4', 'F#4', 'B4', 'A3', 'D4', 'E4', 'G4']
+    j, iy, idl = 0, 0, 0
+    while a + 12 * j < k8 - CAPA_YARICAP - 1:
+        f = giris if j == 0 else a + 12 * j
+        if f < k_git:
+            ad, v, et = (['D4', 'F#4', 'E4', 'A4'][j % 4] if j else B_NOTA), (0.38 if j % 2 == 0 else 0.32), 'cetvel sekizlikleri (pedalsız)'
+        elif f < k_gel:
+            ad, v, et = yuruyus[min(iy, 7)], 0.36 - 0.016 * iy, 'grup yürüyüp gider (inen yürüyüş)'
+            iy += 1
         else:
-            n(k, 'F#5', 0.40, 48, '"M8 vida… 3 tane de M6": uzaktan, asılı', 'isaret')
-    # #8 kuş bakışı: çekmeceye uzanış yarım tempo (dörtlük); kulp, çekiş, durma; dağınık vidalarda pp staccato
-    k8 = kes[1]['kare'] if len(kes) > 1 else a + 192
-    akor(k8, ['B1', 'F#2'], 0.32, 60, 'Bm: kuş bakışı, uzanış'); n(k8, 'F#4', 0.34, 22, 'yarım tempo')
+            ad, v, et = dolap[idl % 8], (0.36 if j % 2 == 0 else 0.30), 'B dolaba yürür (cetvel)'
+            idl += 1
+        n(f, ad, v, 8, et)
+        j += 1
+    n(giris, 'D2', 0.38, 44, 'D: atölye girişi'); n(a + 48, 'G2', 0.34, k_git - a - 48, 'G')
+    n(k_git, 'E2', 0.34, k_gel - k_git, 'Em: grup gider'); n(k_gel, 'D2', 0.36, max(8, k7 - k_gel), 'D: Geliyorum')
+    n(k7, 'E2', 0.32, 44, 'Em: dolaba yürür'); n(k7 + 48, 'A1', 0.34, max(8, k8 - k7 - 48), 'A7sus4')
+    kon8 = [i for i in kon if k8 <= i['kare'] < k9]
+    for i in kon:
+        k, e = i['kare'], ek_metni(i)
+        if k == giris or i in kon8:
+            continue                                      # sohbet: D4 girişi; organizer sözü #8'de
+        if 'Geliyor' in e:
+            n(k, B_NOTA + 12, 0.46, 20, '"Geliyorum!" (B\'nin notası)', 'isaret')
+        elif 'Yazıcı' in e:
+            n(k, 'A5', 0.38, 18, '"Yazıcı ısındı!": B3 kapıya', 'isaret')
+        else:
+            n(k, 'F#5', 0.40, 30, '"M8 vida… 3 tane de M6": asılı', 'isaret')
+    # #8 kuş bakışı: uzanış yarım tempo (dörtlük); kulp, çekiş, dayanak; 3B vidalar yuvarlanır (pp staccato, giderek seyrek);
+    # ölçü çizgisi parça parça (her parça "pıt"); ölçü sonuçları; "Bir organizer alsam… sığar mı?" asılı sus4
+    akor(k8, ['B1', 'F#2'], 0.32, 34, 'Bm: kuş bakışı, uzanış'); n(k8, 'F#4', 0.34, 22, 'yarım tempo')
     n(k8 + 24, 'D4', 0.30, 12, 'yarım tempo')
-    t_cek = [i for i in tik if 'çekmece' in ek_metni(i)]
-    t_vida = [i for i in tik if 'vida' in ek_metni(i)]
-    t_org = [i for i in tik if 'organizer' in ek_metni(i)]
     for i in tik:
         nesne(i['kare'], tik_tipi(i), 'atölye: ' + ek_metni(i).strip())
+    t_cek = [i['kare'] for i in tik if 'çekmece' in ek_metni(i)]
+    t_vida = [i['kare'] for i in tik if 'vida' in ek_metni(i)]
+    t_pit = sorted(i['kare'] for i in tik if 'pıt' in ek_metni(i))
+    vur8 = sorted(i['kare'] for i in vur if k8 <= i['kare'] < k9)
+    vur9 = [i for i in vur if i['kare'] >= k9]
     if t_cek:
-        kc = t_cek[0]['kare']
-        n(kc, 'E2', 0.30, 74, 'Em: çekmece açık')
-        kv = t_vida[0]['kare'] if t_vida else kc + 74
+        kc = t_cek[0]
+        olcu1 = vur8[0] if vur8 else kc + 100
+        n(kc, 'E2', 0.30, olcu1 - kc, 'Em: çekmece açık')
+        kv = t_vida[0] if t_vida else kc + 4
+        son_v = (t_pit[0] if t_pit else olcu1) - CAPA_YARICAP - 2
         r = np.random.default_rng(TOHUM + 7)
-        f = kc + 6
-        while f < kv - CAPA_YARICAP - 1:
+        f, ara = kv + 6, 4.0
+        while f < son_v:
+            u = (f - kv) / max(1, son_v - kv)
             if uygun(f):
-                n(f, str(r.choice(['B4', 'D5', 'E5', 'G5', 'A5', 'B5'])), r.uniform(0.18, 0.25), 3, 'dağınık vidalar: pp staccato', 'isaret')
-            f += int(r.choice([5, 6, 7, 9, 11]))
-    # #9 yüz ve düşünce: noktalar → Gmaj9; organizer iner; çarpınca asılı sus4 ("sığmadı"); ölçü "?"; ikinci deneme pp
+                n(f, str(r.choice(['B4', 'D5', 'E5', 'G5', 'A5', 'B5'])), 0.26 - 0.08 * u, 3, '3B vidalar yuvarlanır: pp staccato', 'isaret')
+            ara *= 1.18
+            f += int(round(ara))
+    # Ölçü sonuçları: ilk kenar B4 (Gmaj7), ikinci kenar G5; soru A7sus4 üstünde asılı (söz ile ikinci ölçü 4 kare arayla:
+    # akor söze, ikinci ölçü kendi notasına)
+    k_soru = kon8[0]['kare'] if kon8 else (vur8[1] if len(vur8) > 1 else None)
+    for j, k in enumerate(vur8):
+        if j == 0:
+            n(k, 'B4', 0.38, 24, 'ölçü: ilk kenar', 'isaret')
+            akor(k, ['G2', 'D3'], 0.28, (k_soru or k + 30) - k, 'Gmaj7: ölçülür')
+        else:
+            n(k, 'G5', 0.38, 20, 'ölçü: ikinci kenar', 'isaret')
+    if k_soru is not None:
+        akor(k_soru, ['A1', 'E2'], 0.36, k9 - k_soru, 'A7sus4: buraya sığar mı? (asılı)'); akor(k_soru, ['G3', 'D4'], 0.30, k9 - k_soru, 'A7sus4')
+        PEDAL.append((k_soru, k9 - 1))
+    for i in kon8:
+        n(i['kare'], B_NOTA + 12, 0.42, k9 - i['kare'], '"Bir organizer alsam… sığar mı?": asılı', 'isaret')
+    # #9 düşünce: noktalar → Gmaj9; parmakla inceltir (daralan iniş), uzatır (yükselen çıkış); düşüncede asılı (sessizlik)
     if dus:
         bulut = dusunce_motifi(dus[0]['kare'], ['B4', 'D5', 'F#5'])
-        akor(bulut, ['G2', 'D3'], 0.34, 44, 'Gmaj9: organizer tasarlasak'); akor(bulut, ['F#4', 'A4', 'B4'], 0.26, 44, 'Gmaj9')
-        PEDAL.append((bulut, bulut + 31))
-    if t_org:
-        kc = t_org[0]['kare']
-        kd = t_org[1]['kare'] if len(t_org) > 1 else kc        # ikinci duvar: sus4 burada iner (ilk tık açıkta duyulsun)
-        dizi(kc - 18, ['D5', 'B4', 'A4'], 6, 0.32, 0.28, 5, 'organizer çekmeceye iner')
-        akor(kd, ['A1', 'E2'], 0.40, b - kd + 1, 'A7sus4: sığmadı (asılı)'); akor(kd, ['D4', 'G4'], 0.34, b - kd + 1, 'A7sus4')
-        PEDAL.append((kd, b))
-        for i in t_org[2:]:
-            akor(i['kare'], ['D4', 'G4'], 0.24, 10, 'yine sığmaz: sus4 pp')
-    for i in vur:
-        n(i['kare'], 'E5', 0.40, b - i['kare'] + 1, 'ölçü "?": asılı', 'isaret')
+        akor(bulut, ['G2', 'D3'], 0.34, b - bulut + 1, 'Gmaj9: organizeri biçimlendirir'); akor(bulut, ['F#4', 'A4'], 0.26, b - bulut + 1, 'Gmaj9')
+        PEDAL.append((bulut, b))
+    for i in vur9:
+        k, e = i['kare'], ek_metni(i)
+        if 'incel' in e:
+            adlar, et = ['E5', 'D5', 'B4'], 'parmakla inceltir (daralan iniş)'
+        elif 'uzat' in e:
+            adlar, et = ['B4', 'D5', 'E5', 'A5'], 'parmakla uzatır (yükselen çıkış)'
+        else:
+            adlar, et = ['A4'], 'vurgu'
+        for q, ad in enumerate(adlar):
+            if q == 0 or uygun(k + 4 * q, k):
+                n(k + 4 * q, ad, 0.38 - 0.02 * q, 8, et, 'isaret')
 
-    # =========================================================================== BALKON: sıcak legato; tek inen nota; Gmaj7/9
+    # =========================================================================== BALKON: ayna; kapıdan güneşe; çiçekler; düşte parmakla biçimlendirme
     a, b = S['s3-balkon']
     kes, kon, tik = isr('kesme', 's3-balkon'), isr('konusma', 's3-balkon'), isr('tik', 's3-balkon')
     dus, vur = isr('dusunce', 's3-balkon'), isr('vurgu', 's3-balkon')
     D_NOTA = kisi_notasi('D', 'B4')
-    # #10 ayna: Dmaj9 → Bm9 → Gmaj7, D motifi legato
+    k11 = vk(11, (a + 144, a + 251))[0]
+    k12 = vk(12, (a + 252, a + 355))[0]
+    k13 = vk(13, (a + 356, b))[0]
+    t_dus = dus[0]['kare'] if dus else b
+    # #10 ayna: Dmaj9 → Bm9 → Gmaj7, D motifi legato; ceket ve küpe tıkları (küpede iki ışıltı)
     akor(a, ['D2', 'A2'], 0.40, 96, 'Dmaj9: sabah, ayna'); akor(a, ['F#3', 'C#4'], 0.28, 96, 'Dmaj9')
     PEDAL.append((a, a + 95))
     n(a, 'F#4', 0.38, 24, 'D motifi (legato)'); n(a + 24, 'A4', 0.36, 12, 'D motifi'); n(a + 36, 'B4', 0.38, 12, 'D motifi')
     n(a + 48, 'D5', 0.42, 36, 'D motifi'); n(a + 84, 'C#5', 0.34, 12, 'D motifi')
     akor(a + 96, ['B1', 'F#2'], 0.36, 48, 'Bm9'); n(a + 96, 'D5', 0.36, 12, 'legato'); n(a + 108, 'C#5', 0.32, 12, 'legato')
-    n(a + 120, 'B4', 0.34, 24, 'legato'); akor(a + 120, ['G2', 'D3'], 0.32, 24, 'Gmaj7')
-    PEDAL.append((a + 96, a + 143))
-    t_dus = dus[0]['kare'] if dus else b
+    n(a + 120, 'B4', 0.34, 24, 'legato'); akor(a + 120, ['G2', 'D3'], 0.32, max(8, k11 - a - 120), 'Gmaj7')
+    PEDAL.append((a + 96, k11 - 1))
     for i in tik:
-        tip = tik_tipi(i)
         if i['kare'] > t_dus:
-            continue                                      # giyinişler aşağıda (nota + kumaş)
-        nesne(i['kare'], tip, 'balkon: ' + ek_metni(i).strip())
-        if 'küpe' in ek_metni(i):                         # küpe: iki küçük ışıltı
+            continue                                      # düşteki biçimlenmeler aşağıda (nota + kumaş)
+        nesne(i['kare'], tik_tipi(i), 'balkon: ' + ek_metni(i).strip())
+        if 'küpe' in ek_metni(i):
             n(i['kare'] + 4, 'D6', 0.16, 4, 'küpe ışıltısı'); n(i['kare'] + 8, 'F#6', 0.14, 4, 'küpe ışıltısı')
-    # #11 balkon (kesme): Gmaj9, D'nin notası; mırıltı legato asılı; Em9
-    k11 = kes[1]['kare'] if len(kes) > 1 else a + 144
-    akor(k11, ['G2', 'D3'], 0.38, 48, 'Gmaj9: balkon, çiçekler'); akor(k11, ['F#3', 'B3'], 0.26, 48, 'Gmaj9')
-    n(k11, D_NOTA, 0.36, 26, 'D\'nin notası')
-    PEDAL.append((k11, k11 + 47))
+    # #11 kapı ve güneş: kapıya legato yürüyüş (Em9); kol (tık); ışık dolar (Gmaj9 açılır, yükselen pırıltı);
+    # beyazdan balkona; güneş yüzüne vurur: Dmaj9 sıcak ve açık
+    t_kapi = next((i['kare'] for i in tik if 'kapı' in ek_metni(i)), k11 + 36)
+    v_isik = next((i['kare'] for i in vur if 'ışık' in ek_metni(i)), t_kapi + 6)
+    v_gunes = next((i['kare'] for i in vur if 'güneş' in ek_metni(i)), k11 + 72)
+    kes11 = [i['kare'] for i in kes if v_isik < i['kare'] < v_gunes]
+    akor(k11, ['E2', 'B2'], 0.30, t_kapi - k11, 'Em9: kapıya yürür'); akor(k11, ['G3'], 0.22, t_kapi - k11, 'Em9')
+    for j, ad in enumerate(['B4', 'A4', 'G4', 'A4', 'B4', 'D5']):
+        f = k11 + 12 * j
+        if f >= t_kapi - CAPA_YARICAP:
+            break
+        n(f, ad, 0.32, 14, 'kapıya yürür (legato)')
+    PEDAL.append((k11, t_kapi - 1))
+    son_isik = (kes11[0] if kes11 else v_gunes)
+    akor(v_isik, ['G2', 'D3', 'F#4', 'A4'], 0.32, son_isik - v_isik, 'Gmaj9: ışık dolar')
+    for j, ad in enumerate(['D5', 'F#5', 'A5', 'B5']):
+        f = v_isik + 4 * j
+        if j == 0 or (f < son_isik - CAPA_YARICAP and uygun(f, v_isik)):
+            n(f, ad, 0.34 - 0.03 * j, 10, 'ışık dolar: yükselen pırıltı', 'isaret' if j == 0 else 'muzik')
+    PEDAL.append((v_isik, son_isik - 1))
+    for k in kes11:
+        n(k, 'E5', 0.32, 10, 'beyazdan balkona')
+    akor(v_gunes, ['D2', 'A2'], 0.38, k12 - v_gunes, 'Dmaj9: güneş'); akor(v_gunes, ['F#3', 'E4', 'A4'], 0.30, k12 - v_gunes, 'Dmaj9')
+    n(v_gunes, 'F#5', 0.36, k12 - v_gunes, 'güneşte gözlerini kapar, gülümser', 'isaret')
+    PEDAL.append((v_gunes, k12 - 1))
+    # #12 çiçekler: Gmaj9 ve D'nin notası; "Çiçeklerim çok güzel…" asılı; klişe saksılar: tek inen nota; topak; kaş iner (ödünç iv)
+    akor(k12, ['G2', 'D3'], 0.36, 48, 'Gmaj9: çiçekler'); akor(k12, ['F#3', 'B3'], 0.26, 48, 'Gmaj9')
+    n(k12, D_NOTA, 0.36, 26, 'D\'nin notası')
+    PEDAL.append((k12, k12 + 47))
     for i in kon:
-        n(i['kare'], 'F#5', 0.36, 46, '"Çok güzeller…": legato, asılı', 'isaret')
-    akor(k11 + 48, ['E2', 'B2'], 0.32, 48, 'Em9'); n(k11 + 72, 'E5', 0.32, 22, 'legato')
-    PEDAL.append((k11 + 48, k11 + 95))
-    # #12 klişe saksılar: pedal kalkar, tek inen nota
-    n(k11 + 96, 'A3', 0.34, 58, 'klişe saksılar: tek inen nota')
-    for i in kes[2:]:
-        if i['kare'] < t_dus - CAPA_YARICAP and i['kare'] not in kesme_birlesen:
-            n(i['kare'], 'G2', 0.30, 30, 'yüz: kaş iner (iv)')
-    for i in vur:
-        if i['kare'] < t_dus:
-            akor(i['kare'], ['A#3', 'D4'], 0.26, 19, 'Gm(add9) ödünç iv: sıkkın')
-            n(i['kare'], 'A4', 0.28, 19, 'kaş iner', 'isaret')
-    # #13 düşünce: noktalar → Gmaj7/9; her giyinişte yükselen nota (+ kumaş); dilek asılı
+        if k12 <= i['kare'] < k13:
+            n(i['kare'], 'F#5', 0.36, 38, '"Çiçeklerim çok güzel…": legato, asılı', 'isaret')
+    t_topak = next((i['kare'] for i in tik if 'toprak' in ek_metni(i)), k12 + 80)
+    n(k12 + 48, 'A3', 0.34, max(8, t_topak - k12 - 50), 'klişe saksılar: tek inen nota')
+    kas = t_topak + 6
+    if kas < k13 - 8:
+        akor(kas, ['G2', 'A#3', 'D4'], 0.26, k13 - kas, 'Gm(add9) ödünç iv: kaş iner'); n(kas, 'A4', 0.28, k13 - kas, 'kaş iner')
+    # #13 düş: noktalar → Gmaj7/9; parmak tutamacı çeker (iki notalık çekiş), saksı oturur (yükselen nota + kumaş);
+    # düş söner, sıkılır (Bm9); "Keşke böyle bir aracım olsaydı…" asılı
+    v_sik = next((i['kare'] for i in vur if 'sıkıl' in ek_metni(i)), b - 100)
     if dus:
         bulut = dusunce_motifi(t_dus, ['D5', 'F#5', 'A5'])
-        akor(bulut, ['G2', 'D3'], 0.36, b - bulut + 1, 'Gmaj7/9: saksı şık giyinir'); akor(bulut, ['F#4', 'A4', 'B4'], 0.27, b - bulut + 1, 'Gmaj7/9')
-        PEDAL.append((bulut, b))
-        giy = [i for i in tik if i['kare'] > t_dus]
-        for j, i in enumerate(giy):
-            n(i['kare'], ['B4', 'D5', 'E5', 'F#5'][min(j, 3)], 0.32 + 0.03 * j, 22, f'saksı giyinir {j + 1}', 'isaret')
-            nesne(i['kare'], 'kumas', 'balkon: giyinir', rol='eslik')
-        for i in vur:
-            if i['kare'] > t_dus:
-                n(i['kare'], 'A5', 0.36, b - i['kare'] + 1, 'dilek asılı (Gmaj9 üstünde 9.)', 'isaret')
+        akor(bulut, ['G2', 'D3'], 0.36, v_sik - bulut, 'Gmaj7/9: düşte saksı biçimlenir'); akor(bulut, ['F#4', 'A4', 'B4'], 0.27, v_sik - bulut, 'Gmaj7/9')
+        PEDAL.append((bulut, v_sik - 1))
+        giy = [i['kare'] for i in tik if t_dus < i['kare'] < v_sik]
+        for j, k in enumerate(giy):
+            hedef = midi(['B4', 'D5', 'E5', 'F#5'][min(j, 3)])
+            for q, f in enumerate((k - 8, k - 4)):
+                if uygun(f, k):
+                    n(f, adim_asagi(hedef) if q else adim_asagi(adim_asagi(hedef)), 0.22, 4, 'parmak tutamacı çeker', 'isaret')
+            n(k, hedef, 0.32 + 0.03 * j, 22, f'saksı biçimlenir {j + 1}', 'isaret')
+            nesne(k, 'kumas', 'balkon: saksı oturur', rol='eslik')
+    akor(v_sik, ['B1', 'F#2'], 0.30, b - v_sik + 1, 'Bm9: düş söner, sıkılır'); akor(v_sik, ['D4', 'F#4'], 0.24, b - v_sik + 1, 'Bm9')
+    PEDAL.append((v_sik, b))
+    for i in kon:
+        if i['kare'] >= v_sik:
+            n(i['kare'], 'A5', 0.36, b - i['kare'] + 1, '"Keşke böyle bir aracım olsaydı…": asılı', 'isaret')
+    for i in vur:
+        if i['kare'] not in (v_isik, v_gunes, v_sik):
+            n(i['kare'], 'A4', 0.32, 24, 'balkon: vurgu', 'isaret')
 
-    # =========================================================================== FRP: tek notalar; zar tıkırtısı + arpej; 4 × D5
+    # =========================================================================== FRP: sohbet; zar sallanır, atış; 3B zarlar; "Keşke…"; dönen zarlar, taş mı reçine mi
     a, b = S['s4-frp']
     kes, kon, tik, zar = isr('kesme', 's4-frp'), isr('konusma', 's4-frp'), isr('tik', 's4-frp'), isr('zar', 's4-frp')
     dus, vur = isr('dusunce', 's4-frp'), isr('vurgu', 's4-frp')
     E_NOTA = midi(kisi_notasi('E', 'A4'))
+    kay4 = SAHNE_KAYDIR.get('s4-frp', 0)
+    k15 = vk(15, (a + 136, a + 263))[0]
+    k16 = vk(16, (a + 264, a + 503))[0]
+    k17 = vk(17, (a + 504, b))[0]
+    k_salla = min(max(a + 24, 1611 + kay4), k15 - 40)        # s4-frp.js: E zarları sallar (iç k1611), atar (iç k1656)
+    k_atis = min(max(k_salla + 20, 1656 + kay4), k15 - 8)
     sus4 = [(s, e) for s, e in SUS if a <= s <= b]
-    # #14 gerilim: A pedalı (V), tek notalar yükselir, zarlar sallanınca sıklaşır
-    akor(a, ['A1', 'E2'], 0.32, 94, 'A (V): gerilim')
-    for f, ad, v, d in [(0, E_NOTA, 0.34, 10), (24, E_NOTA, 0.32, 10), (48, 'C#5', 0.34, 10), (60, 'D5', 0.34, 6), (72, 'E5', 0.36, 6), (84, 'F#5', 0.36, 6)]:
-        n(a + f, ad, v, d, 'gerilim: tek notalar')
-    # #15 yumruk kalkar (kesme): tek nota; nefes (sessizlik); zarlar: tıkırtı + arpej; "Keşke…" asılı (E'nin notası)
-    k15 = kes[1]['kare'] if len(kes) > 1 else a + 96
-    n(k15, 'B1', 0.34, 8, 'yumruk kalkar'); n(k15, 'G5', 0.34, 8, 'tek nota')
-    zar15 = [i['kare'] for i in zar if i['kare'] < (kes[2]['kare'] if len(kes) > 2 else b)]
-    for z in zar:
-        nesne(z['kare'], 'zar', 'zar tıkırtısı')
-    arpej = ['B3', 'D4', 'F#4']
-    for j, z in enumerate(zar15[:2]):
-        n(z, arpej[j], 0.36, 30, 'arpej: zarlar yek', 'isaret')
-    if zar15:
-        f = max(zar15[:2]) + 4
-        if uygun(f):
-            n(f, arpej[2], 0.36, 30, 'arpej', 'isaret')
-    kon_s = sorted(i['kare'] for i in kon)
-    if kon_s:
-        k = kon_s[0]
-        n(k, E_NOTA, 0.42, 63, '"Keşke FRP zarlarım olsa…": asılı (E\'nin notası)', 'isaret')
-        akor(k, ['G2', 'D3'], 0.32, 63, 'Gmaj9: dilek')
-        PEDAL.append((zar15[0] if zar15 else k, (kes[2]['kare'] - 1) if len(kes) > 2 else k + 63))
-    # #16 düşünce (hızlı): noktalar → Dmaj9 arpejleri (d20, d8); piyon çizilir; dilek halkası; ikinci söz bir adım yüksek
-    if dus:
-        bulut = dusunce_motifi(dus[0]['kare'], ['F#5', 'A5', 'C#6'], hizli=True)
-        k_vur16 = next((i['kare'] for i in vur if i['kare'] > bulut), bulut + 52)
-        akor(bulut, ['D2', 'A2'], 0.34, k_vur16 - bulut, 'Dmaj9: d20, d8')
-        PEDAL.append((bulut, k_vur16 - 1))
-        f = bulut + 6
-        for j, ad in enumerate(['D4', 'F#4', 'A4', 'C#5', 'E5']):
-            if uygun(f + 6 * j):
-                n(f + 6 * j, ad, 0.30 + 0.015 * j, 6, 'arpej: d20, d8')
-    k17 = kes[3]['kare'] if len(kes) > 3 else a + 288
-    vur16 = [i['kare'] for i in vur if i['kare'] < k17]
-    vur17 = [i['kare'] for i in vur if i['kare'] >= k17]
-    for k in vur16:
-        akor(k, ['A1', 'E2'], 0.36, k17 - k, 'A7sus4: dilek halkası'); akor(k, ['D4', 'G4'], 0.28, k17 - k, 'A7sus4')
-        PEDAL.append((k, k17 - 1))
-    kon16 = [k for k in kon_s if k < k17][1:]
-    m_e = E_NOTA
-    for k in kon16:
-        m_e = adim_yukari(m_e)
-        n(k, m_e, 0.44, k17 - k, '"Piyonlarımızı kendimiz tasarlasak?": asılı, bir adım yüksek', 'isaret')
-    # 4 piyon: arka arkaya (≤12 k arayla) en az 3 'tik' → her biri D5 ("dın dın dın dın"); öbürleri yumuşak tık
-    tk = sorted(i['kare'] for i in tik)
-    dizi_tik, tek_tik = [], []
-    j = 0
+    # #14 sohbet: G üstünde konuşkan staccato; E2 masaya vurur (darbe); zarlar sallanır: A pedalı, tek notalar sıklaşır; atış
+    akor(a, ['G2', 'D3'], 0.30, k_salla - a, 'Gmaj9: sohbet')
+    sohbet = ['B4', 'D5', 'A4', 'B4', 'G4', 'A4', 'E4', 'G4']
+    for j in range(max(0, (k_salla - a - 4) // 12)):
+        n(a + 12 * j, sohbet[j % 8], 0.30 if j % 2 == 0 else 0.25, 5, 'sohbet: konuşkan staccato')
+    for i in tik:
+        if i['kare'] < k15:
+            nesne(i['kare'], 'darbe', 'E2 masaya vurur, kâğıt figürler sallanır', -4)
+    akor(k_salla, ['A1', 'E2'], 0.32, k_atis - k_salla, 'A (V): zarlar sallanır, gerilim')
+    for o, ad, v, d in [(0, E_NOTA, 0.32, 10), (12, E_NOTA, 0.32, 8), (22, 'C#5', 0.34, 6), (30, 'D5', 0.34, 5), (36, 'E5', 0.36, 4), (41, 'F#5', 0.36, 4)]:
+        if k_salla + o < k_atis - 2:
+            n(k_salla + o, ad, v, d, 'gerilim: tek notalar')
+    n(k_atis, 'G5', 0.34, 8, 'atış: tek nota'); n(k_atis, 'B1', 0.32, 8, 'atış')
+    # #15 3B yakın plan (kesme): Bm boşluğu; her çarpma kemik tıkırtısı (seyrek olanı seken öbek); çarpmalar üstünde
+    # yavaşlayan arpej (yek); kâğıt şövalye devrilir; zarlar durunca nefes (sessizlik); "hep yek": inen iç çekiş
+    s15 = next((s for s, e in sus4 if k15 <= s < k16), k16)
+    e15 = next((e for s, e in sus4 if k15 <= s < k16), k16)
+    akor(k15, ['B1', 'F#2'], 0.28, s15 - k15, 'Bm: 3B yakın plan')
+    zk = sorted(z['kare'] for z in zar)
+    for z in zk:
+        yogun = any(0 < abs(z - w) <= 12 for w in zk)
+        nesne(z, 'kemik' if yogun else 'zar', 'zar çarpar' if yogun else 'zar tıkırtısı')
+    t15 = [i['kare'] for i in tik if k15 <= i['kare'] < k16]
+    z15 = [z for z in zk if k15 <= z < k16 and all(abs(z - t) > CAPA_YARICAP for t in t15)]   # tıkla çakışan çarpma arpejsiz
+    for j, z in enumerate(z15[::2][:4]):
+        n(z, ['B3', 'D4', 'F#4', 'A4'][j], 0.36 - 0.02 * j, 24, 'arpej: zarlar yavaşlar (yek)', 'isaret')
+    for i in tik:
+        if k15 <= i['kare'] < k16:
+            nesne(i['kare'], 'kumas', 'kâğıt şövalye devrilir')
+    if e15 < k16 - 20:
+        n(e15 + 6, 'F#4', 0.28, 12, 'hep yek: söylenirler'); n(e15 + 18, 'D4', 0.26, 16, 'hep yek: söylenirler')
+    # #16 hep yek (Bm9) → E3: "Keşke piyonlarımız gerçek olsa…" Em9 + asılı D5 → E: "Keşke FRP zarlarımız olsa…" Gmaj9 + asılı A4
+    kon16 = sorted(i['kare'] for i in kon if k16 <= i['kare'] < k17)
+    ilk16 = kon16[0] if kon16 else k17
+    akor(k16, ['B1', 'F#2'], 0.32, ilk16 - k16, 'Bm9: hep yek'); akor(k16, ['D4', 'A4'], 0.24, ilk16 - k16, 'Bm9')
+    PEDAL.append((k16, ilk16 - 1))
+    for i in tik:
+        if k16 <= i['kare'] < k17:
+            nesne(i['kare'], 'kumas', 'kâğıt figür boynunu büker')
+    for j, k in enumerate(kon16):
+        son = kon16[j + 1] if j + 1 < len(kon16) else k17
+        if j == 0:
+            akor(k, ['E2', 'B2', 'G3'], 0.32, son - k, 'Em9: "Keşke piyonlarımız gerçek olsa…"')
+            n(k, 'D5', 0.42, son - k, 'E3: "Keşke piyonlarımız…": asılı', 'isaret')
+        else:
+            akor(k, ['G2', 'D3', 'B3'], 0.32, son - k, 'Gmaj9: dilek')
+            n(k, E_NOTA, 0.42, son - k, 'E: "Keşke FRP zarlarımız olsa…": asılı (E\'nin notası)', 'isaret')
+        PEDAL.append((k, son - 1))
+    # #17 çene (vurgu): A7sus4; düşünce: noktalar → Dmaj9 arpeji (zarlar döner); her zar belirince D5 (dın dın…);
+    # "Taştan mı olsa…" asılı; taş: Em9 alçak + tok; reçine: Gmaj9 + cam gibi pırıltı; sorun asılı kalır (IV'te biter)
+    d17 = dus[0]['kare'] if dus else k17 + 6
+    vur17 = sorted(i['kare'] for i in vur if i['kare'] >= k17)
+    v_cene = next((v for v in vur17 if v <= d17), None)
+    sonra = [v for v in vur17 if v > d17]
+    v_tas = sonra[0] if sonra else None
+    v_rec = sonra[1] if len(sonra) > 1 else None
+    if v_cene is not None:
+        akor(v_cene, ['A1', 'E2'], 0.30, d17 - v_cene + 10, 'A7sus4: E elini çenesine götürür'); akor(v_cene, ['D4', 'G4'], 0.24, d17 - v_cene + 10, 'A7sus4')
+        PEDAL.append((v_cene, d17 + 9))
+    tk = sorted(i['kare'] for i in tik if i['kare'] >= k17)
+    dizi_tik, j = [], 0
     while j < len(tk):
         e = j
         while e + 1 < len(tk) and tk[e + 1] - tk[e] <= 12:
             e += 1
-        (dizi_tik if e - j + 1 >= 3 else tek_tik).extend(tk[j:e + 1])
+        if e - j + 1 >= 3:
+            dizi_tik.extend(tk[j:e + 1])
+        else:
+            for k in tk[j:e + 1]:
+                nesne(k, 'tok', 'FRP: tık')
         j = e + 1
-    for k in tek_tik:
-        nesne(k, 'tok', 'FRP: piyon çizilir', -1)
-    # #17 genel plan: E2 doğrulur (Bm), yumruk titrer (tekrarlanan nota), nefes, masaya vurur, söz, zarlar, alt çizgi,
-    # A7sus4 üstünde 4 × D5, gözler parlar: aldatıcı çözülme Bm9 (sorun açık kalır)
-    s17 = next((s for s, e in sus4 if s > k17), k17 + 42)
-    akor(k17, ['B1', 'F#2'], 0.32, s17 - k17, 'Bm: E2 doğrulur')
-    for j, f in enumerate(range(k17 + 12, s17 - CAPA_YARICAP - 1, 12)):
-        n(f, 'F#4', 0.28 + 0.02 * j, 5, 'yumruk titrer')
-    k_vur = vur17[0] if vur17 else s17 + 10
-    k_alt = vur17[1] if len(vur17) > 1 else k_vur + 46
-    k_parla = vur17[-1] if len(vur17) > 2 else (dizi_tik[-1] + 8 if dizi_tik else b - 15)
-    nesne(k_vur, 'darbe', 'masaya vurur')
-    akor(k_vur, ['G1', 'G2'], 0.43, k_alt - k_vur, 'Gmaj9: masaya vurur'); akor(k_vur, ['D3', 'B3', 'F#4', 'A4'], 0.36, k_alt - k_vur, 'Gmaj9')
-    PEDAL.append((k_vur, k_alt - 1))
-    for k in [k for k in kon_s if k >= k17]:
-        n(k, 'E5', 0.44, k_alt - k, '"Abi, bundan kutu oyunu mu yapsak?": asılı', 'isaret')
-    n(k_alt, 'F#5', 0.40, 24, '"kutu oyunu" alt çizgi', 'isaret')
-    ilk_piyon = dizi_tik[0] if dizi_tik else k_parla - 32
-    akor(k_alt, ['A1', 'E2'], 0.36, k_parla - k_alt, 'A7sus4: kutu çizilir'); akor(k_alt + 22, ['D4', 'G4'], 0.26, ilk_piyon - k_alt - 22, 'A7sus4')
-    for j, k in enumerate(dizi_tik):
-        n(k, 'D5', 0.50, 7, f'piyon {j + 1}: dın', 'isaret')
-        nesne(k, 'tok', 'piyon kutuya iner', -6, rol='eslik')
-    akor(k_parla, ['B1', 'F#2'], 0.38, b - k_parla + 1, 'Bm9: gözler parlar (aldatıcı çözülme)')
-    akor(k_parla, ['D4', 'A4'], 0.28, b - k_parla + 1, 'Bm9')
-    n(k_parla, 'F#5', 0.34, b - k_parla + 1, 'gözler parlar', 'isaret')
-    n(k_parla + 4, 'A5', 0.28, 12, 'pırıltı'); n(k_parla + 8, 'C#6', 0.24, 8, 'pırıltı')
-    PEDAL.append((k_parla, b))
+    if dus:
+        bulut = dusunce_motifi(d17, ['F#5', 'A5', 'C#6'])
+        son_b = v_tas if v_tas else b
+        akor(bulut, ['D2', 'A2'], 0.32, son_b - bulut, 'Dmaj9: zarlar döner')
+        for q, ad in enumerate(['D4', 'F#4', 'A4']):
+            f = bulut + 4 + 6 * q
+            if uygun(f) and (not dizi_tik or f < dizi_tik[0] - CAPA_YARICAP):
+                n(f, ad, 0.30, 6, 'arpej: zarlar döner')
+        PEDAL.append((bulut, (dizi_tik[0] if dizi_tik else son_b) - 1))
+    for q, k in enumerate(dizi_tik):
+        n(k, 'D5', 0.48, 5, f'zar {q + 1} belirir: dın', 'isaret')
+    for k in [i['kare'] for i in kon if i['kare'] >= k17]:
+        n(k, 'E5', 0.40, (v_tas or b) - k, '"Taştan mı olsa…": asılı', 'isaret')
+    if v_tas:
+        akor(v_tas, ['E2', 'B2', 'G3'], 0.36, (v_rec or b) - v_tas, 'Em9: taş')
+        nesne(v_tas, 'tok', 'taş', rol='eslik')
+        PEDAL.append((v_tas, (v_rec or b + 1) - 1))
+    if v_rec:
+        akor(v_rec, ['G2', 'D3', 'B3', 'F#4'], 0.30, b - v_rec + 1, 'Gmaj9: reçineden mi?')
+        for q, ad in enumerate(['A5', 'B5', 'D6']):
+            f = v_rec + 4 * q
+            if q == 0 or uygun(f, v_rec):
+                n(f, ad, 0.34 - 0.04 * q, 10, 'reçine: cam gibi pırıltı', 'isaret' if q == 0 else 'muzik')
+        PEDAL.append((v_rec, b))
 
     # =========================================================================== KALABALIK: üst üste kısa motifler, giderek toplanır
     a, b = S['s5-kalabalik']
     isr('kesme', 's5-kalabalik')
     kon, dus, vur = isr('konusma', 's5-kalabalik'), isr('dusunce', 's5-kalabalik'), isr('vurgu', 's5-kalabalik')
     sahip = kalabalik_sahipleri()
-    akor(a, ['G2', 'D3'], 0.34, 96, 'Gmaj9: kafalar alttan çıkar'); akor(a, ['B3', 'F#4'], 0.26, 96, 'Gmaj9')
+    # FRP Gmaj9'da (dilek) biter; kalabalık vi'dan açılır
+    akor(a, ['B1', 'F#2'], 0.34, 96, 'Bm9: kafalar alttan çıkar'); akor(a, ['D4', 'F#4'], 0.26, 96, 'Bm9')
     n(a, 'B4', 0.34, 40, 'kesme: kalabalık')
     PEDAL.append((a, a + 95))
     dus_k = [i['kare'] for i in dus]
@@ -606,7 +744,7 @@ def partisyon(isaretler, final_bilgi):
             kaydir = 12 if midi(adlar[0]) < midi('D5') else 0
         else:
             kaydir = (12 if j % 2 == 0 else 0) if j < 0.4 * J else 0
-        v0 = 0.30 + 0.10 * j / max(1, J - 1) + (0.06 if k > k_keske else 0.0)
+        v0 = 0.30 + 0.10 * j / max(1, J - 1) + (0.10 if k > k_keske else 0.0)
         for q, (o, ad) in enumerate(zip(ofs, adlar)):
             f = k + o
             if q and not uygun(f, k):
@@ -623,7 +761,7 @@ def partisyon(isaretler, final_bilgi):
         if k == k_keske:
             # Yarım vuruşluk hep birlikte vurgu; sonra yalnız bas çınlar, son fikirlerin motifleri duyulsun
             akor(k, ['G1', 'G2'], 0.44, k_devir - k, '"Keşke şöyle olsa…": hep birlikte, Gmaj9')
-            akor(k, ['D3', 'B3', 'F#4', 'A4'], 0.34, VURUS // 2, 'Gmaj9')
+            akor(k, ['D3', 'B3'], 0.34, VURUS // 2, 'Gmaj9')         # orta-tiz boş: hemen ardından gelen fikirler duyulsun
             n(k, 'D5', 0.44, VURUS // 2, 'kalabalığın dileği', 'isaret')
             PEDAL.append((k, k + VURUS // 2 - 1))
         elif k == k_devir:
@@ -660,7 +798,7 @@ def partisyon(isaretler, final_bilgi):
     # sesler keskin bırakılır (pedal harflere dek): harf notaları çınlayan akorun altında kalmasın; bas tuşta kalır.
     harfler = [k for k in sonra_tik if k < slogan]
     ust_sure = (harfler[0] - doruk - 2) if harfler else slogan - doruk
-    akor(doruk, ['D1'], 0.26, slogan - doruk, 'DORUK: logo'); akor(doruk, ['D2'], 0.40, slogan - doruk, 'DORUK: logo')
+    akor(doruk, ['D1'], 0.22, slogan - doruk, 'DORUK: logo'); akor(doruk, ['D2'], 0.36, slogan - doruk, 'DORUK: logo')
     akor(doruk, ['A2', 'F#3'], 0.38, slogan - doruk, 'DORUK: logo'); akor(doruk, ['C#4', 'E4', 'A4'], 0.40, ust_sure, 'DORUK: logo')
     n(doruk, 'D5', 0.54, ust_sure, 'DORUK: logo', 'isaret'); n(doruk, 'F#5', 0.50, ust_sure, 'DORUK: logo')
     n(doruk, 'A5', 0.44, ust_sure, 'DORUK: logo')
@@ -674,15 +812,22 @@ def partisyon(isaretler, final_bilgi):
         for f, ad, v in [(doruk + 24, 'E5', 0.32), (doruk + 36, 'D5', 0.30)]:
             if f < slogan - CAPA_YARICAP and uygun(f):
                 n(f, ad, v, 12, 'OKTOS: çözülmeye iniş')
-    for k in sonra_tik:
-        if k >= slogan:
-            nesne(k, 'tok', 'final: tık', -6)
-    # Slogan oturur: Dadd9 çözülme ve tek "tık"; tutuş, son 0,5 sn kararma
+    # Slogan: Dadd9 çözülme; mürekkep damlaları konarken yumuşak pentatonik damla notaları (Dadd9'un tutulan
+    # telleri dışında); slogan oturunca tek "tık"; tutuş, son 0,5 sn kararma
+    otur = next((i['kare'] for i in f_tik if 'otur' in ek_metni(i)), None)
+    damla = sorted({k for k in sonra_tik if k >= slogan and k != otur})
     akor(slogan, ['D2', 'A2'], 0.34, b - slogan + 1, 'Dadd9: çözülme'); akor(slogan, ['E4', 'F#4', 'A4', 'D5'], 0.28, b - slogan + 1, 'Dadd9')
-    nesne(slogan, 'tok', 'slogan oturur: tık', -3)
-    PEDAL.append((slogan, b))
-    if slogan + 48 < b - 30:
-        n(slogan + 48, 'A5', 0.22, b - slogan - 48, 'son')
+    DAMLA = ['A5', 'E5', 'F#5', 'B5', 'E5', 'A5', 'F#5', 'B5']
+    for j, k in enumerate(damla):
+        n(k, DAMLA[j % len(DAMLA)], 0.34 - 0.01 * j, 10, f'slogan damlası {j + 1}', 'isaret')
+    tik_k = otur if otur is not None else slogan
+    nesne(tik_k, 'tok', 'slogan oturur: tek tık', -3)
+    # Akor tuşta; pedal damlalar boyunca kalkık (her damla ayrı duyulsun), tık ile sona dek basılı
+    if damla and damla[0] > slogan + 1:
+        PEDAL.append((slogan, damla[0] - 1))
+    PEDAL.append((tik_k if damla else slogan, b))
+    if not damla and tik_k + 48 < b - 30:
+        n(tik_k + 48, 'A5', 0.22, b - tik_k - 48, 'son')
     for i in f_nota:
         n(i['kare'], i.get('nota', 'D5'), 0.40, 24, 'final: nota işareti', 'isaret')
     for i in f_vur:
@@ -760,13 +905,13 @@ def partisyon(isaretler, final_bilgi):
 def bolumler():
     S = SAHNELER
     return [
-        dict(ad='Kanca', kare=S['v1-kanca'], icerik='Her yüz değişiminde bir nota (v1-kanca.js sure dizisi; A3→A5 pentatonik dalga, üçlemede iner); k192 A: Dmaj9 çözülme.'),
-        dict(ad='Kafe', kare=S['s1-kafe'], icerik='Dmaj9 üstünde hafif dokunuş ve A\'nın sekme motifi; Em9; "Bakar mısınız?" asılı D5, ikinci sesleniş A7sus4 üstünde E5; sessizlikte müzik susar (tık çalar); düşünce noktaları, Bm9; dilek halkasında asılı E5.'),
-        dict(ad='Atölye', kare=S['s2-atolye'], icerik='D4 girişi, pedalsız cetvel sekizlikleri (D–G–Em–A7sus4); "Geliyorum!" D5, B2 uzaktan F#5; kuş bakışı yarım tempo, kulp/çekmece/vida tıkları, dağınık vidalarda pp staccato; düşünce Gmaj9; organizer iner, ilk duvarda tık, ikincide asılı A7sus4 ("sığmadı"), "?" E5, ikinci deneme pp sus4; sessizlik.'),
-        dict(ad='Balkon', kare=S['s3-balkon'], icerik='Sıcak legato D motifi (Dmaj9→Bm9→Gmaj7), ceket ve küpe tıkları (küpede iki ışıltı); balkon Gmaj9, D\'nin notası B4, "Çok güzeller…" F#5, Em9; klişe saksılarda tek inen nota (A3); kaş iner: ödünç Gm(add9); düşünce Gmaj7/9, her giyinişte yükselen nota; dilek asılı A5.'),
-        dict(ad='FRP masası', kare=S['s4-frp'], icerik='A pedalı üstünde tek notalar; yumruk, nefes (sessizlik); zar tıkırtısı + arpej (yek), "Keşke…" asılı A4 (Gmaj9); hızlı düşünce, Dmaj9 arpejleri; dilek A7sus4, ikinci söz B4; titreyen yumruk, sessizlik, masaya vurur (darbe + Gmaj9), "kutu oyunu" E5/F#5; A7sus4 üstünde 4 × D5; gözler parlar: aldatıcı çözülme Bm9.'),
-        dict(ad='Kalabalık', kare=S['s5-kalabalik'], icerik='Gmaj9 boşluğu, N1\'in hızlı düşüncesi ve asılı soru; Em9 üstünde her balonda sahibinin kısa motifi (üst üste; önce tiz/orta dağınık, sonra orta ses alanında toplanır, hız artar); "Keşke şöyle olsa…" yarım vuruşluk hep birlikte Gmaj9, son fikirler kalabalığın üstüne çıkar; devirde A7sus4 ve yükselen çizgi.'),
-        dict(ad='Final', kare=S['s6-final'], icerik='A (V) pedalı; her logo grubunda bir nota (yükselen), üst sesler G/A→Em/A→A7sus4→A7 kabarır; logo tamamlanınca DORUK Dmaj9 (en yüksek an, orta-üst sesler keskin bırakılır, bas çınlar); OKTOS harf harf B5→D5 pentatonik iniş; slogan: Dadd9 ve tek tık; tutuş, son 0,5 sn kararma.'),
+        dict(ad='Kanca', kare=S['v1-kanca'], icerik='Her yüz değişiminde bir nota (v1-kanca.js sure dizisi; A3→A5 pentatonik dalga, üçlemede iner); A: Dmaj9 çözülme.'),
+        dict(ad='Kafe', kare=S['s1-kafe'], icerik='Kalabalık kafe: Dmaj9 üstünde hafif dokunuş, A\'nın sekme motifi, sohbetteki garsonun motifi; Em9; "Bakar mısınız?" asılı D5, ikinci sesleniş A7sus4 üstünde E5, garson kahkaha atar; sessizlikte yüz asılır (yalnız el ve dirsek tıkları); düşünce noktaları, Bm9; dilek halkasında asılı E5.'),
+        dict(ad='Atölye', kare=S['s2-atolye'], icerik='D4 girişi, pedalsız cetvel sekizlikleri; M8 F#5, "Yazıcı ısındı!" A5; grup yürüyüp giderken inen, kısılan yürüyüş; "Geliyorum!" D5, dolaba cetvel; kuş bakışı yarım tempo, kulp ve dayanak tıkları, 3B vidalar yuvarlanırken giderek seyrelen pp staccato; ölçüde her parçaya "pıt"; ilk ölçü B4 (Gmaj7), "Bir organizer alsam… sığar mı?" D5 ve asılı A7sus4; düşünce Gmaj9, parmakla inceltir (iniş) ve uzatır (çıkış); düşüncede sessizlik.'),
+        dict(ad='Balkon', kare=S['s3-balkon'], icerik='Ayna: legato D motifi (Dmaj9→Bm9→Gmaj7), ceket ve küpe tıkları; kapıya legato yürüyüş (Em9), kol tıkı, ışık dolar (Gmaj9, yükselen pırıltı), güneş: Dmaj9 sıcak; çiçekler Gmaj9, D\'nin notası B4, "Çiçeklerim…" F#5; klişe saksılar: tek inen A3, topak, kaş iner (ödünç Gm(add9)); düş Gmaj7/9: parmak tutamacı çeker (iki notalık çekiş), her biçimde yükselen nota; sıkılır: Bm9, "Keşke böyle bir aracım…" asılı A5.'),
+        dict(ad='FRP masası', kare=S['s4-frp'], icerik='Sohbet: G üstünde konuşkan staccato, masaya vuruş; zarlar sallanır: A pedalında sıklaşan tek notalar, atışta G5; 3B yakın plan: her çarpmada kemik tıkırtısı, yavaşlayan arpej (yek), kâğıt şövalye devrilir, nefes (sessizlik), iç çekiş; Bm9; E3 "Keşke piyonlarımız…" Em9 + D5, E "Keşke FRP zarlarımız…" Gmaj9 + A4; çene A7sus4, düşünce Dmaj9 arpeji, her zar belirince D5 (dın ×5), "Taştan mı…" E5, taş Em9 + tok, reçine Gmaj9 + cam pırıltısı (IV\'te asılı biter).'),
+        dict(ad='Kalabalık', kare=S['s5-kalabalik'], icerik='Bm9 boşluğu, N1\'in hızlı düşüncesi ve asılı soru; Em9 üstünde her balonda sahibinin kısa motifi (üst üste; önce tiz/orta dağınık, sonra orta ses alanında toplanır, hız artar); "Keşke şöyle olsa…" yarım vuruşluk hep birlikte Gmaj9, son fikirler kalabalığın üstüne çıkar; devirde A7sus4 ve yükselen çizgi.'),
+        dict(ad='Final', kare=S['s6-final'], icerik='A (V) pedalı; her logo grubunda bir nota (yükselen), üst sesler G/A→Em/A→A7sus4→A7 kabarır; logo tamamlanınca DORUK Dmaj9 (en yüksek an, orta-üst sesler keskin bırakılır, bas çınlar); OKTOS harf harf B5→D5 pentatonik iniş; slogan: Dadd9, her mürekkep damlasında yumuşak pentatonik nota (pedalsız), slogan oturunca tek tık; tutuş, son 0,5 sn kararma.'),
     ]
 
 
@@ -1386,6 +1531,9 @@ def main():
             kayit = dict(kare=k, tur=i['tur'], ek=ek_metni(i).strip() or None, varsayim=bool(i.get('varsayim')))
             if i['tur'] == 'kesme' and k in P['kesme_birlesen']:
                 kayit.update(durum='birleşti', capa=P['kesme_birlesen'][k])
+            elif k - 1 in bulunan and k in bulunan:
+                # 1 kare (17 ms) arayla iki olay tek an duyulur ve ayrı ölçülemez: önceki işaretle birlikte doğrulanır
+                kayit.update(durum='birleşti', capa=k - 1, ses=capa_ses[k], aciklama='1 kare arayla: önceki işaretle tek an')
             elif k in bulunan:
                 r = bulunan[k]
                 kayit.update(durum='eşlendi', ses=capa_ses[k], bulunan_kare=r['bulunan'], sapma_kare=r['sapma_kare'],
@@ -1397,7 +1545,7 @@ def main():
         en_sapma = max(abs(d['sapma_kare']) for d in eslenen) if eslenen else None
         zayif = [d for d in eslenen if d['yukselis_db'] < 3]
         dogrulama = dict(
-            isaret_sayisi=len(isaret_dog), eslenen=len(eslenen), birlesen_kesme=sum(d['durum'] == 'birleşti' for d in isaret_dog),
+            isaret_sayisi=len(isaret_dog), eslenen=len(eslenen), birlesen=sum(d['durum'] == 'birleşti' for d in isaret_dog),
             ses_yok=[dict(kare=d['kare'], tur=d['tur']) for d in isaret_dog if d['durum'] == 'ses yok'],
             en_buyuk_sapma_kare=en_sapma, sapmasi_1_karedan_buyuk=[d for d in eslenen if abs(d['sapma_kare']) > 1.0],
             yukselisi_3_dbden_az=[dict(kare=d['kare'], tur=d['tur'], yukselis_db=d['yukselis_db']) for d in zayif],
@@ -1450,7 +1598,7 @@ def main():
         ozet = dict(hedefler={k: (v['deger'], 'TAMAM' if v['tamam'] else 'KALDI') for k, v in hedefler.items()},
                     bant_db=olcum['tayf']['bant_db'], sinirlayici=(olcum['sinirlayici_en_cok_db'], olcum['sinirlayici_en_cok_sn']),
                     sessizlik=olcum['sessizlik'],
-                    isaret=dict(toplam=dogrulama['isaret_sayisi'], eslenen=dogrulama['eslenen'], birlesen=dogrulama['birlesen_kesme'],
+                    isaret=dict(toplam=dogrulama['isaret_sayisi'], eslenen=dogrulama['eslenen'], birlesen=dogrulama['birlesen'],
                                 ses_yok=dogrulama['ses_yok'], sapma_1_ustu=[(d['kare'], d['tur'], d['sapma_kare']) for d in dogrulama['sapmasi_1_karedan_buyuk']],
                                 zayif=dogrulama['yukselisi_3_dbden_az'], yapisan=len(P['yapisan']), dusen=len(P['dusen']), genel=P['genel']),
                     kanca_isaretle_uyumlu=P['kanca']['isaretle_uyumlu'], final=final_bilgi['kaynak'],

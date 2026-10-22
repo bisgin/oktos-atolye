@@ -75,7 +75,11 @@ function vurus(no, ad, k0, k1) { vuruslar.push({ no, ad, k0: k0 + KAYDIR, k1: k1
 // tur: 'kesme' (sahne/çekim kesmesi), 'konusma' (sesli söz başlar), 'dusunce' (düşünce balonu açılır), 'tik' (küçük mekanik
 // ses: kapak, çekmece, vida), 'zar', 'sessizlik' (k..bitis arası müzik susar), 'vurgu' (müzikte asılı/çözülen an), 'nota' (nota: 'D5')
 const isaretler = [];
-function isaret(kare, tur, ek = {}) { isaretler.push({ kare: Math.round(kare + KAYDIR), tur, ...ek }); }
+function isaret(kare, tur, ek = {}) {
+  const e = { ...ek };
+  if (e.bitis != null) e.bitis = Math.round(e.bitis + KAYDIR); // sessizlik bitişi de film karesi
+  isaretler.push({ kare: Math.round(kare + KAYDIR), tur, ...e });
+}
 // Her karede çağrılacak çizim (3B tuval gibi): f(icKare) sahnenin iç karesiyle çağrılır; kare kare çekimde seek'ten sonra
 const kareCizimleri = [];
 function herKare(f) { const kay = KAYDIR; kareCizimleri.push(() => f(Math.round(ana.time() * FPS) - kay)); }

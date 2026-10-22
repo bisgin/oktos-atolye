@@ -15,9 +15,10 @@ Girdi
   - --karsilastirma-yok : öteki yönü okuma (daha hızlı)
 
 Çıktı
-  - .impeccable/ses/isaretler.json : meta (yön, dil, adres, zaman), sure_sn, toplam_kare, sahneler (kadro.json),
-    isaretler [{kare, tur, ...ek}], vuruslar [{no, ad, k0, k1}], hatalar (modül), sayfa_hatalari, uyarilar,
-    tur_sayilari, yon_farki.
+  - .impeccable/ses/isaretler.json : meta (yön, dil, adres, zaman), sure_sn, toplam_kare (süreden), sahneler
+    ({modül: [bas, son]} FİLM kareleri, tanitim.sahneler()'den), sahne_yerlesimi ([{m, ic, bas, son, kaydir}]),
+    isaretler [{kare, tur, ...ek}] (FİLM karesi), vuruslar, hatalar (modül), sayfa_hatalari, uyarilar, tur_sayilari, yon_farki.
+    Sahneler uzayabilir (modülün `export const ARALIK`'ı); kadro.json'daki toplam ve sahneler İÇ karelerdir, yalnız yedek.
 
 Kullanım
   python scripts/film-isaret.py
@@ -53,6 +54,7 @@ def sayfa_oku(pw, url):
         veri = pg.evaluate("""() => ({
             isaretler: JSON.parse(JSON.stringify(tanitim.isaretler)),
             vuruslar: JSON.parse(JSON.stringify(tanitim.vuruslar)),
+            sahneler: tanitim.sahneler ? JSON.parse(JSON.stringify(tanitim.sahneler())) : null,
             sure: tanitim.sure(),
             hatalar: [...tanitim.hatalar],
         })""")
@@ -60,6 +62,20 @@ def sayfa_oku(pw, url):
         return veri
     finally:
         b.close()
+
+
+def bitis_duzelt(veri):
+    """Çekirdek isaret() yalnız `kare`yi film karesine kaydırıyor; `bitis` İÇ karede kalıyor. bitis < kare ise sahnenin
+    kaydir'ı eklenir (çekirdek düzeltilince bu dal kendiliğinden çalışmaz). Dönüş: uyarılar."""
+    uyar = []
+    for i in veri['isaretler']:
+        if 'bitis' in i and i['bitis'] < i['kare'] and veri.get('sahneler'):
+            s = next((s for s in veri['sahneler'] if s.get('bas') is not None and s['bas'] <= i['kare'] <= s['son']), None)
+            if s and s.get('kaydir'):
+                uyar.append(f'k{i["kare"]} {i["tur"]}: bitis {i["bitis"]} iç karede kalmış (film.js isaret() kaydırmıyor), '
+                            f'+{s["kaydir"]} → {i["bitis"] + s["kaydir"]}')
+                i['bitis'] += s['kaydir']
+    return uyar
 
 
 def anahtar(i):
@@ -94,16 +110,27 @@ def main():
         for yon in yonler:
             url = f'{taban}/{SAYFA}?cek=1&yon={yon}&dil={arg.dil}'
             okunan[yon] = sayfa_oku(pw, url)
+            okunan[yon]['bitis_uyarilari'] = bitis_duzelt(okunan[yon])
             print(f'{yon}: {len(okunan[yon]["isaretler"])} işaret, {len(okunan[yon]["vuruslar"])} vuruş, '
                   f'süre {okunan[yon]["sure"]:.3f} sn ({time.time() - t0:.0f} sn)')
 
     ana = okunan[arg.yon]
     isaretler = sirala(ana['isaretler'])
     uyarilar = []
-    kadro = json.loads(KADRO.read_text(encoding='utf-8'))
-    toplam = int(kadro['toplam'])
-    if abs(ana['sure'] * 60 - toplam) > 0.5:
-        uyarilar.append(f'süre {ana["sure"]:.3f} sn = {ana["sure"] * 60:.1f} kare; kadro.json toplam {toplam} kare')
+    # Film karesi sayfadan: toplam süreden, sahne yerleşimi tanitim.sahneler()'den (bas/son FİLM karesi; ic: modülün iç
+    # kareleri, kaydir: iç → film). kadro.json'daki toplam ve sahneler iç karelerdir, yalnız sayfa vermezse yedek.
+    toplam = int(round(ana['sure'] * 60))
+    if ana.get('sahneler'):
+        sahneler = {s['m']: [int(s['bas']), int(s['son'])] for s in ana['sahneler'] if s.get('bas') is not None}
+        yerlesim = ana['sahneler']
+    else:
+        kadro = json.loads(KADRO.read_text(encoding='utf-8'))
+        sahneler = kadro.get('sahneler', {})
+        yerlesim = None
+        uyarilar.append('sayfa tanitim.sahneler() vermedi: sahne aralıkları kadro.json yedeğinden (iç kareler)')
+    uyarilar += ana.get('bitis_uyarilari', [])
+    if sahneler and max(b for _, b in sahneler.values()) + 1 != toplam:
+        uyarilar.append(f'sahnelerin sonu (k{max(b for _, b in sahneler.values())}) süreyle ({toplam} kare) uyuşmuyor')
     for h in ana['hatalar']:
         uyarilar.append(f'modül hatası: {h}')
     for h in ana['sayfa_hatalari']:
@@ -125,8 +152,9 @@ def main():
             uyarilar.append(f'işaretler yöne bağlı: {arg.yon}↔{yon} farkı {len(yalniz_ana)} + {len(yalniz_oteki)} işaret')
         if abs(okunan[yon]['sure'] - ana['sure']) > 1e-6:
             uyarilar.append(f'süre yöne bağlı: {arg.yon} {ana["sure"]:.3f} sn, {yon} {okunan[yon]["sure"]:.3f} sn')
+        if anahtar(okunan[yon].get('sahneler')) != anahtar(ana.get('sahneler')):
+            uyarilar.append(f'sahne yerleşimi yöne bağlı: {arg.yon}↔{yon}')
 
-    sahneler = kadro.get('sahneler', {})
     sayim = {}
     for ad, (a, b) in sahneler.items():
         c = Counter(i['tur'] for i in isaretler if a <= i['kare'] <= b)
@@ -134,15 +162,16 @@ def main():
     cikti = dict(
         meta=dict(sayfa=SAYFA, yon=arg.yon, dil=arg.dil, karsilastirilan_yonler=yonler,
                   okundu=time.strftime('%Y-%m-%dT%H:%M:%S'), fps=60),
-        sure_sn=ana['sure'], toplam_kare=toplam, sahneler=sahneler,
+        sure_sn=ana['sure'], toplam_kare=toplam, sahneler=sahneler, sahne_yerlesimi=yerlesim,
         tur_sayilari=dict(sorted(Counter(i['tur'] for i in isaretler).items())), sahne_basina=sayim,
         hatalar=ana['hatalar'], sayfa_hatalari=ana['sayfa_hatalari'], uyarilar=uyarilar, yon_farki=yon_farki,
         isaretler=isaretler, vuruslar=ana['vuruslar'],
     )
 
+    print(f'toplam {toplam} kare ({ana["sure"]:.3f} sn)')
     print('türler:', json.dumps(cikti['tur_sayilari'], ensure_ascii=False))
     for ad, c in sayim.items():
-        print(f'  {ad:13s} {json.dumps(c, ensure_ascii=False)}')
+        print(f'  {ad:13s} k{sahneler[ad][0]}–{sahneler[ad][1]} {json.dumps(c, ensure_ascii=False)}')
     for u in uyarilar:
         print('UYARI:', u)
     if arg.dry_run:
