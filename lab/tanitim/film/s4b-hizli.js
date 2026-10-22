@@ -18,7 +18,7 @@
 // numarasından hesaplanır (geri sarmada da aynı kare). Turuncu yalnız #4b.2'deki tikte.
 import { kisiSVG, MONO, PALET, BOY, GOZ_Y, yol, rng, oval } from '../insan.js';
 import { kolSVG, omuzlar, govdeKes, bilekBul, elNoktasi, elUstten } from '../kol.js';
-import { CIZIMLER } from './cizimler.js';
+import { CIZIMLER, URUN_RENK } from './cizimler.js';
 
 export const ARALIK = [0, 491];
 const [BAS, SON] = ARALIK;
@@ -30,10 +30,15 @@ const f1 = (v) => (+v).toFixed(1);
 const lerp = (a, b, t) => a + (b - a) * t;
 const sinir = (v, a, b) => Math.min(b, Math.max(a, v));
 const aciDer = (a, b) => Math.atan2(b[1] - a[1], b[0] - a[0]) / D2R;
-// Tonlar (mono): toprak, baskı kasası (açık PLA), altlık, ahşap, porselen
+// Kanalları t kadar koyultur (ürün renginin gölgeli yüzleri için)
+const koyult = (h, t) => '#' + [1, 3, 5].map((i) => Math.round(parseInt(h.slice(i, i + 2), 16) * (1 - t)).toString(16).padStart(2, '0')).join('');
+// Tonlar: dünya mono (toprak, ahşap, porselen); ürünlerimiz paletin açık tonlarıyla (kullanıcı 2026-10-22): fide kasası nane,
+// altlığı adaçayı, filizler hafif yeşil. Kasanın gölgede kalan yüzleri aynı tonun koyusu.
+const NANE = URUN_RENK.nane, ADACAYI = URUN_RENK.adacayi;
 const TON = {
-  toprak: '#5f5a53', kasaUst: '#ece7dd', kasaOn: '#e2ddd3', kasaSol: '#ece7dd', kasaSag: '#cfc9bd',
-  altUst: '#bdb6a9', altOn: '#a59e91', altSol: '#b0a99c', altSag: '#8d867a', yaprak: '#d8d2c7',
+  toprak: '#5f5a53', kasaUst: NANE, kasaOn: koyult(NANE, 0.05), kasaSol: NANE, kasaSag: koyult(NANE, 0.14), kasaKatman: koyult(NANE, 0.24),
+  altUst: koyult(ADACAYI, 0.04), altOn: koyult(ADACAYI, 0.1), altSol: koyult(ADACAYI, 0.07), altSag: koyult(ADACAYI, 0.18), yaprak: '#d8d2c7',
+  filiz: '#c6e2a4',
   ahsap: '#cfc9bd', ahsapOn: '#a59e91', ahsapK: '#8d867a', cizgi: '#8d867a', beyaz: '#f4f1ea', koyu: '#46423d',
 };
 
@@ -257,7 +262,7 @@ export function kur(ctx) {
         // baskı katman çizgileri (dış duvar boyunca yatay, ince ve açık: sayfa gibi okunmasın)
         for (let i = 1; i <= katman; i++) {
           const y = lerp(y0, y1, i / (katman + 1));
-          C(ust, kenarla([Q(u0, y, v0), Q(u1, y, v1)], 30, false), { kalinlik: 1.1, renk: '#bdb6a9', genlik: 0.35 });
+          C(ust, kenarla([Q(u0, y, v0), Q(u1, y, v1)], 30, false), { kalinlik: 1.1, renk: TON.kasaKatman, genlik: 0.35 });
         }
       }
     }
@@ -273,7 +278,7 @@ export function kur(ctx) {
       const a = (-90 + yon * (50 + r() * 20)) * D2R, L = (8 + r() * 2.5) * mm * olc;
       const d = [Math.cos(a), Math.sin(a)], n = [-d[1], d[0]], o = [tp[0] + d[0] * L * 0.5, tp[1] + d[1] * L * 0.5];
       C(ust, [tp, [o[0] + n[0] * L * 0.3, o[1] + n[1] * L * 0.3], [tp[0] + d[0] * L, tp[1] + d[1] * L], [o[0] - n[0] * L * 0.3, o[1] - n[1] * L * 0.3]],
-        { kapali: true, dolgu: TON.yaprak, kalinlik: Math.max(1.3, 1.7 * mm), genlik: 0.35, kay: [1, 1] });
+        { kapali: true, dolgu: TON.filiz, kalinlik: Math.max(1.3, 1.7 * mm), genlik: 0.35, kay: [1, 1] });
     }
   }
   const RENK_KASA = { on: TON.kasaOn, sol: TON.kasaSol, sag: TON.kasaSag, ust: TON.kasaUst };
@@ -413,7 +418,7 @@ export function kur(ctx) {
       let str = sk([[P[0] - 9, P[1] - 4], [P[0] + 9, P[1] - 4], [P[0] + 7, P[1] + 14], [P[0] - 7, P[1] + 14]], TON.toprak, 2.8, [1.5, 1.5]);
       const tp = [P[0] - 22, P[1] - 30];
       str += cz([[P[0] - 2, P[1] - 4], [P[0] - 12, P[1] - 18], tp], 3);
-      for (const [dx, dy] of [[-22, -6], [6, -20]]) str += sk([tp, [tp[0] + dx * 0.5 - 4, tp[1] + dy * 0.5 - 4], [tp[0] + dx, tp[1] + dy], [tp[0] + dx * 0.5 + 4, tp[1] + dy * 0.5 + 4]], TON.yaprak, 2.6, [1, 1]);
+      for (const [dx, dy] of [[-22, -6], [6, -20]]) str += sk([tp, [tp[0] + dx * 0.5 - 4, tp[1] + dy * 0.5 - 4], [tp[0] + dx, tp[1] + dy], [tp[0] + dx * 0.5 + 4, tp[1] + dy * 0.5 + 4]], TON.filiz, 2.6, [1, 1]);
       return str;
     };
     // Kol pozları (kutu birimi). yon −1: ekranın solu, +1: sağı. Kasadaki hedefler ekrandan kutuya çevrilir.
@@ -554,11 +559,11 @@ export function kur(ctx) {
     }
     C(gR, [[150, -50], [226, -50]], { kalinlik: 3, renk: '#5f5a53' });
     for (const x of [-210, 210]) C(gR, kenarla([[x - 22, 0], [x + 22, 0], [x + 18, 8], [x - 18, 8]], 10), { kapali: true, dolgu: '#5f5a53', kalinlik: 3 });
-    // QR plakası (dik, ayaklı): ayak, sağ yan kalınlık, ön yüz, Wi-Fi simgesi, QR, yazı çizgisi
+    // QR plakası (dik, ayaklı; ürünümüz, nane): ayak, sağ yan kalınlık, ön yüz, Wi-Fi simgesi, QR (beyaz zeminde), yazı çizgisi
     const gP = el(gR, 'g', { transform: 'translate(36 -118)' });
-    C(gP, kenarla([[-94, -6], [94, -6], [98, 10], [-98, 10]], 20), { kapali: true, dolgu: '#bdb6a9', kalinlik: 3.6 });
-    C(gP, kenarla([[80, -222], [92, -216], [92, -4], [80, -6]], 20), { kapali: true, dolgu: '#cfc9bd', kalinlik: 3.4, kay: [0, 0] });
-    C(gP, yDortgen(-80, -226, 80, -4, 12, 24), { kapali: true, dolgu: TON.beyaz, kalinlik: 4.2, kay: [2, 2] });
+    C(gP, kenarla([[-94, -6], [94, -6], [98, 10], [-98, 10]], 20), { kapali: true, dolgu: koyult(NANE, 0.22), kalinlik: 3.6 });
+    C(gP, kenarla([[80, -222], [92, -216], [92, -4], [80, -6]], 20), { kapali: true, dolgu: koyult(NANE, 0.14), kalinlik: 3.4, kay: [0, 0] });
+    C(gP, yDortgen(-80, -226, 80, -4, 12, 24), { kapali: true, dolgu: NANE, kalinlik: 4.2, kay: [2, 2] });
     for (const [r, n] of [[30, 8], [19, 6]]) C(gP, oval(0, -176, r, r * 0.9, 225, 315, n), { kalinlik: 4 });
     el(gP, 'circle', { cx: 0, cy: -178, r: 4.5, fill: M });
     qrKoy(gP, [-58, -160], [58, -160], [58, -44], [-58, -44], 21, { kontur: 0 });
@@ -580,8 +585,8 @@ export function kur(ctx) {
     C(g0, yDortgen(-110, -222, 110, 222, 30, 30), { kapali: true, dolgu: TON.koyu, kalinlik: 4.4 });
     C(g0, yDortgen(-97, -206, 97, 208, 20, 30), { kapali: true, dolgu: '#d8d2c7', kalinlik: 2.6, kay: [0, 0] });
     C(g0, yDortgen(-26, -200, 26, -190, 5, 10), { kapali: true, dolgu: TON.koyu, kalinlik: 2, kay: [0, 0] });
-    // vizörde plaka: açık yüz, Wi-Fi yayı, QR
-    C(g0, yDortgen(-76, -150, 76, 104, 10, 24), { kapali: true, dolgu: TON.beyaz, kalinlik: 2.6, renk: '#8d867a', kay: [0, 0] });
+    // vizörde plaka: nane yüz, Wi-Fi yayı, QR
+    C(g0, yDortgen(-76, -150, 76, 104, 10, 24), { kapali: true, dolgu: NANE, kalinlik: 2.6, renk: '#8d867a', kay: [0, 0] });
     C(g0, oval(0, -104, 22, 20, 225, 315, 6), { kalinlik: 3.4 });
     qrKoy(g0, [-56, -84], [56, -84], [56, 28], [-56, 28], 21, { kontur: 0 });
   }
@@ -648,15 +653,15 @@ export function kur(ctx) {
       C(L3.svg, [[cx + a * rx, cy + b * ry], [cx + lerp(a, c2, 0.5) * rx + 14, cy + lerp(b, d, 0.5) * ry - 8], [cx + c2 * rx, cy + d * ry]], { kalinlik: 2, renk: '#cfc9bd', genlik: 0.8 });
     }
   }
-  // QR standı: cizimler.js qrStandi gövdesi (çadır ön yüzü + taban), sağda çadırın öbür kanadı; panelde gerçek QR
+  // QR standı (ürünümüz, gök): cizimler.js qrStandi gövdesi (çadır ön yüzü + taban), sağda çadırın öbür kanadı; panelde gerçek QR
   {
     const boy = 300 * s3, sx = m3.cx, sy = m3.cy - 52 * s3;
     const Q = ([x, y]) => [sx + x * boy, sy + (y - 0.42) * boy];
     el(L3.svg, 'ellipse', { cx: f1(sx + 30 * s3), cy: f1(sy + 4 * s3), rx: f1(150 * s3), ry: f1(24 * s3), fill: '#000', opacity: 0.08 });
     const on = CIZIMLER.qrStandi[0].p, taban = CIZIMLER.qrStandi[1].p;
-    C(L3.svg, kenarla([[0.22, -0.42], [0.29, -0.39], [0.41, 0.40], [0.32, 0.42]].map(Q), 16), { kapali: true, dolgu: '#bdb6a9', kalinlik: 3.8, kay: [1.5, 1.5] });
-    C(L3.svg, kenarla([[taban[0][0], 0.405], [taban[1][0], 0.405], [taban[1][0], 0.45], [taban[0][0], 0.45]].map(Q), 18), { kapali: true, dolgu: '#8d867a', kalinlik: 3.6 });
-    C(L3.svg, kenarla(on.map(Q), 18), { kapali: true, dolgu: TON.beyaz, kalinlik: 4.4, kay: [2, 2] });
+    C(L3.svg, kenarla([[0.22, -0.42], [0.29, -0.39], [0.41, 0.40], [0.32, 0.42]].map(Q), 16), { kapali: true, dolgu: koyult(URUN_RENK.gok, 0.16), kalinlik: 3.8, kay: [1.5, 1.5] });
+    C(L3.svg, kenarla([[taban[0][0], 0.405], [taban[1][0], 0.405], [taban[1][0], 0.45], [taban[0][0], 0.45]].map(Q), 18), { kapali: true, dolgu: koyult(URUN_RENK.gok, 0.3), kalinlik: 3.6 });
+    C(L3.svg, kenarla(on.map(Q), 18), { kapali: true, dolgu: URUN_RENK.gok, kalinlik: 4.4, kay: [2, 2] });
     const yuz = dortgen(Q(on[1]), Q(on[2]), Q(on[3]), Q(on[0]));
     qrKoy(L3.svg, yuz(0.2, 0.1), yuz(0.8, 0.1), yuz(0.8, 0.5), yuz(0.2, 0.5), 33);
     C(L3.svg, [yuz(0.3, 0.64), yuz(0.7, 0.64)], { kalinlik: 4, renk: '#6f695f' });
@@ -785,21 +790,21 @@ export function kur(ctx) {
     C(gt, yDortgen(-108, -210, 108, 210, 30, 30), { kapali: true, dolgu: TON.koyu, kalinlik: 4.2 });
     C(gt, yDortgen(-96, -196, 96, 198, 20, 30), { kapali: true, dolgu: '#5f5a53', kalinlik: 2.4, kay: [0, 0] });
   }
-  // Kartvizit (yerel: kartın ortası 0,0): gölge, kalınlık, üst yüz (baskı çizgileri), işaret, ad çizgileri, QR
+  // Kartvizit (ürünümüz, limon; yerel: kartın ortası 0,0): gölge, kalınlık, üst yüz (baskı çizgileri), işaret, ad çizgileri, QR
   const gK4 = el(L4.svg, 'g');
   const gKart = el(gK4, 'g'), gEl4 = el(gK4, 'g');
   {
     const kw = 190, kh = 120;
     el(gKart, 'path', { d: dYol(yDortgen(-kw + 10, -kh + 14, kw + 10, kh + 14, 14, 40)), fill: '#000', opacity: 0.1 });
-    C(gKart, yDortgen(-kw, -kh + 5, kw, kh + 5, 14, 30), { kapali: true, dolgu: '#b5b1aa', kalinlik: 3.6, kay: [0, 0] });
-    C(gKart, yDortgen(-kw, -kh, kw, kh, 14, 30), { kapali: true, dolgu: '#f6f3ed', kalinlik: 4.2, kay: [0, 0] });
+    C(gKart, yDortgen(-kw, -kh + 5, kw, kh + 5, 14, 30), { kapali: true, dolgu: koyult(URUN_RENK.limon, 0.22), kalinlik: 3.6, kay: [0, 0] });
+    C(gKart, yDortgen(-kw, -kh, kw, kh, 14, 30), { kapali: true, dolgu: URUN_RENK.limon, kalinlik: 4.2, kay: [0, 0] });
     const id = 's4b-kart-klip', defs = el(gKart, 'defs'), kp = el(defs, 'clipPath', { id });
     el(kp, 'path', { d: dYol(yDortgen(-kw + 4, -kh + 4, kw - 4, kh - 4, 12, 30)) });
     const gc = el(gKart, 'g', { 'clip-path': `url(#${id})` });
     let d = '';
     for (let x = -kw - kh * 2; x < kw; x += 11) d += `M${x} ${kh}L${x + kh * 2} ${-kh}`;
     el(gc, 'path', { d, stroke: '#1d1d20', 'stroke-width': 1, opacity: 0.06, fill: 'none' });
-    C(gKart, yDortgen(-160, -92, -112, -44, 10, 12), { kapali: true, dolgu: '#cfc9bd', kalinlik: 3 });
+    C(gKart, yDortgen(-160, -92, -112, -44, 10, 12), { kapali: true, dolgu: URUN_RENK.beyaz, kalinlik: 3 });
     C(gKart, oval(-136, -68, 12, 12, 0, 360, 10, 2), { kapali: true, kalinlik: 3 });
     C(gKart, [[-160, -6], [-24, -6]], { kalinlik: 9 });
     C(gKart, [[-160, 24], [-62, 24]], { kalinlik: 5, renk: '#5f5a53' });

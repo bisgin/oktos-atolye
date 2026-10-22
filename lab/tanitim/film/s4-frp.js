@@ -22,6 +22,7 @@
 // kol.js omuzlar() orta gövdeyi varsaydığından omuz ve gövde kesimi yapıya (insan.js YAPI) göre burada düzeltilir.
 import { kisiSVG, YAPI, BOY, GOZ_Y, MONO, PALET, yol, rng, oval } from '../insan.js';
 import { kolSVG, bilekBul, elNoktasi } from '../kol.js';
+import { URUN_RENK, URUN_SIRA } from './cizimler.js';
 
 // three.js (importmap) ve eklentileri: yüklenemezse sahne 2B sürer
 let THREE = null, RoundedBoxGeometry = null, LineSegments2 = null, LineSegmentsGeometry = null, LineMaterial = null;
@@ -888,7 +889,7 @@ export function kur(ctx) {
     // düz çizim yedeği: zarların altıgen silüetleri sırayla belirir
     ZARLAR.forEach((ad, i) => {
       const [x0, y0, x1, y1] = ICR, c = [x0 + (x1 - x0) * (0.1 + i * 0.2), (y0 + y1) / 2], g = el(B.ic, 'g');
-      cizgi(g, oval(c[0], c[1], 60, 60, 0, 360, [3, 6, 4, 6, 3][i] * 2, 2), { kapali: true, dolgu: TON.kagit, kalinlik: 5, tohum: 800 + i });
+      cizgi(g, oval(c[0], c[1], 60, 60, 0, 360, [3, 6, 4, 6, 3][i] * 2, 2), { kapali: true, dolgu: URUN_RENK[URUN_SIRA[i]], kalinlik: 5, tohum: 800 + i });
       gsap.set(g, { autoAlpha: 0 }); tl.set(g, { autoAlpha: 0 }, k(BAS)); tl.set(g, { autoAlpha: 1 }, k(POP[i]));
     });
   }
@@ -1244,7 +1245,8 @@ export function kur(ctx) {
         gl_FragColor = vec4(c, a);
       }`;
     const v3 = (hex) => { const c = new THREE.Color(hex); c.convertLinearToSRGB(); return new THREE.Vector3(c.r, c.g, c.b); };
-    // Tasarımlar: her zar başka kâğıt tonu, başka taş (granit, mermer, arduvaz) ve başka reçine tonu (çok düşük doygunluk)
+    // Tasarımlar (kullanıcı 2026-10-22: ürettiğimiz şeyler açık renkli): her zar paletten başka bir açık tonla başlar, taşta
+    // hepsi açık gri-bej benekli granite döner (ton ve benek yoğunluğu az farklı), reçinede başka bir pastel ton (yarı saydam)
     const TASARIM = DIKEY ? [
       { tur: 'd20', x: 0, y: 0.62, boy: 1.55 }, { tur: 'd12', x: -1.68, y: 0.3, boy: 1.15 }, { tur: 'd8', x: 1.66, y: 0.3, boy: 1.1 },
       { tur: 'd6', x: -0.8, y: -1.15, boy: 0.95 }, { tur: 'd4', x: 0.85, y: -1.15, boy: 1.05 },
@@ -1252,12 +1254,14 @@ export function kur(ctx) {
       { tur: 'd20', x: 0, y: 0.1, boy: 1.65 }, { tur: 'd12', x: -1.95, y: 0.15, boy: 1.3 }, { tur: 'd8', x: 1.95, y: 0.1, boy: 1.25 },
       { tur: 'd6', x: -3.7, y: 0.0, boy: 1.0 }, { tur: 'd4', x: 3.75, y: -0.05, boy: 1.15 },
     ];
+    // reçine arka yüzlerle üst üste biner ve koyulaşır: pastel ton %25 beyaza açılarak verilir
+    const U = URUN_RENK, acik = (h) => '#' + [1, 3, 5].map((j) => Math.round(parseInt(h.slice(j, j + 2), 16) * 0.75 + 255 * 0.25).toString(16).padStart(2, '0')).join('');
     const RENK = [
-      { kagit: '#f4f1ea', tas1: '#b9b3a8', tas2: '#4f4a44', damar: 0, rec: '#e6dccb' },   // granit, amber reçine
-      { kagit: '#e8e2d8', tas1: '#e4dfd6', tas2: '#6f695f', damar: 1, rec: '#d9e0dc' },   // mermer, deniz yeşili reçine
-      { kagit: '#efeae2', tas1: '#6f6a63', tas2: '#2f2c29', damar: 0, rec: '#ddd6e0' },   // arduvaz, lavanta reçine
-      { kagit: '#f4f1ea', tas1: '#c8c1b5', tas2: '#5f5a53', damar: 0, rec: '#e9e6df' },   // açık granit, berrak reçine
-      { kagit: '#e2ddd3', tas1: '#d5cfc5', tas2: '#7d776e', damar: 1, rec: '#d6d2cc' },   // gri mermer, füme reçine
+      { kagit: U.lila, tas1: '#ddd6ca', tas2: '#8d867a', damar: 0, rec: acik(U.mercan) },      // d20: lila → bej granit → mercan reçine
+      { kagit: U.gok, tas1: '#e2dcd1', tas2: '#9a9286', damar: 0, rec: acik(U.nane) },        // d12: gök → açık granit → nane reçine
+      { kagit: U.limon, tas1: '#d6cfc3', tas2: '#857e72', damar: 0, rec: acik(U.gok) },       // d8: limon → kum granit → gök reçine
+      { kagit: U.nane, tas1: '#e0dad0', tas2: '#948c80', damar: 0, rec: acik(U.lila) },       // d6: nane → açık granit → lila reçine
+      { kagit: U.seftali, tas1: '#d9d2c6', tas2: '#8a8377', damar: 0, rec: acik(U.limon) },   // d4: şeftali → bej granit → limon reçine
     ];
     const GEO = {
       d20: (s) => new THREE.IcosahedronGeometry(s * 0.62), d12: (s) => new THREE.DodecahedronGeometry(s * 0.62),

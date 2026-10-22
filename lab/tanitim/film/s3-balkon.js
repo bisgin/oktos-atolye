@@ -24,9 +24,14 @@
 // Bakış: insan.js göz bebeğini bakis × (3, 2) birim kaydırır (göz akı yok); okunsun diye bakis değerleri 3–4 kat verilir.
 import { kisiSVG, yol, rng, MONO, GOZ_Y, BOY } from '../insan.js';
 import { kolSVG, omuzlar, bilekBul, govdeKes } from '../kol.js';
-import { cizimKur } from './cizimler.js';
+import { cizimKur, CIZIMLER, URUN_RENK } from './cizimler.js';
 
 export const ARALIK = [1056, 1683];
+// Renk yardımcıları (ürün renkleri, kullanıcı 2026-10-22): hex → [r, g, b]; iki renk arası; kanalları t kadar koyultma
+const hexRgb = (h) => [1, 3, 5].map((i) => parseInt(h.slice(i, i + 2), 16));
+const rgbHex = (c) => '#' + c.map((v) => Math.round(Math.min(255, Math.max(0, v))).toString(16).padStart(2, '0')).join('');
+const renkKaris = (a, b, t) => { const A = hexRgb(a), B2 = hexRgb(b); return rgbHex(A.map((v, i) => v + (B2[i] - v) * t)); };
+const koyult = (h, t) => rgbHex(hexRgb(h).map((v) => v * (1 - t)));
 
 export function kur(ctx) {
   const { k, E, tl, gsap, el, cizgi, odak, vurus, isaret, W, H, PALET, GRI, GRI2, BALON, VURGU } = ctx;
@@ -904,25 +909,47 @@ export function kur(ctx) {
   const sG = el(fikirG, 'g', { transform: `translate(${FK.o[0]} ${FK.o[1]}) scale(${PS})` });
   const govdeKap = el(sG, 'g'); // "tık" ölçeği (taban çevresinde)
   const C3 = (ust, pts, o = {}) => cizgi(ust, pts, { genlik: 0.7, ...o, kalinlik: (o.kalinlik ?? 5) * LW });
-  const tabakH = [C3(govdeKap, [[0, 0], [1, 0], [0, 1]], { kapali: true, dolgu: '#a59e91', kalinlik: 4.2, tohum: 1401 }), C3(govdeKap, [[0, 0], [1, 0], [0, 1]], { kapali: true, dolgu: '#d8d2c7', kalinlik: 4.2, tohum: 1402 })];
-  const govdeDolgu = C3(govdeKap, [[0, 0], [1, 0], [0, 1]], { kapali: true, dolgu: GRI, kalinlik: 0, tohum: 1403 });
+  // Renkler: balondaki klişe saksı gerçeği gibi pişmiş toprak; her yeni tasarım kendi açık tonuna akar (ince bel şeftali,
+  // çay bardağı nane, uzun ince lila). Ağız (iç arka kenar) gövdenin koyusu; kemer, toka ve tabak tasarımın parçası.
+  const BICIM_RENK = [
+    [TERRA, TERRA_K],
+    [URUN_RENK.seftali, URUN_RENK.seftaliKoyu],
+    [URUN_RENK.nane, koyult(URUN_RENK.nane, 0.12)],
+    [URUN_RENK.lila, koyult(URUN_RENK.lila, 0.12)],
+  ];
+  const bicimRenk = (sv, j) => {
+    const i = Math.min(BICIM_RENK.length - 2, Math.max(0, Math.floor(sv))), t = Math.min(1, Math.max(0, sv - i));
+    return renkKaris(BICIM_RENK[i][j], BICIM_RENK[i + 1][j], t);
+  };
+  const tabakH = [C3(govdeKap, [[0, 0], [1, 0], [0, 1]], { kapali: true, dolgu: koyult(URUN_RENK.nane, 0.2), kalinlik: 4.2, tohum: 1401 }), C3(govdeKap, [[0, 0], [1, 0], [0, 1]], { kapali: true, dolgu: koyult(URUN_RENK.nane, 0.06), kalinlik: 4.2, tohum: 1402 })];
+  const govdeDolgu = C3(govdeKap, [[0, 0], [1, 0], [0, 1]], { kapali: true, dolgu: TERRA, kalinlik: 0, tohum: 1403 });
   const silYol = el(el(defsB, 'clipPath', { id: 's3-sil' }), 'path');
   const desenG = el(govdeKap, 'g', { 'clip-path': 'url(#s3-sil)' });
-  const kemerH = C3(desenG, [[0, 0], [1, 0], [0, 1]], { kapali: true, dolgu: '#6f695f', kalinlik: 3.4, tohum: 1404 });
-  const tokaH = C3(desenG, [[0, 0], [1, 0], [0, 1]], { kapali: true, dolgu: '#d8d2c7', kalinlik: 3, tohum: 1405 });
+  const kemerH = C3(desenG, [[0, 0], [1, 0], [0, 1]], { kapali: true, dolgu: URUN_RENK.mercanKoyu, kalinlik: 3.4, tohum: 1404 });
+  const tokaH = C3(desenG, [[0, 0], [1, 0], [0, 1]], { kapali: true, dolgu: URUN_RENK.limon, kalinlik: 3, tohum: 1405 });
   const cizgiH = [62, 80, 98, 116].map((d, i) => C3(desenG, [[0, 0], [0, 1]], { kalinlik: 2.8, tohum: 1406 + i }));
   const bantH = C3(desenG, [[0, 0], [0, 1]], { kalinlik: 3.4, tohum: 1410 });
-  const agizH = C3(govdeKap, [[0, 0], [1, 0], [0, 1]], { kapali: true, dolgu: GRI2, kalinlik: 4.5, tohum: 1411 });
+  const agizH = C3(govdeKap, [[0, 0], [1, 0], [0, 1]], { kapali: true, dolgu: TERRA_K, kalinlik: 4.5, tohum: 1411 });
   const icH = C3(govdeKap, [[0, 0], [1, 0], [0, 1]], { kapali: true, dolgu: TOPRAK, kalinlik: 2.8, tohum: 1412 });
   const govdeKontur = C3(govdeKap, [[0, 0], [1, 0], [0, 1]], { kapali: true, kalinlik: 5.5, tohum: 1403 });
   const kirikG = el(govdeKap, 'g');
   const centikH = C3(kirikG, [[0, 0], [1, 0], [0, 1]], { kapali: true, dolgu: '#6f695f', kalinlik: 3, tohum: 1413 });
   const catlakH = C3(kirikG, [[0, 0], [0, 1]], { kalinlik: 2.8, tohum: 1414 });
-  // Çiçekler: cizimKur 'saksi' çiziminin gül ve lale konturları (saksı konturları atılır); kökleri ağız merkezinde
+  // Çiçekler: cizimKur 'saksi' çiziminin gül ve lale konturları (saksı konturları atılır); kökleri ağız merkezinde.
+  // Düşteki çiçekler çok hafif renk alır: lale (üç uçlu kâse) limon, gül (sarmal) arkasında mercan bir leke
   const FB = 230;
   const cicekB = el(govdeKap, 'g');
-  const fl = cizimKur(ctx, cicekB, 'saksi', { c: [0, -0.06 * FB], boy: FB, kalinlik: 5 * LW, tohum: 940, dolgu: GRI });
+  const fl = cizimKur(ctx, cicekB, 'saksi', { c: [0, -0.06 * FB], boy: FB, kalinlik: 5 * LW, tohum: 940 });
   fl[0].g.remove(); fl[1].g.remove();
+  fl[3].dolgu?.setAttribute('fill', URUN_RENK.limon);
+  {
+    // gülün sarmalı açık uçlu (dolgusuz kontur): arkasına konturu olmayan mercan elips (sarmal noktalarının ortası)
+    const gp = CIZIMLER.saksi[5].p.map(([x, y]) => [x * FB, -0.06 * FB + y * FB]);
+    const xs = gp.map((p) => p[0]), ys = gp.map((p) => p[1]);
+    const gx = (Math.min(...xs) + Math.max(...xs)) / 2, gy = (Math.min(...ys) + Math.max(...ys)) / 2;
+    const leke = C3(cicekB, elipsP(gx, gy, (Math.max(...xs) - gx) * 0.92, (Math.max(...ys) - gy) * 0.96, 18), { kapali: true, dolgu: URUN_RENK.mercan, kalinlik: 0, tohum: 945, kay: [2, 2] });
+    cicekB.insertBefore(leke.g, fl[5].g);
+  }
   const cicekCiz = fl.slice(2);
   // Tutamaçlar (vurgu): eksen + üç çapa (taban, bel, ağız) ve kolları; tutulan çapada halka
   const HB = LW * 0.9;
@@ -999,6 +1026,8 @@ export function kur(ctx) {
     const b = bicim(Sx.s), q = b.r[NU - 1], r0 = b.r[0];
     const sil = siluet(b);
     govdeDolgu.pts = sil; govdeDolgu.ciz();
+    govdeDolgu.dolgu.setAttribute('fill', bicimRenk(Sx.s, 0));
+    agizH.dolgu.setAttribute('fill', bicimRenk(Sx.s, 1));
     govdeKontur.pts = sil; govdeKontur.ciz();
     silYol.setAttribute('d', ctx.yol(sil, true, SIFIR));
     agizH.pts = elipsP(0, -b.h, q, KU * q); agizH.ciz();

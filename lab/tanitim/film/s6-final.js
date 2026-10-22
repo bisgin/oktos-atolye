@@ -21,6 +21,7 @@
 //     Kısa ayrıntılar (QR'ın küçük kareleri gibi) logoya gitmez: balon sönerken yerinde kısalıp erir.
 //   - Balon sönünce (kontur noktalara ayrılır) çizim eklemlerinden açılır, çizgiler 8–30 k içinde tek tek kalkar (logo2'de
 //     sökülen parçalar 40–80 k enkaz gibi asılı kalıyordu); varış farkını uçuş süresi karşılar: geç gelecek çizgi yavaş süzülür.
+//     Fikirlerin açık renkli dolguları (cizimler.js) ayrılma anında yerinde kalır, 8 k'da solar: uçan çizgiler ve logo mürekkep.
 //   - Uçuş logo2 gibi: kopuştan sonra hemen yola çıkar, yolun ortasında döner ve doğrulur (sürü logonun 0°/45°/90°
 //     doğrultularına dizilir), kaynama söner, incelir, boyu çubuğa yaklaşır (yumuşak kontur düzleşirken yay boyunu korur:
 //     kısa kirişli eğri büzülmez); kenara parçanın dışından dikine gelir, hafifçe taşar, oturur, uçlar eklemlere
@@ -245,8 +246,9 @@ export function kur(ctx) {
     gsap.set(bal.bulut, { scale: 1, autoAlpha: 1 });
     bal.kontur.setAttribute('pathLength', 1000); // sönmede kesik çizgi oranı (kesik yokken görüntüyü değiştirmez)
     const cizimG = el(bal.ic, 'g');
-    cizimKur(ctx, cizimG, s.cizim, { c: [0, 0], boy: s.icBoy, kalinlik: s.kalinlik, tohum: s.cizimTohum });
-    return { s, bi, c: s.c, sar, bal, nYerel, cizimG, cizgiler: [], sonme: Infinity };
+    // Renkler cizimKur'dan (cizimler.js r): s5'in son karesindekiyle aynı dolgular
+    const cizimH = cizimKur(ctx, cizimG, s.cizim, { c: [0, 0], boy: s.icBoy, kalinlik: s.kalinlik, tohum: s.cizimTohum });
+    return { s, bi, c: s.c, sar, bal, nYerel, cizimG, cizimH, cizgiler: [], sonme: Infinity };
   });
 
   // ---------- 2) Çizgiler: CIZIMLER'in ham köşelerinden. Köşeli kenar = 4 nokta (köşe, %14, %86, köşe: cizimKur'un duz
@@ -738,10 +740,15 @@ export function kur(ctx) {
       bal.dolgu.setAttribute('fill-opacity', 1);
       bal.noktalar.forEach((e, j) => e.setAttribute('transform', olcekle(b.nYerel[j], 1)));
       b.cizimG.style.display = '';
+      for (const h of b.cizimH) { h.yol.style.display = ''; h.dolgu?.setAttribute('fill-opacity', 1); }
       return;
     }
-    // Sönme: kontur kesik çizgiye, sonra noktalara ayrılır; buluta en yakın nokta önce küçülür; dolgu solar
-    b.cizimG.style.display = 'none';
+    // Sönme: kontur kesik çizgiye, sonra noktalara ayrılır; buluta en yakın nokta önce küçülür; dolgu solar.
+    // Çizim çizgilerine ayrılır (konturları artık uçan çizgiler taşır); renkli dolgular yerinde kalıp 8 k'da hızla solar,
+    // logoya yalnız mürekkep gider
+    const renk = 1 - P2O(kis(s / 8));
+    b.cizimG.style.display = renk > 0.001 ? '' : 'none';
+    for (const h of b.cizimH) { h.yol.style.display = 'none'; h.dolgu?.setAttribute('fill-opacity', renk.toFixed(3)); }
     const per = 1000 / 26, a = P2I(kis(s / 10));
     bal.kontur.setAttribute('stroke-dasharray', `${(per * (1 - a) + 0.01).toFixed(2)} ${(per * a).toFixed(2)}`);
     bal.kontur.setAttribute('stroke-width', (KONTUR * (1 - P2I(kis((s - 9) / 9)))).toFixed(2));

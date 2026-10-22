@@ -27,8 +27,11 @@
 // sarmalayıcı onu küçültür (kontur kalınlıkları tutarlı kalır), devirde sarmalayıcı birim dönüşüme gider. Balonun yeri,
 // ölçeği ve kuyruğu tek bir vekil nesnede (pr) durur; itme ve devir tween'leri onu sürer, uygula() çizer.
 // Gövde uzatma: insan.js gövdesi kutunun 860 birim altında biter; üst sıralarda bu kenar görünmesin diye gövde aşağı uzatılır.
+// Renk (kullanıcı 2026-10-22): fikirler URUN_RENK'in açık tonlarıyla dolar, kontur mürekkep, kişiler mono. Ortak çizimler
+// rengini cizimler.js'ten alır; bu modülün çizimlerine renk, komşu balonlarda (yatay iki sıra ve dikey üç şerit, son dizilişte
+// ve doğum anında) aynı ton yan yana gelmeyecek biçimde verildi. Dolgu, konturu çizilirken belirir; fikir değişince söner.
 // Sorgu: ?yalniz=s5-kalabalik  ?yon=dikey  ?dil=en
-import { cizimKur, CIZIMLER } from './cizimler.js';
+import { cizimKur, CIZIMLER, URUN_RENK } from './cizimler.js';
 import { oval, MONO, YAPI, rng, rastgeleKisi, boyKaymasi, BOY } from '../insan.js';
 
 // Caveat ancak bir öğe kullanınca indirilir; document.fonts.ready onu beklemez. Konuşma balonu ve el yazısı genişliği
@@ -57,14 +60,15 @@ function duz(pts, kapali = false) {
   if (!kapali) d.push(pts[n - 1]);
   return d;
 }
-const C = (p) => ({ p: duz(p, true), kapali: true });  // köşeli kapalı kontur
-const A = (p) => ({ p: duz(p) });                     // köşeli açık çizgi
-const Y = (p, kapali = false) => ({ p, kapali });     // yumuşak (nokta dizisi olduğu gibi)
+// r: dolgu rengi (URUN_RENK anahtarı; yalnız kapalı konturda). Kontur sırası ve noktaları değişmedi (çizim ritmi aynı).
+const C = (p, r) => ({ p: duz(p, true), kapali: true, r });  // köşeli kapalı kontur
+const A = (p) => ({ p: duz(p) });                           // köşeli açık çizgi
+const Y = (p, kapali = false, r) => ({ p, kapali, r });     // yumuşak (nokta dizisi olduğu gibi)
 
 const YENI = {
   // Vazo aracı: bükümlü vazo (sırtlar spiral döner)
   vazo: [
-    Y([[-0.13, -0.44], [0.13, -0.44], [0.11, -0.36], [0.22, -0.18], [0.27, 0.06], [0.23, 0.32], [0.15, 0.46], [-0.15, 0.46], [-0.23, 0.32], [-0.27, 0.06], [-0.22, -0.18], [-0.11, -0.36]], true),
+    Y([[-0.13, -0.44], [0.13, -0.44], [0.11, -0.36], [0.22, -0.18], [0.27, 0.06], [0.23, 0.32], [0.15, 0.46], [-0.15, 0.46], [-0.23, 0.32], [-0.27, 0.06], [-0.22, -0.18], [-0.11, -0.36]], true, 'adacayi'),
     Y([[-0.13, -0.44], [0, -0.41], [0.13, -0.44]]),
     Y([[-0.05, -0.37], [0.11, -0.2], [0.2, 0.04], [0.16, 0.3], [0.08, 0.45]]),
     Y([[-0.2, -0.13], [-0.02, 0.05], [0.06, 0.27], [0.0, 0.45]]),
@@ -72,10 +76,10 @@ const YENI = {
   ],
   // Kupa altlığı: altıgen altlık (eğik bakış, kalınlıklı) + üstünde kupa ve buhar
   kupaAltligi: [
-    C([[-0.46, 0.24], [-0.24, 0.13], [0.24, 0.13], [0.46, 0.24], [0.24, 0.35], [-0.24, 0.35]]),
+    C([[-0.46, 0.24], [-0.24, 0.13], [0.24, 0.13], [0.46, 0.24], [0.24, 0.35], [-0.24, 0.35]], 'lila'),
     A([[-0.46, 0.24], [-0.46, 0.31], [-0.24, 0.42], [0.24, 0.42], [0.46, 0.31], [0.46, 0.24]]),
     A([[-0.19, -0.3], [-0.18, 0.21], [0.18, 0.21], [0.19, -0.3]]),
-    Y(oval(0, -0.3, 0.19, 0.055, 0, 360, 14), true),
+    Y(oval(0, -0.3, 0.19, 0.055, 0, 360, 14), true, 'seftaliKoyu'), // sütlü kahve
     Y([[0.19, -0.2], [0.31, -0.18], [0.33, -0.04], [0.3, 0.07], [0.18, 0.09]]),
     Y([[-0.06, -0.38], [-0.02, -0.43], [-0.06, -0.49]]),
     Y([[0.06, -0.38], [0.1, -0.43], [0.06, -0.49]]),
@@ -85,23 +89,23 @@ const YENI = {
     A([[-0.44, 0.16], [-0.33, -0.22]]), A([[-0.33, -0.22], [-0.22, 0.16]]), A([[-0.39, 0.03], [-0.27, 0.03]]),
     Y([[-0.13, -0.22], [-0.13, 0.16], [-0.02, 0.16], [0.06, 0.1], [0.08, -0.03], [0.06, -0.16], [-0.02, -0.22]], true),
     A([[0.15, 0.16], [0.26, -0.22]]), A([[0.26, -0.22], [0.37, 0.16]]), A([[0.2, 0.03], [0.32, 0.03]]),
-    C([[-0.48, 0.2], [0.42, 0.2], [0.5, 0.3], [-0.4, 0.3]]),
+    C([[-0.48, 0.2], [0.42, 0.2], [0.5, 0.3], [-0.4, 0.3]], 'lila'),
     A([[-0.48, 0.2], [-0.48, 0.27], [-0.4, 0.37], [0.5, 0.37], [0.5, 0.3]]),
   ],
   // İsimli kapı plakası: ipte asılı yuvarlak köşeli plaka, vida delikleri, isim karalaması
   kapiPlakasi: [
-    Y(oval(0, 0.08, 0.44, 0.24, 0, 360, 26, 4.6), true),
+    Y(oval(0, 0.08, 0.44, 0.24, 0, 360, 26, 4.6), true, 'mercan'),
     A([[-0.3, -0.13], [0, -0.42]]), A([[0, -0.42], [0.3, -0.13]]),
     Y(oval(0, -0.43, 0.035, 0.035, 0, 360, 8), true),
     Y([[-0.26, 0.1], [-0.2, 0.0], [-0.14, 0.12], [-0.07, 0.01], [0.0, 0.12], [0.07, 0.02], [0.13, 0.11], [0.19, 0.04]]),
     A([[-0.24, 0.2], [0.16, 0.2]]),
-    Y(oval(-0.36, 0.08, 0.03, 0.03, 0, 360, 8), true), Y(oval(0.36, 0.08, 0.03, 0.03, 0, 360, 8), true),
+    Y(oval(-0.36, 0.08, 0.03, 0.03, 0, 360, 8), true, 'beyaz'), Y(oval(0.36, 0.08, 0.03, 0.03, 0, 360, 8), true, 'beyaz'), // vida başları
   ],
   // Text Flip: iki yüzünde iki ayrı harf okunan blok (önden A, yandan B) + altında döner tabla oku (çevirince öteki
   // kelime). Dişli blok ve bakış okları 100 px'te tarak gibi okunuyordu.
   textFlip: [
-    C([[0, -0.06], [-0.36, -0.24], [-0.36, 0.2], [0, 0.38]]),
-    C([[0, -0.06], [0.36, -0.24], [0.36, 0.2], [0, 0.38]]),
+    C([[0, -0.06], [-0.36, -0.24], [-0.36, 0.2], [0, 0.38]], 'lila'),
+    C([[0, -0.06], [0.36, -0.24], [0.36, 0.2], [0, 0.38]], 'lilaAcik'), // iki yüz iki ton: blok okunsun
     A([[-0.36, -0.24], [0, -0.42], [0.36, -0.24]]),
     A([[-0.29, 0.21], [-0.18, -0.08], [-0.07, 0.3]]), A([[-0.25, 0.13], [-0.11, 0.2]]),
     A([[0.1, 0.32], [0.1, -0.02]]),
@@ -112,56 +116,72 @@ const YENI = {
   // Fidget clicker: kedi biçimli anahtarlık, ortasında klavye tuşu (dış ve üst yüz), bıyıklar, sağ üstte "tık" çizgileri.
   // (Düğmeli küp küçükken zar ya da kutu gibi okunuyordu; kulaklar ve tuş başlığı clicker'ı tanıtır.)
   fidget: [
-    Y([[-0.33, 0.3], [-0.38, 0.06], [-0.35, -0.16], [-0.34, -0.43], [-0.15, -0.27], [0.15, -0.27], [0.34, -0.43], [0.35, -0.16], [0.38, 0.06], [0.33, 0.3], [0.17, 0.39], [-0.17, 0.39]], true),
-    C([[-0.16, -0.12], [0.16, -0.12], [0.16, 0.2], [-0.16, 0.2]]),
-    C([[-0.1, -0.08], [0.1, -0.08], [0.1, 0.1], [-0.1, 0.1]]),
+    Y([[-0.33, 0.3], [-0.38, 0.06], [-0.35, -0.16], [-0.34, -0.43], [-0.15, -0.27], [0.15, -0.27], [0.34, -0.43], [0.35, -0.16], [0.38, 0.06], [0.33, 0.3], [0.17, 0.39], [-0.17, 0.39]], true, 'lila'),
+    C([[-0.16, -0.12], [0.16, -0.12], [0.16, 0.2], [-0.16, 0.2]], 'lilaAcik'),
+    C([[-0.1, -0.08], [0.1, -0.08], [0.1, 0.1], [-0.1, 0.1]], 'beyaz'), // tuş başlığı
     A([[-0.24, 0.1], [-0.47, 0.06]]), A([[-0.24, 0.18], [-0.46, 0.23]]),
     A([[0.24, 0.1], [0.47, 0.06]]), A([[0.24, 0.18], [0.46, 0.23]]),
     A([[0.42, -0.3], [0.49, -0.38]]), A([[0.45, -0.19], [0.54, -0.22]]),
   ],
   // Zar kulesi: kule (ön, üst, yan), çıkış kemeri, içteki rampalar, önde tepsi ve düşen zar
   zarKulesi: [
-    C([[-0.22, -0.4], [0.14, -0.4], [0.14, 0.3], [-0.22, 0.3]]),
+    C([[-0.22, -0.4], [0.14, -0.4], [0.14, 0.3], [-0.22, 0.3]], 'limon'),
     A([[-0.22, -0.4], [-0.12, -0.49], [0.24, -0.49], [0.14, -0.4]]),
     A([[0.24, -0.49], [0.24, 0.22], [0.14, 0.3]]),
     Y([[-0.14, 0.3], [-0.14, 0.17], [-0.08, 0.11], [0.0, 0.11], [0.06, 0.17], [0.06, 0.3]]),
     A([[-0.17, -0.28], [0.08, -0.17]]), A([[0.09, -0.05], [-0.16, 0.05]]),
     A([[-0.22, 0.3], [-0.42, 0.3], [-0.36, 0.42], [0.38, 0.42], [0.3, 0.3], [0.14, 0.3]]),
-    C([[-0.33, 0.34], [-0.27, 0.29], [-0.21, 0.34], [-0.27, 0.39]]),
+    C([[-0.33, 0.34], [-0.27, 0.29], [-0.21, 0.34], [-0.27, 0.39]], 'beyaz'), // zar
   ],
   // Deste kutusu: önü ve yanı, içinden çıkan iki kart, önde baklava işareti
   desteKutusu: [
-    C([[-0.3, -0.02], [0.18, -0.02], [0.18, 0.44], [-0.3, 0.44]]),
+    C([[-0.3, -0.02], [0.18, -0.02], [0.18, 0.44], [-0.3, 0.44]], 'limon'),
     A([[0.18, -0.02], [0.3, -0.12], [0.3, 0.34], [0.18, 0.44]]),
     A([[-0.3, -0.02], [-0.2, -0.12], [-0.17, -0.12]]), A([[0.13, -0.12], [0.3, -0.12]]),
     A([[-0.22, -0.02], [-0.22, -0.32], [0.1, -0.32], [0.1, -0.02]]),
     A([[-0.16, -0.32], [-0.12, -0.42], [0.2, -0.38], [0.15, -0.12]]),
-    C([[-0.06, 0.12], [0.0, 0.04], [0.06, 0.12], [0.0, 0.2]]),
+    C([[-0.06, 0.12], [0.0, 0.04], [0.06, 0.12], [0.0, 0.2]], 'mercan'), // baklava
   ],
   // Kulaklık askısı: oval kaide, dikme, üst kol; bant kolun üstüne oturur, kulaklıklar dikmenin iki yanında aşağı sarkar
   // (kulaklıklar yukarıda kalınca terazi gibi okunuyordu)
   // Kulak yastıkları iri ve içe dönük: küçükken bant + küçük kaplar terazi ya da şemsiye gibi okunuyordu
   kulaklikAskisi: [
-    Y(oval(0, 0.42, 0.26, 0.06, 0, 360, 16), true),
+    Y(oval(0, 0.42, 0.26, 0.06, 0, 360, 16), true, 'limon'),
     A([[0, 0.36], [0, -0.3]]), A([[-0.11, -0.32], [0.11, -0.32]]),
     Y(oval(0, 0.0, 0.29, 0.36, 194, 346, 14)),
     Y(oval(0, 0.0, 0.23, 0.28, 198, 342, 12)),
-    Y(oval(-0.28, 0.06, 0.1, 0.16, 0, 360, 14), true), Y(oval(0.28, 0.06, 0.1, 0.16, 0, 360, 14), true),
+    Y(oval(-0.28, 0.06, 0.1, 0.16, 0, 360, 14), true, 'limon'), Y(oval(0.28, 0.06, 0.1, 0.16, 0, 360, 14), true, 'limon'),
     A([[-0.19, -0.05], [-0.19, 0.17]]), A([[0.19, -0.05], [0.19, 0.17]]),
   ],
   // Kablo klipsi: klips gövdesinin içinden geçen üç kablo, sağ uçlarında fişler, sol uçları sarkar. (Önden kesit
   // halkaları pasta, yandan çizim boru dirseği gibi okunuyordu; fiş ucu "kablo" dedirtir.)
   kabloKlipsi: [
-    Y(oval(0, 0, 0.13, 0.25, 0, 360, 18, 4.2), true),
+    Y(oval(0, 0, 0.13, 0.25, 0, 360, 18, 4.2), true, 'nane'),
     Y([[-0.13, -0.12], [-0.3, -0.13], [-0.42, -0.08], [-0.47, 0.04]]),
     Y([[-0.13, 0.0], [-0.28, 0.01], [-0.38, 0.08], [-0.41, 0.2]]),
     Y([[-0.13, 0.12], [-0.25, 0.14], [-0.31, 0.24], [-0.33, 0.36]]),
     A([[0.13, -0.12], [0.3, -0.12]]), A([[0.13, 0.0], [0.3, 0.0]]), A([[0.13, 0.12], [0.3, 0.12]]),
-    C([[0.3, -0.16], [0.4, -0.16], [0.4, -0.08], [0.3, -0.08]]), A([[0.4, -0.12], [0.48, -0.12]]),
-    C([[0.3, -0.04], [0.4, -0.04], [0.4, 0.04], [0.3, 0.04]]), A([[0.4, 0.0], [0.48, 0.0]]),
-    C([[0.3, 0.08], [0.4, 0.08], [0.4, 0.16], [0.3, 0.16]]), A([[0.4, 0.12], [0.48, 0.12]]),
+    C([[0.3, -0.16], [0.4, -0.16], [0.4, -0.08], [0.3, -0.08]], 'koyu'), A([[0.4, -0.12], [0.48, -0.12]]),
+    C([[0.3, -0.04], [0.4, -0.04], [0.4, 0.04], [0.3, 0.04]], 'koyu'), A([[0.4, 0.0], [0.48, 0.0]]),
+    C([[0.3, 0.08], [0.4, 0.08], [0.4, 0.16], [0.3, 0.16]], 'koyu'), A([[0.4, 0.12], [0.48, 0.12]]),
   ],
 };
+// Yalnız dolgu olan yüzler: açık çizgiyle çizilmiş yüzeyler (kalınlık bandı, yan yüz, tepsi) ya da önündeki nesnenin
+// arkasını örten yüz (kupa). Çizgisi yoktur; k numaralı konturun hemen altına girer ve o kontur çizilirken belirir.
+const YUZ = {
+  kupaAltligi: [
+    { k: 0, r: 'lila', p: [[-0.46, 0.24], [-0.46, 0.31], [-0.24, 0.42], [0.24, 0.42], [0.46, 0.31], [0.46, 0.24], [0.24, 0.35], [-0.24, 0.35]] },
+    { k: 2, r: 'beyaz', p: [[-0.19, -0.3], [-0.18, 0.21], [0.18, 0.21], [0.19, -0.3]] }, // kupa altlığın arka kenarını örter
+  ],
+  isimYazisi: [{ k: 7, r: 'lila', p: [[-0.48, 0.2], [-0.4, 0.3], [0.5, 0.3], [0.5, 0.37], [-0.4, 0.37], [-0.48, 0.27]] }],
+  zarKulesi: [
+    { k: 0, r: 'limon', p: [[0.14, -0.4], [0.24, -0.49], [0.24, 0.22], [0.14, 0.3]] },
+    { k: 0, r: 'limon', p: [[-0.42, 0.3], [-0.36, 0.42], [0.38, 0.42], [0.3, 0.3]] },
+  ],
+  desteKutusu: [{ k: 0, r: 'limon', p: [[0.18, -0.02], [0.3, -0.12], [0.3, 0.34], [0.18, 0.44]] }],
+};
+// Figür (ctx.FIGUR, kontur sırası: kaide, gövde, iki kol, baş, kulaklık bandı, iki kulaklık): gövde ve baş renkli
+const FIGUR_RENK = [null, 'gok', null, null, 'gok', null, 'koyu', 'koyu'];
 
 // ---------- Kişiler: kadro.json'dan önceki sahnelerin kişileri + 6 yeni genç yüz (insan.js parametreleri)
 const YENI_YUZ = {
@@ -416,13 +436,27 @@ export function kur(ctx) {
   const ANAHTAR = Object.fromEntries(SONH.balonlar.map((b) => [b.kod, b])); // sekiz büyük balon (son yer, boy, kuyruk)
   const TB = DIKEY ? 1.12 : 1; // tasarım boyu çarpanı (dikeyde balonlar daha büyük)
 
-  // ---------- Fikir çizimi: cizimler.js'te varsa cizimKur (s6 ile aynı çizgiler), yoksa bu modülün çizimleri
-  const FIGUR = ctx.FIGUR.map(({ p, kapali }) => ({ p: p.map(([x, y]) => [x, y + 0.49]), kapali })); // taban y=0 → merkez
+  // ---------- Fikir çizimi: cizimler.js'te varsa cizimKur (s6 ile aynı çizgiler ve renkler), yoksa bu modülün çizimleri.
+  // Dönüş: [{ yol, dolgu, j }]; j kontur sırası (dolgu o kontur çizilirken belirir). Dolgu cizimKur gibi 2 px kayık.
+  const FIGUR = ctx.FIGUR.map(({ p, kapali }, i) => ({ p: p.map(([x, y]) => [x, y + 0.49]), kapali, r: FIGUR_RENK[i] })); // taban y=0 → merkez
   function fikirCiz(ust, ad, { boy, tohum }) {
-    if (CIZIMLER[ad]) return cizimKur(ctx, ust, ad, { c: [0, 0], boy, kalinlik: KALINLIK, tohum });
-    const tanim = ad === 'figur' ? FIGUR : YENI[ad];
-    return tanim.map((c, i) => ctx.cizgi(ust, c.p.map(([x, y]) => [x * boy, y * boy]), { kapali: !!c.kapali, kalinlik: KALINLIK, tohum: tohum + i, genlik: 1.0 }));
+    if (CIZIMLER[ad]) return cizimKur(ctx, ust, ad, { c: [0, 0], boy, kalinlik: KALINLIK, tohum }).map((h, j) => ({ yol: h.yol, dolgu: h.dolgu, j }));
+    const tanim = ad === 'figur' ? FIGUR : YENI[ad], yuzler = YUZ[ad] || [], olc = (pts) => pts.map(([x, y]) => [x * boy, y * boy]);
+    const ortak = { kalinlik: KALINLIK, genlik: 1.0, kay: [2, 2] };
+    const out = [];
+    tanim.forEach((c, i) => {
+      yuzler.forEach((y, n) => {
+        if (y.k !== i) return;
+        const h = ctx.cizgi(ust, olc(duz(y.p, true)), { ...ortak, kapali: true, tohum: tohum + 50 + n, dolgu: URUN_RENK[y.r] });
+        h.yol.remove(); // yalnız dolgu
+        out.push({ yol: null, dolgu: h.dolgu, j: i });
+      });
+      const h = ctx.cizgi(ust, olc(c.p), { ...ortak, kapali: !!c.kapali, tohum: tohum + i, dolgu: c.kapali && c.r ? URUN_RENK[c.r] : null });
+      out.push({ yol: h.yol, dolgu: h.dolgu, j: i });
+    });
+    return out;
   }
+  const parca = (ad, hs) => ({ ad, yollar: hs.filter((h) => h.yol).map((h) => h.yol), dolgular: hs.filter((h) => h.dolgu) });
 
   // ---------- Soluk figüran: saydamlık yerine kâğıda doğru açma filtresi (opak kalır; üst üste binen figüranlar birbirinin
   // içinden görünmez). çıkış = giriş × a + kâğıt × (1 − a), sRGB'de.
@@ -517,10 +551,10 @@ export function kur(ctx) {
     const koken = `${(50 + (u0[0] / l0) * 42).toFixed(0)}% ${(50 + (u0[1] / l0) * 42).toFixed(0)}%`;
     b.bal = balon(b.sar, { c: [0, 0], r, noktalar: b.noktalar, tohum: T.balon, koken });
     b.bal.bulut.setAttribute('data-s5bulut', b.kod);
-    b.cizimler = [{ ad: a.cizim, yollar: fikirCiz(b.bal.ic, a.cizim, { boy: icBoy, tohum: T.cizim }).map((h) => h.yol) }];
+    b.cizimler = [parca(a.cizim, fikirCiz(b.bal.ic, a.cizim, { boy: icBoy, tohum: T.cizim }))];
     if (a.degis) {
       const ad2 = a.degis[1], boy2 = an && an.cizim === ad2 ? an.icBoy : (IKINCI_BOY[ad2] ?? icBoy) * TB;
-      b.cizimler.push({ ad: ad2, yollar: fikirCiz(b.bal.ic, ad2, { boy: boy2, tohum: T.cizim + 10 }).map((h) => h.yol) });
+      b.cizimler.push(parca(ad2, fikirCiz(b.bal.ic, ad2, { boy: boy2, tohum: T.cizim + 10 })));
     }
     if (an) b.sonYerel = an.noktalar.map(([x, y, rad]) => [x - an.c[0], y - an.c[1], rad]);
     uygula(b);
@@ -562,23 +596,30 @@ export function kur(ctx) {
   // Sıfır boylu çizgi yuvarlak uçla NOKTA çizer (DrawSVG 0% ve 100% 100%): her kontur kendi çizimi başlayana dek gizli,
   // geri sarılan eski çizim bitince gizlenir (yoksa N6'nın son balonunda Wi-Fi plakasının uç noktaları kalıyordu).
   const tumYollar = (b) => b.cizimler.flatMap((c) => c.yollar);
-  const ciz = (yollar, t0, sure, ara) => {
-    tl.fromTo(yollar, { drawSVG: '0%' }, { drawSVG: '100%', duration: k(sure), ease: E.EO, stagger: k(ara), immediateRender: false }, k(t0));
-    yollar.forEach((y, i) => tl.set(y, { visibility: 'visible' }, k(t0 + i * ara)));
+  const tumDolgular = (b) => b.cizimler.flatMap((c) => c.dolgular.map((h) => h.dolgu));
+  // Dolgu kendi konturu %60 çizilmişken 5 k'da belirir: renk çizgiyle birlikte gelir, çizimden önce görünmez
+  const ciz = (c, t0, sure, ara) => {
+    tl.fromTo(c.yollar, { drawSVG: '0%' }, { drawSVG: '100%', duration: k(sure), ease: E.EO, stagger: k(ara), immediateRender: false }, k(t0));
+    c.yollar.forEach((y, i) => tl.set(y, { visibility: 'visible' }, k(t0 + i * ara)));
+    c.dolgular.forEach((h) => tl.fromTo(h.dolgu, { autoAlpha: 0 }, { autoAlpha: 1, duration: k(5), ease: 'none', immediateRender: false }, k(t0 + h.j * ara + sure * 0.6)));
   };
   for (const b of Object.values(BALON)) {
     const { a, bal } = b;
     gsap.set(tumYollar(b), { visibility: 'hidden' });
+    gsap.set(tumDolgular(b), { autoAlpha: 0 });
     tl.set(tumYollar(b), { drawSVG: '0%', visibility: 'hidden' }, k(a.balon));
+    tl.set(tumDolgular(b), { autoAlpha: 0 }, k(a.balon));
     bal.ac(a.balon, { hizli: !!a.hizli });
     ctx.isaret(a.balon, 'dusunce');
     const c0 = b.cizimler[0];
-    ciz(c0.yollar, a.balon + (a.hizli ? 6 : 10), a.hizli ? 5 : 7, a.hizli ? 1.5 : 2);
+    ciz(c0, a.balon + (a.hizli ? 6 : 10), a.hizli ? 5 : 7, a.hizli ? 1.5 : 2);
     if (a.degis) {
+      // Fikir değişir: eski çizim geri sarılırken dolgusu söner (Wi-Fi plakasının yeşili telefon standının ardında kalmasın)
       const [kd] = a.degis, c1 = b.cizimler[1];
       tl.to(c0.yollar, { drawSVG: '100% 100%', duration: k(5), ease: E.EI, stagger: k(0.6) }, k(kd));
+      tl.fromTo(c0.dolgular.map((h) => h.dolgu), { autoAlpha: 1 }, { autoAlpha: 0, duration: k(5), ease: E.EI, immediateRender: false }, k(kd));
       tl.set(c0.yollar, { visibility: 'hidden' }, k(kd + 5 + 0.6 * c0.yollar.length));
-      ciz(c1.yollar, kd + 7, 7, 2);
+      ciz(c1, kd + 7, 7, 2);
     }
   }
 
