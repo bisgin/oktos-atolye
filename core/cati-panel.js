@@ -1,15 +1,16 @@
 // Çatı katı (portfolyo) kart içeriği ve ışık kutusu. Motorun yakın plan kartına (core/story.js onCard) bölgeye göre
-// ek içerik koyar: fikir rafı gözlerinde alt kalemler ve o alandan işlerin fotoğrafları, süreç adımları (kayıt ışık
-// kutusunda oynar), hakkımda yazısı, merdivende "Odaya in". Ayrıca bütün içeriği düz liste olarak veren erişilebilir bir
-// katman (sahnesiz okunur).
+// ek içerik koyar: ekranda süreç adımlarının listesi (seçilen adım TV'de oynar; TV'ye tıklamak da sıradaki adıma geçer),
+// raflarda işlerin fotoğrafları (ışık kutusunda) ve "Fikrini anlat", hakkımda yazısı. Ayrıca bütün içeriği düz liste
+// olarak veren erişilebilir bir katman (sahnesiz okunur).
 // Görseller ve kayıtlar yalnız kart açılınca iner (loading="lazy"; kayıt ışık kutusunda istenince). Işık kutusu ve
 // liste kipli: arkadaki sahne ve üst çubuk etkisiz (inert), sayfa kaydırması kilitli, kapanınca odak geri döner.
 // Hareket azaltmada süreç kayıtları yerine ilk kareleri gösterilir.
-import { ALANLAR, SUREC, HAKKIMDA, SAYFA, CATI_STORY } from './cati-veri.js';
+import { RAF_ISLERI, SUREC, HAKKIMDA, SAYFA, CATI_STORY, fikirLinki } from './cati-veri.js';
 
 const esc = (s) => String(s ?? '').replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
 
-export function catiPanel(root, { lang = 'tr', reduce = false } = {}) {
+// ekran: () => TV denetçisi (core/cati-ekran.js: git, aktif, onDegis); sahne kurulunca gelir
+export function catiPanel(root, { lang = 'tr', reduce = false, ekran = () => null } = {}) {
   const L = (o) => (o ? o[lang] ?? o.tr ?? '' : '');
   let ek = null, sonId = null;
   const ust = () => document.querySelector('.topbar');
@@ -65,18 +66,15 @@ export function catiPanel(root, { lang = 'tr', reduce = false } = {}) {
   const kucuk = (src, baslik, alt, yazi, sinif = '', onizleme = src) => `<button type="button" class="cati-k ${sinif}" data-src="${esc(src)}" data-baslik="${esc(baslik)}" data-yazi="${esc(yazi)}">
       <img src="${esc(onizleme)}" alt="" loading="lazy" decoding="async"><span>${esc(alt)}</span></button>`;
   function icerik(id) {
-    const a = ALANLAR.find((x) => x.id === id);
-    if (a) {
-      const alt = a.id === 'fikir' ? '' : `<ul class="cati-alt">${L(a.alt).split(', ').map((k) => `<li>${esc(k)}</li>`).join('')}</ul>`;
-      const isler = a.isler.length ? `<p class="cati-ara">${esc(L(SAYFA.isler))}</p><div class="cati-izgara">${a.isler.map((g) => kucuk(g.gorsel, L(g.baslik), L(g.baslik), L(g.desc))).join('')}</div>` : '';
-      return alt + isler;
+    if (id === 'kitaplik') {
+      const link = fikirLinki(lang);
+      return `<p class="cati-ara">${esc(L(SAYFA.isler))}</p><div class="cati-izgara">${RAF_ISLERI.map((g) => kucuk(g.gorsel, L(g.baslik), L(g.baslik), L(g.desc))).join('')}</div>`
+        + (link ? `<a class="cati-in cati-fikir" href="${esc(link)}" target="_blank" rel="noopener">${esc(L(SAYFA.fikrini))}</a>` : '');
     }
-    if (id === 'merdiven') return `<a class="cati-in" href="oda.html">${esc(L(SAYFA.asagiKat))}</a>`;
-    if (id === 'surec') {
-      return `<ol class="cati-adimlar">${SUREC.map((s, i) => {
-        const ad = `${String(i + 1).padStart(2, '0')} ${L(s.ad)}`;
-        return `<li>${kucuk(reduce ? s.poster : s.kayit, ad, ad, L(s.desc), 'kayit', s.poster)}</li>`;
-      }).join('')}</ol>`;
+    if (id === 'ekran') {
+      const a = ekran()?.aktif ?? 0;
+      return `<p class="cati-ara">${esc(L(SAYFA.adimlar))}</p><ol class="cati-adim-liste">${SUREC.map((s, i) => `<li><button type="button" data-adim="${i}"${i === a ? ' aria-current="step"' : ''}>
+        <span>${String(i + 1).padStart(2, '0')}</span>${esc(L(s.ad))}</button></li>`).join('')}</ol>`;
     }
     if (id === 'hakkimda') return `<div class="cati-yazi">${HAKKIMDA[lang === 'en' ? 'en' : 'tr'].map((p) => `<p>${esc(p)}</p>`).join('')}</div>`;
     return '';
@@ -97,7 +95,8 @@ export function catiPanel(root, { lang = 'tr', reduce = false } = {}) {
       return;
     }
     sonId = h.id;
-    // Portfolyoda 'atölyede hazırlanıyor' notu yok; düğme yalnız fikir rafı gözlerinde (Fikrini anlat)
+    ekranaBagla();
+    // Portfolyoda 'atölyede hazırlanıyor' notu yok
     const soon = card.querySelector('.sc-soon');
     if (soon) soon.hidden = true;
     const html = icerik(h.id);
@@ -109,7 +108,19 @@ export function catiPanel(root, { lang = 'tr', reduce = false } = {}) {
     ek.addEventListener('click', (e) => {
       const b = e.target.closest('.cati-k[data-src]');
       if (b) kutuAc(b.dataset.src, b.dataset.baslik, b.dataset.yazi);
+      const adim = e.target.closest('button[data-adim]');
+      if (adim) ekran()?.git(Number(adim.dataset.adim));
     });
+  }
+  // TV adımı değişince (tıklama, kart) listedeki etkin adım güncellenir
+  let bagli = false;
+  function ekranaBagla() {
+    const e = ekran();
+    if (!e || bagli) return;
+    bagli = true;
+    e.onDegis((i) => ek?.querySelectorAll('button[data-adim]').forEach((b) => {
+      if (Number(b.dataset.adim) === i) b.setAttribute('aria-current', 'step'); else b.removeAttribute('aria-current');
+    }));
   }
 
   // ---- düz liste (sahnesiz okuma, ekran okuyucu, arama motoru) ----
@@ -123,8 +134,8 @@ export function catiPanel(root, { lang = 'tr', reduce = false } = {}) {
   liste.innerHTML = `<div class="cati-liste-ic">
     <h2 id="cati-liste-baslik" tabindex="-1">${esc(L(SAYFA.listeBaslik))}</h2>
     ${bolum('hakkimda', `<div class="cati-yazi">${HAKKIMDA[lang === 'en' ? 'en' : 'tr'].map((p) => `<p>${esc(p)}</p>`).join('')}</div>`)}
-    <section><h3>${esc(L(SAYFA.rafBaslik))}</h3><ul>${ALANLAR.map((a) => `<li><b>${esc(L(a.baslik))}</b> <small>${esc(L(a.alt))}</small><br>${esc(L(a.metin))}${a.isler.length ? `<br><small>${a.isler.map((g) => esc(L(g.baslik))).join(' · ')}</small>` : ''}</li>`).join('')}</ul></section>
-    ${bolum('surec', `<ol>${SUREC.map((s) => `<li><b>${esc(L(s.ad))}</b>: ${esc(L(s.desc))}</li>`).join('')}</ol>`)}
+    ${bolum('ekran', `<ol>${SUREC.map((s) => `<li><b>${esc(L(s.ad))}</b>: ${esc(L(s.desc))}</li>`).join('')}</ol>`)}
+    ${bolum('kitaplik', `<ul>${RAF_ISLERI.map((g) => `<li><b>${esc(L(g.baslik))}</b>: ${esc(L(g.desc))}</li>`).join('')}</ul>`)}
     ${bolum('biggie', '')}
     <button type="button" class="cati-kapat">${esc(L(SAYFA.listeKapat))}</button></div>`;
   document.body.appendChild(liste);

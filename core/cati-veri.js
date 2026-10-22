@@ -1,15 +1,15 @@
 // Çatı katı (portfolyo) metni ve içerik listesi. Kaynak: kullanıcının bitirme projesi sunumu (slayt metinleri), ürün
-// inceleme paketleri, ürün görsellerindeki yazılar ve çatı planındaki alan listesi (planlar, 2026-10-21); uydurma olgu
-// yok, alan metinlerinde sayı ve iddia yok (hizmet tanımı). Görseller assets/cati/portfolyo/ altında (yalnız kullanıcının
-// kendi işleri). Ses: portfolyo birinci tekil ("ben"), ziyaretçiye "sen" (aşağıdaki oda "biz/atölye" sesinde). Biçim
+// inceleme paketleri, ürün görsellerindeki yazılar ve kullanıcının çatı katı geri bildirimi (2026-10-22: raflarda tasarım
+// çalışmaları ve kutu oyunları, ekranda süreç); uydurma olgu yok. Görseller assets/cati/portfolyo/ altında (yalnız
+// kullanıcının kendi işleri). Ses: portfolyo birinci tekil ("ben"), ziyaretçiye "sen" (aşağıdaki oda "biz/atölye" sesinde). Biçim
 // motorun beklediği gibi (core/story-data.js zone).
 import { ORDER } from './order-config.js';
 
 const zone = (tr, en, dtr, den, pin = null) => ({ tr, en, desc: { tr: dtr, en: den }, ...(pin ? { pin: { tr: pin[0], en: pin[1] } } : {}) });
 const PORT = '../assets/cati/portfolyo/';
 
-// Modern Balbal serisi (Figürler alanının işleri; heykel modelleri assets/cati/modeller/, gözün ilk adayı, şimdi konmuyor).
-// gorsel: ürün master karesi (yazısız).
+// Modern Balbal serisi (heykel modelleri assets/cati/modeller/: kitaplığın raflarında büst olarak durur).
+// gorsel: ürün master karesi (yazısız); kitaplık kartında.
 export const ESERLER = [
   { id: 'kapital-kagan', model: null, gorsel: PORT + 'is-kapital-kagan.webp', detay: PORT + 'is-kapital-kagan-detay.webp',
     ad: { tr: 'Kapital Kağan', en: 'Kapital Kaghan' },
@@ -30,7 +30,7 @@ export const ESERLER = [
     olcu: null },
 ];
 
-// Atölyeden çıkan diğer işler (fotoğraf); her biri ait olduğu alanın kartında
+// Atölyeden çıkan diğer işler (fotoğraf); kitaplık kartında
 export const GALERI = [
   { id: 'dokum-cift', gorsel: PORT + 'is-dokum-cift.webp', baslik: { tr: 'Kapital Kağan ve Kadere Kınalı', en: 'Kapital Kaghan and Kadere Kınalı' },
     desc: { tr: 'Serinin iki karakteri yan yana.', en: 'Two characters from the series, side by side.' } },
@@ -41,45 +41,9 @@ export const GALERI = [
   { id: 'satranc', gorsel: PORT + 'is-satranc.webp', baslik: { tr: 'Satranç takımı', en: 'Chess set' },
     desc: { tr: '3B yazıcıda basılmış bir satranç takımı.', en: 'A 3D-printed chess set.' } },
 ];
-const galeri = (id) => GALERI.find((g) => g.id === id);
 const eser = (e) => ({ gorsel: e.gorsel, baslik: e.ad, desc: { tr: [e.desc.tr, e.olcu?.tr].filter(Boolean).join(' · '), en: [e.desc.en, e.olcu?.en].filter(Boolean).join(' · ') } });
-
-// Fikir rafı: 2×4 gözlü vitrin, 7 alan + "Senin fikrin" (sıra gözlerin sırası: üst sıra soldan sağa, sonra alt sıra).
-// Her gözde başlık (arka kâğıt), alt kalemler ve sonradan gerçek ürünün konacağı boş yuva. Gerçek ürün gelince yalnız
-// yuva değişir: model (GLB yolu; döner kaidenin üstüne sığdırılır, hayalet çizim söner). isler: o alandaki eski işlerin
-// fotoğrafları (kartta). doodle: hayalet çizimin adı (core/cati-sahne.js HAYALET).
-const alan = (id, doodle, [tr, en], [altTr, altEn], [mTr, mEn], isler = []) => ({
-  id, doodle, baslik: { tr, en }, alt: { tr: altTr, en: altEn }, metin: { tr: mTr, en: mEn }, isler, yuva: { model: null },
-});
-export const ALANLAR = [
-  alan('kutu', 'kutu', ['Kutu oyunları', 'Board games'], ['insert, jeton, zar', 'inserts, tokens, dice'],
-    ['Oyununun kutusuna göre bölmeli insert, jeton ve zar tasarlayıp basarım.', "I design and print inserts, tokens and dice that fit your game's box."],
-    [galeri('recine-zarlar'), galeri('satranc')]),
-  alan('plaka', 'plaka', ['Plakalar', 'Plaques & signs'], ['tabela, isimlik, kabartma', 'signs, nameplates, reliefs'],
-    ['Tabela, isimlik ve kabartmalı plakaları ölçüsüne göre modelleyip basarım.', 'Signs, nameplates and relief plaques, modelled to size and printed.']),
-  alan('figur', 'figur', ['Figürler', 'Figures'], ['figür, heykelcik, kaide', 'figures, statuettes, bases'],
-    ['Figür ve heykelcikleri modeller, basar ya da kalıbını alıp dökerim. Modern Balbal serisi burada.', 'I model figures and statuettes, then print them or mould and cast them. The Modern Balbal series lives here.'],
-    [...ESERLER.filter((e) => e.gorsel).map(eser), galeri('dokum-cift')]),
-  alan('anahtarlik', 'anahtarlik', ['Anahtarlıklar', 'Keychains'], ["isimli, QR'lı, tıklayan", 'named, QR, clicky'],
-    ['İsimli, QR kodlu ya da tıklayan anahtarlıklar. Atölyenin araçlarıyla kendin de tasarlayabilirsin.', "Named, QR-coded or clicky keychains. You can also design one yourself with the workshop's tools."]),
-  alan('stant', 'stant', ['Stant ve vitrinler', 'Stands & displays'], ['masa standı, figür vitrini', 'desk stands, display cases'],
-    ['Figürüne, ürününe ya da koleksiyonuna göre stant ve vitrin.', 'Stands and display cases built around your figure, product or collection.']),
-  alan('ev', 'ev', ['Ev ürünleri', 'Home goods'], ['vazo, saksı, düzenleyici', 'vases, planters, organisers'],
-    ['Vazo, saksı ve düzenleyiciler; ölçüsü ve rengi sana göre.', 'Vases, planters and organisers, sized and coloured to suit you.'],
-    [galeri('saksilar')]),
-  alan('endustri', 'endustri', ['Endüstriyel ön-mühendislik', 'Industrial pre-engineering'], ['prototip, tolerans, kalıp tasarımı', 'prototypes, tolerances, mould design'],
-    ['Parçanın ilk prototipini modelleyip basarım; montajı ve ölçüleri elde birlikte deneriz.', 'I model and print a first prototype of your part, so we can test the fit and dimensions together.']),
-  alan('fikir', 'fikir', ['Senin fikrin', 'Your idea'], ['Sıradaki sayfa senin.', 'The next page is yours.'],
-    ['Aklındakini anlat; ölçüsünü, malzemesini ve yolunu birlikte buluruz.', "Tell me what you have in mind; we'll work out the size, material and method together."]),
-];
-
-// Süreç rayı: vitrinin üstündeki 4 ışıklı kart (sıra soldan sağa)
-export const SUREC_RAYI = [
-  { id: 'tasarim', ad: { tr: 'Tasarım', en: 'Design' } },
-  { id: 'fdm', ad: { tr: 'FDM baskı', en: 'FDM print' } },
-  { id: 'recine', ad: { tr: 'Reçine baskı', en: 'Resin print' } },
-  { id: 'kalip', ad: { tr: 'Kalıp ve döküm', en: 'Mould & cast' } },
-];
+// Kitaplıktaki tasarım çalışmaları (kartta fotoğraflar; raflarda büstler, vazolar ve oyun kutuları durur)
+export const RAF_ISLERI = [...ESERLER.filter((e) => e.gorsel).map(eser), ...GALERI];
 
 export const CATI_STORY = {
   live: true,
@@ -87,16 +51,16 @@ export const CATI_STORY = {
   name: { tr: 'Çatı katı', en: 'Top floor' },
   title: { tr: '3B bir fikrin var mı? Gerçeğe dönüştürelim.', en: 'Got an idea in 3D? Let’s make it real.' },
   lede: {
-    tr: 'Burası atölyenin çatı katı, benim köşem. Raftaki bir göze tıkla: o alanda neler yaptığıma yakından bak.',
-    en: "This is the workshop's top floor, my own corner. Click a slot on the shelf to see what I make in that area.",
+    tr: 'Burası atölyenin çatı katı, benim köşem. Ekranda süreci adım adım izle, raflarda şimdiye kadarki işlerime bak.',
+    en: "This is the workshop's top floor, my own corner. Follow the process step by step on the screen, and look over my work so far on the shelves.",
   },
   hotspots: {
-    surec: zone('Süreç', 'Process', 'Dijital modelden döküme sekiz adım.', 'Eight steps from digital model to cast.', ['Süreç', 'Process']),
-    ...Object.fromEntries(ALANLAR.map((a) => [a.id, zone(a.baslik.tr, a.baslik.en, a.metin.tr, a.metin.en)])),
+    ekran: zone('Süreç', 'Process', 'Dijital modelden döküme sekiz adım. Ekrana tıkla: sıradaki adım.', 'Eight steps from digital model to cast. Click the screen for the next step.', ['Süreç', 'Process']),
+    kitaplik: zone('Raflar', 'Shelves', 'Şimdiye kadarki tasarım çalışmalarım ve kutu oyunları: Modern Balbal serisinin büstleri, vazolar, oyun kutuları.',
+      'My design work so far, and board games: busts from the Modern Balbal series, vases, game boxes.', ['Raflar', 'Shelves']),
     biggie: zone('Biggie', 'Biggie', "Atölyenin maskotu bizzikoloşko, kısaca Biggie. Blender'da yeniden kuruldu; kilden elle yapılmış gibi duruyor.",
       'The workshop mascot, bizzikoloşko, or Biggie for short. Rebuilt in Blender, it looks like a little clay figure made by hand.', ['Biggie', 'Biggie']),
     hakkimda: zone('Hakkımda', 'About me', 'Kimim, ne yapıyorum, nasıl çalışıyorum.', 'Who I am, what I make, how I work.', ['Hakkımda', 'About']),
-    merdiven: zone('Merdiven', 'Stairs', 'Merdivenden aşağıda oda var.', 'The stairs lead down to the room.', ['Aşağı', 'Down']),
   },
 };
 
@@ -106,21 +70,19 @@ export const SAYFA = {
   liste: { tr: 'Listeyi göster', en: 'Show the list' },
   listeKapat: { tr: 'Kapat', en: 'Close' },
   listeBaslik: { tr: 'Çatı katında neler var', en: "What's on the top floor" },
-  rafBaslik: { tr: 'Fikir rafı', en: 'Idea shelf' },
+  rafBaslik: { tr: 'Raflar', en: 'Shelves' },
   oynat: { tr: 'Kaydı oynat', en: 'Play the clip' },
   magaza: { tr: 'Mağazada gör', en: 'See in the shop' },
   ileri: { tr: 'Sıradaki', en: 'Next' },
   fikrini: { tr: 'Fikrini anlat', en: 'Tell me your idea' },
   basla: { tr: 'Kaydır, süreçten başla', en: 'Scroll to start with the process' },
-  isler: { tr: 'Bu alandan işler', en: 'Work from this area' },
+  isler: { tr: 'Raflardan işler', en: 'Work from the shelves' },
+  adimlar: { tr: 'Adımlar (ekranda oynar)', en: 'Steps (play on the screen)' },
 };
 
-// "Fikrini anlat": mevcut sipariş hattı (WhatsApp, core/order-config.js); alanın adı hazır mesajda
-export function fikirLinki(a, lang = 'tr') {
-  const L = (o) => o[lang] ?? o.tr;
-  const msg = lang === 'en'
-    ? `Hello Oktos, I'm writing from the idea shelf on the top floor.\nArea: ${L(a.baslik)}\nMy idea: `
-    : `Merhaba Oktos, çatı katındaki fikir rafından yazıyorum.\nAlan: ${L(a.baslik)}\nFikrim: `;
+// "Fikrini anlat": mevcut sipariş hattı (WhatsApp, core/order-config.js)
+export function fikirLinki(lang = 'tr') {
+  const msg = lang === 'en' ? "Hello Oktos, I'm writing from the top floor.\nMy idea: " : 'Merhaba Oktos, çatı katından yazıyorum.\nFikrim: ';
   return ORDER.whatsapp ? `https://wa.me/${ORDER.whatsapp}?text=${encodeURIComponent(msg)}` : null;
 }
 

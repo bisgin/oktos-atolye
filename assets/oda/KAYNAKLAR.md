@@ -11,8 +11,11 @@ Ham dosyalar `kaynak/` altında durur (depoya girmez); sitede yalnız sıkışt�
 | `kaynak/marble_01/` (doku, 2k) | https://polyhaven.com/a/marble_01 | Rob Tuytel | Pencere pervazı |
 | `kaynak/wood_floor/` (doku, 2k) | https://polyhaven.com/a/wood_floor | Dimitrios Savva | Oda zemini |
 | `kaynak/flower_gazania/` (model, 2k) | https://polyhaven.com/a/flower_gazania | James Ray Cock, Jenelle van Heerden | Saksıdaki canlı çiçek |
-| `kaynak/anthurium_botany_01/` (model, 2k) | https://polyhaven.com/a/anthurium_botany_01 | Rob Tuytel, Rico Cilliers | Saksıdaki canlı çiçek (antoryum) |
-| `kaynak/periwinkle_plant/` (model, 2k) | https://polyhaven.com/a/periwinkle_plant | Amal Kumar | Saksıdaki canlı çiçek (cezayir menekşesi) |
+| `kaynak/anthurium_botany_01/` (model, 2k) | https://polyhaven.com/a/anthurium_botany_01 | Rob Tuytel, Rico Cilliers | Saksıdaki canlı çiçek (antoryum); çatı katının saksı bitkileri (assets/cati/bitkiler.glb, scripts/cati-bitki.py) |
+| `kaynak/periwinkle_plant/` (model, 2k) | https://polyhaven.com/a/periwinkle_plant | Amal Kumar | Saksıdaki canlı çiçek (cezayir menekşesi); çatı katında küçük saksı (assets/cati/bitkiler.glb) |
+| `kaynak/calathea_orbifolia_01/` (model, 1k) | https://polyhaven.com/a/calathea_orbifolia_01 | Rob Tuytel, Rico Cilliers | Çatı katının saksı bitkisi (kalatya; assets/cati/bitkiler.glb, scripts/cati-bitki.py) |
+| `kaynak/pachira_aquatica_01/` (model, 1k) | https://polyhaven.com/a/pachira_aquatica_01 | Rob Tuytel, Rico Cilliers | Çatı katının uzun saksı bitkisi (para ağacı; assets/cati/bitkiler.glb) |
+| `kaynak/fern_02/` (model, 1k) | https://polyhaven.com/a/fern_02 | Rob Tuytel, Rico Cilliers | Çatı katının saksı bitkisi (eğrelti; assets/cati/bitkiler.glb) |
 | `kaynak/strawberry_chocolate_cake/` (model, 1k) | https://polyhaven.com/a/strawberry_chocolate_cake | Kuutti Siitonen | Buzdolabındaki pasta (üstüne bizim 3D Yazı pasta süsümüz) |
 | `kaynak/balcony/` (hdri, 4k) | https://polyhaven.com/a/balcony | Greg Zaal | Balkonun ardındaki manzara (yalnız görünüm; odanın ışığı sabah gökyüzünden) |
 | `kaynak/asphalt_02/` (doku, 1k) | https://polyhaven.com/a/asphalt_02 | Rob Tuytel | Balkonun önündeki sokak (asfalt) |
