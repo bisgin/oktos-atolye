@@ -5,7 +5,7 @@
 // (kart, tabanı arkaya kıvrılıp dik durdurulmuş: şövalye, büyücü, canavar). Marka yok; ekranda "FRP zarı" denir.
 // #14 (k1536–1671) Genel plan, sohbet: E3 bir şey anlatır (eller havada), omuz silker; espri: E4 elini ağzına kapatıp güler,
 //     E2 geriye yaslanıp E3'ü gösterir, masaya vurur (kâğıt figürler sallanır), E3 E'nin omzuna iki kez vurur. E zarları
-//     yumruğunda sallar (30 fps titreme), herkes öne eğilir; k1656 atar. Dikeyde kamera çiftten çifte kayar (E4+E3 → E+E2).
+//     yumruğunda sallar (sürekli titreme), herkes öne eğilir; k1656 atar. Dikeyde kamera çiftten çifte kayar (E4+E3 → E+E2).
 // #15 (k1672–1799) Kesme: 3B yakın plan (three.js; toon gölge + mürekkep konturu, harita dokusu aynı çizgi dilinde). İki tavla
 //     zarı haritaya düşer, takla atar, seker, yavaşlayıp durur: hep yek. Fizik önceden hesaplı ve tohumsuz (yuvarlatılmış küp,
 //     darbe tabanlı katı cisim, 1200 Hz), ekranda %85 hızla (hafif ağır çekim). Bir zar şövalyeyi devirir: kart yüzüstü kapanır,
@@ -20,8 +20,11 @@
 // açılamazsa 3B çekimler düşer: yakın plan yerine 2B masada zarlar iner, balonda zarlar düz çizim kalır.
 // Kişiler çekirdeğin ctx.kisi'si yerine burada kurulur: gövde (masanın altında) ve kollar (masanın üstünde) ayrı svg'de.
 // kol.js omuzlar() orta gövdeyi varsaydığından omuz ve gövde kesimi yapıya (insan.js YAPI) göre burada düzeltilir.
+// Hareket 60 fps (kullanıcı 2026-10-22: 12 fps adımlı poz kesik geliyordu): her kol kendi izinden (anahtar: başlangıç karesi,
+// süre, poz, eğri) her karede ara değerle çizilir; eğilme, gülme, vuruş, figür sallanması, kâğıdın bükülmesi sürekli
+// tween'ler. Ayrık kalanlar: yüz ifadesi ve göz yönü (çizim), 2B zarın takla yüzü, çizgi kaynaması (8 fps).
 import { kisiSVG, YAPI, BOY, GOZ_Y, MONO, PALET, yol, rng, oval } from '../insan.js';
-import { kolSVG, bilekBul, elNoktasi } from '../kol.js';
+import { kolSVG, bilekBul, elNoktasi, kolIK } from '../kol.js';
 import { URUN_RENK, URUN_SIRA } from './cizimler.js';
 
 // three.js (importmap) ve eklentileri: yüklenemezse sahne 2B sürer
@@ -106,6 +109,70 @@ function govdeKes(p, { sol, sag, id, kaynama, w = 4.2 }) {
   };
 }
 const aciDer = (a, b) => Math.atan2(b[1] - a[1], b[0] - a[0]) / D2R;
+
+// ---------- 60 fps kol geçişi. Kol tanımı: kolSVG parametreleri (omuz, dirsek, bilek, el, elAci, basparmak…). İki tanım
+// arası: kol iki yoldan biriyle akar (aşağıda mod), el ön kolu izler, öbür sayılar doğrusal; el pozu, yüz, taraf gibi ayrık
+// alanlar eşikte değişir. (s3-balkon.js'teki ile aynı)
+const aciFark = (a, b) => ((((b - a) % 360) + 540) % 360) - 180;
+// kolSVG'nin varsayılanları (bir tanımda eksik alan karışırken)
+const VARSAY = { kisalma: (p) => (p.el === 'dayanma' ? 0.62 : 1), basparmak: (p) => (p.taraf === 'sag' ? 1 : -1) * (p.yuz === 'avuc' ? 1 : -1) };
+// a: geçiş anahtarı { esik, mod, elYon }. mod 'eklem' (varsayılan): üst kol omuz çevresinde en kısa yoldan döner, ön kol dirsek
+// açısıyla açılıp kapanır (kaldırma, savurma, indirme yay çizer). mod 'el': el önde gider, bilek düz yolda, dirsek IK
+// (bir hedefe uzanma, bırakma: el masanın altına sarkmaz)
+function kolKaris(A, B, u, a = {}) {
+  const esik = a.esik ?? 0.5;
+  if (u <= 0) return A;
+  if (u >= 1 || !A || !B) return u < esik ? A : B;
+  const dir = (p) => p.dirsek || kolIK(p.omuz, p.bilek, p.ust ?? 160, p.alt ?? 150, p.bukulme ?? 1);
+  const dA = dir(A), dB = dir(B), C = { ...(u < esik ? A : B) };
+  const ara = (p, q) => [p[0] + (q[0] - p[0]) * u, p[1] + (q[1] - p[1]) * u];
+  const uz = (p, q) => Math.hypot(q[0] - p[0], q[1] - p[1]);
+  const yon = (p, q) => Math.atan2(q[1] - p[1], q[0] - p[0]) / D2R;
+  const omuz = ara(A.omuz, B.omuz);
+  const ust = uz(A.omuz, dA) * (1 - u) + uz(B.omuz, dB) * u, alt = uz(dA, A.bilek) * (1 - u) + uz(dB, B.bilek) * u;
+  let dirsek, bilek;
+  if (a.mod === 'el') {
+    bilek = ara(A.bilek, B.bilek);
+    const yan = (p, d) => (Math.sign((p.bilek[0] - p.omuz[0]) * (d[1] - p.omuz[1]) - (p.bilek[1] - p.omuz[1]) * (d[0] - p.omuz[0])) || 1);
+    const sA = yan(A, dA), sB = yan(B, dB);
+    const eA = kolIK(omuz, bilek, ust, alt, sA);
+    dirsek = sA === sB ? eA : ara(eA, kolIK(omuz, bilek, ust, alt, sB));
+  } else {
+    const uA = yon(A.omuz, dA), uB = yon(B.omuz, dB), fA = yon(dA, A.bilek), fB = yon(dB, B.bilek);
+    const ua = uA + aciFark(uA, uB) * u;
+    dirsek = [omuz[0] + Math.cos(ua * D2R) * ust, omuz[1] + Math.sin(ua * D2R) * ust];
+    const fa = (ua + aciFark(uA, fA) * (1 - u) + aciFark(uB, fB) * u) * D2R;
+    bilek = [dirsek[0] + Math.cos(fa) * alt, dirsek[1] + Math.sin(fa) * alt];
+  }
+  Object.assign(C, { omuz, dirsek, bilek });
+  // el ön kolu izler: el açısı ön kola göre (bilek bükümü) karışır
+  // (a.elYon ±1: bilek bu yöne döner; ör. elin yüzün önünden değil dışarıdan dönmesi için)
+  const buk = (p, d) => aciFark(yon(d, p.bilek), p.elAci ?? yon(d, p.bilek));
+  const bA = buk(A, dA);
+  let bB = buk(B, dB);
+  if (a.elYon < 0 && bB > bA) bB -= 360;
+  if (a.elYon > 0 && bB < bA) bB += 360;
+  C.elAci = yon(dirsek, bilek) + bA * (1 - u) + bB * u;
+  const iki = (ad) => [A[ad] ?? VARSAY[ad]?.(A), B[ad] ?? VARSAY[ad]?.(B)];
+  for (const ad of ['elBoy', 'kisalma']) { const [p, q] = iki(ad); if (typeof p === 'number' && typeof q === 'number') C[ad] = p + (q - p) * u; }
+  const [pa, pb] = iki('basparmak');
+  if (pa * pb > 0) C.basparmak = pa + (pb - pa) * u; // ters yandaysa el eşikte döner
+  C.ara = true; // ara değer (s4: gizli poz yalnız tam oturmuşken çizilmez)
+  return C;
+}
+// Hareket izi: anahtarlar { bas, sure, poz(f), ease, esik, mod } (bas: geçişin başladığı iç kare, bas sırasında). f karesindeki
+// durum: her anahtar, bir öncekinin kendi başladığı andaki ara durumundan pozuna `sure` karede akar (yarıda kesilen sıçramaz)
+const izOran = (a, f) => (a.sure > 0 ? a.ease(Math.min(1, Math.max(0, (f - a.bas) / a.sure))) : 1);
+function izDurum(iz, f, karis) {
+  let bas = null, akt = null;
+  for (const a of iz) {
+    if (a.bas > f) break;
+    if (akt) bas = karis(bas, akt.poz(a.bas), izOran(akt, a.bas), akt);
+    akt = a;
+  }
+  return akt ? karis(bas, akt.poz(f), izOran(akt, f), akt) : null;
+}
+
 
 // ---------- Kâğıt figür çizimleri (kart birimi: u ∈ [−0,5; 0,5] sağa, v ∈ [0; 1] yukarı). 2B sahnede ve 3B dokuda aynı.
 // d: dolgu tonu (TON anahtarı), k: kapalı, w: çizgi kalınlığı çarpanı. Genel fantastik figürler (tanınır karakter değil).
@@ -228,8 +295,7 @@ const ATISLAR = [
 ];
 
 export function kur(ctx) {
-  const { k, E, tl, gsap, el, cizgi, W, H, DIKEY, VURGU, BALON, KAGIT, adim } = ctx;
-  const ka = (n) => k(adim(n)); // 12 fps poz ızgarası
+  const { k, E, tl, gsap, el, cizgi, W, H, DIKEY, VURGU, BALON, KAGIT } = ctx;
   ctx.vurus(14, 'Sohbet, E zarları atar', BAS, KY - 1);
   ctx.vurus(15, 'Yakın plan: tavla zarları (3B)', KY, KO - 1);
   ctx.vurus(16, '"Keşke piyonlarımız…", "Keşke FRP zarlarımız…"', KO, K_CENE - 1);
@@ -242,7 +308,6 @@ export function kur(ctx) {
     gsap.set(K.div, { autoAlpha: 0 });
     tl.set(K.div, { autoAlpha: 0 }, 0);
   }
-  const sahnede = () => { const t = tl.time(); return t >= k(BAS) - 0.02 && t < k(SON + 1); };
 
   // ---------- Yerleşim (dünya). Masa: yassı oval üst yüz; kişiler uzak kenarın arkasında, kenar göğüslerini keser.
   const MASA = { c: [960, 905], r: [930, 150] };
@@ -255,7 +320,11 @@ export function kur(ctx) {
   const gGovde = el(L.svg, 'g'), gMasa = el(L.svg, 'g'), gKol = el(L.svg, 'g'), gPerde = el(L.svg, 'g');
   const gFigur = el(L.svg, 'g'), gZar = el(L.svg, 'g'), gEfekt = el(L.svg, 'g');
   const oyuncular = [];
-  function oyuncu(ad, { kalinlik = 64, giysi = null, manset = 'duz', kolBoyu = 'uzun', ozel = null }) {
+  // Kişi: gövde (masanın altında) ve kollar (masanın üstünde) ayrı svg'de. Yüz ve göz ayrık (h.poz, tl.call); kollar her
+  // kolun kendi izinden 60 fps: h.kolAt(n, { sol, sag }, sure, ease, mod | { mod, elYon }) n'de başlayan geçiş ekler (ad →
+  // POZ ya da ozel). Çizim her karede h.surdur(f)'te, kollar ya da yüz/kaynama değiştiyse (kaynama 8 fps). bos: kolu null
+  // olan kişinin gizli pozu
+  function oyuncu(ad, { kalinlik = 64, giysi = null, manset = 'duz', kolBoyu = 'uzun', ozel = null, bos = null }) {
     const p = ctx.kisiParam(ad), { x, s, yuk = 0 } = YER[ad];
     const kY = kenarY(x);
     const y0 = kY - KESIT * s + ctx.boyKaymasi(p) * s - yuk, x0 = x - BOY.en * s / 2;
@@ -265,32 +334,51 @@ export function kur(ctx) {
     const o = omuzlar(p, kalinlik);
     const id = `s4-${ad}`;
     const h = {
-      ad, p, s, x, x0, y0, ifade: 'notr', bakis: [0, 0], kol: { sol: 'masa', sag: 'masa' }, titre: [0, 0], o, kalinlik,
+      ad, p, s, x, x0, y0, ifade: 'notr', bakis: [0, 0], o, kalinlik,
       dunya: ([u, v]) => [x0 + u * s, y0 + v * s],
       kutu: ([X, Y]) => [(X - x0) / s, (Y - y0) / s],
       kenar: (kY - y0) / s,   // masa uzak kenarının bu kişinin kutusundaki yüksekliği
-      araya: '',               // tutulan nesne (kol.js araya: parmakların arasında)
+      iz: { sol: [], sag: [] }, kollar: { sol: null, sag: null }, kirli: true,
     };
     let son = 0;
-    h.ciz = (i) => {
-      if (i != null) { son = Math.max(0, i); if (!sahnede()) return; }
+    // yon'daki kolun f karesindeki pozu (kolSVG tanımı, kutu birimi)
+    const poz = (yon, ad2, f) => {
+      const a = ad2 ?? bos;
+      if (!a) return null;
+      const P = (ozel && ozel(h, yon, a, f)) || POZ[a]?.(h, yon, f);
+      if (!P) return null;
+      const taraf = yon < 0 ? 'sol' : 'sag';
+      return { omuz: o[taraf], omuzUcu: o.ucu(yon), taraf, tohum: p.tohum % 50 + (yon < 0 ? 1 : 2), elBoy: EB, ...P };
+    };
+    h.kolAt = (n, kol, sure = 6, ease = 'sine.inOut', ops = 'eklem', esik = 0.5) => {
+      const sec = typeof ops === 'string' ? { mod: ops } : ops;
+      for (const [taraf, ad2] of Object.entries(kol)) {
+        const yon = taraf === 'sol' ? -1 : 1;
+        h.iz[taraf].push({ bas: n, sure, ease: gsap.parseEase(ease), esik, ...sec, poz: (f) => poz(yon, ad2, f) });
+        h.iz[taraf].sort((a, b) => a.bas - b.bas);
+      }
+    };
+    const ciz = () => {
       const ortak = { giysi: giysi || MONO.giysi[p.giysi], ten: MONO.ten[p.ten], kalinlik, kaynama: son, manset, kolBoyu, golge: { klip: `url(#${id}-g)` } };
-      const kol = (yon) => {
-        const ad2 = h.kol[yon < 0 ? 'sol' : 'sag'];
-        if (!ad2) return '';
-        const P = (ozel && ozel(h, yon, ad2, son)) || POZ[ad2]?.(h, yon);
-        if (!P) return '';
-        const taraf = yon < 0 ? 'sol' : 'sag', omuz = o[taraf];
-        return kolSVG({ ...ortak, omuz, omuzUcu: o.ucu(yon), taraf, tohum: p.tohum % 50 + (yon < 0 ? 1 : 2), elBoy: EB, ...P });
+      const kol = (taraf) => {
+        const P = h.kollar[taraf];
+        if (!P || (P.gizli && !P.ara)) return '';
+        return kolSVG({ ...ortak, ...P, araya: h.araya ? h.araya(taraf, P, son) : '' });
       };
-      const sol = kol(-1), sag = kol(1);
+      const sol = kol('sol'), sag = kol('sag');
       const G = govdeKes(p, { sol: !!sol, sag: !!sag, id, kaynama: son });
       sB.innerHTML = G.tanim + `<g ${G.klip}>${kisiSVG(p, { kaynama: son, ifade: h.ifade, bakis: h.bakis, mono: true })}</g>` + G.kontur;
       sK.innerHTML = sol + sag;
     };
-    h.poz = ({ ifade, bakis, kol, titre } = {}) => {
-      if (ifade) h.ifade = ifade; if (bakis) h.bakis = bakis; if (kol) Object.assign(h.kol, kol); if (titre) h.titre = titre;
-      h.ciz();
+    h.ciz = (i) => { son = Math.max(0, i); h.kirli = true; };
+    h.poz = ({ ifade, bakis } = {}) => { if (ifade) h.ifade = ifade; if (bakis) h.bakis = bakis; h.kirli = true; };
+    let sonA = '';
+    h.surdur = (f) => {
+      const K = { sol: izDurum(h.iz.sol, f, kolKaris), sag: izDurum(h.iz.sag, f, kolKaris) };
+      const a = JSON.stringify(K) + (h.araya ? h.arayaAnahtar() : '');
+      if (!h.kirli && a === sonA) return;
+      h.kollar = K; sonA = a; h.kirli = false;
+      ciz();
     };
     // Eğilme ve doğrulma: masadaki temas noktası çevresinde (gövde + kollar birlikte); zip: gülme sarsıntısı (dy'ye eklenir)
     h.d = { dx: 0, dy: 0, aci: 0, s: 1, px: x, py: kY, zip: 0 };
@@ -299,9 +387,9 @@ export function kur(ctx) {
       const t = `translate(${f1(d.dx)} ${f1(d.dy + d.zip)}) rotate(${f3(d.aci)} ${f1(d.px)} ${f1(d.py)}) translate(${f1(d.px)} ${f1(d.py)}) scale(${f3(d.s)}) translate(${f1(-d.px)} ${f1(-d.py)})`;
       gB.setAttribute('transform', t); gK.setAttribute('transform', t);
     };
-    // Duruş tween'i (12 fps adımlı ya da verilen eğri): İÇ kare zamanlı
-    h.dur = (n0, sure, hedef, ease = null) => tl.to(h.d, { ...hedef, duration: k(sure), ease: ease || `steps(${Math.max(1, Math.round(sure / 5))})`, onUpdate: h.uygula }, k(n0));
-    h.ciz(0);
+    // Duruş tween'i (60 fps; verilmezse sine.inOut): İÇ kare zamanlı
+    h.dur = (n0, sure, hedef, ease = 'sine.inOut') => tl.to(h.d, { ...hedef, duration: k(sure), ease, onUpdate: h.uygula }, k(n0));
+    ciz();
     ctx.kaynayanlar.add(h.ciz);
     oyuncular.push(h);
     return h;
@@ -352,8 +440,9 @@ export function kur(ctx) {
   const kart = { b: -1 };
   // kart yüzün yanında, çene ile göz hizası arasında (okunsun diye masadaki figürden biraz büyük)
   const TUT = { bilek: (h) => { const [sx, sy] = S(h, 1); return [sx - 30, sy - 22]; }, dirsek: (h) => { const [sx, sy] = S(h, 1); return [sx + 52, sy + 118]; }, elAci: -64 };
-  const kartElde = (h, bukum, kaynama) => {
-    const [bx, by] = elNoktasi({ el: 'tutma', bilek: TUT.bilek(h), elAci: TUT.elAci, elBoy: EB, basparmak: 1, ad: 'tut' });
+  // bilek, elAci: o karedeki elin (ara değerli) yeri; kart elle birlikte gelir
+  const kartElde = (h, bukum, kaynama, bilek = TUT.bilek(h), elAci = TUT.elAci) => {
+    const [bx, by] = elNoktasi({ el: 'tutma', bilek, elAci, elBoy: EB, basparmak: 1, ad: 'tut' });
     const Hc = 108, ww = Hc * 0.62, th = bukum * 1.65;
     const C = (v) => {
       if (th < 1e-3) return [[bx, by - Hc * v], [0, -1]];
@@ -376,7 +465,7 @@ export function kur(ctx) {
   const E4 = oyuncu('E4', { kalinlik: 56, manset: 'gomlek' });
   const E3 = oyuncu('E3', {
     kalinlik: 74, kolBoyu: 'sivali',
-    ozel: (h, yon, ad, kaynama) => {
+    ozel: (h, yon, ad) => {
       const [sx, sy] = S(h, yon);
       // E'nin omzuna vurma: el E'nin sol omuz başında (E'nin kutusundan E3'ün kutusuna). Sol el, avuç omuzda: el sırtı
       // görünür, başparmak omzun önüne (aşağı) düşer (basparmak +yon)
@@ -394,29 +483,37 @@ export function kur(ctx) {
         const bilek = bilekBul({ el: 'tutma', hedef, elAci, elBoy: EB, basparmak: yon, ad: 'tut' });
         return { dirsek: [sx + 44, sy + 96], bilek, el: 'tutma', elAci, basparmak: yon };
       }
-      if (ad === 'tut') return { dirsek: TUT.dirsek(h), bilek: TUT.bilek(h), el: 'tutma', elAci: TUT.elAci, basparmak: yon, araya: kart.b < 0 ? '' : kartElde(h, kart.b, kaynama) };
+      if (ad === 'tut') return { dirsek: TUT.dirsek(h), bilek: TUT.bilek(h), el: 'tutma', elAci: TUT.elAci, basparmak: yon };
       return null;
     },
   });
-  // E'nin kolları perdenin ardında (çizilmez); atış ve jestler sol kolla (yatayda E3'ün yanı)
+  // kâğıt elde (kart.b ≥ 0): sağ el tutma pozundayken o anki elin parmakları arasında çizilir
+  E3.araya = (taraf, P, kaynama) => (taraf === 'sag' && kart.b >= 0 && P.el === 'tutma' ? kartElde(E3, kart.b, kaynama, P.bilek, P.elAci) : '');
+  E3.arayaAnahtar = () => String(kart.b);
+  // E'nin zar sallayan yumruğunun titremesi (kare numarasından, sürekli): 7,5 Hz dikey, yarısı hızla yatay; uçlarda söner
+  const titre = (f) => {
+    const z = Math.min(1, Math.max(0, (f - 1610) / 6), Math.max(0, (1648 - f) / 4));
+    return [2.6 * Math.sin(2 * Math.PI * (f - 1614) / 16 + 0.6) * z, -6.5 * Math.cos(2 * Math.PI * (f - 1614) / 8) * z];
+  };
+  // E'nin kolları perdenin ardında (dinlenirken çizilmez: 'gizli' poz yalnız geçişte görünür); atış ve jestler sol kolla
+  // (yatayda E3'ün yanı)
   const ATIS = { salla: [[66, 215], [34, 362], -96], kaldir: [[60, 186], [28, 334], -80], at: [[104, 236], [40, 372], 100], at2: [[104, 258], [46, 380], 108] };
   const EE = oyuncu('E', {
-    kalinlik: 56, manset: 'ribana',
-    ozel: (h, yon, ad) => {
-      const [tx, ty] = h.titre;
+    kalinlik: 56, manset: 'ribana', bos: 'gizli',
+    ozel: (h, yon, ad, f) => {
       if (ad === 'salla' || ad === 'kaldir') {
-        const [[bx, by], d, a] = ATIS[ad];
-        return { dirsek: d, bilek: [bx + (ad === 'salla' ? tx : 0), by + (ad === 'salla' ? ty : 0)], el: 'yumruk', elAci: a, elBoy: EB * 0.95, basparmak: -yon };
+        const [[bx, by], d, a] = ATIS[ad], [tx, ty] = ad === 'salla' ? titre(f) : [0, 0];
+        return { dirsek: d, bilek: [bx + tx, by + ty], el: 'yumruk', elAci: a, elBoy: EB * 0.95, basparmak: -yon };
       }
       if (ad === 'at' || ad === 'at2') { const [bilek, dirsek, elAci] = ATIS[ad]; return { dirsek, bilek, el: 'acik', elAci, basparmak: yon, yuz: 'sirt' }; }
-      // konuşurken avuç yukarı, zarları gösterir (el perdenin üstünde)
       // konuşurken açık avuç yana ve yukarı ("keşke…"); el perdenin üstünde
       if (ad === 'goster') { const [sx, sy] = S(h, yon); return { dirsek: [sx + yon * 40, h.kenar - 20], bilek: [sx + yon * 66, sy - 30], el: 'acik', yuz: 'avuc', elAci: yon < 0 ? -128 : -52, basparmak: -yon, kisalma: 0.9 }; }
+      // perdenin ardında dinlenen kol (ön kol içe, el perdenin arkasında); kol perdenin üstüne bundan kalkar
+      if (ad === 'gizli') { const [sx, sy] = S(h, yon); return { dirsek: [sx + yon * 24, sy + 122], bilek: [200 + yon * 72, sy + 112], el: 'acik', elAci: yon < 0 ? 8 : 172, basparmak: yon, gizli: 1 }; }
       return null;
     },
   });
   const E2 = oyuncu('E2', { kalinlik: 64, giysi: DERI });
-  EE.kol = { sol: null, sag: null };
 
   // ---------- Oda (L0): duvar saati ve raf (yalnız genel planda görünür; balonlara değmez)
   {
@@ -478,7 +575,7 @@ export function kur(ctx) {
   }
 
   // ---------- Kâğıt figürler (gFigur): kart + arkaya kıvrık taban (yandan görünür), alt gölge. dn: kartın dönüklüğü
-  // (−1…1; taban kanadı dönük yanda görünür). Sallanma: grup tabanın ortası çevresinde döner (12 fps).
+  // (−1…1; taban kanadı dönük yanda görünür). Sallanma: grup tabanın ortası çevresinde döner (60 fps).
   const kartNokta = (BL, BR, TR, TL) => ([u, v]) => {
     const s = u + 0.5, a = (1 - s) * (1 - v), b = s * (1 - v), c = s * v, d = (1 - s) * v;
     return [a * BL[0] + b * BR[0] + c * TR[0] + d * TL[0], a * BL[1] + b * BR[1] + c * TR[1] + d * TL[1]];
@@ -583,7 +680,7 @@ export function kur(ctx) {
       const ni = Math.floor((n - t0) / 2);
       const d = TAKLA[(ni + i * 3 + 64) % TAKLA.length];
       if (String(z.deger) !== String(d)) { z.deger = d; z.ciz(); }
-      z.koy(x, y, 30 * ni + i * 40, 1, 1, 0.03 + 0.05 * u);
+      z.koy(x, y, 15 * (n - t0) + i * 40, 1, 1, 0.03 + 0.05 * u); // dönüş sürekli; yüz (nokta) değişimi takla çizimi, 2 karede bir
     });
   };
   tl.fromTo(ucus, { n: 1656 }, { n: 1672, duration: k(16), ease: 'none', onUpdate: () => ucusUygula(ucus.n), immediateRender: false }, k(1656));
@@ -687,30 +784,36 @@ export function kur(ctx) {
     kamGit(1612, 30, KAM.genis2, KAM.salla);
   }
   kamGit(1642, 30, KAM.salla, KAM.at, 'power1.inOut');
-  const bas = (h, o) => tl.call(() => h.poz(o), null, k(BAS));
-  bas(E4, { ifade: 'merak', bakis: [3, 0], kol: { sol: 'masa', sag: 'masa' } });
-  bas(E3, { ifade: 'saskin', bakis: [2, 0], kol: { sol: 'anlat', sag: 'anlat' } });
-  bas(EE, { ifade: 'merak', bakis: [-3, 0], kol: { sol: null, sag: null }, titre: [0, 0] });
-  bas(E2, { ifade: 'merak', bakis: [-3, 0], kol: { sol: 'masa', sag: 'masa' } });
-  tl.call(() => { E3.araya = ''; for (const h of oyuncular) { Object.assign(h.d, { dx: 0, dy: 0, aci: 0, s: 1, zip: 0 }); h.uygula(); } }, null, k(BAS));
+  const bas = (h, o, kol) => { tl.call(() => h.poz(o), null, k(BAS)); h.kolAt(BAS, kol, 0); };
+  bas(E4, { ifade: 'merak', bakis: [3, 0] }, { sol: 'masa', sag: 'masa' });
+  bas(E3, { ifade: 'saskin', bakis: [2, 0] }, { sol: 'anlat', sag: 'anlat' });
+  bas(EE, { ifade: 'merak', bakis: [-3, 0] }, { sol: null, sag: null });
+  bas(E2, { ifade: 'merak', bakis: [-3, 0] }, { sol: 'masa', sag: 'masa' });
+  tl.call(() => { for (const h of oyuncular) { Object.assign(h.d, { dx: 0, dy: 0, aci: 0, s: 1, zip: 0 }); h.uygula(); } }, null, k(BAS));
   for (const h of oyuncular) h.uygula();
-  const P = (n, h, o) => tl.call(() => h.poz(o), null, ka(n));
+  // Yüz ve göz (ayrık çizim) tam karesinde; kollar h.kolAt ile (başlangıç, süre): geçişin ortası eski 12 fps poz karesine,
+  // vuruş ve atışta varış ses işaretine denk gelir
+  const P = (n, h, o) => tl.call(() => h.poz(o), null, k(n));
   // E3 anlatır: ağız açılıp kapanır, eller değişir; 1551 espri (omuz silker)
-  P(1541, E3, { ifade: 'merak', kol: { sol: 'anlat2', sag: 'anlat' } });
-  P(1546, E3, { ifade: 'saskin', kol: { sol: 'anlat', sag: 'anlat2' } });
-  P(1551, E3, { ifade: 'mutlu', kol: { sol: 'silk', sag: 'silk' } });
+  P(1541, E3, { ifade: 'merak' }); E3.kolAt(1537, { sol: 'anlat2', sag: 'anlat' }, 7);
+  P(1546, E3, { ifade: 'saskin' }); E3.kolAt(1542, { sol: 'anlat', sag: 'anlat2' }, 7);
+  P(1551, E3, { ifade: 'mutlu' }); E3.kolAt(1547, { sol: 'silk', sag: 'silk' }, 7);
   P(1546, E2, { ifade: 'kisik', bakis: [-3, 0] });
   P(1551, EE, { ifade: 'kisik', bakis: [-3, 0] });
   // gülüşme (1556–1600): E2 geriye yaslanıp E3'ü gösterir, E4 elini ağzına kapatır, E başını sallar
-  P(1556, E2, { ifade: 'mutlu', kol: { sol: 'isaret' } });
-  P(1556, E4, { ifade: 'mutlu', kol: { sag: 'agiz' } });
+  P(1556, E2, { ifade: 'mutlu' }); E2.kolAt(1551, { sol: 'isaret' }, 8);
+  P(1556, E4, { ifade: 'mutlu' }); E4.kolAt(1551, { sag: 'agiz' }, 8);
   P(1556, EE, { ifade: 'mutlu' });
-  P(1561, E3, { ifade: 'mutlu', kol: { sol: 'masa', sag: 'silk' }, bakis: [3, -1] });
-  P(1571, E3, { kol: { sag: 'masa' } });
+  P(1561, E3, { ifade: 'mutlu', bakis: [3, -1] }); E3.kolAt(1556, { sol: 'masa' }, 9);
+  E3.kolAt(1566, { sag: 'masa' }, 9);
   E2.dur(1556, 10, { aci: -3.5, dy: -10 });
-  const gul = (h, n0, n1, gen, faz = 0) => { for (let n = n0, i = faz; n < n1; n += 5, i++) tl.call(() => { h.d.zip = i % 2 ? gen : 0; h.uygula(); }, null, ka(n)); tl.call(() => { h.d.zip = 0; h.uygula(); }, null, ka(n1)); };
-  gul(E2, 1556, 1600, -5); gul(E4, 1561, 1606, 4, 1); gul(EE, 1561, 1596, 3); gul(E3, 1566, 1601, 4, 1);
-  // gülme çizgileri (başın yanında üç kısa çizgi, 12 fps yanıp söner)
+  // gülme sarsıntısı: zip sürekli iner-kalkar (10 karelik dönüş), başta ve sonda sıfır
+  const gul = (h, n0, n1, gen) => {
+    const c = Math.max(1, Math.round((n1 - n0) / 10));
+    tl.fromTo(h.d, { zip: 0 }, { zip: gen, duration: k(n1 - n0), ease: (q) => 0.5 - 0.5 * Math.cos(2 * Math.PI * c * q), onUpdate: h.uygula, immediateRender: false }, k(n0));
+  };
+  gul(E2, 1556, 1600, -5); gul(E4, 1561, 1606, 4); gul(EE, 1561, 1596, 3); gul(E3, 1566, 1601, 4);
+  // gülme çizgileri (başın yanında üç kısa çizgi): belirir, gülme ritmiyle atar (ölçek, 10 karelik dönüş), söner
   const gulmeCizgi = (h, yon, n0, n1, tohum) => {
     const Y = YAPI[h.p.yapi] || YAPI.orta, hw = h.p.yuzEn * Y.yuz;
     const [ax, ay] = h.dunya([200 + yon * (hw + 26), GOZ_Y - 10]), g = el(gEfekt, 'g');
@@ -718,61 +821,68 @@ export function kur(ctx) {
       const L = 20 * h.s, r0 = 8 * h.s, dx = Math.cos(a) * yon, dy = Math.sin(a);
       cizgi(g, [[ax + dx * r0, ay + dy * r0], [ax + dx * (r0 + L), ay + dy * (r0 + L)]], { kalinlik: 3.6, tohum: tohum + i });
     });
-    gsap.set(g, { autoAlpha: 0 });
+    gsap.set(g, { autoAlpha: 0, svgOrigin: `${f1(ax)} ${f1(ay)}` });
     tl.set(g, { autoAlpha: 0 }, k(BAS));
-    for (let n = n0, i = 0; n < n1; n += 5, i++) tl.set(g, { autoAlpha: i % 3 === 2 ? 0 : 1 }, ka(n));
-    tl.set(g, { autoAlpha: 0 }, ka(n1));
+    const c = Math.max(1, Math.round((n1 - n0) / 10));
+    tl.fromTo(g, { autoAlpha: 0 }, { autoAlpha: 1, duration: k(4), ease: 'none', immediateRender: false }, k(n0));
+    tl.fromTo(g, { scale: 0.8 }, { scale: 1.12, duration: k(n1 - n0), ease: (q) => 0.5 - 0.5 * Math.cos(2 * Math.PI * c * q), immediateRender: false }, k(n0));
+    tl.to(g, { autoAlpha: 0, duration: k(5), ease: 'none' }, k(n1 - 5));
     return g;
   };
   // (E2 sola dönük güler: çizgiler sağında; E4 sağa dönük: solunda)
   gulmeCizgi(E2, 1, 1561, 1596, 720); gulmeCizgi(E4, -1, 1566, 1601, 724);
-  // E2 masaya vurur (1576 kalkar, 1582 vurur): darbe çizgileri, figürler sallanır, 'tik'
-  P(1576, E2, { kol: { sol: 'vurHazir' } });
-  P(1581, E2, { kol: { sol: 'vur' } });
+  // E2 masaya vurur (eli kalkar, 1582'de masada: tık): darbe çizgileri, figürler sallanır
+  E2.kolAt(1569, { sol: 'vurHazir' }, 8);
+  E2.kolAt(1579, { sol: 'vur' }, 3, 'power2.in');
   ctx.isaret(1582, 'tik');
   {
     const [vx, vy] = E2.dunya([200 - 70, E2.kenar + 100]);
     const g = el(gEfekt, 'g');
     [[-50, -6, -84, -18], [-44, 18, -78, 28], [40, -10, 72, -24], [-10, -30, -16, -60]]
       .forEach(([a, b, c, d], i) => cizgi(g, [[vx + a, vy + b], [vx + c, vy + d]], { kalinlik: 4, tohum: 730 + i }));
-    gsap.set(g, { autoAlpha: 0 });
+    gsap.set(g, { autoAlpha: 0, svgOrigin: `${vx} ${vy}` });
     tl.set(g, { autoAlpha: 0 }, k(BAS));
-    tl.set(g, { autoAlpha: 1, scale: 0.7, svgOrigin: `${vx} ${vy}` }, ka(1581));
-    tl.set(g, { scale: 1.1 }, ka(1586));
-    tl.set(g, { autoAlpha: 0 }, ka(1591));
+    tl.fromTo(g, { autoAlpha: 1, scale: 0.7 }, { scale: 1.15, duration: k(9), ease: E.EO, immediateRender: false }, k(1582));
+    tl.to(g, { autoAlpha: 0, duration: k(4), ease: 'none' }, k(1588));
   }
-  // figürler sallanır (12 fps, sönümlü)
+  // figürler sallanır (sönümlü, 60 fps): darbeyle hızla yatar, sağa sola salınıp durur
   Object.values(FIGURLER).forEach((f, i) => {
+    const sg = i % 2 ? -1 : 1;
     tl.set(f.g, { rotation: 0, y: 0 }, k(BAS));
-    [[1581, 7, -3], [1586, -5, 0], [1591, 3, 0], [1596, -1, 0], [1601, 0, 0]].forEach(([n, r, y]) => tl.set(f.g, { rotation: r * (i % 2 ? -1 : 1), y }, ka(n + i)));
+    tl.to(f.g, { keyframes: [
+      { rotation: 7 * sg, y: -3, duration: k(2), ease: 'power2.out' },
+      { rotation: -5 * sg, y: 0, duration: k(5), ease: 'sine.inOut' },
+      { rotation: 3 * sg, duration: k(5), ease: 'sine.inOut' },
+      { rotation: -1 * sg, duration: k(5), ease: 'sine.inOut' },
+      { rotation: 0, duration: k(5), ease: 'sine.inOut' },
+    ] }, k(1582 + i));
   });
-  P(1586, E2, { kol: { sol: 'masa' } });
+  E2.kolAt(1585, { sol: 'masa' }, 7);
   E2.dur(1601, 10, { aci: 0, dy: 0 });
-  // E3, E'nin omzuna iki kez vurur (gülerek)
-  P(1586, E3, { kol: { sag: 'omuzKalk' }, bakis: [3, 0] });
-  P(1591, E3, { kol: { sag: 'omuz' } });
-  P(1596, E3, { kol: { sag: 'omuzKalk' } });
-  P(1601, E3, { kol: { sag: 'omuz' } });
-  P(1608, E3, { kol: { sag: 'masa' }, ifade: 'merak' });
-  EE.dur(1591, 4, { dy: 6 }, 'none'); EE.dur(1596, 4, { dy: 0 }, 'none'); EE.dur(1601, 4, { dy: 6 }, 'none'); EE.dur(1606, 4, { dy: 0 }, 'none');
-  P(1601, E4, { kol: { sag: 'masa' }, ifade: 'merak', bakis: [3, 0] });
-  // E zarları yumruğunda sallar (30 fps titreme), herkes öne eğilir, gözler yumrukta
-  P(1611, EE, { kol: { sol: 'salla' }, ifade: 'kisik', bakis: [-2, -1] });
+  // E3, E'nin omzuna iki kez vurur (gülerek): el kalkar, iner (vuruş hızlı), yine kalkar, iner, masaya döner
+  P(1586, E3, { bakis: [3, 0] });
+  E3.kolAt(1579, { sag: 'omuzKalk' }, 7, 'sine.inOut', 'el');
+  E3.kolAt(1588, { sag: 'omuz' }, 3, 'power2.in');
+  E3.kolAt(1592, { sag: 'omuzKalk' }, 4);
+  E3.kolAt(1598, { sag: 'omuz' }, 3, 'power2.in');
+  P(1608, E3, { ifade: 'merak' }); E3.kolAt(1603, { sag: 'masa' }, 9, 'sine.inOut', 'el');
+  EE.dur(1591, 3, { dy: 6 }, 'power2.out'); EE.dur(1594, 6, { dy: 0 }); EE.dur(1601, 3, { dy: 6 }, 'power2.out'); EE.dur(1604, 6, { dy: 0 }); // vuruşla omzu çöker
+  P(1601, E4, { ifade: 'merak', bakis: [3, 0] }); E4.kolAt(1597, { sag: 'masa' }, 8);
+  // E zarları yumruğunda sallar (sürekli titreme), herkes öne eğilir, gözler yumrukta
+  P(1611, EE, { ifade: 'kisik', bakis: [-2, -1] }); EE.kolAt(1603, { sol: 'salla' }, 9);
   P(1616, E3, { ifade: 'saskin', bakis: [3, -2] });
   P(1616, E4, { ifade: 'merak', bakis: [3, -1] });
   P(1621, E2, { ifade: 'merak', bakis: [-3, -1] });
   P(1631, E2, { ifade: 'kisik' });
   E3.dur(1612, 30, { aci: 2, dy: 8, s: 1.02 }); E4.dur(1616, 30, { aci: 1.6, dy: 8, s: 1.02 }); E2.dur(1614, 30, { aci: -2.2, dy: 8, s: 1.02 });
-  for (let n = 1614, i = 0; n < 1648; n += 2, i++) {
-    const tt = [[0, -7], [3, 5], [-2, -6], [2, 6]][i % 4];
-    tl.call(() => EE.poz({ titre: tt }), null, k(n));
-  }
-  // atış: kaldırır (1648), açar (1656), el yere doğru (1662), sonra perdenin ardına çekilir
-  tl.call(() => EE.poz({ kol: { sol: 'kaldir' }, titre: [0, 0], ifade: 'kararli', bakis: [-2, 1] }), null, k(1648));
-  EE.dur(1648, 4, { dy: -6 }, 'none');
-  tl.call(() => EE.poz({ kol: { sol: 'at' } }), null, k(1656));
-  tl.call(() => EE.poz({ kol: { sol: 'at2' } }), null, k(1662));
-  for (const [h, b] of [[E3, [3, 2]], [E4, [3, 2]], [E2, [-3, 2]]]) P(1661, h, { ifade: 'saskin', bakis: b });
+  // atış: kaldırır (1648), savurur (zarlar 1657'de elden çıkar), el yere doğru (1662), sonra perdenin ardına çekilir
+  P(1648, EE, { ifade: 'kararli', bakis: [-2, 1] }); EE.kolAt(1645, { sol: 'kaldir' }, 5);
+  EE.dur(1648, 4, { dy: -6 });
+  EE.kolAt(1652, { sol: 'at' }, 5, 'power2.in', { elYon: -1 }); // el yüzün önünden değil dışarıdan döner
+  EE.kolAt(1657, { sol: 'at2' }, 7, 'power2.out');
+  for (const [h, b] of [[E3, [3, 2]], [E4, [3, 2]], [E2, [-3, 2]]]) P(1660, h, { ifade: 'saskin', bakis: b });
+  // Kişiler her karede kendi izinden çizilir (sahne aralığında)
+  ctx.herKare((f) => { if (f >= BAS && f <= SON) for (const h of oyuncular) h.surdur(f); });
 
   // =========================================================================== #15 (1672–1799): 3B yakın plan
   ctx.isaret(KY, 'kesme');
@@ -804,21 +914,32 @@ export function kur(ctx) {
   ctx.kameraKoy(KO, KAM.orta);
   kamGit(KO, 122, KAM.orta, itis(KAM.orta, 1.025), 'none');
   tl.call(() => {
-    E3.poz({ ifade: 'sikkin', bakis: [3, 2], kol: { sol: 'masa', sag: 'masa' } });
-    EE.poz({ ifade: 'sikkin', bakis: [-2, 2], kol: { sol: null, sag: null }, titre: [0, 0] });
-    E4.poz({ ifade: 'sikkin', bakis: [3, 2], kol: { sol: 'masa', sag: 'masa' } });
-    E2.poz({ ifade: 'sikkin', bakis: [-3, 2], kol: { sol: 'masa', sag: 'masa' } });
+    E3.poz({ ifade: 'sikkin', bakis: [3, 2] });
+    EE.poz({ ifade: 'sikkin', bakis: [-2, 2] });
+    E4.poz({ ifade: 'sikkin', bakis: [3, 2] });
+    E2.poz({ ifade: 'sikkin', bakis: [-3, 2] });
     for (const h of oyuncular) { Object.assign(h.d, { dx: 0, dy: 0, aci: 0, s: 1, zip: 0 }); h.uygula(); }
   }, null, k(KO));
-  // E3 devrik kâğıda uzanır, alır; kâğıt elinde boynunu büker (12 fps)
-  P(1806, E3, { kol: { sag: 'uzan' }, ifade: 'sikkin', bakis: [3, 3] });
-  E3.dur(1806, 10, { aci: 2.5, dy: 10, s: 1.02 });
+  // kesme: kollar yeni planda doğrudan yerinde (geçişsiz)
+  for (const h of [E3, E4, E2]) h.kolAt(KO, { sol: 'masa', sag: 'masa' }, 0);
+  EE.kolAt(KO, { sol: null, sag: null }, 0);
+  // E3 devrik kâğıda uzanır (öne eğilerek), alır, doğrulurken kaldırır; kâğıt elinde boynunu büker (60 fps)
+  P(1806, E3, { ifade: 'sikkin', bakis: [3, 3] }); E3.kolAt(1801, { sag: 'uzan' }, 13, 'sine.inOut', 'el');
+  E3.dur(1803, 11, { aci: 2.5, dy: 10, s: 1.02 });
   tl.call(() => { kart.b = -1; }, null, k(BAS));
-  tl.set(DEVRIK.g, { autoAlpha: 0 }, ka(1816));
-  tl.call(() => { kart.b = 0; E3.poz({ kol: { sag: 'tut' }, ifade: 'merak', bakis: [1, -3] }); }, null, ka(1816));
-  E3.dur(1816, 10, { aci: 0, dy: 0, s: 1 });
-  [[1826, 0.2], [1831, 0.55], [1836, 1.05], [1841, 0.86], [1846, 0.97], [1851, 0.93]].forEach(([n, b]) =>
-    tl.call(() => { kart.b = b; E3.poz({}); }, null, ka(n)));
+  tl.set(DEVRIK.g, { autoAlpha: 0 }, k(1815));
+  tl.call(() => { kart.b = 0; E3.poz({ ifade: 'merak', bakis: [1, -3] }); }, null, k(1815));
+  E3.kolAt(1814, { sag: 'tut' }, 11, 'sine.inOut', 'el');
+  E3.dur(1814, 12, { aci: 0, dy: 0, s: 1 });
+  // kâğıt boynunu büker: yerçekimiyle hızlanarak yığılır (1836, tık), geri seker, oturur
+  tl.fromTo(kart, { b: 0 }, { keyframes: [
+    { b: 0.2, duration: k(6), ease: 'sine.in' },
+    { b: 0.55, duration: k(5), ease: 'power1.in' },
+    { b: 1.05, duration: k(5), ease: 'power2.in' },
+    { b: 0.86, duration: k(5), ease: 'sine.out' },
+    { b: 0.97, duration: k(5), ease: 'sine.inOut' },
+    { b: 0.93, duration: k(5), ease: 'sine.inOut' },
+  ], immediateRender: false }, k(1820));
   ctx.isaret(1836, 'tik');
   P(1836, E3, { ifade: 'sikkin', bakis: [1, -3] });
   P(1842, E3, { ifade: 'ozlem', bakis: [2, -2] });
@@ -837,11 +958,11 @@ export function kur(ctx) {
   kamGit(1920, 26, itis(KAM.orta, 1.025), KAM.orta2);
   kamGit(1946, 84, KAM.orta2, itis(KAM.orta2, 1.03), 'none');
   P(1921, EE, { ifade: 'ozlem', bakis: [-1, 3] });
-  P(1931, EE, { ifade: 'saskin', kol: { sag: 'goster' } });
+  P(1931, EE, { ifade: 'saskin' }); EE.kolAt(1925, { sag: 'goster' }, 10);
   P(1941, EE, { ifade: 'ozlem' });
   P(1956, EE, { ifade: 'merak', bakis: [-3, 0] });
   P(1971, EE, { ifade: 'ozlem' });
-  P(1996, EE, { kol: { sag: null }, bakis: [-1, -1] });
+  P(1996, EE, { bakis: [-1, -1] }); EE.kolAt(1990, { sag: null }, 11);
   P(1926, E3, { ifade: 'merak', bakis: [3, 0] });
   P(1931, E2, { ifade: 'merak', bakis: [-3, 0] });
   P(1936, E4, { ifade: 'merak', bakis: [3, 0] });
@@ -858,10 +979,14 @@ export function kur(ctx) {
   ctx.isaret(K_CENE, 'vurgu');
   kamGit(2030, 40, itis(KAM.orta2, 1.03), KAM.ruya);
   kamGit(2070, SON - 2070, KAM.ruya, KAM.ruya2, 'none');
-  // E3 kâğıdı masaya bırakır
-  tl.call(() => { kart.b = -1; E3.poz({ kol: { sag: 'masa' } }); }, null, ka(2031));
-  tl.set(DEVRIK.g, { autoAlpha: 1 }, ka(2031));
-  P(2036, EE, { kol: { sol: 'cene' }, ifade: 'ozlem', bakis: [2, -3] });
+  // E3 kâğıdı aldığı yere bırakır (eğilerek), el masaya döner
+  E3.kolAt(2023, { sag: 'uzan' }, 9, 'sine.inOut', 'el');
+  E3.dur(2023, 9, { aci: 2.5, dy: 10, s: 1.02 });
+  tl.call(() => { kart.b = -1; }, null, k(2032));
+  tl.set(DEVRIK.g, { autoAlpha: 1 }, k(2032));
+  E3.kolAt(2032, { sag: 'masa' }, 9, 'sine.inOut', 'el');
+  E3.dur(2032, 10, { aci: 0, dy: 0, s: 1 });
+  P(2036, EE, { ifade: 'ozlem', bakis: [2, -3] }); EE.kolAt(2028, { sol: 'cene' }, 10);
   P(2046, EE, { ifade: 'merak' });
   P(2056, E3, { ifade: 'merak', bakis: [3, -1] });
   P(2061, E2, { ifade: 'merak', bakis: [-3, -1] });

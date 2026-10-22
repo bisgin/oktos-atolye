@@ -81,7 +81,7 @@ PIYANO = dict(
 YANKI = dict(rt60=(1.45, 1.35, 1.2, 0.9, 0.55, 0.3),   # bant başına (125, 350, 1k, 2,8k, 7k, 14k Hz)
              merkez=(125, 350, 1000, 2800, 7000, 14000),
              sure=2.4, on_gecikme_ms=11.0, islak_db=-13.0, islak_hp=150.0)
-EQ = dict(hp=35.0, alt_raf_db=2.0, alt_raf_f=170.0, sert_db=-3.0, sert_f=3200.0, sert_q=0.9, lp=12000.0)
+EQ = dict(hp=35.0, alt_raf_db=3.5, alt_raf_f=170.0, sert_db=-3.0, sert_f=3200.0, sert_q=0.9, lp=12000.0)
 
 # Nesne sesleri (kendi sentezimiz): kısa, tok, yumuşak tepe. mod: (frekans Hz, sönüm sn, genlik), gur: (merkez Hz, sönüm sn, pay)
 # db: aynı karedeki mp piyano notasının tepesine göre düzey. Hepsi 3 kHz'te yumuşak kesilir (sertlik bandı yorulmasın).
@@ -127,11 +127,30 @@ KEMAN_TEKNIK = dict(
     flautando=dict(harm=5, egim=2.7, sordino_db=12.0, nefes_db=-36.0, atak_ms=240, birak_ms=450, vib=0.0045, gecikme=0.28),
     sordino=dict(harm=8, egim=2.0, sordino_db=15.0, nefes_db=-42.0, atak_ms=110, birak_ms=260, vib=0.005, gecikme=0.22),
 )
-DOKU_HEDEF_DB = {'s1-kafe': -13.0, 's2-atolye': -13.0, 's3-balkon': -12.0, 's4-frp': -14.0, 's4b-hizli': -14.0, 's5-kalabalik': -13.0,
+DOKU_HEDEF_DB = {'s1-kafe': -14.0, 's2-atolye': -13.0, 's3-balkon': -13.0, 's4-frp': -14.0, 's4b-hizli': -14.0, 's5-kalabalik': -14.0,
                  's6-final': -14.0}
 DOKU_CEKIL_DB = -6.0       # kanca notaları ve önemli vurgularda doku çekilir
 DOKU_SESSIZ_DB = -14.0     # sessizliklerde doku incelir (susmaz)
 DOKU_ISLAK_DB = -9.0       # doku aynı odada, biraz daha yankılı (uzun rezonans)
+
+# ----- v09: ANA TEMA (leitmotif) ----------------------------------------------------------------------------------------
+# Re majör, 4 + 4 ölçü (soru / cevap); imza aralığı yükselen altılı (A4 → F#5), adım hareketli, ıslıkla çalınabilir.
+# (vuruş, nota, süre vuruş); vuruş = 24 kare (150 BPM), ölçü = 4 vuruş
+TEMA = [(0, 'A4', 1), (1, 'F#5', 1.5), (2.5, 'E5', .5), (3, 'D5', 1),                    # 1 D   : altılı sıçrama, iniş
+        (4, 'E5', 1), (5, 'F#5', .5), (5.5, 'E5', .5), (6, 'D5', 1), (7, 'B4', 1),       # 2 Bm
+        (8, 'A4', 1), (9, 'B4', .5), (9.5, 'D5', .5), (10, 'E5', 1), (11, 'A5', 1),      # 3 G   : dörtlü sıçrama
+        (12, 'G5', 1.5), (13.5, 'F#5', .5), (14, 'E5', 2),                               # 4 A7  : soru (açık, E5)
+        (16, 'A4', 1), (17, 'F#5', 1.5), (18.5, 'E5', .5), (19, 'D5', 1),                # 5 D   : imza yeniden
+        (20, 'E5', 1), (21, 'F#5', .5), (21.5, 'G5', .5), (22, 'A5', 1), (23, 'B5', 1),  # 6 G   : tepeye çıkış
+        (24, 'A5', 1.5), (25.5, 'F#5', .5), (26, 'E5', 1), (27, 'C#5', 1),               # 7 A7  : iniş, yeden
+        (28, 'D5', 4)]                                                                   # 8 D   : cevap (çözülme)
+TEMA_AKOR = ['D', 'Bm', 'G', 'A7', 'D', 'G', 'A7', 'D']
+AKOR_PC = {'D': {2, 6, 9, 1, 4}, 'Bm': {11, 2, 6, 9}, 'G': {7, 11, 2, 6, 9}, 'A7': {9, 1, 4, 7}}
+AKOR_KILAVUZ = {'D': [6, 1], 'Bm': [2, 9], 'G': [11, 6], 'A7': [1, 7]}   # karşı ezgi: 3'lü ve 7'li
+# Tema keçe piyanoda sağ elde: net ve öne çıkan (keçeden biraz parlak, yumuşak ama belirgin atak)
+PIYANO_TEMA = dict(PIYANO_KECE, parlaklik=0.5, fc_tavan=2500.0, atak_ms=4.0, cekic_db=-40.0, pan_genislik=0.15)
+TEMA_ONE_DB = 4.5          # melodi kendi bandında (400–1300 Hz, tema çalarken) eşlikten bu kadar yüksek ayarlanır
+TEMA_CEKIL = dict(f=650.0, db=-3.0, genislik_okt=1.3)   # tema çalarken akor ve doku melodinin bölgesinde çekilir
 
 KOK = Path(__file__).resolve().parent.parent
 CIKIS = KOK / '.impeccable' / 'ses'
@@ -317,6 +336,7 @@ KANCA_CIFTLERI = [('A4', 'D5'), ('B4', 'E5'), ('D5', 'F#5'), ('E4', 'A4'), ('F#4
 
 def partisyon(isaretler, final_bilgi):
     N, NES, PEDAL = [], [], []
+    TEMA_N, TEMA_YER = [], []      # ana temanın notaları (cizelge "tema") ve karşı ezgi için ölçü yerleri
     S = SAHNELER
     tuketilen = set()
 
@@ -417,13 +437,7 @@ def partisyon(isaretler, final_bilgi):
     kon, dus, vur, tik = isr('konusma', 's1-kafe'), isr('dusunce', 's1-kafe'), isr('vurgu', 's1-kafe'), isr('tik', 's1-kafe')
     A_NOTA = midi(kisi_notasi('A', 'D4')) + 12
     k4 = vk(4, (a + 108, a + 239))[0]
-    # #3 kalabalık kafe: kancanın Dmaj9'u üstünde hafif dokunuş ve A'nın sekme motifi (8-16-16-4); garson sohbette güler
-    n(a + 24, 'A4', 0.26, 10, 'kafe: hafif')
-    n(a + 48, 'A4', 0.36, 12, 'A motifi (kafe)'); n(a + 60, 'F#4', 0.30, 6, 'A motifi (kafe)')
-    n(a + 66, 'A4', 0.32, 6, 'A motifi (kafe)'); n(a + 72, 'D5', 0.38, 20, 'A motifi (kafe)')
-    for j, (o, ad) in enumerate(zip((0, 6, 12), MOTIF['garson'][1])):
-        if uygun(k4 - 24 + o):
-            n(k4 - 24 + o, ad, 0.28 - 0.02 * j, 5, 'garson sohbette: güler')
+    # #3 kalabalık kafe: kancanın Dmaj9'u üstünde ana temanın ilk ölçüsü (aşağıda, TEMA bölümü: zarif, yalnız)
     # #4 el kalkar: Em9 (ii); her seslenişte asılı nota (A'nın notası), ikincisi bir adım yüksek ve V üstünde; garson kahkaha atar
     son4 = kon[1]['kare'] if len(kon) > 1 else k4 + 80
     akor(k4, ['E2', 'B2'], 0.34, son4 - k4, 'Em9: el kalkar'); akor(k4, ['G3', 'D4'], 0.26, son4 - k4, 'Em9')
@@ -450,8 +464,7 @@ def partisyon(isaretler, final_bilgi):
         k = dus[0]['kare']
         bulut = max(dusunce_motifi(k, ['F#5', 'A5', 'C#6']), sus_bitisi(k))
         akor(bulut, ['B1', 'F#2'], 0.34, b - bulut + 1, 'Bm9: QR olsa…'); akor(bulut, ['D4', 'A4', 'C#5'], 0.27, b - bulut + 1, 'Bm9')
-        PEDAL.append((bulut, b))
-        n(bulut + 14, 'F#4', 0.28, 22, 'iç ses'); n(bulut + 38, 'E4', 0.26, 20, 'iç ses')
+        PEDAL.append((bulut, b))                            # iç ses: temanın 2. ölçüsü (TEMA bölümü), D5'i dilek halkasında
     for i in vur:
         n(i['kare'], 'E5', 0.40, b - i['kare'] + 1, 'dilek halkası: asılı (Bm üstünde 11.)', 'isaret')
 
@@ -469,19 +482,41 @@ def partisyon(isaretler, final_bilgi):
     # #6–#7 pedalsız "cetvel" sekizlikleri (B motifi D F# E A); grup yürüyüp giderken inen, kısılan bir yürüyüş;
     # "Geliyorum!"dan sonra B dolaba yürür (cetvel geri gelir)
     yuruyus = ['B4', 'A4', 'G4', 'F#4', 'E4', 'D4', 'C#4', 'B3']
-    dolap = ['E4', 'G4', 'F#4', 'B4', 'A3', 'D4', 'E4', 'G4']
-    j, iy, idl = 0, 0, 0
+
+    def tema8(olculer):
+        """Temanın ölçüleri sekizliklere açılır (cetvel gibi): [(nota, yeni_nota_mı, ölçü)]."""
+        out = []
+        for o in olculer:
+            for bt, ad, d in TEMA:
+                if (o - 1) * 4 <= bt < o * 4:
+                    for q in range(max(1, int(round(d * 2)))):
+                        out.append((ad, q == 0, o))
+        return out
+    cetvel_t, dolap_t = tema8([1, 2]), tema8([2])
+    j, iy, it, idl = 0, 0, 0, 0
     while a + 12 * j < k8 - CAPA_YARICAP - 1:
         f = giris if j == 0 else a + 12 * j
-        if f < k_git:
-            ad, v, et = (['D4', 'F#4', 'E4', 'A4'][j % 4] if j else B_NOTA), (0.38 if j % 2 == 0 else 0.32), 'cetvel sekizlikleri (pedalsız)'
+        if j == 0:
+            n(f, B_NOTA, 0.38, 8, 'D4 girişi (cetvel)')
+        elif f < k_git:
+            ad, yeni, o = cetvel_t[it % len(cetvel_t)]
+            it += 1
+            if yeni:
+                n(f, ad, 0.44, 8, 'tema (atölye): ritmik, cetvel gibi', 'tema')
+                TEMA_N.append(dict(kare=f, m=midi(ad), sahne='s2-atolye', olcu=o, etiket='tema (atölye): ritmik, cetvel gibi'))
+            else:
+                n(f, ad, 0.28, 8, 'cetvel sekizliği (tema tekrarı, pedalsız)')
         elif f < k_gel:
-            ad, v, et = yuruyus[min(iy, 7)], 0.36 - 0.016 * iy, 'grup yürüyüp gider (inen yürüyüş)'
+            n(f, yuruyus[min(iy, 7)], 0.36 - 0.016 * iy, 8, 'grup yürüyüp gider (inen yürüyüş)')
             iy += 1
         else:
-            ad, v, et = dolap[idl % 8], (0.36 if j % 2 == 0 else 0.30), 'B dolaba yürür (cetvel)'
+            ad, yeni, o = dolap_t[idl % len(dolap_t)]
             idl += 1
-        n(f, ad, v, 8, et)
+            if yeni:
+                n(f, ad, 0.42, 8, 'tema (atölye): B dolaba yürür, cetvel', 'tema')
+                TEMA_N.append(dict(kare=f, m=midi(ad), sahne='s2-atolye', olcu=o, etiket='tema (atölye): B dolaba yürür, cetvel'))
+            else:
+                n(f, ad, 0.28, 8, 'cetvel sekizliği (tema tekrarı)')
         j += 1
     n(giris, 'D2', 0.38, 44, 'D: atölye girişi'); n(a + 48, 'G2', 0.34, k_git - a - 48, 'G')
     n(k_git, 'E2', 0.34, k_gel - k_git, 'Em: grup gider'); n(k_gel, 'D2', 0.36, max(8, k7 - k_gel), 'D: Geliyorum')
@@ -502,7 +537,7 @@ def partisyon(isaretler, final_bilgi):
     akor(k8, ['B1', 'F#2'], 0.32, 34, 'Bm: kuş bakışı, uzanış'); n(k8, 'F#4', 0.34, 22, 'yarım tempo')
     n(k8 + 24, 'D4', 0.30, 12, 'yarım tempo')
     for i in tik:
-        nesne(i['kare'], tik_tipi(i), 'atölye: ' + ek_metni(i).strip())
+        nesne(i['kare'], tik_tipi(i), 'atölye: ' + ek_metni(i).strip(), 3.0 if 'dayanağa' in ek_metni(i) else 0.0)
     t_cek = [i['kare'] for i in tik if 'çekmece' in ek_metni(i)]
     t_vida = [i['kare'] for i in tik if 'vida' in ek_metni(i)]
     t_pit = sorted(i['kare'] for i in tik if 'pıt' in ek_metni(i))
@@ -564,11 +599,9 @@ def partisyon(isaretler, final_bilgi):
     t_dus = dus[0]['kare'] if dus else b
     # #10 ayna: Dmaj9 → Bm9 → Gmaj7, D motifi legato; ceket ve küpe tıkları (küpede iki ışıltı)
     akor(a, ['D2', 'A2'], 0.40, 96, 'Dmaj9: sabah, ayna'); akor(a, ['F#3', 'C#4'], 0.28, 96, 'Dmaj9')
-    PEDAL.append((a, a + 95))
-    n(a, 'F#4', 0.38, 24, 'D motifi (legato)'); n(a + 24, 'A4', 0.36, 12, 'D motifi'); n(a + 36, 'B4', 0.38, 12, 'D motifi')
-    n(a + 48, 'D5', 0.42, 36, 'D motifi'); n(a + 84, 'C#5', 0.34, 12, 'D motifi')
-    akor(a + 96, ['B1', 'F#2'], 0.36, 48, 'Bm9'); n(a + 96, 'D5', 0.36, 12, 'legato'); n(a + 108, 'C#5', 0.32, 12, 'legato')
-    n(a + 120, 'B4', 0.34, 24, 'legato'); akor(a + 120, ['G2', 'D3'], 0.32, max(8, k11 - a - 120), 'Gmaj7')
+    PEDAL.append((a, a + 95))                           # melodi: temanın 1–2. ölçüsü legato (TEMA bölümü)
+    akor(a + 96, ['B1', 'F#2'], 0.36, 48, 'Bm9')
+    akor(a + 120, ['G2', 'D3'], 0.32, max(8, k11 - a - 120), 'Gmaj7')
     PEDAL.append((a + 96, k11 - 1))
     for i in tik:
         if i['kare'] > t_dus:
@@ -599,15 +632,14 @@ def partisyon(isaretler, final_bilgi):
     for k in kes11:
         n(k, 'E5', 0.32, 10, 'beyazdan balkona')
     akor(v_gunes, ['D2', 'A2'], 0.38, k12 - v_gunes, 'Dmaj9: güneş'); akor(v_gunes, ['F#3', 'E4', 'A4'], 0.30, k12 - v_gunes, 'Dmaj9')
-    n(v_gunes, 'F#5', 0.36, k12 - v_gunes, 'güneşte gözlerini kapar, gülümser', 'isaret')
-    PEDAL.append((v_gunes, k12 - 1))
+    PEDAL.append((v_gunes, k12 - 1))                    # güneşte temanın 5. ölçüsü (TEMA bölümü)
     # #12 çiçekler: Gmaj9 ve D'nin notası; "Çiçeklerim çok güzel…" asılı; klişe saksılar: tek inen nota; topak; kaş iner (ödünç iv)
     akor(k12, ['G2', 'D3'], 0.36, 48, 'Gmaj9: çiçekler'); akor(k12, ['F#3', 'B3'], 0.26, 48, 'Gmaj9')
     n(k12, D_NOTA, 0.36, 26, 'D\'nin notası')
     PEDAL.append((k12, k12 + 47))
     for i in kon:
         if k12 <= i['kare'] < k13:
-            n(i['kare'], 'F#5', 0.36, 38, '"Çiçeklerim çok güzel…": legato, asılı', 'isaret')
+            n(i['kare'], 'A5', 0.34, 38, '"Çiçeklerim çok güzel…": legato, asılı (Gmaj9 üstünde 9.)', 'isaret')
     t_topak = next((i['kare'] for i in tik if 'toprak' in ek_metni(i)), k12 + 80)
     n(k12 + 48, 'A3', 0.34, max(8, t_topak - k12 - 50), 'klişe saksılar: tek inen nota')
     kas = t_topak + 6
@@ -651,9 +683,7 @@ def partisyon(isaretler, final_bilgi):
     sus4 = [(s, e) for s, e in SUS if a <= s <= b]
     # #14 sohbet: G üstünde konuşkan staccato; E2 masaya vurur (darbe); zarlar sallanır: A pedalı, tek notalar sıklaşır; atış
     akor(a, ['G2', 'D3'], 0.30, k_salla - a, 'Gmaj9: sohbet')
-    sohbet = ['B4', 'D5', 'A4', 'B4', 'G4', 'A4', 'E4', 'G4']
-    for j in range(max(0, (k_salla - a - 4) // 12)):
-        n(a + 12 * j, sohbet[j % 8], 0.30 if j % 2 == 0 else 0.25, 5, 'sohbet: konuşkan staccato')
+    # sohbet: melodi temanın 1. ölçüsü, oyunbaz (hızlı, kesik; TEMA bölümü)
     for i in tik:
         if i['kare'] < k15:
             nesne(i['kare'], 'darbe', 'E2 masaya vurur, kâğıt figürler sallanır', -4)
@@ -761,10 +791,7 @@ def partisyon(isaretler, final_bilgi):
             bas_, ic, desen, ad = AKOR4B[min(j, len(AKOR4B) - 1)]
             n(k, DIN4B[min(j, len(DIN4B) - 1)], 0.46, 18, f'hızlı geçiş {j + 1}: kesmede dın', 'isaret')
             akor(k, bas_, 0.32, son - k, f'{ad}: hızlı geçiş {j + 1}'); akor(k, ic, 0.24, VURUS, ad)
-            PEDAL.append((k, son - 1))                    # çekim boyu pedal: sekizlikler birbirine bağlanır (aydınlık, yumuşak)
-            for q, f in enumerate(range(k + 12, son - CAPA_YARICAP - 1, 12)):
-                if uygun(f):
-                    n(f, desen[q % len(desen)], 0.22 if q % 2 == 0 else 0.16, 12, 'hızlı geçiş: hafif sekizlik (pedallı, bağlı)')
+            PEDAL.append((k, son - 1))                    # çekim boyu pedal; melodi: tema çift hızda (TEMA bölümü)
         for j, k in enumerate(vur4b):
             n(k, 'B5' if j == 0 else 'A5', 0.36 if j == 0 else 0.30, 20 if j == 0 else 12,
               'bahçıvan gülümser: parlak nota' if j == 0 else 'alnını siler: küçük nota', 'isaret')
@@ -803,16 +830,13 @@ def partisyon(isaretler, final_bilgi):
         ofs, adlar = MOTIF[mot]
         if mot == 'kanca':
             adlar = list(KANCA_CIFTLERI[kanca_sayac % len(KANCA_CIFTLERI)]); kanca_sayac += 1
-        # Kayıt: önce dağınık (tiz / orta), sonra orta ses alanında toplanır; dilekten sonra kalabalığın üstüne çıkar
-        if k > k_keske:
-            kaydir = 12 if midi(adlar[0]) < midi('D5') else 0
-        else:
-            kaydir = (12 if j % 2 == 0 else 0) if j < 0.4 * J else 0
-        v0 = 0.30 + 0.10 * j / max(1, J - 1) + (0.10 if k > k_keske else 0.0)
+        # v09: her fikir temanın kanonunun üstünde parlak tek bir nota olarak belirir (D5 ve üstü)
+        kaydir = 12 if midi(adlar[0]) < midi('D5') else 0
+        v0 = 0.38 + 0.06 * j / max(1, J - 1) + (0.10 if any(0 < k - c <= 6 for c in CAPA) else 0.0)   # yüksek vurgunun hemen ardı
         for q, (o, ad) in enumerate(zip(ofs, adlar)):
             f = k + o
-            if q and not uygun(f, k):
-                continue
+            if q:
+                break                       # v09: her fikir yalnız ilk notasıyla "belirir"; melodiyi temanın kanonu taşır
             m = midi(ad) + kaydir
             while m > 84:
                 m -= 12
@@ -829,8 +853,7 @@ def partisyon(isaretler, final_bilgi):
             n(k, 'D5', 0.44, VURUS // 2, 'kalabalığın dileği', 'isaret')
             PEDAL.append((k, k + VURUS // 2 - 1))
         elif k == k_devir:
-            akor(k, ['A1', 'E2'], 0.40, b - k + 1, 'A7sus4: devir, balonlar kenara')
-            dizi(k, ['D4', 'E4', 'G4', 'A4', 'D5'], 6, 0.30, 0.38, 6, 'balonlar kenara süzülür', 'isaret')
+            akor(k, ['A1', 'E2'], 0.40, b - k + 1, 'A7sus4: devir, balonlar kenara')   # melodi: temanın 6. ölçüsü yükselir
             PEDAL.append((k, b))
         else:
             n(k, 'A4', 0.34, 24, 'vurgu', 'isaret')
@@ -843,7 +866,7 @@ def partisyon(isaretler, final_bilgi):
     slogan = next((i['kare'] for i in f_vur if i.get('ad') == 'slogan'), FINAL_VARSAYIM['slogan'])
     gruplar = sorted({i['kare'] for i in f_tik if i['kare'] < doruk})
     sonra_tik = sorted({i['kare'] for i in f_tik if i['kare'] >= doruk})
-    cizgi = ['D4', 'E4', 'F#4', 'A4', 'B4', 'D5', 'E5', 'F#5']
+    cizgi = ['F#3', 'A3', 'B3', 'D4', 'E4', 'F#4', 'A4', 'B4']        # v09: melodinin altında iç ses (tema üstte büyür)
     notalar = cizgi[-len(gruplar):] if 0 < len(gruplar) <= len(cizgi) else cizgi + [cizgi[-1]] * max(0, len(gruplar) - len(cizgi))
     ustler = [['G3', 'B3', 'D4'], ['E3', 'G3', 'B3'], ['D4', 'E4', 'G4'], ['C#4', 'E4', 'G4']]   # G/A → Em/A → A7sus4 → A7
     ilk = gruplar[0] if gruplar else doruk
@@ -853,7 +876,7 @@ def partisyon(isaretler, final_bilgi):
     for j, g in enumerate(gruplar):
         son = gruplar[j + 1] if j + 1 < G else doruk
         u = j / max(1, G - 1)
-        n(g, notalar[j], 0.40 + 0.10 * u, son - g, f'logo grubu {j + 1}', 'isaret')
+        n(g, notalar[j], 0.34 + 0.06 * u, son - g, f'logo grubu {j + 1}', 'isaret')
         n(g, 'A1', 0.30 + 0.08 * u, son - g, 'A bas')
         akor(g, ustler[min(3, int(round(u * 3)))], 0.24 + 0.08 * u, son - g, 'kabaran üst sesler')
         PEDAL.append((g, son - 1))
@@ -861,17 +884,16 @@ def partisyon(isaretler, final_bilgi):
     # D1 ve D2 geri, yükseklik orta-tiz seslerden gelir (sınırlayıcı az çalışsın). OKTOS harfleri geliyorsa orta ve üst
     # sesler keskin bırakılır (pedal harflere dek): harf notaları çınlayan akorun altında kalmasın; bas tuşta kalır.
     harfler = [k for k in sonra_tik if k < slogan]
-    ust_sure = (harfler[0] - doruk - 2) if harfler else slogan - doruk
+    ust_sure = (harfler[0] - doruk - 6) if harfler else slogan - doruk     # v09: tepeyi temanın A5'i tutar
     akor(doruk, ['D1'], 0.22, slogan - doruk, 'DORUK: logo'); akor(doruk, ['D2'], 0.36, slogan - doruk, 'DORUK: logo')
     akor(doruk, ['A2', 'F#3'], 0.38, slogan - doruk, 'DORUK: logo'); akor(doruk, ['C#4', 'E4', 'A4'], 0.40, ust_sure, 'DORUK: logo')
     n(doruk, 'D5', 0.54, ust_sure, 'DORUK: logo', 'isaret'); n(doruk, 'F#5', 0.50, ust_sure, 'DORUK: logo')
-    n(doruk, 'A5', 0.44, ust_sure, 'DORUK: logo')
-    PEDAL.append((doruk, doruk + ust_sure - 1 if harfler else slogan - 1))
-    # OKTOS harf harf: her harf tıkı Dmaj9'dan inen bir nota (çözülmeye iniş); harf işareti yoksa iki notalık iniş
-    inis = ['B5', 'A5', 'F#5', 'E5', 'D5', 'B4', 'A4', 'F#4']     # 6.'dan toniğe pentatonik iniş (ilk harf doruğun tellerinde değil)
+    PEDAL.append((doruk, doruk + ust_sure - 1 if harfler else slogan - 1))   # doruğun A5'i: temanın 7. ölçüsü (TEMA)
+    # OKTOS harf harf: tema inerken (A5 → F#5 → E5 → C#5) her harfe yumuşak tiz bir pırıltı
+    inis = ['D6', 'C#6', 'B5', 'D6', 'C#6', 'B5', 'A5', 'F#5']
     if harfler:
         for j, k in enumerate(harfler):
-            n(k, inis[min(j, len(inis) - 1)], 0.46 - 0.015 * j, 14, f'OKTOS harf {j + 1}: çözülmeye iniş', 'isaret')
+            n(k, inis[min(j, len(inis) - 1)], 0.40, 10, f'OKTOS harf {j + 1}: pırıltı', 'isaret')
     else:
         for f, ad, v in [(doruk + 24, 'E5', 0.32), (doruk + 36, 'D5', 0.30)]:
             if f < slogan - CAPA_YARICAP and uygun(f):
@@ -881,10 +903,16 @@ def partisyon(isaretler, final_bilgi):
     otur = next((i['kare'] for i in f_tik if 'otur' in ek_metni(i)), None)
     esne = sorted({i['kare'] for i in f_tik if i.get('ad') == 'slogan-i'})
     damla = sorted({k for k in sonra_tik if k >= slogan and k != otur and k not in esne})
-    akor(slogan, ['D2', 'A2'], 0.34, b - slogan + 1, 'Dadd9: çözülme'); akor(slogan, ['E4', 'F#4', 'A4', 'D5'], 0.28, b - slogan + 1, 'Dadd9')
+    # v09: slogan damlarken V (A7sus4) asılı kalır, tema C#5'te bekler; slogan oturunca Dadd9 ve temanın D5'i: çözülme
+    if otur is not None and otur > slogan + 24:
+        akor(slogan, ['A1', 'E2'], 0.32, otur - slogan, 'A7sus4: slogan damlar (asılı)'); akor(slogan, ['G3', 'D4'], 0.24, otur - slogan, 'A7sus4')
+        n(slogan, 'A5', 0.34, 18, 'slogan başlar', 'isaret')
+        akor(otur, ['D2', 'A2'], 0.36, b - otur + 1, 'Dadd9: slogan oturur, çözülme'); akor(otur, ['E4', 'F#4', 'A4'], 0.28, b - otur + 1, 'Dadd9')
+    else:
+        akor(slogan, ['D2', 'A2'], 0.34, b - slogan + 1, 'Dadd9: çözülme'); akor(slogan, ['E4', 'F#4', 'A4', 'D5'], 0.28, b - slogan + 1, 'Dadd9')
     DAMLA = ['A5', 'E5', 'F#5', 'B5', 'E5', 'A5', 'F#5', 'B5']
     for j, k in enumerate(damla):
-        n(k, DAMLA[j % len(DAMLA)], 0.34 - 0.01 * j, 10, f'slogan damlası {j + 1}', 'isaret')
+        n(k, DAMLA[j % len(DAMLA)], 0.30 - 0.01 * j, 10, f'slogan damlası {j + 1}', 'isaret')
     tik_k = otur if otur is not None else slogan
     nesne(tik_k, 'tok', 'slogan oturur: tek tık', -3)
     # Akor tuşta; pedal damlalar boyunca kalkık (her damla ayrı duyulsun), tık ile sona dek basılı
@@ -901,6 +929,114 @@ def partisyon(isaretler, final_bilgi):
     for i in f_vur:
         if i['kare'] not in (doruk, slogan):
             n(i['kare'], 'A4', 0.34, 24, 'final: vurgu', 'isaret')
+
+    # =========================================================================== ANA TEMA (leitmotif): sahne başına çeşitleme
+    def bul_k(tur, sahne, anahtar=None, ad=None):
+        if sahne not in S:
+            return []
+        a_, b_ = S[sahne]
+        return sorted(i['kare'] for i in isaretler if i['tur'] == tur and a_ <= i['kare'] <= b_
+                      and (anahtar is None or anahtar in ek_metni(i)) and (ad is None or i.get('ad') == ad))
+
+    def tema_yerlestir(bas, olculer, sahne, et, hiz=0.48, olcek=1.0, legato=0.95, stakato=False, son=None, oktav=0,
+                       uzat_son=None, kontra=True):
+        """Temanın ölçülerini (art arda) bas karesinden çalar; olcek: vuruş = 24·olcek kare. Bir çapanın ±3 karesine düşen
+        nota çapaya yapışır; sessizlikte nota yok. Karşı ezgi için ölçü yerleri TEMA_YER'e yazılır."""
+        notlar, yer, t = [], [], 0.0
+        for o in olculer:
+            for bt, ad, d in TEMA:
+                if (o - 1) * 4 <= bt < o * 4:
+                    notlar.append((t + bt - (o - 1) * 4, ad, d, o, len(yer)))
+            yer.append((o, int(round(bas + t * VURUS * olcek)), int(round(4 * VURUS * olcek))))
+            t += 4
+        hizlar = list(hiz) if isinstance(hiz, (list, tuple)) else [hiz] * len(olculer)
+        alinan = set()
+        for i, (bt, ad, d, o, oi) in enumerate(notlar):
+            f = int(round(bas + bt * VURUS * olcek))
+            if son is not None and f > son:
+                break
+            sure = d * VURUS * olcek * (0.5 if stakato else legato)
+            if uzat_son is not None and i == len(notlar) - 1:
+                sure = max(sure, uzat_son - f)
+            yakin = [c for c in CAPA if 0 < abs(c - f) <= CAPA_YARICAP]
+            if yakin:
+                f = min(yakin, key=lambda c: abs(c - f))
+                if f in alinan:
+                    continue                      # aynı cümlenin iki notası aynı çapaya yığılmaz: sonraki düşer
+            alinan.add(f)
+            if f < 0 or f >= TOPLAM_KARE or any(s <= f < e for s, e in SUS):
+                continue
+            m = midi(ad) + 12 * oktav
+            v = hizlar[oi] + (0.04 if bt % 4 == 0 else 0.0) - (0.03 if bt % 1 else 0.0)
+            n(f, m, v, max(3, int(round(sure))), et, 'tema')
+            TEMA_N.append(dict(kare=f, m=m, sahne=sahne, olcu=o, etiket=et))
+        if kontra:
+            TEMA_YER.append(dict(sahne=sahne, olculer=[y for y in yer if son is None or y[1] <= son], son=son))
+
+    # Kafe: zarif, yalnız: 1. ölçü A'nın yalnızlığı; düşüncede 2. ölçü, D5'i dilek halkasının karesinde
+    if 's1-kafe' in S:
+        a_, b_ = S['s1-kafe']
+        tema_yerlestir(a_ + 24, [1], 's1-kafe', 'tema (kafe): zarif, yalnız', hiz=0.46)
+        vk1 = bul_k('vurgu', 's1-kafe')
+        if vk1:
+            tema_yerlestir(vk1[0] - 2 * VURUS, [2], 's1-kafe', 'tema (kafe): düşüncede, yalnız', hiz=0.44, uzat_son=b_)
+    # Atölye: ritmik, cetvel gibi (cetvel sekizlikleri temayı heceler: yukarıda, ATÖLYE bölümü)
+    # Balkon: legato, sıcak: aynada 1–2. ölçü (kapı kesmesinde D5'e varır), güneşte 5. ölçü
+    if 's3-balkon' in S:
+        a_, b_ = S['s3-balkon']
+        tema_yerlestir(a_, [1, 2], 's3-balkon', 'tema (balkon): legato, sıcak', hiz=0.46, legato=1.2,
+                       son=VURUSLAR.get('11', (a_ + 144, 0))[0])
+        vg = bul_k('vurgu', 's3-balkon', 'güneş')
+        if vg:
+            tema_yerlestir(vg[0], [5], 's3-balkon', 'tema (balkon): güneş, sıcak', hiz=0.48, legato=1.15)
+    # FRP: oyunbaz: sohbette 1. ölçü hızlı ve kesik (zarlar sallanmadan biter)
+    if 's4-frp' in S:
+        a_, b_ = S['s4-frp']
+        k_s = min(max(a_ + 24, 1611 + SAHNE_KAYDIR.get('s4-frp', 0)), a_ + 100)
+        tema_yerlestir(a_, [1, 2], 's4-frp', 'tema (FRP): oyunbaz', hiz=0.44, olcek=0.75, stakato=True, son=k_s - 6, kontra=False)
+    # Hızlı geçişler: hızlı, parlak: tema çift hızda çekimler boyunca (1–3 bahçe, 4–5 modem, 6–7 kafe, 8 kartvizit, asılı)
+    if 's4b-hizli' in S:
+        a_, b_ = S['s4b-hizli']
+        kes_ = (bul_k('kesme', 's4b-hizli') or [a_])[:4]
+        plan = [[1, 2, 3], [4, 5], [6, 7], [8]]
+        for j, k in enumerate(kes_):
+            son_ = (kes_[j + 1] - 4) if j + 1 < len(kes_) else b_
+            tema_yerlestir(k + 12, plan[j], 's4b-hizli', 'tema (hızlı geçiş): hızlı, parlak', hiz=0.48, olcek=0.5, legato=0.9,
+                           son=son_, uzat_son=(b_ if j == len(kes_) - 1 else None), kontra=False)
+    # Kalabalık: üst üste girişler (kanon), "Keşke"de hep birlikte (oktavlı), devirde 6. ölçü yükselir
+    if 's5-kalabalik' in S:
+        a_, b_ = S['s5-kalabalik']
+        vk5 = bul_k('vurgu', 's5-kalabalik')
+        ks = (bul_k('vurgu', 's5-kalabalik', 'dilek') or vk5[:1] or [a_ + 210])[0]
+        dev = next((v for v in vk5 if v > ks), b_ - 63)
+        ff = [k for k in bul_k('dusunce', 's5-kalabalik') if a_ + 60 < k < ks - 30]
+        for idx, olc, okt, h in [(0, [1], -1, 0.36), (2, [1], 0, 0.40), (4, [2], 0, 0.42), (6, [3], 0, 0.44)]:
+            if idx < len(ff):
+                tema_yerlestir(ff[idx], olc, 's5-kalabalik', 'tema (kalabalık): üst üste giriş', hiz=h, oktav=okt, son=ks - 4, kontra=False)
+        tema_yerlestir(ks, [5], 's5-kalabalik', 'tema (kalabalık): "Keşke", hep birlikte', hiz=0.50, son=dev - 4)
+        tema_yerlestir(ks, [5], 's5-kalabalik', 'tema (kalabalık): "Keşke", hep birlikte (oktav altı)', hiz=0.40, oktav=-1, son=dev - 4,
+                       kontra=False)
+        tema_yerlestir(dev, [6], 's5-kalabalik', 'tema (kalabalık): devir, yükselir', hiz=0.46, son=b_, kontra=False)
+    # Final: logo kurulurken tema büyür (1 → 2 → 6), doruğa 7. ölçünün A5'i oturur, OKTOS'ta iner (son harfte F#5),
+    # C#5 slogan damlarken asılı bekler, slogan oturunca D5'e çözülür
+    if 's6-final' in S:
+        a_, b_ = S['s6-final']
+        dr = next(iter(bul_k('vurgu', 's6-final', ad='doruk')), None)
+        ot = next(iter(bul_k('tik', 's6-final', ad='slogan-otur')), None)
+        if dr is not None and dr - 12 * VURUS >= a_:
+            tema_yerlestir(dr - 12 * VURUS, [1, 2, 6, 7], 's6-final', 'tema (final): logo kurulurken büyür, doruk, iner',
+                           hiz=[0.40, 0.44, 0.48, 0.58], legato=1.0, uzat_son=ot)
+            tema_yerlestir(dr - 4 * VURUS, [6], 's6-final', 'tema (final): büyür (oktav altı)', hiz=0.30, oktav=-1, kontra=False)
+            if ot is not None:
+                n(ot, 'D5', 0.50, b_ - ot + 1, 'tema (final): slogan oturur, çözülme', 'tema')
+                TEMA_N.append(dict(kare=ot, m=midi('D5'), sahne='s6-final', olcu=8, etiket='tema (final): slogan oturur, çözülme'))
+    # Tema öne çıksın: aynı karede temayla yarım/tam ton (ya da aynı) perdede çakışan eşlik ve işaret notaları kalkar
+    # (o karedeki çapanın sesini tema taşır)
+    tema_kare = {}
+    for t_ in TEMA_N:
+        tema_kare.setdefault(t_['kare'], []).append(t_['m'])
+    N[:] = [p for p in N if not (p['parca'] in ('muzik', 'isaret') and p['kare'] in tema_kare
+                                 and any(abs(p['m'] - m) <= 2 for m in tema_kare[p['kare']]))]
 
     # =========================================================================== Kalan işaretler: genel karşılık
     genel = []
@@ -967,7 +1103,7 @@ def partisyon(isaretler, final_bilgi):
                 yapisan=yapisan, dusen=dusen, genel=genel,
                 kanca=dict(kesmeler=yuzler, a_karesi=a_k, kaynak=kaynak, isaret_kesmeleri=kanca_isaret,
                            isaretle_uyumlu=[k for k in kanca_isaret if k != 0] == kesmeler),   # k0: ilk yüz (açılış kesmesi)
-                final=dict(final_bilgi, doruk=doruk, slogan=slogan, gruplar=gruplar))
+                final=dict(final_bilgi, doruk=doruk, slogan=slogan, gruplar=gruplar), tema=TEMA_N, tema_yer=TEMA_YER)
 
 
 def bolumler():
@@ -1088,7 +1224,7 @@ def nota_ciz(m, v, birak, uzunluk_max, rng, P, hizli=False, pan_ek=0.0):
     return np.vstack([sol, sag])
 
 
-def cal(notalar, pedal, susturma, secici, rng, hizli=False):
+def cal(notalar, pedal, susturma, secici, rng, hizli=False, P=PIYANO):
     N = kare_ornek(TOPLAM_KARE)
     kuru = np.zeros((2, N))
     for p in notalar:
@@ -1098,7 +1234,7 @@ def cal(notalar, pedal, susturma, secici, rng, hizli=False):
         bk = birakma_karesi(p, pedal, susturma)
         p['birakma_kare'] = bk
         birak = kare_ornek(bk) - bas
-        y = nota_ciz(p['m'], p['hiz'], birak, N - bas, rng, PIYANO, hizli)
+        y = nota_ciz(p['m'], p['hiz'], birak, N - bas, rng, P, hizli)
         L = min(y.shape[1], N - bas)
         kuru[:, bas:bas + L] += y[:, :L]
     return kuru
@@ -1645,6 +1781,22 @@ def doku_kur(P, isaretler, nesneler):
         m = muz.get(k, midi('A5'))
         pn(k + 6, m + 12 if m + 12 <= midi('E6') else m, 0.10, 8, 'kece', 0.5 if j % 2 else -0.5, 'slogan damlası: yankı')
 
+    # ------------------------------------------------------------------ Karşı ezgi (v09): tema çalarken kemanlar
+    # Temanın her ölçüsünde akorunun kılavuz sesi (3'lü ya da 7'li), melodinin altında (D4–A4), en yakın sesle bağlı
+    # uzun notalar (flautando, pp–p): yalnız uğultu değil, temaya karşılık veren bir çizgi
+    for yer in P.get('tema_yer', []):
+        notlar, onceki = [], 66
+        for o, f0, L in yer['olculer']:
+            pcs_ = AKOR_KILAVUZ[TEMA_AKOR[o - 1]]
+            aday = [m for m in range(62, 72) if m % 12 in pcs_] or [onceki]
+            m = min(aday, key=lambda x: (abs(x - onceki), x))
+            onceki = m
+            son_ = f0 + L if yer['son'] is None else min(f0 + L, yer['son'])
+            if son_ - f0 > 12:
+                notlar.append((f0, m, son_ - f0, 0.22, 120))
+        if notlar:
+            KM.append(dict(teknik='flautando', pan=-0.25, notlar=notlar, etiket=f'karşı ezgi: {yer["sahne"]}'))
+
     # ------------------------------------------------------------------ Nesne seslerine perde: çalan akorun en yakın tonu
     for e in nesneler:
         if e['tip'] in NESNE_SABIT_PERDE or 'nota' in e:
@@ -1717,6 +1869,37 @@ def sahne_kazanci(n_ornek, kazanc_db):
         if ad in kazanc_db:
             g[kare_ornek(a):kare_ornek(b + 1)] = 10 ** (kazanc_db[ad] / 20)
     return kutu(g, kare_ornek(24))
+
+
+def tema_aktivite(notalar, n_ornek):
+    """Tema çalıyor mu (0..1): tema notalarının tuş süresi + 0,3 sn, 50 ms yumuşak geçişle."""
+    a = np.zeros(n_ornek)
+    for p in notalar:
+        if p['parca'] == 'tema':
+            s0 = kare_ornek(p['kare'])
+            a[s0:min(n_ornek, kare_ornek(p['kare'] + p['sure']) + int(0.3 * SR))] = 1.0
+    return np.clip(kutu(a, int(0.05 * SR)), 0.0, 1.0)
+
+
+def tema_cekil(x, akt):
+    """Tema çalarken eşlik melodinin bölgesinde (TEMA_CEKIL çan süzgeci) çekilir: x + akt·(süzülmüş − x)."""
+    N = x.shape[1]
+    nf = _fft_boy(N)
+    f = np.maximum(np.fft.rfftfreq(nf, 1 / SR), 1e-3)
+    g = 10 ** (TEMA_CEKIL['db'] / 20)
+    H = 1 + (g - 1) * np.exp(-0.5 * (np.log2(f / TEMA_CEKIL['f']) / (TEMA_CEKIL['genislik_okt'] / 2)) ** 2)
+    y = np.vstack([np.fft.irfft(np.fft.rfft(x[c], nf) * H, nf)[:N] for c in range(x.shape[0])])
+    return x + akt * (y - x)
+
+
+def bant_enerji(x, f0, f1, maske):
+    """[f0, f1] Hz bandının maske (0/1) altındaki toplam enerjisi (mono)."""
+    m = x.mean(axis=0)
+    N = len(m)
+    nf = _fft_boy(N)
+    fr = np.fft.rfftfreq(nf, 1 / SR)
+    b = np.fft.irfft(np.fft.rfft(m, nf) * ((fr >= f0) & (fr <= f1)), nf)[:N]
+    return float(np.sum((b * maske) ** 2))
 
 
 def sert_atak_say(x, esik_db=12.0, taban_dbfs=-45.0):
@@ -2070,15 +2253,37 @@ def main():
         isaret=cal(notalar, pedal, susturma, lambda p: p['parca'] == 'isaret' and not p['serbest'], rng, arg.hizli),
         serbest=cal(notalar, pedal, susturma, lambda p: p['serbest'], rng, arg.hizli),
     )
+    if P['tema']:
+        kuru['tema'] = cal(notalar, pedal, susturma, lambda p: p['parca'] == 'tema', rng, arg.hizli, P=PIYANO_TEMA)
     ir = yanki_ir(np.random.default_rng(TOHUM + 1), YANKI)
     islak = {ad: eq_uygula(yanki_uygula(x, ir, YANKI['islak_db']), EQ) for ad, x in kuru.items()}
     # Sessizlikte müzik ve yankısı susar; balon noktaları ve nesne sesleri susmaz. Dosya sonunda yumuşak kararma.
     sus = sus_zarfi(islak['muzik'].shape[1], susturma)
-    for ad in ('kesme', 'muzik', 'isaret'):
-        islak[ad] *= sus
+    for ad in ('kesme', 'muzik', 'isaret', 'tema'):
+        if ad in islak:
+            islak[ad] *= sus
+    # Tema öne: melodi TEMA_ONE_DB; tema çalarken akor ve doku melodinin bölgesinde (TEMA_CEKIL) biraz çekilir
+    akt = tema_aktivite(notalar, islak['muzik'].shape[1]) if P['tema'] else None
+    if akt is not None:
+        for ad in ('muzik', 'isaret', 'serbest'):
+            islak[ad] = tema_cekil(islak[ad], akt)
     # Nesne sesleri müziğin üstüne ayarlanır (miks), sonra çalınır
     nesne_duzeyle(nesneler, sum(islak.values()), np.random.default_rng(TOHUM + 2), arg.hizli)
     islak['nesne'] = eq_uygula(yanki_uygula(nesne_cal(nesneler, np.random.default_rng(TOHUM + 2), arg.hizli), ir, YANKI['islak_db']), EQ)
+    tema_kazanci = None
+    if akt is not None:
+        islak['nesne'] = tema_cekil(islak['nesne'], akt)
+        # Melodi öne: tema çalarken 400–1300 Hz bandında eşlikten TEMA_ONE_DB yüksek olacak kazanç (ölçerek ayarlanır)
+        maske = (akt > 0.5).astype(float)
+        geri = sum(v for ad, v in islak.items() if ad != 'tema')
+        tema_kazanci = {}
+        for ad, (sa_, sb_) in SAHNELER.items():           # sahne başına: her sahnede melodi aynı ölçüde öne
+            mk_ = np.zeros_like(maske)
+            mk_[kare_ornek(sa_):kare_ornek(sb_ + 1)] = maske[kare_ornek(sa_):kare_ornek(sb_ + 1)]
+            if mk_.sum() > 0.3 * SR:
+                r0 = 10 * math.log10(bant_enerji(islak['tema'], 400, 1300, mk_) / max(bant_enerji(geri, 400, 1300, mk_), 1e-20))
+                tema_kazanci[ad] = round(float(np.clip(TEMA_ONE_DB - r0, -12.0, 12.0)), 1)
+        islak['tema'] *= sahne_kazanci(islak['tema'].shape[1], tema_kazanci)
     karisim = sum(islak.values())
     Lk = int(SON_KARARMA_SN * SR)
     son_zarf = np.ones(karisim.shape[1]); son_zarf[-Lk:] = 0.5 + 0.5 * np.cos(np.linspace(0, np.pi, Lk))
@@ -2089,6 +2294,8 @@ def main():
         piy_k, kem_k = doku_cal(D, np.random.default_rng(TOHUM + 12), arg.hizli)
         piy_w = eq_uygula(yanki_uygula(piy_k, ir, DOKU_ISLAK_DB), EQ)
         kem_w = eq_uygula(yanki_uygula(kem_k, ir, DOKU_ISLAK_DB), EQ)
+        if akt is not None:
+            piy_w, kem_w = tema_cekil(piy_w, akt), tema_cekil(kem_w, akt)
         onemli = sorted({p['kare'] for p in notalar if p['parca'] in ('kesme', 'isaret')})
         cekil = doku_zarfi(karisim.shape[1], onemli, susturma)
         piy_w *= cekil
@@ -2178,6 +2385,22 @@ def main():
             except (OSError, ValueError) as e:
                 onceki = dict(hata=str(e))
         olcum['onceki_karisim'] = onceki
+        # Melodi öne çıkışı: tema çalarken 400–1300 Hz bandında tema / geri kalan (dB); sahne başına da
+        if akt is not None:
+            tema_c = islak['tema'] * son_zarf * 10 ** (kazanc_db / 20)
+            maske = (akt > 0.5).astype(float)
+            et_, er_ = bant_enerji(tema_c, 400, 1300, maske), bant_enerji(cikti - tema_c, 400, 1300, maske)
+            sahne_one = {}
+            for ad, (sa_, sb_) in SAHNELER.items():
+                mk_ = np.zeros_like(maske)
+                mk_[kare_ornek(sa_):kare_ornek(sb_ + 1)] = maske[kare_ornek(sa_):kare_ornek(sb_ + 1)]
+                if mk_.sum() > SR * 0.2:
+                    e1, e2 = bant_enerji(tema_c, 400, 1300, mk_), bant_enerji(cikti - tema_c, 400, 1300, mk_)
+                    sahne_one[ad] = round(10 * math.log10(e1 / max(e2, 1e-20)), 1)
+            olcum['tema'] = dict(one_db=round(10 * math.log10(et_ / max(er_, 1e-20)), 1), sahne_one_db=sahne_one,
+                                 kazanc_db=tema_kazanci, hedef_one_db=TEMA_ONE_DB,
+                                 sure_sn=round(float(maske.sum()) / SR, 1), nota=len(P['tema']),
+                                 sahne_nota={ad: sum(t['sahne'] == ad for t in P['tema']) for ad in SAHNELER})
         if doku_bilgi:
             kaz_lin = 10 ** (kazanc_db / 20)
             doku_c = doku * kaz_lin
@@ -2315,6 +2538,14 @@ def main():
                                 rol=e['rol'], db=e['db'], db_ayar=e.get('db_ayar'), etiket=e['etiket']) for e in nesneler],
             olcum=olcum, dogrulama=dogrulama,
         )
+        if P['tema']:
+            cizelge['tema'] = dict(
+                tarif='Re majör, 4 + 4 ölçü (soru / cevap), imza aralığı yükselen altılı A4 → F#5; keçe piyano sağ el, '
+                      f'+{TEMA_ONE_DB:g} dB öne, çalarken eşlik ve doku {TEMA_CEKIL["f"]:g} Hz çevresinde {TEMA_CEKIL["db"]:g} dB çekilir',
+                akorlar=TEMA_AKOR,
+                kaynak=[dict(vurus=bt, nota=ad, sure_vurus=d, olcu=int(bt // 4) + 1) for bt, ad, d in TEMA],
+                notalar=[dict(kare=t['kare'], sn=round(kare_sn(t['kare']), 3), nota=nota_adi(t['m']), sahne=t['sahne'], olcu=t['olcu'],
+                              etiket=t['etiket']) for t in sorted(P['tema'], key=lambda t: (t['kare'], t['m']))])
         if D is not None:
             cizelge['meta']['sentez'] += ('; v2 doku: keçe piyano (yumuşak çekiç, una corda, düşük parlaklık, yumuşak atak) ve keman '
                                           '(harmonik dizi, gövde rezonansları, geç vibrato, legato, flautando ve con sordino, pizzicato); '
@@ -2338,6 +2569,8 @@ def main():
             ozet['doku'] = dict(goreli_db=doku_bilgi['goreli_db'], kazanc_db=doku_bilgi['sahne_kazanci_db'], ozet=D['ozet'],
                                 keman_bant_db=olcum['doku']['tayf_keman']['bant_db'], doku_bant_db=olcum['doku']['tayf_doku']['bant_db'])
         ozet['sert_atak'] = olcum['sert_atak']
+        if 'tema' in olcum:
+            ozet['tema'] = olcum['tema']
         ozet['onceki'] = onceki
         ozet['en_sert_100ms'] = (olcum['tayf']['sertlik_en_kotu_db'], olcum['tayf']['sertlik_en_kotu_sn'])
         print(json.dumps(ozet, ensure_ascii=False, indent=1, default=_json_tip))

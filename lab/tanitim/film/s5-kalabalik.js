@@ -18,7 +18,7 @@
 //      plakası), E2 (kutu oyunu), Garson (kupa altlığı). Fikir değişir: zar kulesi → deste kutusu, Text Flip → fidget,
 //      kulaklık askısı → kablo klipsi.
 // #5.4 DEVİR (k2312–2375, 64 k; kadro.json'daki 40 k'dan uzun, ARALIK): yedi balon söner; kalabalık kaybolmaz, ortadan
-//      ikiye ayrılıp ritimle kenarlara çekilir (30 fps, küçük adım sekmeleri; yatayda sol/sağ alt köşeler, dikeyde altta
+//      ikiye ayrılıp ritimle kenarlara çekilir (60 fps, küçük adım sekmeleri; yatayda sol/sağ alt köşeler, dikeyde altta
 //      iki köşe, biraz geri çekilerek). Önce yürüdükleri yana, varınca yukarı bakarlar (merak). Sekiz balon (qrStandi,
 //      organizer, saksi, d20, piyon, kutuOyunu, yapboz, telefonStandi; cizimler.js) sahiplerinin başlarının üstüne süzülüp
 //      son boyuna büyür: alt kat bağlı kuyrukla, üst kat kısa kuyrukla sahibine doğru. Orta logoya, OKTOS'a, slogana boş.
@@ -402,7 +402,7 @@ export function govdeUzat(ctx, h) {
 }
 
 export function kur(ctx) {
-  const { k, E, tl, gsap, el, kisi, balon, odak, W, H, yer, metin, adim, BOY, DIKEY } = ctx;
+  const { k, E, tl, gsap, el, kisi, balon, odak, W, H, yer, metin, BOY, DIKEY } = ctx;
   ctx.vurus('5.1', 'Kafalar alttan çıkar: "Bunu canlandırabilir miyiz?"', BAS, SATIR2 - 1);
   ctx.vurus('5.2', 'Kalabalık dolar: yapboz', SATIR2, KESKE - 1);
   ctx.vurus('5.3', '"Keşke şöyle olsa…"', KESKE, DEVIR - 1);
@@ -417,9 +417,6 @@ export function kur(ctx) {
     tl.set(K.div, { autoAlpha: 1 }, k(BAS));
     tl.set(K.div, { autoAlpha: 0 }, k(SON + 1)); // s6 aynı karede aynı kişileri ve balonları kendi katmanında kurar
   }
-
-  // Hızlı aksiyon 30 fps: eğriyi 2 karelik adımlara oturt
-  const adimli = (ease, kare) => { const f = gsap.parseEase(ease), n = Math.max(1, Math.round(kare / 2)); return (p) => f(Math.round(p * n) / n); };
 
   // ---------- Yerleşim (yön başına; tablolar modül düzeyinde: SIRA_T, YERLER_T, SON_YER)
   const yonAd = DIKEY ? 'dikey' : 'yatay';
@@ -489,12 +486,12 @@ export function kur(ctx) {
     }
   }
 
-  // ---------- Çıkış: kafa kadrajın altından BO ile (30 fps); başlangıçta kadraj altında bekler
+  // ---------- Çıkış: kafa kadrajın altından BO ile (60 fps, her karede); başlangıçta kadraj altında bekler
   for (const K of Object.values(KISI)) {
     const a = AKIS[K.kod];
     const dy = H + 40 - K.ust;
     gsap.set(K.h.g, { y: dy });
-    tl.fromTo(K.h.g, { y: dy }, { y: 0, duration: k(16), ease: adimli(E.BO, 16), immediateRender: false }, k(a.cik));
+    tl.fromTo(K.h.g, { y: dy }, { y: 0, duration: k(16), ease: E.BO, immediateRender: false }, k(a.cik));
   }
 
   // ---------- Balonlar. Vekil pr = { x, y (dünya merkezi), s (sarmalayıcı ölçeği), m (kuyruk: 0 başa bağlı, 1 kısa),
@@ -643,7 +640,7 @@ export function kur(ctx) {
   const gorunur = (kare) => { const c = kam(kare); return [-c.x / c.scale, (W - c.x) / c.scale, -c.y / c.scale]; };
   const sigdir = (x, w, kare, pay = 24) => { const [sl, sg] = gorunur(kare); return Math.max(sl + pay, Math.min(sg - pay - w, x)); };
 
-  // ---------- Pozlar (12 fps): anahtar kareler + göz kırpmaları
+  // ---------- Pozlar (ayrık çizim: ifade ve bakış; 12 fps ızgarasına değil, yazıldıkları karede): anahtar kareler + göz kırpmaları
   const POZ = {};
   const pz = (kod, kare, d) => (POZ[kod] ||= []).push([kare, d]);
   const yon = (a, b) => Math.sign(Math.round((b - a) / 40)); // bakış yönü (-1, 0, 1)
@@ -667,7 +664,7 @@ export function kur(ctx) {
   // N3 önce çevresine bakar, sonra düşünür
   pz('N3', 2206, { ifade: 'merak', bakis: [-1, 0] });
   pz('N3', 2211, { ifade: 'merak', bakis: [1, 0] });
-  // #5.3 "Keşke…": herkes yukarı, fikirlerine bakar (özlem); 12 fps ızgarasında üç dalga
+  // #5.3 "Keşke…": herkes yukarı, fikirlerine bakar (özlem); 5 k arayla üç dalga
   for (const K of Object.values(KISI)) {
     const t = Math.max(KESKE + 4 + (Math.round(K.x / 37) % 3) * 5, AKIS[K.kod].balon + 16);
     pz(K.kod, t, { ifade: 'ozlem', bakis: [yon(K.x, sonYer(BALON[K.kod])[0]), -1] });
@@ -680,18 +677,18 @@ export function kur(ctx) {
     pz(K.kod, DEVIR + 34 + (Math.round(K.x / 53) % 3) * 5, { ifade: sn.ifade, bakis: sn.bakis });
   }
 
-  const kirpKare = new Map(); // aynı 12 fps adımında en çok iki kişi göz kırpar
+  const kirpKare = new Map(); // aynı 5 karelik dilimde en çok iki kişi göz kırpar
   for (const K of Object.values(KISI)) {
-    const liste = POZ[K.kod].map(([kare, d]) => [adim(kare), d]).sort((x, y) => x[0] - y[0]);
-    // Göz kırpma: 70–110 k arayla; bir anahtar kareye 10 k'dan yakınsa ya da o adımda iki kırpma varsa atla
+    const liste = POZ[K.kod].map(([kare, d]) => [kare, d]).sort((x, y) => x[0] - y[0]);
+    // Göz kırpma (6 k, ~0,1 sn): 70–110 k arayla; bir anahtar kareye 10 k'dan yakınsa ya da o dilimde iki kırpma varsa atla
     const r = ctx.rng(K.p.tohum * 13 + 5), kirpmalar = [];
     for (let f = AKIS[K.kod].cik + 40 + Math.floor(r() * 40); f < DEVIR - 6; f += 70 + Math.floor(r() * 40)) {
-      const fa = adim(f);
-      if (liste.some(([kk]) => Math.abs(kk - fa) < 10) || (kirpKare.get(fa) || 0) >= 2) continue;
-      kirpKare.set(fa, (kirpKare.get(fa) || 0) + 1);
-      kirpmalar.push(fa);
+      const dilim = Math.round(f / 5);
+      if (liste.some(([kk]) => Math.abs(kk - f) < 10) || (kirpKare.get(dilim) || 0) >= 2) continue;
+      kirpKare.set(dilim, (kirpKare.get(dilim) || 0) + 1);
+      kirpmalar.push(f);
     }
-    const olaylar = [...liste.map(([kk, d]) => ({ kk, d })), ...kirpmalar.flatMap((kk) => [{ kk, kirp: true }, { kk: kk + 5, geri: true }])].sort((x, y) => x.kk - y.kk);
+    const olaylar = [...liste.map(([kk, d]) => ({ kk, d })), ...kirpmalar.flatMap((kk) => [{ kk, kirp: true }, { kk: kk + 6, geri: true }])].sort((x, y) => x.kk - y.kk);
     let durum = { ifade: 'merak', bakis: [0, 0] };
     for (const o of olaylar) {
       if (o.d) { durum = { ...durum, ...o.d }; const d = { ...durum }; tl.call(() => K.h.poz(d), null, k(o.kk)); }
@@ -768,8 +765,8 @@ export function kur(ctx) {
     LB.svg.appendChild(b.sar);
     b.bal.ciz(0); gsap.set(b.bal.kontur2, { drawSVG: '4% 92%' }); b.bal.ciz();
   }), null, k(DEVIR));
-  // Kişiler (30 fps): ortadakiler önce kalkar (yer açılsın), dışa doğru 0,6 k arayla; hepsi son 6 k'dan önce durur (devir
-  // anında herkes yerinde). Ritim: yol boyunca ~170 px'te bir küçük sekme (adım); yerinde kalan da bir kez kıpırdar.
+  // Kişiler (60 fps, her karede): ortadakiler önce kalkar (yer açılsın), dışa doğru 0,6 k arayla; hepsi son 6 k'dan önce
+  // durur (devir anında herkes yerinde). Ritim: yol boyunca ~170 px'te bir küçük sekme (adım); yerinde kalan da bir kez kıpırdar.
   // Dönüşüm kabın üstünde (öteleme + ölçek m): çıkış tween'i h.g'de, filtre kapta (renk; dönüşümden bağımsız).
   const Y0 = SON_YER[yonAd];
   const kayanlar = Object.values(KISI).sort((x, y) => Math.abs(x.x - W / 2) - Math.abs(y.x - W / 2));
@@ -785,7 +782,7 @@ export function kur(ctx) {
   const yurut = (fHam) => {
     const f = Math.max(DEVIR, Math.min(SON, fHam));
     for (const K of kayanlar) {
-      const n = Math.max(1, Math.round(K.D / 2)), uq = Math.round(kis((f - K.t0) / K.D) * n) / n, u = P2IO(uq), h = K.hedef;
+      const uq = kis((f - K.t0) / K.D), u = P2IO(uq), h = K.hedef;
       const sek = -Math.abs(Math.sin(Math.PI * K.adimSay * uq)) * 7 * K.S.o;
       K.cur = { tx: h.tx * u, ty: h.ty * u + sek, m: 1 + (h.m - 1) * u };
       K.kap.setAttribute('transform', `translate(${K.cur.tx.toFixed(2)} ${K.cur.ty.toFixed(2)}) scale(${K.cur.m.toFixed(4)})`);

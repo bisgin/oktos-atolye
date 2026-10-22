@@ -3,7 +3,8 @@
 // aynı bulutla (ctx.balon, aynı tohum) ve aynı çizgilerle (cizimKur, aynı çizim tohumu ve kalınlık) AÇIK hâlde kurulur;
 // kenarlara çekilmiş kalabalık da SON_KISILER'den aynı yerde, aynı ölçek ve pozla (s5'in gövde uzatmasıyla) kurulur.
 // s5 katmanları k2376'da kapanır, bu katman açılır. Kamera odak(0,0,1) (dünya = ekran) ve sona dek sabit.
-// KİŞİLER final boyunca ekranda kalır, hafifçe yaşar (12 fps: göz kırpma, baş sallama, sevinç sekmesi, omuz kıpırtısı):
+// KİŞİLER final boyunca ekranda kalır, hafifçe yaşar (sevinç sekmesi, baş sallama, omuz kıpırtısı her karede yumuşak;
+// ifade, bakış ve göz kırpma ayrık çizim, yazıldıkları karede):
 // balonu sönen ortaya, inşaya bakar; ~30 k sonra gülümser; logo tamamlanınca gülümseme büyür (gözler de güler), sonra
 // OKTOS'a ve slogana bakarlar; slogan oturunca yine. Ayrıntı: 13) Kişilerin takvimi.
 // #6.1 HASAT (k2376–2669): stil/logo2.js'teki inşa filme uyarlandı (biçim dönüşümü değil yapım; logo2.js'e dokunulmaz).
@@ -637,7 +638,8 @@ export function kur(ctx) {
   // ---------- 12) Slogan: harfler OKTOS'un altında (HTML), damlalar logonun üstünde (SVG)
   const slogan = sloganKur(ctx, L.div, ad, L.svg);
 
-  // ---------- 13) Kişilerin takvimi (12 fps ızgarası; yön ve dil değiştirmez, kare kare saf). İfadeler:
+  // ---------- 13) Kişilerin takvimi (yön ve dil değiştirmez, kare kare saf). İfade ve bakış ayrık çizim, olay karesinde
+  // değişir (12 fps ızgarasına oturtulmaz); sekme, baş sallama ve omuz kıpırtısı her karede yumuşak eğriyle. İfadeler:
   //   merak: gözler açık, inşaya bakar | gülümse: yüz 'mutlu', gözler 'kisik' (açık, bakan) | mutlu: gözler de güler.
   //   'gülümse' iki çizimin birleşimi: göz bölgesi (iki küçük dikdörtgen) 'kisik' çiziminden, gerisi 'mutlu'dan. İkisinde
   //   kaynama ve sapma sırası göze dek aynı (göz başına bir yol), yani dikiş görünmez; kırpma da aynı yolla ('kirp').
@@ -645,7 +647,7 @@ export function kur(ctx) {
   // bakar → ~30 k sonra gülümser → logo tamam (TAKAS): gülümseme büyür (mutlu) + sevinç sekmesi, ortadan dışa dalga →
   // OKTOS harfleri: çoğu harflere döner (gülümse), baş sallar → slogan: slogana bakar → slogan oturur: yine mutlu + sekme
   // → son tutuş: yarısı gülümseyerek bakar (göz kırpar), yarısı mutlu; arada küçük omuz kıpırtısı.
-  const adimla = (n) => ctx.adim(n);
+  const tamKare = (n) => Math.round(n); // olay kareleri tam sayı (12 fps ızgarasına oturtulmaz)
   const OD = [D.logo.cx, D.logo.cy];
   const yaziY = D.ad.top + D.ad.boyut * 0.55, sloganY = D.ad.top + D.ad.boyut * 1.55;
   const bak = (K, h) => { const dx = h[0] - K.yuz[0], dy = h[1] - K.yuz[1]; return [Math.abs(dx) < 50 ? 0 : Math.sign(dx), dy < -90 ? -1 : dy > 90 ? 1 : 0]; };
@@ -675,34 +677,46 @@ export function kur(ctx) {
     if (ESNE.length && r() < 0.5) K.hareket.push([ESNE[Math.floor(r() * ESNE.length)] + 4, 'bas']);
     if (r() < 0.5) O.push([otur + 34 + gec * 2, gul([W / 2, sloganY])]);
     K.hareket.push([otur + 70 + Math.floor(r() * 50), 'omuz']);
-    K.olaylar = O.map(([f, d]) => [adimla(f), d]).sort((a, b) => a[0] - b[0]);
-    K.hareket = K.hareket.map(([f, t]) => [adimla(f), t]).sort((a, b) => a[0] - b[0]);
+    K.olaylar = O.map(([f, d]) => [tamKare(f), d]).sort((a, b) => a[0] - b[0]);
+    K.hareket = K.hareket.map(([f, t]) => [tamKare(f), t]).sort((a, b) => a[0] - b[0]);
     // Göz kırpma (yalnız açık gözle: merak, gülümse): 55–100 k arayla, bir ifade değişimine 10 k'dan yakın değil
     for (let f = BAS + 20 + Math.floor(r() * 40); f < SON - 8; f += 55 + Math.floor(r() * 45)) {
-      const fa = adimla(f);
+      const fa = tamKare(f);
       if (K.olaylar.some(([kk]) => Math.abs(kk - fa) < 10)) continue;
       K.kirpmalar.push(fa);
     }
   }
-  // Kare f'deki durum (12 fps): ifade, göz katmanı, bakış; kırpma; hareket (sekme, baş sallama, omuz) → dönüşüm
+  // Kare f'deki durum: ifade, göz katmanı, bakış, kırpma (ayrık, tam karede); hareket (sekme, baş sallama, omuz) her karede
+  // yumuşak eğriyle → dönüşüm. Hareket eğrisi j (olaydan beri geçen kare) → [dy (kutu birimi), dönme (derece)]; aralığın
+  // dışında 0. Üst üste binen hareketler toplanır.
+  // Anahtarlardan yumuşak eğri: [[j, dy, dönme], ...] (kübik Hermite, Catmull-Rom teğeti, uçlarda teğet 0)
+  const egri = (A) => (j) => {
+    const n = A.length;
+    if (j <= A[0][0] || j >= A[n - 1][0]) return [0, 0];
+    let i = 0;
+    while (j >= A[i + 1][0]) i++;
+    const m = (q, c) => (q <= 0 || q >= n - 1 ? 0 : (A[q + 1][c] - A[q - 1][c]) / (A[q + 1][0] - A[q - 1][0]));
+    const dt = A[i + 1][0] - A[i][0], s = (j - A[i][0]) / dt, s2 = s * s, s3 = s2 * s;
+    return [1, 2].map((c) => (2 * s3 - 3 * s2 + 1) * A[i][c] + (s3 - 2 * s2 + s) * dt * m(i, c) + (-2 * s3 + 3 * s2) * A[i + 1][c] + (s3 - s2) * dt * m(i + 1, c));
+  };
   const HAREKET = {
-    sek: [[0, -9, 0], [5, -3, 0], [10, 0, 0]],          // sevinç: hafif sıçrar
-    bas: [[0, 2, 1.6], [5, 1, -0.8], [10, 0, 0]],        // baş sallama: öne eğilir, geri gelir (boyun çevresinde)
-    omuz: [[0, -4, 0], [5, 0, 0]],                       // omuz kıpırtısı
+    // sevinç: hafif sıçrar (4 k'da tepeye yavaşlayarak, 8 k'da yerçekimiyle iner)
+    sek: (j) => [j <= 0 || j >= 12 ? 0 : j < 4 ? -9 * P2O(j / 4) : -9 * (1 - P2I((j - 4) / 8)), 0],
+    bas: egri([[0, 0, 0], [4, 2, 1.6], [9, 1, -0.8], [14, 0, 0]]),   // baş sallama: öne eğilir, geri gelir (boyun çevresinde)
+    omuz: egri([[0, 0, 0], [4, -4, 0], [11, 0, 0]]),                 // omuz kıpırtısı: kalkar, iner
   };
   function kisiDurum(K, f) {
-    const fq = adimla(f);
+    const fq = Math.round(f);
     let d = K.olaylar[0][1];
     for (const [kk, dd] of K.olaylar) { if (kk <= fq) d = dd; else break; }
     d = { ...d };
     const acik = d.goz === 'kisik' || (!d.goz && d.ifade !== 'mutlu');
-    if (acik && K.kirpmalar.some((kk) => fq >= kk && fq < kk + 5)) { if (d.goz) d.goz = 'kirp'; else d.ifade = 'kirp'; }
+    if (acik && K.kirpmalar.some((kk) => fq >= kk && fq < kk + 6)) { if (d.goz) d.goz = 'kirp'; else d.ifade = 'kirp'; }
     let dy = 0, don = 0;
     for (const [kk, tur] of K.hareket) {
-      if (fq < kk) break;
-      const adimlar = HAREKET[tur], j = fq - kk;
-      for (const [a, y, r] of adimlar) if (j >= a) { dy = y; don = r; }
-      if (j >= adimlar[adimlar.length - 1][0]) { dy = 0; don = 0; }
+      if (f < kk) break;
+      const [y, r] = HAREKET[tur](f - kk);
+      dy += y; don += r;
     }
     return { ...d, dy: dy * K.olcek, don };
   }
@@ -725,7 +739,7 @@ export function kur(ctx) {
       }
     }
     const boyun = [K.x, K.yuz[1] + 70 * K.olcek];
-    K.h.g.setAttribute('transform', d.dy || d.don ? `translate(0 ${d.dy.toFixed(1)}) rotate(${d.don} ${boyun[0].toFixed(1)} ${boyun[1].toFixed(1)})` : '');
+    K.h.g.setAttribute('transform', d.dy || d.don ? `translate(0 ${d.dy.toFixed(2)}) rotate(${d.don.toFixed(3)} ${boyun[0].toFixed(1)} ${boyun[1].toFixed(1)})` : '');
   }
 
   // ---------- Kare kurulumu (saf: yalnız f'ye bağlı)
