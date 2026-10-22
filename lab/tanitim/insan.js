@@ -118,7 +118,7 @@ export function rastgeleKisi(tohum, zorla = {}) {
 }
 
 // p: kişi parametreleri. Seçenekler: kaynama (0,1,2: aynı kişinin üç çizimi), ifade, bakis
-export function kisiSVG(p, { kaynama = 0, ifade = p.ifade, bakis = p.bakis, mono = false } = {}) {
+export function kisiSVG(p, { kaynama = 0, ifade = p.ifade, bakis = p.bakis, mono = false, arka = false } = {}) {
   const M = PALET.murekkep;
   const R = rng(p.tohum * 31 + 7);
   const sapmaTablosu = Array.from({ length: 512 }, () => (R() - 0.5) * 1.6);
@@ -164,6 +164,80 @@ export function kisiSVG(p, { kaynama = 0, ifade = p.ifade, bakis = p.bakis, mono
   const sis = (y) => { if (!yk) return 1; const z = ((y - cy) / hh - 0.42) / 0.32; return 1 + yk * 0.13 * Math.exp(-z * z); };
   const kulakKay = (sis(cy + 8) - 1) * hw; // şişen yanak kulağı örtmesin: kulak ve küpe dışa kayar
   const parca = [];
+  if (arka) return arkaGorunus();
+
+  // --- ARKADAN GÖRÜNÜŞ (v06: sırtı dönük müşteri, yürüyüp uzaklaşan mühendis). Yüz yok; aynı gövde, boyun, kulak; saç
+  // başın arkasını ensenin üstüne dek örter. Saç stili, şapka, başörtüsü, örgü ve küpe arkadan okunur biçimde çizilir.
+  function arkaGorunus() {
+    const omuzY = gY + 40, E = Y.en, tepe = cy - 6 - hh, ense = cy + hh * 0.5;
+    const govde = [[cx - hw * 0.5 * nb, gY + 14], [cx - 118 * E, omuzY + 14 - Y.omuz * 0.5], [cx - 162 * E, omuzY + 52 - Y.omuz], [cx - 176 * E, BOY.boy + 420], [cx + 176 * E, BOY.boy + 420], [cx + 162 * E, omuzY + 52 - Y.omuz], [cx + 118 * E, omuzY + 14 - Y.omuz * 0.5], [cx + hw * 0.5 * nb, gY + 14]];
+    const govdeRenk = deri ? (mono ? DERI.mono : DERI.renk) : giysi;
+    parca.push(sekil([[cx - hw * 0.38 * nb, ceneY - 30], [cx - hw * 0.42 * nb, gY + 22], [cx + hw * 0.42 * nb, gY + 22], [cx + hw * 0.38 * nb, ceneY - 30]], ten));
+    parca.push(sekil(govde, govdeRenk));
+    // Sırt: kürek kemiği hizasında hafif kıvrım ve omurga çizgisi (gövde düz bir levha gibi durmasın)
+    parca.push(cizgi(yol([[cx - 52 * E, omuzY + 96], [cx - 20 * E, omuzY + 104], [cx, omuzY + 100]], false, s()), 2.4));
+    parca.push(cizgi(yol([[cx + 6, omuzY + 120], [cx + 4, omuzY + 210]], false, s()), 2.2));
+    if (deri) parca.push(sekil([[cx - hw * 0.62, gY + 2], [cx + hw * 0.62, gY + 2], [cx + hw * 0.7, gY + 30], [cx - hw * 0.7, gY + 30]], govdeRenk));
+    else if (p.yaka === 'kapusonlu') parca.push(sekil([[cx - 70, gY + 6], [cx + 70, gY + 6], [cx + 58, gY + 70], [cx, gY + 92], [cx - 58, gY + 70]], giysi));
+    else if (p.yaka === 'gomlek' || blazer) parca.push(sekil([[cx - hw * 0.55, gY + 2], [cx + hw * 0.55, gY + 2], [cx + hw * 0.6, gY + 20], [cx - hw * 0.6, gY + 20]], blazer ? giysi : '#f4f1ea'));
+    if (p.atki) parca.push(sekil([[cx - hw * 0.72, ceneY - 4], [cx + hw * 0.72, ceneY - 4], [cx + hw * 0.82, ceneY + 26], [cx - hw * 0.82, ceneY + 26]], PL.giysi[p.atkiRenk ?? 1], 3.8));
+    // Başörtüsü: başı ve omuzları örter (yüz yok)
+    if (p.sacStil === 'basortusu') {
+      parca.push(sekil([[cx, tepe - 22], [cx + hw + 24, cy - hh * 0.55], [cx + hw + 30, cy + hh * 0.3], [cx + hw + 44, ceneY + 44], [cx + 124, ceneY + 96], [cx, ceneY + 112], [cx - 124, ceneY + 96], [cx - hw - 44, ceneY + 44], [cx - hw - 30, cy + hh * 0.3], [cx - hw - 24, cy - hh * 0.55]], ortu));
+      parca.push(cizgi(yol([[cx - 10, tepe + 10], [cx - 26, cy + hh * 0.2], [cx - 40, ceneY + 70]], false, s()), 2.4));
+      return parca.join('');
+    }
+    // Kulaklar (arkadan, başın iki yanında) ve küpe
+    for (const yon of [-1, 1]) parca.push(sekil([[cx + yon * (hw - 6), cy - 12], [cx + yon * (hw + 10), cy - 10], [cx + yon * (hw + 12), cy + 10], [cx + yon * (hw + 2), cy + 22]], ten, 3.6));
+    if (p.kupe === 'halka') for (const yon of [-1, 1]) parca.push(`<circle cx="${cx + yon * (hw + 7)}" cy="${cy + 40}" r="15" fill="none" stroke="${M}" stroke-width="3.6"/>`);
+    else if (p.kupe) for (const yon of [-1, 1]) parca.push(`<circle cx="${cx + yon * (hw + 6)}" cy="${cy + 28}" r="5" fill="${VURGU1}" stroke="${M}" stroke-width="3"/>`);
+    // Baş (arkası): ten ovali
+    parca.push(sekil(oval(cx, cy - 6, hw, hh, 0, 360, 22, p.ust), ten));
+    // Saç örtüsü: tepeden enseye; alt kenarı hafif dalgalı. Stile göre boy ve biçim değişir
+    const st = p.sacStil;
+    const sacKapak = (alt, dis = 6, tumsek = 0) => {
+      const k = [];
+      for (let i = 0; i <= 18; i++) {
+        const a = (180 + i * 10) * Math.PI / 180, rr = 1 + (tumsek && i % 2 ? tumsek : 0);
+        k.push([cx + (hw + dis) * rr * Math.cos(a), cy - 6 + (hh + dis) * rr * Math.sin(a)]);
+      }
+      k.push([cx + hw + dis - 2, alt - 6], [cx + hw * 0.45, alt + 4], [cx, alt], [cx - hw * 0.45, alt + 5], [cx - hw - dis + 2, alt - 6]);
+      return sekil(k, sac);
+    };
+    if (st === 'uzun') parca.push(sekil([[cx - hw - 10, cy - hh * 0.5], [cx - hw - 18, cy + hh * 0.5], [cx - hw - 6, ceneY + 120], [cx, ceneY + 132], [cx + hw + 6, ceneY + 120], [cx + hw + 18, cy + hh * 0.5], [cx + hw + 10, cy - hh * 0.5], [cx, tepe - 12]], sac));
+    else if (st === 'bob') parca.push(sekil([[cx - hw - 10, cy - hh * 0.5], [cx - hw - 14, cy + hh * 0.4], [cx - hw - 2, ceneY + 6], [cx, ceneY + 12], [cx + hw + 2, ceneY + 6], [cx + hw + 14, cy + hh * 0.4], [cx + hw + 10, cy - hh * 0.5], [cx, tepe - 12]], sac));
+    else if (st === 'kivircik' || st === 'twist') parca.push(sacKapak(ense, 22, 0.08));
+    else if (st === 'undercut') {
+      for (let i = 0; i < 16; i++) parca.push(`<circle cx="${(cx - hw * 0.7 + (i % 8) * hw * 0.2).toFixed(1)}" cy="${(cy + hh * 0.15 + Math.floor(i / 8) * 14).toFixed(1)}" r="1.6" fill="${M}" opacity="0.5"/>`);
+      parca.push(sacKapak(cy - hh * 0.05, 8));
+    } else if (st === 'mohawk') {
+      for (let i = 0; i < 18; i++) parca.push(`<circle cx="${(cx - hw * 0.75 + (i % 9) * hw * 0.19).toFixed(1)}" cy="${(cy - hh * 0.3 + Math.floor(i / 9) * 30).toFixed(1)}" r="1.6" fill="${M}" opacity="0.5"/>`);
+      parca.push(sekil([[cx - 14, tepe - 54], [cx + 14, tepe - 54], [cx + 16, ense - 10], [cx, ense], [cx - 16, ense - 10]], sac));
+    } else if (st === 'kazik') {
+      for (let i = 0; i < 24; i++) parca.push(`<circle cx="${(cx - hw * 0.75 + (i % 8) * hw * 0.21).toFixed(1)}" cy="${(tepe + 18 + Math.floor(i / 8) * 26).toFixed(1)}" r="1.7" fill="${M}" opacity="0.5"/>`);
+    } else if (st === 'kel') {
+      parca.push(sekil([[cx - hw - 2, cy - hh * 0.1], [cx - hw * 0.5, cy + hh * 0.42], [cx + hw * 0.5, cy + hh * 0.42], [cx + hw + 2, cy - hh * 0.1], [cx + hw * 0.6, cy + hh * 0.2], [cx - hw * 0.6, cy + hh * 0.2]], sac, 3.4));
+    } else parca.push(sacKapak(ense, 6));
+    // Tel izleri (saç kask gibi durmasın)
+    if (!['kel', 'kazik', 'mohawk'].includes(st)) for (const u of [-0.4, 0, 0.4]) parca.push(cizgi(yol([[cx + hw * u, tepe + 4], [cx + hw * u * 1.1, cy - hh * 0.2], [cx + hw * u * 0.9, ense - 14]], false, s()), 2.2));
+    if (st === 'topuz') parca.push(sekil(oval(cx + 4, tepe - 20, 32, 26, 0, 360, 12), sac));
+    if (st === 'orgu') for (const yon of [-1, 1]) {
+      for (let i = 0; i < 6; i++) parca.push(sekil(donOval(cx + yon * (20 + i * 2), ense + 4 + i * 20, 13 - i * 0.6, 12, yon * 8), sac, 3.6));
+      parca.push(sekil(donOval(cx + yon * 32, ense + 126, 7, 6, 0, 8), PL.giysi[1], 3));
+    }
+    if (p.sapka === 'kasket') {
+      const ks = giysi === PL.giysi[4] ? PL.giysi[2] : PL.giysi[4];
+      parca.push(sekil([[cx - hw - 12, cy - hh * 0.4], [cx - hw - 8, cy - hh * 0.9], [cx - hw * 0.4, tepe - 22], [cx + hw * 0.4, tepe - 22], [cx + hw + 8, cy - hh * 0.9], [cx + hw + 12, cy - hh * 0.4], [cx, cy - hh * 0.28]], ks));
+      parca.push(cizgi(yol([[cx - hw - 6, cy - hh * 0.52], [cx, cy - hh * 0.42], [cx + hw + 6, cy - hh * 0.52]], false, s()), 2.6));
+      parca.push(`<circle cx="${cx}" cy="${tepe - 22}" r="5" fill="${M}"/>`);
+    }
+    if (p.sapka === 'bere') {
+      const br = PL.giysi[p.bereRenk ?? 5];
+      parca.push(sekil([[cx - hw - 10, cy - hh * 0.3], [cx - hw - 8, cy - hh * 0.8], [cx - hw * 0.4, tepe - 28], [cx + hw * 0.4, tepe - 28], [cx + hw + 8, cy - hh * 0.8], [cx + hw + 10, cy - hh * 0.3]], br));
+      parca.push(cizgi(yol([[cx - hw - 9, cy - hh * 0.45], [cx, cy - hh * 0.5], [cx + hw + 9, cy - hh * 0.45]], false, s())));
+    }
+    return parca.join('');
+  }
 
   // --- Arka katman: uzun saç / başörtüsü dökümü
   if (p.sacStil === 'uzun') parca.push(sekil([[cx - hw - 6, cy - hh * 0.6], [cx - hw - 16, cy + hh * 0.4], [cx - hw - 10, ceneY + 48], [cx - hw * 0.4, ceneY + 58], [cx + hw * 0.4, ceneY + 58], [cx + hw + 10, ceneY + 48], [cx + hw + 16, cy + hh * 0.4], [cx + hw + 6, cy - hh * 0.6], [cx, cy - hh - 10]], sac));

@@ -7,7 +7,7 @@
 // Animatik: gri yer tutucu şekiller, gerçek yazılar; "GERÇEK" anları renkli yer tutucu + etiket (3B sonra gelir).
 // Kare hızı katmanları: kamera, yazı, nesne konumu 60 fps; karakter pozu 12 fps (ctx.adim ile); kaynama 8 fps / 4 çizim.
 // Sorgu: ?yon=yatay|dikey ?dil=tr|en ?yazi=0 (yazısız, site sürümü) ?sayac=0 ?t=12.5 (kareyi dondur) ?hiz=0.5
-//        ?yalniz=v1-kanca,v2-zar (yalnız bu modüller) ?cek=1 (scripts/film-cek.py kare kare çekim)
+//        ?yalniz=v1-kanca,s1-kafe (yalnız bu modüller) ?ic=1 (sahneleri iç karelerinde kur) ?cek=1 (scripts/film-cek.py)
 import { gsap } from 'gsap';
 import { DrawSVGPlugin } from 'gsap/DrawSVGPlugin.js';
 import { MorphSVGPlugin } from 'gsap/MorphSVGPlugin.js';
@@ -25,7 +25,8 @@ const W = DIKEY ? 1080 : 1920, H = DIKEY ? 1920 : 1080;
 const DIL = q.get('dil') === 'en' ? 'en' : 'tr';
 const YAZI = q.get('yazi') !== '0';
 const KADRO = await (await fetch(new URL('./film/kadro.json', import.meta.url))).json();
-const FPS = 60, TOPLAM = KADRO.toplam;
+const FPS = 60;
+let TOPLAM = KADRO.toplam; // kurulumda sahne aralıklarından yeniden hesaplanır
 const k = (n) => n / FPS; // kare → saniye
 const NS = 'http://www.w3.org/2000/svg';
 
@@ -52,7 +53,11 @@ if (q.get('sayac') === '0' || CEKIM && q.get('sayac') !== '1') sayac.hidden = tr
 gsap.set([kamera, itme], { transformOrigin: '0 0', x: 0, y: 0, scale: 1 });
 
 // ---------- Zaman çizelgesi ve kaynama (8 fps, 4 çizim)
-const tl = gsap.timeline({ paused: true });
+// Ana zaman çizelgesi. Her sahne kendi alt çizelgesine İÇ (mutlak) karelerle yazar; alt çizelge ana çizelgeye sahnenin
+// kayması kadar ileride eklenir. Böylece bir sahne uzarsa (export ARALIK) sonraki sahneler kendiliğinden kayar.
+const ana = gsap.timeline({ paused: true });
+let tl = ana;    // etkin çizelge: sahne kurulurken o sahnenin alt çizelgesi (balon, yazı, kamera yardımcıları buna yazar)
+let KAYDIR = 0;  // etkin sahnenin kayması (kare): iç kare + KAYDIR = film karesi
 let kare = -1;
 const kaynayanlar = new Set();
 function kaynat(i) { if (i === kare) return; kare = i; for (const f of kaynayanlar) f(i); }
@@ -66,11 +71,14 @@ const SIFIR = { sap: () => 0 };
 
 // ---------- Çekim kaydı (sayaç için) ve ses işaretleri (scripts/film-ses.py müziği bunlara oturtur: tanitim.isaretler)
 const vuruslar = [];
-function vurus(no, ad, k0, k1) { vuruslar.push({ no, ad, k0, k1 }); }
+function vurus(no, ad, k0, k1) { vuruslar.push({ no, ad, k0: k0 + KAYDIR, k1: k1 + KAYDIR }); }
 // tur: 'kesme' (sahne/çekim kesmesi), 'konusma' (sesli söz başlar), 'dusunce' (düşünce balonu açılır), 'tik' (küçük mekanik
 // ses: kapak, çekmece, vida), 'zar', 'sessizlik' (k..bitis arası müzik susar), 'vurgu' (müzikte asılı/çözülen an), 'nota' (nota: 'D5')
 const isaretler = [];
-function isaret(kare, tur, ek = {}) { isaretler.push({ kare: Math.round(kare), tur, ...ek }); }
+function isaret(kare, tur, ek = {}) { isaretler.push({ kare: Math.round(kare + KAYDIR), tur, ...ek }); }
+// Her karede çağrılacak çizim (3B tuval gibi): f(icKare) sahnenin iç karesiyle çağrılır; kare kare çekimde seek'ten sonra
+const kareCizimleri = [];
+function herKare(f) { const kay = KAYDIR; kareCizimleri.push(() => f(Math.round(ana.time() * FPS) - kay)); }
 function sayacYaz(t) {
   if (sayac.hidden) return;
   const n = Math.round(t * FPS), v = vuruslar.find((x) => n >= x.k0 && n <= x.k1);
@@ -153,35 +161,48 @@ function kisi(ust, p, { x = W / 2, alt = H, olcek = 1.9, hiza = null } = {}) {
   const h = { g, svg: s, p, ifade: p.ifade || 'notr', bakis: [0, 0], donuk: false, olcek, x, alt };
   // Göz çizgisinin sahnedeki yeri (montajda kamera bu noktaya kilitlenir)
   h.goz = [x, alt - BOY.boy * olcek + GOZ_Y * olcek];
-  h.ciz = (i = kare) => { if (!h.donuk) s.innerHTML = kisiSVG(h.p, { kaynama: Math.max(0, i), ifade: h.ifade, bakis: h.bakis, mono: true }); };
-  h.poz = ({ p: yeni, ifade, bakis } = {}) => { if (yeni) h.p = yeni; if (ifade) h.ifade = ifade; if (bakis) h.bakis = bakis; h.ciz(); };
+  // arka: true → sırtı dönük çizim (insan.js arka görünüş); poz({ arka }) ile dönebilir
+  h.arka = false;
+  h.ciz = (i = kare) => { if (!h.donuk) s.innerHTML = kisiSVG(h.p, { kaynama: Math.max(0, i), ifade: h.ifade, bakis: h.bakis, mono: true, arka: h.arka }); };
+  h.poz = ({ p: yeni, ifade, bakis, arka } = {}) => { if (yeni) h.p = yeni; if (ifade) h.ifade = ifade; if (bakis) h.bakis = bakis; if (arka != null) h.arka = arka; h.ciz(); };
   h.ciz(Math.max(0, kare));
   kaynayanlar.add(h.ciz);
   return h;
 }
 
-// ---------- Düşünce balonu: düzensiz tümsekli bulut + 3 nokta. ac(k0): noktalar 4 k arayla (8 k, BO), bulut 14 k BO,
-// kıvrımlar 12 k DrawSVG. kapat(k0): 18 k Eİ. hizli: true → noktalar 2 k arayla, bulut 8 k (plan #12)
+// ---------- Düşünce balonu: el çizimi, organik bulut + 3 nokta (v06: kullanıcı "tek kontur değil, gerçekten bulut oluşmuş
+// gibi, fazla çizgilerle, el çizimi" istedi). Katmanlar: dolgu → ikinci kalem geçişi (ince, biraz kayık, yer yer kopuk) →
+// ana kontur (tümsekler farklı boyda) → tümsek birleşimlerinde içe kıvrılan kısa çizgiler (hacim) → alt-sağ iç kenarda
+// birkaç kısa tarama (gölge) → içerik. Noktalar da çift geçişli. Hepsi kaynar (8 fps). API değişmedi.
+// ac(k0): noktalar 4 k arayla (8 k, BO), bulut 14 k BO, ana kontur 12 k DrawSVG, ikinci geçiş +3 k, kıvrımlar ve tarama +8 k.
+// kapat(k0): 18 k Eİ. hizli: true → noktalar 2 k arayla, bulut 8 k
 function balon(ust, { c, r, noktalar, tohum = 5, koken = '20% 90%' }) {
+  const M = PALET.murekkep;
   const g = el(ust, 'g');
-  const nk = noktalar.map(() => el(g, 'path', { fill: BALON, stroke: PALET.murekkep, 'stroke-width': 4.5 }));
+  const nk = noktalar.map(() => el(g, 'g'));
+  const nkD = nk.map((x) => el(x, 'path', { fill: BALON }));
+  const nkK = nk.map((x) => el(x, 'path', { fill: 'none', stroke: M, 'stroke-width': 4.2, 'stroke-linecap': 'round', 'stroke-linejoin': 'round' }));
+  const nkK2 = nk.map((x) => el(x, 'path', { fill: 'none', stroke: M, 'stroke-width': 2, 'stroke-linecap': 'round', opacity: 0.75 }));
   const bg = el(g, 'g');
   const dolgu = el(bg, 'path', { fill: BALON });
-  const kontur = el(bg, 'path', { fill: 'none', stroke: PALET.murekkep, 'stroke-width': 5, 'stroke-linecap': 'round', 'stroke-linejoin': 'round' });
+  const kontur2 = el(bg, 'path', { fill: 'none', stroke: M, 'stroke-width': 2.3, 'stroke-linecap': 'round', 'stroke-linejoin': 'round', opacity: 0.8 });
+  const kontur = el(bg, 'path', { fill: 'none', stroke: M, 'stroke-width': 5, 'stroke-linecap': 'round', 'stroke-linejoin': 'round' });
+  const eskiz = el(bg, 'g', { fill: 'none', stroke: M, 'stroke-linecap': 'round', 'stroke-linejoin': 'round' });
   const ic = el(bg, 'g'); // içerik buraya (balonla birlikte büyür)
-  const sp = sapma(tohum, 1.6);
-  const n = 11, rr = rng(tohum * 7 + 77), wv = Array.from({ length: n }, () => 0.75 + rr() * 0.5), top = wv.reduce((a, b) => a + b, 0);
+  const sp = sapma(tohum, 1.6), sp2 = sapma(tohum * 5 + 3, 2.2), spE = sapma(tohum * 11 + 7, 1.1);
+  const n = 11, rr = rng(tohum * 7 + 77), wv = Array.from({ length: n }, () => 0.62 + rr() * 0.76), top = wv.reduce((a, b) => a + b, 0);
   const aci = []; let acc = 0;
   for (let i = 0; i < n; i++) { aci.push(acc / top * Math.PI * 2 - Math.PI * 0.62); acc += wv[i]; }
-  const yolu = (ss) => {
-    const P = (a) => [c[0] + r[0] * Math.cos(a), c[1] + r[1] * Math.sin(a)];
-    const N = (a) => { const x = Math.cos(a) / r[0], y = Math.sin(a) / r[1], l = Math.hypot(x, y); return [x / l, y / l]; };
-    const f = (v) => v.toFixed(1);
-    const uc = aci.map((a, i) => { const p0 = P(a); return [p0[0] + ss.sap(i * 6, 0), p0[1] + ss.sap(i * 6, 1)]; });
+  const sis = wv.map((w) => 0.5 + w * 0.22); // tümsek şişkinliği: geniş tümsek daha dolgun (bulut düzensiz)
+  const P = (a, o = 1) => [c[0] + r[0] * o * Math.cos(a), c[1] + r[1] * o * Math.sin(a)];
+  const N = (a) => { const x = Math.cos(a) / r[0], y = Math.sin(a) / r[1], l = Math.hypot(x, y); return [x / l, y / l]; };
+  const f = (v) => v.toFixed(1);
+  const yolu = (ss, o = 1, don = 0) => {
+    const uc = aci.map((a, i) => { const p0 = P(a + don, o); return [p0[0] + ss.sap(i * 6, 0), p0[1] + ss.sap(i * 6, 1)]; });
     let d = `M${f(uc[0][0])} ${f(uc[0][1])}`;
     for (let i = 0; i < n; i++) {
-      const a0 = aci[i], a1 = i + 1 < n ? aci[i + 1] : aci[0] + Math.PI * 2;
-      const p0 = P(a0), p1 = P(a1), n0 = N(a0), n1 = N(a1), b = Math.hypot(p1[0] - p0[0], p1[1] - p0[1]) * 0.62;
+      const a0 = aci[i] + don, a1 = (i + 1 < n ? aci[i + 1] : aci[0] + Math.PI * 2) + don;
+      const p0 = P(a0, o), p1 = P(a1, o), n0 = N(a0), n1 = N(a1), b = Math.hypot(p1[0] - p0[0], p1[1] - p0[1]) * sis[i];
       const j = (q0, m) => [q0[0] + ss.sap(i * 6 + m, 0), q0[1] + ss.sap(i * 6 + m, 1)];
       const c1 = j([p0[0] + n0[0] * b + (p1[0] - p0[0]) * 0.08, p0[1] + n0[1] * b + (p1[1] - p0[1]) * 0.08], 1);
       const c2 = j([p1[0] + n1[0] * b - (p1[0] - p0[0]) * 0.08, p1[1] + n1[1] * b - (p1[1] - p0[1]) * 0.08], 2);
@@ -190,18 +211,41 @@ function balon(ust, { c, r, noktalar, tohum = 5, koken = '20% 90%' }) {
     }
     return d + 'Z';
   };
+  // Tümsek birleşimlerinde içe kıvrılan kısa çizgiler (tohumlu seçim, en az 4) ve alt-sağ iç kenarda tarama
+  const rmin = Math.min(r[0], r[1]);
+  const secili = aci.map((_, i) => i).filter(() => rr() < 0.6);
+  for (let j = 0; secili.length < 4; j++) secili.push((j * 3 + 1) % n);
+  const kivrimlar = [...new Set(secili)].map((i) => {
+    const a = aci[i], p0 = P(a), nn = N(a), t = [-nn[1], nn[0]], L = rmin * (0.1 + 0.05 * wv[i]);
+    return [[p0[0] - nn[0] * 5, p0[1] - nn[1] * 5], [p0[0] - nn[0] * L * 0.6 + t[0] * L * 0.25, p0[1] - nn[1] * L * 0.6 + t[1] * L * 0.25], [p0[0] - nn[0] * L + t[0] * L * 0.7, p0[1] - nn[1] * L + t[1] * L * 0.7]];
+  });
+  const taramalar = [0.18, 0.3, 0.42, 0.54].map((u, j) => {
+    const a = (0.18 + u * 0.9) * Math.PI * 0.5 + 0.1, p0 = P(a, 0.9 - 0.02 * (j % 2)), L = rmin * (0.07 + 0.02 * (j % 2));
+    return [[p0[0] - L * 0.5, p0[1] + L * 0.5], [p0[0] + L * 0.5, p0[1] - L * 0.5]];
+  });
+  const kivEl = kivrimlar.map(() => el(eskiz, 'path', { 'stroke-width': 2.8 }));
+  const tarEl = taramalar.map(() => el(eskiz, 'path', { 'stroke-width': 2, opacity: 0.45 }));
   const durum = { donuk: false };
   const ciz = (i = kare) => {
     if (durum.donuk) return;
-    const d = yolu(i < 0 ? SIFIR : sp(i));
+    const ii = Math.max(0, i), d = yolu(i < 0 ? SIFIR : sp(i));
     dolgu.setAttribute('d', d); kontur.setAttribute('d', d);
-    noktalar.forEach(([x, y, rad], j) => nk[j].setAttribute('d', yol(oval(x, y, rad, rad * 0.86, 0, 360, 10), true, sapma(tohum * 3 + j, 0.8)(Math.max(0, i)))));
+    kontur2.setAttribute('d', yolu(i < 0 ? SIFIR : sp2(i), 1.012, 0.035));
+    const ss = spE(ii);
+    kivrimlar.forEach((pts, j) => kivEl[j].setAttribute('d', yol(pts, false, { sap: (q, e) => ss.sap(j * 7 + q, e) })));
+    taramalar.forEach((pts, j) => tarEl[j].setAttribute('d', yol(pts, false, { sap: (q, e) => ss.sap(60 + j * 5 + q, e) })));
+    noktalar.forEach(([x, y, rad], j) => {
+      const dd = yol(oval(x, y, rad, rad * 0.86, 0, 360, 10), true, sapma(tohum * 3 + j, 0.8)(ii));
+      nkD[j].setAttribute('d', dd); nkK[j].setAttribute('d', dd);
+      nkK2[j].setAttribute('d', yol(oval(x + rad * 0.08, y - rad * 0.05, rad * 1.06, rad * 0.9, 20, 300, 9), false, sapma(tohum * 3 + j + 50, 0.9)(ii)));
+    });
   };
   ciz(Math.max(0, kare));
   kaynayanlar.add(ciz);
   gsap.set(nk, { scale: 0, transformOrigin: '50% 50%' });
   gsap.set(bg, { scale: 0.3, autoAlpha: 0, transformOrigin: koken });
-  const h = { g, bulut: bg, ic, dolgu, kontur, noktalar: nk, c, r, yolu: () => yolu(SIFIR), ciz };
+  gsap.set(kontur2, { drawSVG: '4% 92%' }); // açık kurulan balon da açılmış olanla aynı görünsün (s5 → s6 devri)
+  const h = { g, bulut: bg, ic, dolgu, kontur, kontur2, eskiz, noktalar: nk, c, r, yolu: () => yolu(SIFIR), ciz };
   // h.donuk = true: kaynama durur (bilinçli sessizlik); zaman çizelgesinde tl.call ile aç/kapat
   Object.defineProperty(h, 'donuk', { get: () => durum.donuk, set: (v) => { durum.donuk = v; } });
   h.ac = (k0, { hizli = false } = {}) => {
@@ -211,6 +255,8 @@ function balon(ust, { c, r, noktalar, tohum = 5, koken = '20% 90%' }) {
     tl.fromTo(bg, { scale: 0.3, autoAlpha: 0 }, { scale: 1, autoAlpha: 1, duration: k(hizli ? 8 : 14), ease: 'back.out(1.2)', immediateRender: false }, tb); // ~%5 aşma: kadraj kenarına taşmasın
     tl.fromTo(kontur, { drawSVG: '0%' }, { drawSVG: '100%', duration: k(12), ease: E.EO, immediateRender: false }, tb);
     tl.set(kontur, { clearProps: 'strokeDasharray,strokeDashoffset' }, tb + k(13));
+    tl.fromTo(kontur2, { drawSVG: '0% 0%' }, { drawSVG: '4% 92%', duration: k(12), ease: E.EO, immediateRender: false }, tb + k(3)); // ikinci kalem geçişi kopuk kalır
+    tl.fromTo(eskiz, { autoAlpha: 0 }, { autoAlpha: 1, duration: k(8), ease: 'none', immediateRender: false }, tb + k(8));
     return tb + k(hizli ? 8 : 14); // bulutun oturduğu an (sn)
   };
   h.kapat = (k0, sure = 18) => {
@@ -279,7 +325,7 @@ function yazi(metin, k0, k1, { stil = 'cumle', yer = {}, boyut } = {}) {
   for (const [a, v] of Object.entries(yer)) p.style[a === 'align' ? 'textAlign' : a] = typeof v === 'number' ? v + 'px' : v;
   if (boyut) p.style.fontSize = boyut + 'px';
   yaziKatmani.appendChild(p);
-  yazilar.push({ p, k0, k1 });
+  yazilar.push({ p, k0: k0 + KAYDIR, k1: k1 == null ? null : k1 + KAYDIR });
   return p;
 }
 function yazilariKur() {
@@ -337,7 +383,7 @@ const ctx = {
   W, H, DIKEY, DIL, YAZI, FPS, TOPLAM, k, E, tl, gsap, VURGU, GRI, GRI2, KAGIT, BALON, PALET, MONO, BOY, GOZ_Y,
   kamera, itme, yaziKatmani, katman, el, cizgi, sapma, yol, oval, rng, kaynayanlar,
   KISI, MONTAJ, kisiParam, kisi, balon, elYazisi, yazElYazisi, silElYazisi, yazi, odak, kameraGit, kameraKoy,
-  gercekEtiket, YERLESIM, vurus, isaret, FIGUR, SAKSI, KADRO, konus, boyKaymasi, rastgeleKisi,
+  gercekEtiket, YERLESIM, vurus, isaret, herKare, FIGUR, SAKSI, KADRO, konus, boyKaymasi, rastgeleKisi,
   yer: (yatay, dikey) => (DIKEY ? dikey : yatay),
   metin: (tr, en) => ({ tr, en }),
   // 12 fps adım: karakter pozu değişiklikleri bu ızgaraya oturur (5 karede bir)
@@ -347,32 +393,59 @@ const ctx = {
 // ---------- Modülleri yükle (her biri kendi vinyetini kurar)
 const MODULLER = ['v1-kanca', 's1-kafe', 's2-atolye', 's3-balkon', 's4-frp', 's5-kalabalik', 's6-final'];
 const SECILI = q.get('yalniz') ? q.get('yalniz').split(',') : MODULLER;
+const IC_KARE = q.get('ic') === '1'; // sahne testi: iç kareler (film-kare.py "...?yalniz=s2-atolye&ic=1")
 const hatalar = [];
+const sahneler = [];
 async function kur() {
+  // 1) Bütün modüller yüklenir (yalniz seçilmese de: yerleşim tüm sahnelere göre hesaplanır)
   for (const m of MODULLER) {
-    if (!SECILI.includes(m)) continue;
+    let mod = null;
+    try { mod = await import(`./film/${m}.js`); } catch (e) { console.error(m, e); hatalar.push(`${m}: ${e.message}`); }
+    sahneler.push({ m, mod });
+  }
+  // 2) Yerleşim: her sahnenin iç aralığı modülün ARALIK'ı (yoksa kadro.json sahneler); sahneler arka arkaya dizilir.
+  // Sahneler yalnız UZAYABİLİR: kısalan sahne sonrakini iç karesinden önceye çekerdi (negatif kayma), bu hata sayılır.
+  let bas = 0;
+  for (const y of sahneler) {
+    const ic = y.mod?.ARALIK || KADRO.sahneler?.[y.m];
+    if (!ic) { hatalar.push(`${y.m}: aralık yok`); continue; }
+    // ?ic=1 (sahne testi): seçili sahneler kendi iç karelerinde kurulur, önceki sahnelerin uzaması onları kaydırmaz
+    const kay = IC_KARE ? 0 : bas - ic[0];
+    Object.assign(y, { ic, kaydir: kay, bas: ic[0] + kay, son: ic[1] + kay });
+    if (y.kaydir < 0) hatalar.push(`${y.m}: önceki sahne kısalmış, kayma ${y.kaydir} (sahneler yalnız uzayabilir)`);
+    bas = IC_KARE ? Math.max(bas, y.son + 1) : y.son + 1;
+  }
+  TOPLAM = bas;
+  // 3) Seçili sahneler kendi alt çizelgelerine kurulur
+  for (const y of sahneler) {
+    if (!y.mod || !y.ic || y.kaydir < 0 || !SECILI.includes(y.m)) continue;
+    const alt = gsap.timeline();
+    ana.add(alt, k(y.kaydir));
+    tl = alt; KAYDIR = y.kaydir;
     try {
-      const mod = await import(`./film/${m}.js`);
-      mod.kur(ctx);
+      y.mod.kur({ ...ctx, tl: alt, KAYDIR: y.kaydir, ARALIK: y.ic });
     } catch (e) {
-      console.error(m, e);
-      hatalar.push(`${m}: ${e.message}`);
+      console.error(y.m, e);
+      hatalar.push(`${y.m}: ${e.message}`);
     }
+    tl = ana; KAYDIR = 0;
   }
   yazilariKur();
-  tl.to({}, { duration: k(1) }, k(TOPLAM - 1)); // süre en az TOPLAM kare
+  ana.to({}, { duration: k(1) }, k(TOPLAM - 1)); // süre en az TOPLAM kare
   hataEl.textContent = hatalar.join('\n');
 }
 
 // ---------- Kare kare çekim ve oynatma
 function kareKur(t) {
-  tl.seek(Math.max(t, 1e-4), false); // seek(0) 0. sn'deki set'leri uygulamıyor (ilk kare)
+  ana.seek(Math.max(t, 1e-4), false); // seek(0) 0. sn'deki set'leri uygulamıyor (ilk kare)
   kaynat(kaynaIndis(t));
+  for (const f of kareCizimleri) f();
   sayacYaz(t);
 }
-gsap.ticker.add(() => { if (!CEKIM) sayacYaz(tl.time()); });
+gsap.ticker.add(() => { if (!CEKIM) { sayacYaz(ana.time()); for (const f of kareCizimleri) f(); } });
 if (CEKIM) { gsap.ticker.lagSmoothing(0); document.getElementById('tekrar').hidden = true; }
-window.tanitim = { tl, kare: kareKur, sure: () => tl.duration(), hatalar, vuruslar, isaretler, ctx };
+window.tanitim = { tl: ana, kare: kareKur, sure: () => ana.duration(), hatalar, vuruslar, isaretler, ctx,
+  sahneler: () => sahneler.map(({ m, ic, bas, son, kaydir }) => ({ m, ic, bas, son, kaydir })) };
 await document.fonts.ready;
 // Caveat ve Big Shoulders bir öğe kullanana dek indirilmez; fonts.ready onları beklemez. Balon ve el yazısı genişliği gerçek
 // yazı tipiyle ölçülsün diye sahneler kurulmadan önce yüklenir (Türkçe harfler dahil)
@@ -385,16 +458,16 @@ try {
   ]);
 } catch { /* yazı tipi gelmezse yedekle sürer */ }
 await kur();
-tl.seek(1e-4, false); // 0. saniyedeki set'ler hemen uygulansın: ilk boyanan kare de doğru olsun
+ana.seek(1e-4, false); // 0. saniyedeki set'ler hemen uygulansın: ilk boyanan kare de doğru olsun
 kaynat(0);
 if (CEKIM) window.tanitimHazir = true;
 else if (q.get('t') !== null) {
   // İleri sararken çağrılar sırayla çalışsın: kare kare ilerle
   const hedef = +q.get('t');
-  for (let t = 0; t < hedef; t = Math.min(hedef, t + 1 / FPS)) tl.seek(t, false);
+  for (let t = 0; t < hedef; t = Math.min(hedef, t + 1 / FPS)) ana.seek(t, false);
   kareKur(hedef);
 } else {
-  tl.timeScale(+(q.get('hiz') || 1));
-  tl.play(0);
+  ana.timeScale(+(q.get('hiz') || 1));
+  ana.play(0);
   document.getElementById('tekrar').addEventListener('click', () => location.reload());
 }

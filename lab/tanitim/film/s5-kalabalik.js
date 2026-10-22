@@ -242,7 +242,8 @@ function sonNoktalar(b, s) {
 }
 export const SON_BALONLAR = Object.fromEntries(Object.entries(SON_YER).map(([yon, Y0]) => [yon, Y0.balonlar.map((b) => ({
   cizim: b.cizim, c: b.c, r: b.r, icBoy: b.icBoy, noktalar: sonNoktalar(b, Y0.nokta),
-  tohum: TOHUM[b.kod].balon, cizimTohum: TOHUM[b.kod].cizim, kalinlik: KALINLIK, kod: b.kod,
+  // Son çizim balonun ikinci fikriyse (degis) tohumu +10 (kurulumdaki fikirCiz ile aynı): finalde kayma olmasın
+  tohum: TOHUM[b.kod].balon, cizimTohum: TOHUM[b.kod].cizim + (AKIS[b.kod]?.degis?.[1] === b.cizim ? 10 : 0), kalinlik: KALINLIK, kod: b.kod,
 }))]));
 
 // ---------- Kişi geometrisi (kutu birimi; insan.js ile aynı ölçüler)
