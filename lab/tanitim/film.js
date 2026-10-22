@@ -1,6 +1,8 @@
-// Tanıtım filmi animatiği (M1) çekirdeği: sahne, tek zaman çizelgesi, kamera, yazı, balon, karakterler, sayaç.
-// Plan: tanıtım filmi planı v04 (yerel çalışma notları) (26 çekim, 2304 kare, 60 fps).
-// Vinyetler ayrı modüllerdir (lab/tanitim/film/v*.js); her biri `export function kur(ctx)` ile zaman çizelgesine
+// Tanıtım filmi animatiği (v06) çekirdeği: sahne, tek zaman çizelgesi, kamera, yazı, düşünce ve konuşma balonu, karakterler, sayaç.
+// Yapı v06 (yerel çalışma notları): 48 sn = 2880 kare, 60 fps. Kanca → kafe → atölye → balkon → FRP masası → kalabalık "keşke"
+// → balon konturlarından logo inşası → OKTOS + örgü şişiyle "Dokunulabilir hayaller". Sahneler sorunda biter, çözüm gösterilmez.
+// Kadro (genç, 16–30), kanca yüzleri, sahne aralıkları ve kareler tek kaynaktan: film/kadro.json (scripts/film-ses.py de okur).
+// Sahneler ayrı modüllerdir (lab/tanitim/film/*.js); her biri `export function kur(ctx)` ile zaman çizelgesine
 // kendi tween'lerini MUTLAK kare zamanlarıyla ekler (ctx.k(kare) → saniye). Bir modül hata verirse yalnız o vinyet düşer.
 // Animatik: gri yer tutucu şekiller, gerçek yazılar; "GERÇEK" anları renkli yer tutucu + etiket (3B sonra gelir).
 // Kare hızı katmanları: kamera, yazı, nesne konumu 60 fps; karakter pozu 12 fps (ctx.adim ile); kaynama 8 fps / 4 çizim.
@@ -13,7 +15,7 @@ import { SplitText } from 'gsap/SplitText.js';
 import { CustomEase } from 'gsap/CustomEase.js';
 import { ScrambleTextPlugin } from 'gsap/ScrambleTextPlugin.js';
 import { MotionPathPlugin } from 'gsap/MotionPathPlugin.js';
-import { kisiSVG, rastgeleKisi, yol, oval, rng, PALET, MONO, BOY, GOZ_Y } from './insan.js';
+import { kisiSVG, rastgeleKisi, boyKaymasi, yol, oval, rng, PALET, MONO, BOY, GOZ_Y } from './insan.js';
 
 gsap.registerPlugin(DrawSVGPlugin, MorphSVGPlugin, SplitText, CustomEase, ScrambleTextPlugin, MotionPathPlugin);
 const q = new URLSearchParams(location.search);
@@ -22,7 +24,8 @@ const DIKEY = q.get('yon') === 'dikey' || (!q.has('yon') && !CEKIM && innerHeigh
 const W = DIKEY ? 1080 : 1920, H = DIKEY ? 1920 : 1080;
 const DIL = q.get('dil') === 'en' ? 'en' : 'tr';
 const YAZI = q.get('yazi') !== '0';
-const FPS = 60, TOPLAM = 2304;
+const KADRO = await (await fetch(new URL('./film/kadro.json', import.meta.url))).json();
+const FPS = 60, TOPLAM = KADRO.toplam;
 const k = (n) => n / FPS; // kare → saniye
 const NS = 'http://www.w3.org/2000/svg';
 
@@ -61,9 +64,13 @@ const sapma = (tohum, genlik = 1.2) => {
 };
 const SIFIR = { sap: () => 0 };
 
-// ---------- Çekim kaydı (sayaç için)
+// ---------- Çekim kaydı (sayaç için) ve ses işaretleri (scripts/film-ses.py müziği bunlara oturtur: tanitim.isaretler)
 const vuruslar = [];
 function vurus(no, ad, k0, k1) { vuruslar.push({ no, ad, k0, k1 }); }
+// tur: 'kesme' (sahne/çekim kesmesi), 'konusma' (sesli söz başlar), 'dusunce' (düşünce balonu açılır), 'tik' (küçük mekanik
+// ses: kapak, çekmece, vida), 'zar', 'sessizlik' (k..bitis arası müzik susar), 'vurgu' (müzikte asılı/çözülen an), 'nota' (nota: 'D5')
+const isaretler = [];
+function isaret(kare, tur, ek = {}) { isaretler.push({ kare: Math.round(kare), tur, ...ek }); }
 function sayacYaz(t) {
   if (sayac.hidden) return;
   const n = Math.round(t * FPS), v = vuruslar.find((x) => n >= x.k0 && n <= x.k1);
@@ -106,13 +113,8 @@ function cizgi(ust, pts, { kapali = false, dolgu = null, kalinlik = 5, renk = PA
   return h;
 }
 
-// ---------- Karakterler (insan.js, tek renkli). Montaj ve dört ana karakter (plan §4; "[y]" parçalar yaklaşık)
-const KISI = {
-  A: { tohum: 7, kadin: true, sacStil: 'kivircik', yas: 'genc', cil: true, gozluk: null, sakal: null, kupe: true, ten: 4, sac: 0, giysi: 3, yaka: 'kapusonlu' },
-  B: { tohum: 41, kadin: true, sacStil: 'topuz', yas: 'yasli', sac: 5, ten: 1, gozluk: 'kare', kalem: true, sakal: null, kupe: false, yaka: 'gomlek', giysi: 0 },
-  C: { tohum: 52, kadin: false, sacStil: 'kisa', yas: 'orta', sac: 0, ten: 6, sakal: 'sakal', kulaklik: true, gozluk: null, kupe: false, yaka: 'kapusonlu', giysi: 5, yuzEn: 68 },
-  D: { tohum: 63, kadin: true, sacStil: 'basortusu', yas: 'orta', ten: 3, ortu: 1, ceket: true, yaka: 'gomlek', giysi: 5, gozluk: null, sakal: null, kupe: false },
-};
+// ---------- Karakterler (insan.js, tek renkli). Konuşan kadro kadro.json'dan (kisiler.<kod>.p); kanca yüzleri kadro.montaj.
+const KISI = Object.fromEntries(Object.entries(KADRO.kisiler).map(([ad, v]) => [ad, v.p]));
 const MONTAJ = [
   { kel: 1, p: { sacStil: 'kel', sac: 6, sakal: 'biyik', gozluk: 'kare', kalem: true, yas: 'yasli', ten: 2 } },           // M1
   { p: { sacStil: 'topuz', yas: 'genc', ten: 5, yuzEn: 52, yuzBoy: 66, gozluk: null, sakal: null } },                  // M2 çocuk
@@ -136,11 +138,16 @@ const MONTAJ = [
   { p: { sacStil: 'kel', sac: 0, ten: 0, gozluk: 'kare', sakal: null } },                                             // M20
   { p: { sacStil: 'bere', sakal: 'biyik', sac: 6, ten: 5, yas: 'yasli', gozluk: null } },                              // M21
 ].map((m, i) => rastgeleKisi(100 + i * 13, m.p));
+// v06: kanca yüzleri genç kadrodan (kadro.json montaj); yoksa eski liste kalır
+if (KADRO.montaj?.length) KADRO.montaj.forEach((m, i) => { MONTAJ[i] = rastgeleKisi(m.tohum ?? 100 + i * 13, m); });
 const kisiParam = (ad) => rastgeleKisi(KISI[ad].tohum, KISI[ad]);
 
 // Kişi: üst katmana (svg) iç içe svg olarak konur. (x, alt) = göğüs ortası ve alt kenar; olcek 1 = 400×440 px.
+// hiza: ortak zemindeki kişiler için 'orta' boylu birinin kutu alt kenarı; verilirse alt = hiza + boyKaymasi(p) × olcek
+// (kısa biri aşağıda, uzun biri yukarıda durur; gövde kutunun 420 birim altına dek uzar, kenarı görünmez).
 // Pozu 12 fps'te değiştir: ctx.tl.call(() => kisi.poz({ ifade: 'merak', bakis: [1, -1] }), null, ctx.k(kare)).
-function kisi(ust, p, { x = W / 2, alt = H, olcek = 1.9 } = {}) {
+function kisi(ust, p, { x = W / 2, alt = H, olcek = 1.9, hiza = null } = {}) {
+  if (hiza != null) alt = hiza + boyKaymasi(p) * olcek;
   const g = el(ust, 'g');
   const s = el(g, 'svg', { viewBox: `0 0 ${BOY.en} ${BOY.boy}`, width: BOY.en * olcek, height: BOY.boy * olcek, x: x - (BOY.en * olcek) / 2, y: alt - BOY.boy * olcek, overflow: 'visible' });
   const h = { g, svg: s, p, ifade: p.ifade || 'notr', bakis: [0, 0], donuk: false, olcek, x, alt };
@@ -226,6 +233,41 @@ function yazElYazisi(p, k0, sure = 28) {
 }
 function silElYazisi(p, k0) { tl.to(p, { autoAlpha: 0, y: -18, duration: k(14), ease: E.EI }, k(k0)); }
 
+// ---------- Konuşma balonu (sesli söz; düşünce balonu ise iç ses): elle çizilmiş yuvarlak köşeli kutu + kuyruk, içinde Caveat.
+// konus(L, metin, { x, y, kuyruk: [x, y], boyut, aci, tohum }) → { g, p, ac(k0, yazSure), kapat(k0) }. (x, y) yazının sol üstü,
+// kuyruk konuşanın ağzına bakan uç (dünya koordinatı). Balon 8 k BO ile kuyruk ucundan açılır, yazı 4 k sonra yazılır.
+function konus(L, metin, { x, y, kuyruk = null, boyut = 52, aci = 0, tohum = 9, dolgu = BALON, pay = [26, 16] } = {}) {
+  const g = el(L.svg, 'g');
+  const p = elYazisi(L.div, metin, { x, y, boyut, aci });
+  const w = p.offsetWidth || boyut * 6, h = p.offsetHeight || boyut;
+  const cx = x + w / 2, cy = y + h / 2, rx = w / 2 + pay[0], ry = h / 2 + pay[1];
+  const govde = oval(cx, cy, rx, ry, 0, 360, 30, 5.5); // süperelips: yuvarlak köşeli kutu
+  cizgi(g, govde, { kapali: true, dolgu, kalinlik: 4.5, tohum, genlik: 1.1, kay: [0, 0] });
+  let uc = [cx, cy + ry];
+  if (kuyruk) {
+    // Kuyruk tabanı: konturun kuyruk yönüne en yakın noktasının iki yanı; taban şeridi dolguyla örtülür (kontur kesilir)
+    const a = Math.atan2((kuyruk[1] - cy) / ry, (kuyruk[0] - cx) / rx), d = 0.16;
+    const P = (t) => { const c = Math.cos(t), sn = Math.sin(t); return [cx + rx * Math.sign(c) * Math.abs(c) ** (2 / 5.5), cy + ry * Math.sign(sn) * Math.abs(sn) ** (2 / 5.5)]; };
+    const b1 = P(a - d), b2 = P(a + d), ic = (q) => [q[0] + (cx - q[0]) * 0.12, q[1] + (cy - q[1]) * 0.12];
+    uc = kuyruk;
+    el(g, 'path', { d: `M${ic(b1).join(' ')} L${b1.join(' ')} L${kuyruk.join(' ')} L${b2.join(' ')} L${ic(b2).join(' ')}Z`, fill: dolgu });
+    cizgi(g, [b1, [(b1[0] + kuyruk[0]) / 2 + (b2[1] - b1[1]) * 0.08, (b1[1] + kuyruk[1]) / 2], kuyruk], { kalinlik: 4.5, tohum: tohum + 1, genlik: 0.9 });
+    cizgi(g, [b2, kuyruk], { kalinlik: 4.5, tohum: tohum + 2, genlik: 0.9 });
+  }
+  gsap.set(g, { autoAlpha: 0, scale: 0.6, svgOrigin: `${uc[0]} ${uc[1]}` });
+  gsap.set(p, { autoAlpha: 0 });
+  const hb = { g, p, kutu: [cx - rx, cy - ry, cx + rx, cy + ry] };
+  hb.ac = (k0, yazSure = 16) => {
+    tl.fromTo(g, { autoAlpha: 0, scale: 0.6 }, { autoAlpha: 1, scale: 1, duration: k(8), ease: E.BO, immediateRender: false }, k(k0));
+    yazElYazisi(p, k0 + 4, yazSure);
+  };
+  hb.kapat = (k0, sure = 10) => {
+    tl.to(g, { autoAlpha: 0, scale: 0.9, duration: k(sure), ease: E.EI }, k(k0));
+    tl.to(p, { autoAlpha: 0, duration: k(sure), ease: E.EI }, k(k0));
+  };
+  return hb;
+}
+
 // ---------- Oktos'un sesi: HTML yazı katmanı (kameradan bağımsız). Kelimeler maskeden 34 k EO, 4 k arayla açılır,
 // 18 k Eİ ile yukarı çıkar. stil: 'baslik' | 'cumle' | 'etiket'. yer: { left, top, right, bottom, width, align }
 const yazilar = [];
@@ -295,7 +337,7 @@ const ctx = {
   W, H, DIKEY, DIL, YAZI, FPS, TOPLAM, k, E, tl, gsap, VURGU, GRI, GRI2, KAGIT, BALON, PALET, MONO, BOY, GOZ_Y,
   kamera, itme, yaziKatmani, katman, el, cizgi, sapma, yol, oval, rng, kaynayanlar,
   KISI, MONTAJ, kisiParam, kisi, balon, elYazisi, yazElYazisi, silElYazisi, yazi, odak, kameraGit, kameraKoy,
-  gercekEtiket, YERLESIM, vurus, FIGUR, SAKSI,
+  gercekEtiket, YERLESIM, vurus, isaret, FIGUR, SAKSI, KADRO, konus, boyKaymasi, rastgeleKisi,
   yer: (yatay, dikey) => (DIKEY ? dikey : yatay),
   metin: (tr, en) => ({ tr, en }),
   // 12 fps adım: karakter pozu değişiklikleri bu ızgaraya oturur (5 karede bir)
@@ -303,7 +345,7 @@ const ctx = {
 };
 
 // ---------- Modülleri yükle (her biri kendi vinyetini kurar)
-const MODULLER = ['v1-kanca', 'v2-zar', 'v3-muhendis', 'v4-oyuncu', 'v5-saksi', 'v6-final'];
+const MODULLER = ['v1-kanca', 's1-kafe', 's2-atolye', 's3-balkon', 's4-frp', 's5-kalabalik', 's6-final'];
 const SECILI = q.get('yalniz') ? q.get('yalniz').split(',') : MODULLER;
 const hatalar = [];
 async function kur() {
@@ -318,7 +360,7 @@ async function kur() {
     }
   }
   yazilariKur();
-  tl.to({}, { duration: k(1) }, k(TOPLAM - 1)); // süre en az 2304 kare
+  tl.to({}, { duration: k(1) }, k(TOPLAM - 1)); // süre en az TOPLAM kare
   hataEl.textContent = hatalar.join('\n');
 }
 
@@ -330,8 +372,18 @@ function kareKur(t) {
 }
 gsap.ticker.add(() => { if (!CEKIM) sayacYaz(tl.time()); });
 if (CEKIM) { gsap.ticker.lagSmoothing(0); document.getElementById('tekrar').hidden = true; }
-window.tanitim = { tl, kare: kareKur, sure: () => tl.duration(), hatalar, vuruslar, ctx };
+window.tanitim = { tl, kare: kareKur, sure: () => tl.duration(), hatalar, vuruslar, isaretler, ctx };
 await document.fonts.ready;
+// Caveat ve Big Shoulders bir öğe kullanana dek indirilmez; fonts.ready onları beklemez. Balon ve el yazısı genişliği gerçek
+// yazı tipiyle ölçülsün diye sahneler kurulmadan önce yüklenir (Türkçe harfler dahil)
+try {
+  await Promise.all([
+    document.fonts.load('600 62px Caveat', 'Aa ÇçĞğİıÖöŞşÜü?!…'),
+    document.fonts.load('900 112px "Big Shoulders Display"', 'OKTOS ÇĞİÖŞÜ'),
+    document.fonts.load('300 112px "Big Shoulders Display"', 'OLASILIKTAN'),
+    document.fonts.load('600 64px "Schibsted Grotesk"', 'Aa ÇçĞğİıÖöŞşÜü'),
+  ]);
+} catch { /* yazı tipi gelmezse yedekle sürer */ }
 await kur();
 tl.seek(1e-4, false); // 0. saniyedeki set'ler hemen uygulansın: ilk boyanan kare de doğru olsun
 kaynat(0);
