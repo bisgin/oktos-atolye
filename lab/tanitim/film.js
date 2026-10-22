@@ -395,7 +395,7 @@ const ctx = {
 };
 
 // ---------- Modülleri yükle (her biri kendi vinyetini kurar)
-const MODULLER = ['v1-kanca', 's1-kafe', 's2-atolye', 's3-balkon', 's4-frp', 's5-kalabalik', 's6-final'];
+const MODULLER = ['v1-kanca', 's1-kafe', 's2-atolye', 's3-balkon', 's4-frp', 's4b-hizli', 's5-kalabalik', 's6-final'];
 const SECILI = q.get('yalniz') ? q.get('yalniz').split(',') : MODULLER;
 const IC_KARE = q.get('ic') === '1'; // sahne testi: iç kareler (film-kare.py "...?yalniz=s2-atolye&ic=1")
 const hatalar = [];

@@ -306,21 +306,24 @@ export function kur(ctx) {
     return h;
   }
 
-  // ---------- Kol pozları (kutu birimi). yon −1: ekranın solu, +1: sağı. S: omuz eklemi; kn: masa kenarı.
-  // Açık avuç izleyiciye dönükse başparmak gövdeye doğru (basparmak: −yon).
+  // ---------- Kol pozları (kutu birimi). yon −1: ekranın solu (kişinin sağ eli), +1: sağı (sol eli). S: omuz eklemi;
+  // kn: masa kenarı. Başparmak kuralı (kişi izleyiciye dönük; kol.js'te basparmak +1: başparmak, parmak yönünün saat
+  // yönü yanında): izleyici AVCU görüyorsa basparmak −yon, EL SIRTINI görüyorsa +yon. Yani avucu izleyiciye dönük kalkık
+  // elde başparmak içe (yüze), sırtı dönük kalkık elde dışa; masaya düz basan elde (sırt görünür) başparmaklar içe,
+  // birbirine bakar. kol.js yumruk, işaret ve çene pozları avuç yanından çizilir (başparmak önden geçer): −yon.
   const S = (h, yon) => h.o[yon < 0 ? 'sol' : 'sag'];
   const masaEl = (h, yon, dirsek, hedef, kisalma = 0.74) => {
-    const elAci = aciDer(dirsek, hedef), basparmak = -yon;
+    const elAci = aciDer(dirsek, hedef), basparmak = yon; // avuç masada, el sırtı görünür
     const bilek = bilekBul({ el: 'dayanma', hedef, elAci, elBoy: EB, basparmak, kisalma, ad: 'avuc' });
     return { dirsek, bilek, el: 'dayanma', elAci, basparmak, kisalma };
   };
   const POZ = {
-    // ön kol masada, el düz
-    masa: (h, yon) => { const [sx] = S(h, yon), kn = h.kenar; return masaEl(h, yon, [sx + yon * 14, kn + 44], [200 + yon * 26, kn + 114]); },
+    // ön kol masada, el düz; iki el yan yana, başparmaklar ortada buluşur (üst üste binmez)
+    masa: (h, yon) => { const [sx] = S(h, yon), kn = h.kenar; return masaEl(h, yon, [sx + yon * 14, kn + 44], [200 + yon * 44, kn + 114]); },
     // masaya vurmuş el (biraz dışarıda)
     vur: (h, yon) => { const [sx] = S(h, yon), kn = h.kenar; return masaEl(h, yon, [sx + yon * 34, kn + 36], [200 + yon * 70, kn + 100], 0.8); },
-    // vurmaya kalkmış el (avuç aşağı, masanın üstünde)
-    vurHazir: (h, yon) => { const [sx, sy] = S(h, yon); return { dirsek: [sx + yon * 44, sy + 150], bilek: [sx + yon * 40, sy + 30], el: 'dayanma', elAci: yon < 0 ? 64 : 116, basparmak: -yon, kisalma: 0.85 }; },
+    // vurmaya kalkmış el (avuç aşağı, masanın üstünde): bilekten öne (izleyiciye) bükülür, el sırtı ön kolun önünde görünür
+    vurHazir: (h, yon) => { const [sx, sy] = S(h, yon); return { dirsek: [sx + yon * 44, sy + 150], bilek: [sx + yon * 40, sy + 30], el: 'dayanma', elAci: yon < 0 ? 64 : 116, basparmak: yon, kisalma: 0.85, elOnde: true }; },
     // anlatırken kalkan el (avuç izleyiciye, parmaklar yukarı)
     anlat: (h, yon) => { const [sx, sy] = S(h, yon); return { dirsek: [sx + yon * 30, h.kenar + 6], bilek: [sx - yon * 4, sy - 60], el: 'acik', yuz: 'avuc', elAci: -90 + yon * 12, basparmak: -yon }; },
     anlat2: (h, yon) => { const [sx, sy] = S(h, yon); return { dirsek: [sx + yon * 70, h.kenar - 40], bilek: [sx + yon * 84, sy - 104], el: 'acik', yuz: 'avuc', elAci: -90 + yon * 30, basparmak: -yon }; },
@@ -335,9 +338,10 @@ export function kur(ctx) {
       return { dirsek: [sx + yon * 24, h.kenar + 4], bilek, el: 'acik', yuz: 'sirt', elAci, basparmak };
     },
     // eli çenede (parmak sırtları çeneyi taşır, dirsek masada)
+    // (avuç yanı izleyiciye: başparmak içte, çene hattında; yumruğun ucu çenenin altına biraz biner, boyunda kalmaz)
     cene: (h, yon) => {
-      const [sx] = S(h, yon), elAci = yon > 0 ? -116 : -64, basparmak = yon > 0 ? -1 : 1;
-      const bilek = bilekBul({ el: 'cene', hedef: [200 - yon * 2, GOZ_Y + 4 + h.p.yuzBoy + 4], elAci, elBoy: EB, basparmak, ad: 'cene' });
+      const [sx] = S(h, yon), elAci = yon > 0 ? -116 : -64, basparmak = -yon;
+      const bilek = bilekBul({ el: 'cene', hedef: [200 - yon * 2, GOZ_Y + 4 + h.p.yuzBoy - 6], elAci, elBoy: EB, basparmak, ad: 'cene' });
       return { dirsek: [sx + yon * 26, h.kenar + 10], bilek, el: 'cene', elAci, basparmak };
     },
   };
@@ -348,7 +352,7 @@ export function kur(ctx) {
   // kart yüzün yanında, çene ile göz hizası arasında (okunsun diye masadaki figürden biraz büyük)
   const TUT = { bilek: (h) => { const [sx, sy] = S(h, 1); return [sx - 30, sy - 22]; }, dirsek: (h) => { const [sx, sy] = S(h, 1); return [sx + 52, sy + 118]; }, elAci: -64 };
   const kartElde = (h, bukum, kaynama) => {
-    const [bx, by] = elNoktasi({ el: 'tutma', bilek: TUT.bilek(h), elAci: TUT.elAci, elBoy: EB, basparmak: -1, ad: 'tut' });
+    const [bx, by] = elNoktasi({ el: 'tutma', bilek: TUT.bilek(h), elAci: TUT.elAci, elBoy: EB, basparmak: 1, ad: 'tut' });
     const Hc = 108, ww = Hc * 0.62, th = bukum * 1.65;
     const C = (v) => {
       if (th < 1e-3) return [[bx, by - Hc * v], [0, -1]];
@@ -373,20 +377,23 @@ export function kur(ctx) {
     kalinlik: 74, kolBoyu: 'sivali',
     ozel: (h, yon, ad, kaynama) => {
       const [sx, sy] = S(h, yon);
-      // E'nin omzuna vurma: el E'nin sol omuz başında (E'nin kutusundan E3'ün kutusuna)
+      // E'nin omzuna vurma: el E'nin sol omuz başında (E'nin kutusundan E3'ün kutusuna). Sol el, avuç omuzda: el sırtı
+      // görünür, başparmak omzun önüne (aşağı) düşer (basparmak +yon)
       if (ad === 'omuz' || ad === 'omuzKalk') {
         const hedef = h.kutu(EE.dunya(EE.o.ucu(-1)));
         const kalk = ad === 'omuzKalk' ? -26 : 0, elAci = 64;
-        const bilek = bilekBul({ el: 'acik', hedef: [hedef[0] + 6, hedef[1] + 10 + kalk], elAci, elBoy: EB, basparmak: -1, ad: 'avuc' });
-        return { dirsek: [sx + 18, sy + 132], bilek, el: 'acik', yuz: 'sirt', elAci, basparmak: -1 };
+        const bilek = bilekBul({ el: 'acik', hedef: [hedef[0] + 6, hedef[1] + 10 + kalk], elAci, elBoy: EB, basparmak: yon, ad: 'avuc' });
+        return { dirsek: [sx + 18, sy + 132], bilek, el: 'acik', yuz: 'sirt', elAci, basparmak: yon };
       }
-      // masadaki devrik kâğıda uzanma / tutup kaldırma (kâğıt parmakların arasında: h.araya)
+      // masadaki devrik kâğıda uzanma / tutup kaldırma (kâğıt parmakların arasında: h.araya). Tutma pozu el sırtından
+      // görünür (parmaklar kâğıdın önünden sarar, başparmak arkada): basparmak +yon. Uzanırken dirsek yüksekte: kol
+      // omuzdan kâğıda iner (alçak dirsekte kısalan ön kolun sıvalı yeni ele biniyordu)
       if (ad === 'uzan') {
         const hedef = h.kutu(DEVRIK.tut), elAci = 70;
-        const bilek = bilekBul({ el: 'tutma', hedef, elAci, elBoy: EB, basparmak: -1, ad: 'tut' });
-        return { dirsek: [sx + 66, sy + 150], bilek, el: 'tutma', elAci, basparmak: -1 };
+        const bilek = bilekBul({ el: 'tutma', hedef, elAci, elBoy: EB, basparmak: yon, ad: 'tut' });
+        return { dirsek: [sx + 44, sy + 96], bilek, el: 'tutma', elAci, basparmak: yon };
       }
-      if (ad === 'tut') return { dirsek: TUT.dirsek(h), bilek: TUT.bilek(h), el: 'tutma', elAci: TUT.elAci, basparmak: -1, araya: kart.b < 0 ? '' : kartElde(h, kart.b, kaynama) };
+      if (ad === 'tut') return { dirsek: TUT.dirsek(h), bilek: TUT.bilek(h), el: 'tutma', elAci: TUT.elAci, basparmak: yon, araya: kart.b < 0 ? '' : kartElde(h, kart.b, kaynama) };
       return null;
     },
   });

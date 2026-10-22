@@ -18,7 +18,7 @@
 //    çekmece-yerel mm). B: "Bir organizer alsam… buraya sığar mı?"
 // #9 (k1172–1355) B'nin yüzü, yanında açık çekmece. Düşünce balonunda organizer (cizimler.js), kenarlarında vurgu renkli
 //    tutamaçlar (v5 saksı sahnesinin dili). B işaret parmağıyla sağ kenarı içeri iter (inceltir), sonra üst kenarı yukarı
-//    çeker (uzatır). "Bunu kısaltıp uzatabilsem… sığacak bir organizer yapabilir miyim?" B düşüncelere dalar (baş yana,
+//    çeker (uzatır). "Hazır almak yerine kendim tasarlayabilsem nasıl olur?" (kullanıcı 2026-10-22) B düşüncelere dalar (baş yana,
 //    bakış uzakta); sahne çözümsüz biter (k1356 s3-balkon).
 // Katmanlar: 's2-atolye' (ön görünüş dünyası: #6, #7, #9), 's2-kus' (#8; kamera k840'tan sonra birim: ekran koordinatı;
 // içinde alt svg, 3B tuval, üst svg sırasıyla).
@@ -1185,7 +1185,7 @@ export function kur(ctx) {
   const NY = yer({ x: 1250, y: 250, boyut: 44 }, { x: 210, y: 450, boyut: 50 });
   const notP = (() => {
     const [x, y] = D9(NY.x, NY.y);
-    const satirlar = t2(['Bunu kısaltıp uzatabilsem…', 'sığacak bir organizer', 'yapabilir miyim?'], ['If I could shorten it,', 'stretch it… could I make', 'one that fits?']);
+    const satirlar = t2(['Hazır almak yerine', 'kendim tasarlayabilsem', 'nasıl olur?'], ['Instead of buying one,', 'what if I could', 'design it myself?']);
     const p = document.createElement('p');
     p.className = 'el-yazisi';
     p.innerHTML = satirlar.map((s) => `<span style="display:block;line-height:1.18;padding-right:0.2em">${s}</span>`).join('');
