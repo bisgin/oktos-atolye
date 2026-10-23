@@ -1,0 +1,2275 @@
+{
+  "aciklama": "Örnek çalıcı haritası (scripts/ornek-calici.py). Çalgı → kütüphane içi göreli klasör ve dosya adı kuralları. Kütüphane kökü burada yazmaz: --kutuphane ya da OKTOS_SES_KUTUPHANE. Kaynaklar ve lisans (hepsi CC0 1.0): kütüphane kökündeki KAYNAKLAR.md. 'tarama' bölümlerini --tara yazar; elle düzenlemeyin.",
+  "surum": 1,
+  "kurallar": {
+    "desen": "kaynak klasöre göre göreli yola (/ ayraçlı) tam eşleşen düzenli ifade. Gruplar: nota (C#4 gibi), indeks (eslem dosyasıyla MIDI), katman (sayı), din (pp..fff), rr, artik, tur, parca.",
+    "akort": "'olc': her örneğin perdesi ölçülür, sapma (sent) kaydırmada düzeltilir (çubuklu çalgılar ve kalimba eşit akortlu değil).",
+    "oktav": "dosya adındaki oktava eklenen sayı (sayı ya da ham artikülasyon adına göre sözlük, '*' varsayılan). --tara perdeyi ölçüp doğrular.",
+    "artik": "artikülasyon özellikleri: sure 'surekli' (bırakışta sönüm uygulanır) ya da 'dogal' (örnek kendi söner); birakis_sn.",
+    "tur_esle / artik_esle": "ham ad → kanonik ad; eşlemede olmayan ham ad 'eşlenemeyen' sayılır.",
+    "sanal": "başka bir türün hız aralığına sıkıştırılmış takma ad (ör. trampet_tap = trampetin hayalet vuruşu).",
+    "normal": "'calgi': tek kazanç (gruplar arası doğal denge korunur; normal_grup'un üst katmanının ortanca tepesi 0 dBFS olur), 'grup': her grup kendi üst katmanına göre."
+  },
+  "calgilar": {
+    "piyano": {
+      "aciklama": "Dik piyano (VSCO 2 CE Upright Piano, Simon Dalzell / Ivy Audio)",
+      "tur": "perdeli",
+      "kaynaklar": [
+        {
+          "klasor": "vsco2ce/Keys/Upright Piano",
+          "desen": "Player_dyn(?P<katman>\\d+)_rr(?P<rr>\\d+)_(?P<indeks>\\d{3})\\.wav",
+          "eslem": "MappingChart.txt",
+          "artik_sabit": "normal",
+          "oktav": 0
+        }
+      ],
+      "artik": {"normal": {"sure": "surekli", "birakis_sn": 0.3, "dongu": false}},
+      "varsayilan_artik": "normal",
+      "normal": "calgi",
+      "hiz_aralik_db": 12,
+      "tarama": {
+        "ornek_sayisi": 69,
+        "oktav": {"normal": {"kural": 0, "olculen": 0, "dagilim": {"-2": 2, "0": 66, "1": 1}, "uyusuyor": true}},
+        "gruplar": {
+          "normal": {
+            "sayi": 69,
+            "katman_sayisi": 3,
+            "rr_en_cok": 1,
+            "sure": "surekli",
+            "nota_araligi": ["A0", "C8"],
+            "nota_sayisi": 23,
+            "notalar": ["A0", "C#1", "F1", "A1", "C#2", "F2", "A2", "C#3", "F3", "A3", "C#4", "F4", "A4", "C#5", "F5", "A5", "C#6", "F6", "A6", "C#7", "F7", "A7", "C8"],
+            "calinabilir": ["F#0", "D#8", 18, 111],
+            "katman_tepe_db": [-31.5, -20.5, -11.6],
+            "ust_tepe_db": -11.62,
+            "sure_sn": [1.42, 28.62]
+          }
+        },
+        "yin_uyari_sayisi": 13
+      }
+    },
+    "keman_grubu": {
+      "aciklama": "Keman grubu (VSCO 2 CE Violin Section)",
+      "tur": "perdeli",
+      "kaynaklar": [
+        {
+          "klasor": "vsco2ce/Strings/Violin Section",
+          "desen": "(?P<artik>Pizz|Spic|Trem|susVib)/VlnEns_[A-Za-z]+_(?P<nota>[A-G]#?\\d)_v(?P<katman>\\d+)(?:_rr(?P<rr>\\d+))?\\.wav",
+          "artik_esle": {"susVib": "sus", "Trem": "trem", "Spic": "spic", "Pizz": "pizz"},
+          "oktav": 1
+        }
+      ],
+      "artik": {
+        "sus": {"sure": "surekli", "birakis_sn": 0.35},
+        "trem": {"sure": "surekli", "birakis_sn": 0.3},
+        "spic": {"sure": "dogal"},
+        "pizz": {"sure": "dogal"}
+      },
+      "varsayilan_artik": "sus",
+      "normal": "calgi",
+      "hiz_aralik_db": 12,
+      "tarama": {
+        "ornek_sayisi": 131,
+        "oktav": {
+          "Pizz": {"kural": 1, "olculen": 1, "dagilim": {"-2": 1, "0": 1, "1": 39, "2": 3}, "uyusuyor": true},
+          "Spic": {"kural": 1, "olculen": 1, "dagilim": {"1": 41, "2": 3}, "uyusuyor": true},
+          "Trem": {"kural": 1, "olculen": 1, "dagilim": {"1": 20, "2": 1}, "uyusuyor": true},
+          "susVib": {"kural": 1, "olculen": 1, "dagilim": {"1": 21, "2": 1}, "uyusuyor": true}
+        },
+        "gruplar": {
+          "pizz": {
+            "sayi": 44,
+            "katman_sayisi": 2,
+            "rr_en_cok": 2,
+            "sure": "dogal",
+            "nota_araligi": ["G3", "D6"],
+            "nota_sayisi": 11,
+            "notalar": ["G3", "A3", "B3", "D4", "F#4", "A4", "C5", "E5", "G5", "B5", "D6"],
+            "calinabilir": ["E3", "F6", 52, 89],
+            "katman_tepe_db": [-25.9, -10.9],
+            "ust_tepe_db": -10.89,
+            "sure_sn": [0.44, 3.02]
+          },
+          "spic": {
+            "sayi": 44,
+            "katman_sayisi": 2,
+            "rr_en_cok": 2,
+            "sure": "dogal",
+            "nota_araligi": ["G3", "D6"],
+            "nota_sayisi": 11,
+            "notalar": ["G3", "A3", "B3", "D4", "F#4", "A4", "C5", "E5", "G5", "B5", "D6"],
+            "calinabilir": ["E3", "F6", 52, 89],
+            "katman_tepe_db": [-19.2, -11.2],
+            "ust_tepe_db": -11.15,
+            "sure_sn": [0.5, 3.21]
+          },
+          "sus": {
+            "sayi": 22,
+            "katman_sayisi": 2,
+            "rr_en_cok": 1,
+            "sure": "surekli",
+            "nota_araligi": ["G3", "D6"],
+            "nota_sayisi": 11,
+            "notalar": ["G3", "A3", "B3", "D4", "F#4", "A4", "C5", "E5", "G5", "B5", "D6"],
+            "calinabilir": ["E3", "F6", 52, 89],
+            "katman_tepe_db": [-21.7, -15.4],
+            "ust_tepe_db": -15.41,
+            "sure_sn": [8.99, 15.2]
+          },
+          "trem": {
+            "sayi": 21,
+            "katman_sayisi": 2,
+            "rr_en_cok": 1,
+            "sure": "surekli",
+            "nota_araligi": ["G3", "D6"],
+            "nota_sayisi": 11,
+            "notalar": ["G3", "A3", "B3", "D4", "F#4", "A4", "C5", "E5", "G5", "B5", "D6"],
+            "calinabilir": ["E3", "F6", 52, 89],
+            "eksik_katman": 1,
+            "katman_tepe_db": [-24.3, -6.8],
+            "ust_tepe_db": -6.83,
+            "sure_sn": [7.57, 13.13]
+          }
+        },
+        "yin_uyari_sayisi": 10
+      }
+    },
+    "cello": {
+      "aciklama": "Viyolonsel grubu (VSCO 2 CE Cello Section)",
+      "tur": "perdeli",
+      "kaynaklar": [
+        {
+          "klasor": "vsco2ce/Strings/Cello Section",
+          "desen": "(?P<artik>pizzT|spic|susvib|trem)/[A-Za-z]+_(?P<nota>[A-G]#?\\d)_v(?P<katman>\\d+)_(?:RR)?(?P<rr>\\d+)\\.wav",
+          "artik_esle": {"susvib": "sus", "trem": "trem", "spic": "spic", "pizzT": "pizz"},
+          "oktav": 1
+        }
+      ],
+      "artik": {
+        "sus": {"sure": "surekli", "birakis_sn": 0.35},
+        "trem": {"sure": "surekli", "birakis_sn": 0.3},
+        "spic": {"sure": "dogal"},
+        "pizz": {"sure": "dogal"}
+      },
+      "varsayilan_artik": "sus",
+      "normal": "calgi",
+      "hiz_aralik_db": 12,
+      "tarama": {
+        "ornek_sayisi": 156,
+        "oktav": {
+          "pizzT": {"kural": 1, "olculen": 1, "dagilim": {"-2": 3, "-1": 3, "0": 3, "1": 42, "2": 1}, "uyusuyor": true},
+          "spic": {"kural": 1, "olculen": 1, "dagilim": {"1": 50, "2": 2}, "uyusuyor": true},
+          "susvib": {"kural": 1, "olculen": 1, "dagilim": {"1": 26, "2": 1}, "uyusuyor": true},
+          "trem": {"kural": 1, "olculen": 1, "dagilim": {"0": 2, "1": 21, "2": 2}, "uyusuyor": true}
+        },
+        "gruplar": {
+          "pizz": {
+            "sayi": 52,
+            "katman_sayisi": 2,
+            "rr_en_cok": 2,
+            "sure": "dogal",
+            "nota_araligi": ["C2", "F5"],
+            "nota_sayisi": 13,
+            "notalar": ["C2", "E2", "G2", "B2", "D3", "F3", "A3", "C4", "E4", "G4", "B4", "D5", "F5"],
+            "calinabilir": ["A1", "G#5", 33, 80],
+            "katman_tepe_db": [-21.2, -11.5],
+            "ust_tepe_db": -11.51,
+            "sure_sn": [0.87, 4.0]
+          },
+          "spic": {
+            "sayi": 52,
+            "katman_sayisi": 2,
+            "rr_en_cok": 2,
+            "sure": "dogal",
+            "nota_araligi": ["C2", "F5"],
+            "nota_sayisi": 13,
+            "notalar": ["C2", "E2", "G2", "B2", "D3", "F3", "A3", "C4", "E4", "G4", "B4", "D5", "F5"],
+            "calinabilir": ["A1", "G#5", 33, 80],
+            "katman_tepe_db": [-21.4, -8.8],
+            "ust_tepe_db": -8.77,
+            "sure_sn": [0.77, 3.5]
+          },
+          "sus": {
+            "sayi": 27,
+            "katman_sayisi": 2,
+            "rr_en_cok": 2,
+            "sure": "surekli",
+            "nota_araligi": ["C2", "F5"],
+            "nota_sayisi": 13,
+            "notalar": ["C2", "E2", "G2", "B2", "D3", "F3", "A3", "C4", "E4", "G4", "B4", "D5", "F5"],
+            "calinabilir": ["A1", "G#5", 33, 80],
+            "katman_tepe_db": [-20.8, -5.2],
+            "ust_tepe_db": -5.23,
+            "sure_sn": [6.39, 12.75]
+          },
+          "trem": {
+            "sayi": 25,
+            "katman_sayisi": 2,
+            "rr_en_cok": 1,
+            "sure": "surekli",
+            "nota_araligi": ["C2", "F5"],
+            "nota_sayisi": 14,
+            "notalar": ["C2", "E2", "G2", "B2", "D3", "F3", "A3", "B3", "C4", "E4", "G4", "B4", "D5", "F5"],
+            "calinabilir": ["A1", "G#5", 33, 80],
+            "eksik_katman": 3,
+            "katman_tepe_db": [-31.7, -1.0],
+            "ust_tepe_db": -1.03,
+            "sure_sn": [6.61, 11.18]
+          }
+        },
+        "yin_uyari_sayisi": 19
+      }
+    },
+    "kontrbas": {
+      "aciklama": "Solo kontrbas (VSCO 2 CE Solo Contrabass)",
+      "tur": "perdeli",
+      "kaynaklar": [
+        {
+          "klasor": "vsco2ce/Strings/Solo Contrabass",
+          "desen": "(?P<artik>Pizz|Spic|SusNV|SusVib|Trem)/BKCtbss_[A-Za-z]+_(?P<nota>[A-G]#?\\d)_v(?P<katman>\\d+)_rr(?P<rr>\\d+)\\.wav",
+          "artik_esle": {"SusVib": "sus", "SusNV": "susnv", "Trem": "trem", "Spic": "spic", "Pizz": "pizz"},
+          "oktav": 1
+        }
+      ],
+      "artik": {
+        "sus": {"sure": "surekli", "birakis_sn": 0.35},
+        "susnv": {"sure": "surekli", "birakis_sn": 0.35},
+        "trem": {"sure": "surekli", "birakis_sn": 0.3},
+        "spic": {"sure": "dogal"},
+        "pizz": {"sure": "dogal"}
+      },
+      "varsayilan_artik": "pizz",
+      "normal": "calgi",
+      "hiz_aralik_db": 12,
+      "tarama": {
+        "ornek_sayisi": 152,
+        "oktav": {
+          "Pizz": {"kural": 1, "olculen": 1, "dagilim": {"-1": 2, "0": 3, "1": 32, "2": 3}, "uyusuyor": true},
+          "Spic": {"kural": 1, "olculen": 1, "dagilim": {"0": 1, "1": 38, "2": 3}, "uyusuyor": true},
+          "SusNV": {"kural": 1, "olculen": 1, "dagilim": {"1": 28}, "uyusuyor": true},
+          "SusVib": {"kural": 1, "olculen": 1, "dagilim": {"0": 1, "1": 23, "2": 2}, "uyusuyor": true},
+          "Trem": {"kural": 1, "olculen": 1, "dagilim": {"1": 14, "2": 2}, "uyusuyor": true}
+        },
+        "gruplar": {
+          "pizz": {
+            "sayi": 40,
+            "katman_sayisi": 2,
+            "rr_en_cok": 2,
+            "sure": "dogal",
+            "nota_araligi": ["E1", "B3"],
+            "nota_sayisi": 14,
+            "notalar": ["E1", "F#1", "G1", "A#1", "C2", "D2", "E2", "F#2", "G#2", "A2", "C#3", "E3", "G#3", "B3"],
+            "calinabilir": ["C#1", "D4", 25, 62],
+            "eksik_katman": 8,
+            "katman_tepe_db": [-30.8, -21.2],
+            "ust_tepe_db": -21.19,
+            "sure_sn": [0.96, 6.02]
+          },
+          "spic": {
+            "sayi": 42,
+            "katman_sayisi": 2,
+            "rr_en_cok": 2,
+            "sure": "dogal",
+            "nota_araligi": ["E1", "B3"],
+            "nota_sayisi": 14,
+            "notalar": ["E1", "F#1", "G1", "A#1", "C2", "D2", "E2", "F#2", "G#2", "A2", "C#3", "E3", "G#3", "B3"],
+            "calinabilir": ["C#1", "D4", 25, 62],
+            "eksik_katman": 7,
+            "katman_tepe_db": [-26.2, -18.1],
+            "ust_tepe_db": -18.07,
+            "sure_sn": [1.1, 3.28]
+          },
+          "sus": {
+            "sayi": 26,
+            "katman_sayisi": 2,
+            "rr_en_cok": 1,
+            "sure": "surekli",
+            "nota_araligi": ["F#1", "B3"],
+            "nota_sayisi": 13,
+            "notalar": ["F#1", "G1", "A#1", "C2", "D2", "E2", "F#2", "G#2", "A2", "C#3", "E3", "G#3", "B3"],
+            "calinabilir": ["D#1", "D4", 27, 62],
+            "katman_tepe_db": [-28.6, -18.7],
+            "ust_tepe_db": -18.68,
+            "sure_sn": [6.54, 17.33]
+          },
+          "susnv": {
+            "sayi": 28,
+            "katman_sayisi": 2,
+            "rr_en_cok": 1,
+            "sure": "surekli",
+            "nota_araligi": ["E1", "B3"],
+            "nota_sayisi": 14,
+            "notalar": ["E1", "F#1", "G1", "A#1", "C2", "D2", "E2", "F#2", "G#2", "A2", "C#3", "E3", "G#3", "B3"],
+            "calinabilir": ["C#1", "D4", 25, 62],
+            "katman_tepe_db": [-30.3, -18.9],
+            "ust_tepe_db": -18.9,
+            "sure_sn": [6.59, 18.2]
+          },
+          "trem": {
+            "sayi": 16,
+            "katman_sayisi": 2,
+            "rr_en_cok": 1,
+            "sure": "surekli",
+            "nota_araligi": ["E1", "B3"],
+            "nota_sayisi": 8,
+            "notalar": ["E1", "G1", "C2", "E2", "G#2", "E3", "G#3", "B3"],
+            "calinabilir": ["C#1", "D4", 25, 62],
+            "bosluklar": ["C3"],
+            "katman_tepe_db": [-24.8, -12.9],
+            "ust_tepe_db": -12.89,
+            "sure_sn": [6.11, 10.64]
+          }
+        },
+        "yin_uyari_sayisi": 20
+      }
+    },
+    "arp": {
+      "aciklama": "Arp (VSCO 2 CE Harp; nota başına tek örnek)",
+      "tur": "perdeli",
+      "kaynaklar": [
+        {
+          "klasor": "vsco2ce/Strings/Harp",
+          "desen": "KSHarp_(?P<nota>[A-G]#?\\d)_(?:mp|mf|f)\\.wav",
+          "artik_sabit": "kopar",
+          "oktav": 0
+        }
+      ],
+      "artik": {"kopar": {"sure": "dogal"}},
+      "varsayilan_artik": "kopar",
+      "normal": "calgi",
+      "hiz_aralik_db": 20,
+      "tarama": {
+        "ornek_sayisi": 23,
+        "oktav": {"kopar": {"kural": 0, "olculen": 0, "dagilim": {"0": 23}, "uyusuyor": true}},
+        "gruplar": {
+          "kopar": {
+            "sayi": 23,
+            "katman_sayisi": 1,
+            "rr_en_cok": 1,
+            "sure": "dogal",
+            "nota_araligi": ["E1", "F7"],
+            "nota_sayisi": 23,
+            "notalar": ["E1", "G1", "B1", "D2", "F2", "A2", "C3", "E3", "G3", "B3", "D4", "F4", "A4", "C5", "E5", "G5", "B5", "D6", "F6", "A6", "B6", "D7", "F7"],
+            "calinabilir": ["C#1", "G#7", 25, 104],
+            "katman_tepe_db": [-25.0],
+            "ust_tepe_db": -24.96,
+            "sure_sn": [1.89, 22.68]
+          }
+        }
+      }
+    },
+    "flut": {
+      "aciklama": "Flüt (VSCO 2 CE Flute)",
+      "tur": "perdeli",
+      "kaynaklar": [
+        {
+          "klasor": "vsco2ce/Woodwinds/Flute",
+          "desen": "(?P<artik>expvib|stac|susNV|susvib)/LDFlute_[A-Za-z]+_(?P<nota>[A-G]#?\\d)_v(?P<katman>\\d+)_(?:rr)?(?P<rr>\\d+)\\.wav",
+          "artik_esle": {"susvib": "sus", "susNV": "susnv", "expvib": "ifadeli", "stac": "stac"},
+          "oktav": 1
+        }
+      ],
+      "artik": {
+        "sus": {"sure": "surekli", "birakis_sn": 0.15},
+        "susnv": {"sure": "surekli", "birakis_sn": 0.15},
+        "ifadeli": {"sure": "surekli", "birakis_sn": 0.15},
+        "stac": {"sure": "dogal"}
+      },
+      "varsayilan_artik": "sus",
+      "normal": "calgi",
+      "hiz_aralik_db": 12,
+      "tarama": {
+        "ornek_sayisi": 94,
+        "oktav": {
+          "expvib": {"kural": 1, "olculen": 1, "dagilim": {"1": 14}, "uyusuyor": true},
+          "stac": {"kural": 1, "olculen": 1, "dagilim": {"1": 48}, "uyusuyor": true},
+          "susNV": {"kural": 1, "olculen": 1, "dagilim": {"1": 19}, "uyusuyor": true},
+          "susvib": {"kural": 1, "olculen": 1, "dagilim": {"1": 13}, "uyusuyor": true}
+        },
+        "gruplar": {
+          "ifadeli": {
+            "sayi": 14,
+            "katman_sayisi": 1,
+            "rr_en_cok": 2,
+            "sure": "surekli",
+            "nota_araligi": ["C4", "C7"],
+            "nota_sayisi": 10,
+            "notalar": ["C4", "E4", "A4", "C5", "E5", "A5", "C6", "E6", "A6", "C7"],
+            "calinabilir": ["A3", "D#7", 57, 99],
+            "katman_tepe_db": [-13.8],
+            "ust_tepe_db": -13.84,
+            "sure_sn": [4.12, 12.4]
+          },
+          "stac": {
+            "sayi": 48,
+            "katman_sayisi": 4,
+            "rr_en_cok": 2,
+            "sure": "dogal",
+            "nota_araligi": ["A4", "C7"],
+            "nota_sayisi": 8,
+            "notalar": ["A4", "C5", "E5", "A5", "C6", "E6", "A6", "C7"],
+            "calinabilir": ["F#4", "D#7", 66, 99],
+            "eksik_katman": 8,
+            "katman_tepe_db": [-24.5, -18.3, -19.0, -21.5],
+            "ust_tepe_db": -21.55,
+            "sure_sn": [0.6, 1.27]
+          },
+          "sus": {
+            "sayi": 13,
+            "katman_sayisi": 1,
+            "rr_en_cok": 2,
+            "sure": "surekli",
+            "nota_araligi": ["C4", "C7"],
+            "nota_sayisi": 10,
+            "notalar": ["C4", "E4", "A4", "C5", "E5", "A5", "C6", "E6", "A6", "C7"],
+            "calinabilir": ["A3", "D#7", 57, 99],
+            "katman_tepe_db": [-15.3],
+            "ust_tepe_db": -15.26,
+            "sure_sn": [4.76, 10.59]
+          },
+          "susnv": {
+            "sayi": 19,
+            "katman_sayisi": 3,
+            "rr_en_cok": 1,
+            "sure": "surekli",
+            "nota_araligi": ["C4", "C7"],
+            "nota_sayisi": 10,
+            "notalar": ["C4", "E4", "A4", "C5", "E5", "A5", "C6", "E6", "A6", "C7"],
+            "calinabilir": ["A3", "D#7", 57, 99],
+            "eksik_katman": 11,
+            "katman_tepe_db": [-18.5, -12.3, -14.9],
+            "ust_tepe_db": -14.92,
+            "sure_sn": [6.11, 13.08]
+          }
+        },
+        "yin_uyari_sayisi": 2
+      }
+    },
+    "glok": {
+      "aciklama": "Glokenşpil (VSCO 2 CE Glock, orta tokmak)",
+      "tur": "perdeli",
+      "kaynaklar": [
+        {
+          "klasor": "vsco2ce/Percussion/Glock",
+          "desen": "glock_medium_(?P<nota>[A-G]#?\\d)\\.wav",
+          "artik_sabit": "vurus",
+          "oktav": 1,
+          "akort": "olc"
+        }
+      ],
+      "artik": {"vurus": {"sure": "dogal"}},
+      "varsayilan_artik": "vurus",
+      "normal": "calgi",
+      "hiz_aralik_db": 20,
+      "tarama": {
+        "ornek_sayisi": 6,
+        "akort_sent": {
+          "vsco2ce/Percussion/Glock/glock_medium_C5.wav": 11.7,
+          "vsco2ce/Percussion/Glock/glock_medium_C6.wav": 15.3,
+          "vsco2ce/Percussion/Glock/glock_medium_C7.wav": 24.4,
+          "vsco2ce/Percussion/Glock/glock_medium_G4.wav": 8.2,
+          "vsco2ce/Percussion/Glock/glock_medium_G5.wav": 11.9,
+          "vsco2ce/Percussion/Glock/glock_medium_G6.wav": 15.7
+        },
+        "oktav": {"vurus": {"kural": 1, "olculen": 1, "dagilim": {"1": 6}, "uyusuyor": true}},
+        "gruplar": {
+          "vurus": {
+            "sayi": 6,
+            "katman_sayisi": 1,
+            "rr_en_cok": 1,
+            "sure": "dogal",
+            "nota_araligi": ["G5", "C8"],
+            "nota_sayisi": 6,
+            "notalar": ["G5", "C6", "G6", "C7", "G7", "C8"],
+            "calinabilir": ["E5", "D#8", 76, 111],
+            "katman_tepe_db": [-26.5],
+            "ust_tepe_db": -26.53,
+            "sure_sn": [2.79, 7.21]
+          }
+        },
+        "perde_uyarilari": [
+          {"dosya": "vsco2ce/Percussion/Glock/glock_medium_C5.wav", "neden": "akort +12 sent, kaydırmada düzeltilir"},
+          {"dosya": "vsco2ce/Percussion/Glock/glock_medium_C6.wav", "neden": "akort +15 sent, kaydırmada düzeltilir"},
+          {"dosya": "vsco2ce/Percussion/Glock/glock_medium_C7.wav", "neden": "akort +24 sent, kaydırmada düzeltilir"},
+          {"dosya": "vsco2ce/Percussion/Glock/glock_medium_G5.wav", "neden": "akort +12 sent, kaydırmada düzeltilir"},
+          {"dosya": "vsco2ce/Percussion/Glock/glock_medium_G6.wav", "neden": "akort +16 sent, kaydırmada düzeltilir"}
+        ]
+      }
+    },
+    "marimba": {
+      "aciklama": "Marimba (VSCO 2 CE Marimba)",
+      "tur": "perdeli",
+      "kaynaklar": [
+        {
+          "klasor": "vsco2ce/Percussion/Marimba",
+          "desen": "Marimba_hit_Outrigger_(?P<nota>[A-G]#?\\d)_loud_(?P<rr>\\d+)\\.wav",
+          "artik_sabit": "vurus",
+          "oktav": 1,
+          "akort": "olc"
+        }
+      ],
+      "artik": {"vurus": {"sure": "dogal"}},
+      "varsayilan_artik": "vurus",
+      "normal": "calgi",
+      "hiz_aralik_db": 20,
+      "tarama": {
+        "ornek_sayisi": 10,
+        "akort_sent": {
+          "vsco2ce/Percussion/Marimba/Marimba_hit_Outrigger_B2_loud_01.wav": 2.2,
+          "vsco2ce/Percussion/Marimba/Marimba_hit_Outrigger_B4_loud_01.wav": 0.0,
+          "vsco2ce/Percussion/Marimba/Marimba_hit_Outrigger_C2_loud_01.wav": 1.4,
+          "vsco2ce/Percussion/Marimba/Marimba_hit_Outrigger_C4_loud_01.wav": 4.4,
+          "vsco2ce/Percussion/Marimba/Marimba_hit_Outrigger_C6_loud_01.wav": -1.3,
+          "vsco2ce/Percussion/Marimba/Marimba_hit_Outrigger_F1_loud_01.wav": -1.3,
+          "vsco2ce/Percussion/Marimba/Marimba_hit_Outrigger_F3_loud_01.wav": -0.4,
+          "vsco2ce/Percussion/Marimba/Marimba_hit_Outrigger_F5_loud_01.wav": -2.2,
+          "vsco2ce/Percussion/Marimba/Marimba_hit_Outrigger_G2_loud_01.wav": -0.8,
+          "vsco2ce/Percussion/Marimba/Marimba_hit_Outrigger_G4_loud_01.wav": -2.4
+        },
+        "oktav": {"vurus": {"kural": 1, "olculen": 1, "dagilim": {"1": 10}, "uyusuyor": true}},
+        "gruplar": {
+          "vurus": {
+            "sayi": 10,
+            "katman_sayisi": 1,
+            "rr_en_cok": 1,
+            "sure": "dogal",
+            "nota_araligi": ["F2", "C7"],
+            "nota_sayisi": 10,
+            "notalar": ["F2", "C3", "G3", "B3", "F4", "C5", "G5", "B5", "F6", "C7"],
+            "calinabilir": ["D2", "D#7", 38, 99],
+            "katman_tepe_db": [-20.5],
+            "ust_tepe_db": -20.46,
+            "sure_sn": [1.78, 8.45]
+          }
+        }
+      }
+    },
+    "ksilofon": {
+      "aciklama": "Ksilofon (VSCO 2 CE Xylo)",
+      "tur": "perdeli",
+      "kaynaklar": [
+        {
+          "klasor": "vsco2ce/Percussion/Xylo",
+          "desen": "Xylo_Medium_(?P<nota>[A-G]#?\\d)_ff_(?P<rr>\\d+)_far\\.wav",
+          "artik_sabit": "vurus",
+          "oktav": 1,
+          "akort": "olc"
+        }
+      ],
+      "artik": {"vurus": {"sure": "dogal"}},
+      "varsayilan_artik": "vurus",
+      "normal": "calgi",
+      "hiz_aralik_db": 20,
+      "tarama": {
+        "ornek_sayisi": 8,
+        "akort_sent": {
+          "vsco2ce/Percussion/Xylo/Xylo_Medium_C4_ff_01_far.wav": 12.3,
+          "vsco2ce/Percussion/Xylo/Xylo_Medium_C5_ff_01_far.wav": 15.4,
+          "vsco2ce/Percussion/Xylo/Xylo_Medium_C6_ff_01_far.wav": 16.7,
+          "vsco2ce/Percussion/Xylo/Xylo_Medium_C7_ff_01_far.wav": 17.9,
+          "vsco2ce/Percussion/Xylo/Xylo_Medium_G3_ff_01_far.wav": 12.8,
+          "vsco2ce/Percussion/Xylo/Xylo_Medium_G4_ff_01_far.wav": 13.7,
+          "vsco2ce/Percussion/Xylo/Xylo_Medium_G5_ff_01_far.wav": 16.0,
+          "vsco2ce/Percussion/Xylo/Xylo_Medium_G6_ff_01_far.wav": 18.1
+        },
+        "oktav": {"vurus": {"kural": 1, "olculen": 1, "dagilim": {"1": 8}, "uyusuyor": true}},
+        "gruplar": {
+          "vurus": {
+            "sayi": 8,
+            "katman_sayisi": 1,
+            "rr_en_cok": 1,
+            "sure": "dogal",
+            "nota_araligi": ["G4", "C8"],
+            "nota_sayisi": 8,
+            "notalar": ["G4", "C5", "G5", "C6", "G6", "C7", "G7", "C8"],
+            "calinabilir": ["E4", "D#8", 64, 111],
+            "katman_tepe_db": [-6.4],
+            "ust_tepe_db": -6.36,
+            "sure_sn": [1.14, 3.62]
+          }
+        },
+        "perde_uyarilari": [
+          {
+            "dosya": "vsco2ce/Percussion/Xylo/Xylo_Medium_C4_ff_01_far.wav",
+            "neden": "akort +12 sent, kaydırmada düzeltilir"
+          },
+          {
+            "dosya": "vsco2ce/Percussion/Xylo/Xylo_Medium_C5_ff_01_far.wav",
+            "neden": "akort +15 sent, kaydırmada düzeltilir"
+          },
+          {
+            "dosya": "vsco2ce/Percussion/Xylo/Xylo_Medium_C6_ff_01_far.wav",
+            "neden": "akort +17 sent, kaydırmada düzeltilir"
+          },
+          {
+            "dosya": "vsco2ce/Percussion/Xylo/Xylo_Medium_C7_ff_01_far.wav",
+            "neden": "akort +18 sent, kaydırmada düzeltilir"
+          },
+          {
+            "dosya": "vsco2ce/Percussion/Xylo/Xylo_Medium_G3_ff_01_far.wav",
+            "neden": "akort +13 sent, kaydırmada düzeltilir"
+          },
+          {
+            "dosya": "vsco2ce/Percussion/Xylo/Xylo_Medium_G4_ff_01_far.wav",
+            "neden": "akort +14 sent, kaydırmada düzeltilir"
+          },
+          {
+            "dosya": "vsco2ce/Percussion/Xylo/Xylo_Medium_G5_ff_01_far.wav",
+            "neden": "akort +16 sent, kaydırmada düzeltilir"
+          },
+          {
+            "dosya": "vsco2ce/Percussion/Xylo/Xylo_Medium_G6_ff_01_far.wav",
+            "neden": "akort +18 sent, kaydırmada düzeltilir"
+          }
+        ]
+      }
+    },
+    "kalimba": {
+      "aciklama": "Kalimba / mbira (VCSL Kalimba, Kenya); aynı perdeli iki dil round robin sayılır",
+      "tur": "perdeli",
+      "kaynaklar": [
+        {
+          "klasor": "vcsl/Idiophones/Plucked Idiophones/Kalimba, Kenya",
+          "desen": "Mbira6_Normal_MainSpirit_(?P<nota>[A-G]#?\\d)_k(?P<rr>\\d+)_vl(?P<katman>\\d+)_rr\\d+\\.wav",
+          "artik_sabit": "kopar",
+          "oktav": 1,
+          "akort": "olc"
+        }
+      ],
+      "artik": {"kopar": {"sure": "dogal"}},
+      "varsayilan_artik": "kopar",
+      "normal": "calgi",
+      "hiz_aralik_db": 20,
+      "tarama": {
+        "ornek_sayisi": 15,
+        "akort_sent": {
+          "vcsl/Idiophones/Plucked Idiophones/Kalimba, Kenya/Mbira6_Normal_MainSpirit_A4_k1_vl3_rr2.wav": -36.3,
+          "vcsl/Idiophones/Plucked Idiophones/Kalimba, Kenya/Mbira6_Normal_MainSpirit_B2_k8_vl3_rr2.wav": -8.2,
+          "vcsl/Idiophones/Plucked Idiophones/Kalimba, Kenya/Mbira6_Normal_MainSpirit_B3_k12_vl3_rr2.wav": 18.0,
+          "vcsl/Idiophones/Plucked Idiophones/Kalimba, Kenya/Mbira6_Normal_MainSpirit_B3_k3_vl3_rr2.wav": 18.2,
+          "vcsl/Idiophones/Plucked Idiophones/Kalimba, Kenya/Mbira6_Normal_MainSpirit_C#3_k7_vl3_rr2.wav": 19.8,
+          "vcsl/Idiophones/Plucked Idiophones/Kalimba, Kenya/Mbira6_Normal_MainSpirit_C#4_k2_vl3_rr2.wav": 20.4,
+          "vcsl/Idiophones/Plucked Idiophones/Kalimba, Kenya/Mbira6_Normal_MainSpirit_D#3_k6_vl3_rr2.wav": 9.4,
+          "vcsl/Idiophones/Plucked Idiophones/Kalimba, Kenya/Mbira6_Normal_MainSpirit_D#3_k9_vl3_rr2.wav": 9.4,
+          "vcsl/Idiophones/Plucked Idiophones/Kalimba, Kenya/Mbira6_Normal_MainSpirit_D#4_k13_vl3_rr2.wav": 27.0,
+          "vcsl/Idiophones/Plucked Idiophones/Kalimba, Kenya/Mbira6_Normal_MainSpirit_F#3_k10_vl3_rr2.wav": 14.2,
+          "vcsl/Idiophones/Plucked Idiophones/Kalimba, Kenya/Mbira6_Normal_MainSpirit_F#3_k5_vl3_rr2.wav": 16.5,
+          "vcsl/Idiophones/Plucked Idiophones/Kalimba, Kenya/Mbira6_Normal_MainSpirit_F#4_k14_vl3_rr2.wav": 35.8,
+          "vcsl/Idiophones/Plucked Idiophones/Kalimba, Kenya/Mbira6_Normal_MainSpirit_G#3_k11_vl3_rr2.wav": 43.4,
+          "vcsl/Idiophones/Plucked Idiophones/Kalimba, Kenya/Mbira6_Normal_MainSpirit_G#3_k4_vl3_rr2.wav": 44.3
+        },
+        "oktav": {"kopar": {"kural": 1, "olculen": 1, "dagilim": {"-1": 1, "1": 14}, "uyusuyor": true}},
+        "gruplar": {
+          "kopar": {
+            "sayi": 15,
+            "katman_sayisi": 1,
+            "rr_en_cok": 2,
+            "sure": "dogal",
+            "nota_araligi": ["B3", "B5"],
+            "nota_sayisi": 14,
+            "notalar": ["B3", "C#4", "D#4", "F#4", "F#4", "G#4", "G#4", "B4", "B4", "C#5", "D#5", "F#5", "A5", "B5"],
+            "calinabilir": ["G#3", "D6", 56, 86],
+            "katman_tepe_db": [-13.6],
+            "ust_tepe_db": -13.59,
+            "sure_sn": [3.01, 10.05]
+          }
+        },
+        "perde_uyarilari": [
+          {
+            "dosya": "vcsl/Idiophones/Plucked Idiophones/Kalimba, Kenya/Mbira6_Normal_MainSpirit_B4_k15_vl3_rr2.wav",
+            "neden": "akort ölçülemedi (temel zayıf: -27 dB), düzeltilmedi"
+          },
+          {
+            "dosya": "vcsl/Idiophones/Plucked Idiophones/Kalimba, Kenya/Mbira6_Normal_MainSpirit_A4_k1_vl3_rr2.wav",
+            "neden": "akort -36 sent, kaydırmada düzeltilir"
+          },
+          {
+            "dosya": "vcsl/Idiophones/Plucked Idiophones/Kalimba, Kenya/Mbira6_Normal_MainSpirit_B3_k12_vl3_rr2.wav",
+            "neden": "akort +18 sent, kaydırmada düzeltilir"
+          },
+          {
+            "dosya": "vcsl/Idiophones/Plucked Idiophones/Kalimba, Kenya/Mbira6_Normal_MainSpirit_B3_k3_vl3_rr2.wav",
+            "neden": "akort +18 sent, kaydırmada düzeltilir"
+          },
+          {
+            "dosya": "vcsl/Idiophones/Plucked Idiophones/Kalimba, Kenya/Mbira6_Normal_MainSpirit_C#3_k7_vl3_rr2.wav",
+            "neden": "akort +20 sent, kaydırmada düzeltilir"
+          },
+          {
+            "dosya": "vcsl/Idiophones/Plucked Idiophones/Kalimba, Kenya/Mbira6_Normal_MainSpirit_C#4_k2_vl3_rr2.wav",
+            "neden": "akort +20 sent, kaydırmada düzeltilir"
+          },
+          {
+            "dosya": "vcsl/Idiophones/Plucked Idiophones/Kalimba, Kenya/Mbira6_Normal_MainSpirit_D#4_k13_vl3_rr2.wav",
+            "neden": "akort +27 sent, kaydırmada düzeltilir"
+          },
+          {
+            "dosya": "vcsl/Idiophones/Plucked Idiophones/Kalimba, Kenya/Mbira6_Normal_MainSpirit_F#3_k10_vl3_rr2.wav",
+            "neden": "akort +14 sent, kaydırmada düzeltilir"
+          },
+          {
+            "dosya": "vcsl/Idiophones/Plucked Idiophones/Kalimba, Kenya/Mbira6_Normal_MainSpirit_F#3_k5_vl3_rr2.wav",
+            "neden": "akort +16 sent, kaydırmada düzeltilir"
+          },
+          {
+            "dosya": "vcsl/Idiophones/Plucked Idiophones/Kalimba, Kenya/Mbira6_Normal_MainSpirit_F#4_k14_vl3_rr2.wav",
+            "neden": "akort +36 sent, kaydırmada düzeltilir"
+          },
+          {
+            "dosya": "vcsl/Idiophones/Plucked Idiophones/Kalimba, Kenya/Mbira6_Normal_MainSpirit_G#3_k11_vl3_rr2.wav",
+            "neden": "akort +43 sent, kaydırmada düzeltilir"
+          },
+          {
+            "dosya": "vcsl/Idiophones/Plucked Idiophones/Kalimba, Kenya/Mbira6_Normal_MainSpirit_G#3_k4_vl3_rr2.wav",
+            "neden": "akort +44 sent, kaydırmada düzeltilir"
+          }
+        ],
+        "yin_uyari_sayisi": 1
+      }
+    },
+    "timpani": {
+      "aciklama": "Timpani (VSCO 2 CE Timpani; 5 kazan, perde ölçülür)",
+      "tur": "perdeli",
+      "kaynaklar": [
+        {
+          "klasor": "vsco2ce/Percussion/Timpani",
+          "desen": "(?:Rolls/)?(?P<parca>Timpani\\d)_(?P<artik>Hit|Roll)_v(?P<katman>\\d+)_rr(?P<rr>\\d+)_Sum\\.wav",
+          "artik_esle": {"Hit": "vurus", "Roll": "tremolo"},
+          "nota_kaynagi": "olcum"
+        }
+      ],
+      "artik": {"vurus": {"sure": "dogal"}, "tremolo": {"sure": "surekli", "birakis_sn": 0.6}},
+      "varsayilan_artik": "vurus",
+      "normal": "calgi",
+      "hiz_aralik_db": 12,
+      "tarama": {
+        "ornek_sayisi": 38,
+        "olculen_nota": {
+          "Timpani1": {"midi": 41.47, "nota": "F2", "hz": 89.7, "olcum_sayisi": 6, "yayilim_sent": 94.0},
+          "Timpani2": {"midi": 46.82, "nota": "B2", "hz": 122.2, "olcum_sayisi": 8, "yayilim_sent": 88.0},
+          "Timpani3": {"midi": 49.49, "nota": "C#3", "hz": 142.6, "olcum_sayisi": 8, "yayilim_sent": 143.0},
+          "Timpani4": {"midi": 52.43, "nota": "E3", "hz": 169.0, "olcum_sayisi": 8, "yayilim_sent": 46.0},
+          "Timpani5": {"midi": 54.37, "nota": "F#3", "hz": 189.0, "olcum_sayisi": 8, "yayilim_sent": 982.0}
+        },
+        "gruplar": {
+          "tremolo": {
+            "sayi": 10,
+            "katman_sayisi": 3,
+            "rr_en_cok": 1,
+            "sure": "surekli",
+            "nota_araligi": ["F2", "F#3"],
+            "nota_sayisi": 5,
+            "notalar": ["F2", "B2", "C#3", "E3", "F#3"],
+            "calinabilir": ["D2", "A3", 38, 57],
+            "eksik_katman": 5,
+            "katman_tepe_db": [-22.5, -16.3, -11.1],
+            "ust_tepe_db": -11.15,
+            "sure_sn": [16.82, 29.46]
+          },
+          "vurus": {
+            "sayi": 28,
+            "katman_sayisi": 3,
+            "rr_en_cok": 2,
+            "sure": "dogal",
+            "nota_araligi": ["F2", "F#3"],
+            "nota_sayisi": 5,
+            "notalar": ["F2", "B2", "C#3", "E3", "F#3"],
+            "calinabilir": ["D2", "A3", 38, 57],
+            "eksik_katman": 1,
+            "katman_tepe_db": [-36.5, -21.6, -9.7],
+            "ust_tepe_db": -9.68,
+            "sure_sn": [1.49, 11.49]
+          }
+        }
+      }
+    },
+    "davul": {
+      "aciklama": "Caz davul seti (Virtuosity Drums, 'mid' mikrofonu); vuruş türü ve hız katmanı SFZ'den",
+      "tur": "vurmali",
+      "kaynaklar": [
+        {
+          "sfz": "virtuosity_drums/Programs/mappings/mid_all.sfz",
+          "sfz_kok": "virtuosity_drums/Programs",
+          "tanimlar": "virtuosity_drums/Programs/keymaps/keymap.sfz",
+          "tur_esle": {
+            "kick_snon": "kick",
+            "kick_snoff": "kick_kuru",
+            "snare_center": "trampet",
+            "snare_offcenter": "trampet_kenar",
+            "snare_rimshot": "trampet_rim",
+            "snare_crossstick": "cross",
+            "snare_buzz": "trampet_buzz",
+            "snare_flam": "trampet_flam",
+            "snare_muted": "trampet_sustur",
+            "snare_halfopen": "trampet_yari",
+            "snare_stickshot1": "baget",
+            "snare_stickshot2": "baget_2",
+            "snare_roll": "trampet_tremolo",
+            "snare_roll_end": "trampet_tremolo_son",
+            "hh_closed": "hh_kapali",
+            "hh_open": "hh_acik",
+            "hh_half": "hh_yari",
+            "hh_34": "hh_ceyrek",
+            "hh_pedal": "hh_pedal",
+            "hh_splash": "hh_splash",
+            "ride_ride": "ride",
+            "ride_bell": "ride_can",
+            "ltom_center": "tom_alcak",
+            "ltom_offcenter": "tom_alcak_kenar",
+            "ltom_rimshot": "tom_alcak_rim",
+            "ltom_crossstick": "tom_alcak_cross",
+            "ltom_muted": "tom_alcak_sustur",
+            "ltom_halfopen": "tom_alcak_yari",
+            "htom_center": "tom_yuksek",
+            "htom_offcenter": "tom_yuksek_kenar",
+            "crash_crash": "crash",
+            "crash_sizzle": "crash_cizirti",
+            "flatride_ride": "duz_ride",
+            "flatride_crash": "duz_ride_crash"
+          },
+          "yok_say": ["hh_silences"]
+        }
+      ],
+      "sanal": {"trampet_tap": {"tur": "trampet", "hiz": [0.05, 0.42]}, "tom": {"tur": "tom_alcak", "hiz": [0.0, 1.0]}},
+      "artik": {"trampet_tremolo": {"sure": "surekli", "birakis_sn": 0.12}},
+      "normal": "calgi",
+      "normal_grup": "trampet",
+      "tarama": {
+        "ornek_sayisi": 432,
+        "gruplar": {
+          "baget": {
+            "sayi": 8,
+            "katman_sayisi": 8,
+            "rr_en_cok": 1,
+            "sure": "dogal",
+            "hiz_araliklari": [[0, 15], [16, 31], [32, 47], [48, 63], [64, 79], [80, 95], [96, 111], [112, 127]],
+            "katman_tepe_db": [-33.9, -20.9, -17.9, -13.2, -11.1, -10.5, -8.9, -8.5],
+            "ust_tepe_db": -8.46,
+            "sure_sn": [2.01, 2.29],
+            "merkez_hz": 3143,
+            "tepe_ani_sn": 0.03
+          },
+          "baget_2": {
+            "sayi": 16,
+            "katman_sayisi": 16,
+            "rr_en_cok": 1,
+            "sure": "dogal",
+            "hiz_araliklari": [
+              [0, 7],
+              [8, 15],
+              [16, 23],
+              [24, 31],
+              [32, 39],
+              [40, 47],
+              [48, 55],
+              [56, 63],
+              [64, 71],
+              [72, 79],
+              [80, 87],
+              [88, 95],
+              [96, 103],
+              [104, 111],
+              [112, 119],
+              [120, 127]
+            ],
+            "katman_tepe_db": [-55.8, -52.2, -47.5, -42.0, -40.7, -37.1, -31.3, -29.7, -27.9, -24.4, -19.6, -20.2, -18.5, -15.6, -13.1, -14.0],
+            "ust_tepe_db": -13.96,
+            "sure_sn": [1.24, 1.46],
+            "merkez_hz": 3792,
+            "tepe_ani_sn": 0.04
+          },
+          "cross": {
+            "sayi": 16,
+            "katman_sayisi": 16,
+            "rr_en_cok": 1,
+            "sure": "dogal",
+            "hiz_araliklari": [
+              [0, 7],
+              [8, 15],
+              [16, 23],
+              [24, 31],
+              [32, 39],
+              [40, 47],
+              [48, 55],
+              [56, 63],
+              [64, 71],
+              [72, 79],
+              [80, 87],
+              [88, 95],
+              [96, 103],
+              [104, 111],
+              [112, 119],
+              [120, 127]
+            ],
+            "katman_tepe_db": [-44.7, -44.2, -39.1, -31.9, -29.6, -24.7, -24.3, -20.2, -15.0, -12.1, -15.0, -11.8, -10.2, -11.5, -12.1, -11.4],
+            "ust_tepe_db": -11.42,
+            "sure_sn": [2.38, 2.89],
+            "merkez_hz": 3230,
+            "tepe_ani_sn": 0.04
+          },
+          "hh_acik": {
+            "sayi": 12,
+            "katman_sayisi": 4,
+            "rr_en_cok": 3,
+            "sure": "dogal",
+            "hiz_araliklari": [[0, 31], [32, 63], [64, 95], [96, 127]],
+            "katman_tepe_db": [-36.1, -28.9, -23.8, -10.0],
+            "ust_tepe_db": -10.02,
+            "sure_sn": [7.2, 12.23],
+            "merkez_hz": 6125,
+            "tepe_ani_sn": 0.03
+          },
+          "hh_ceyrek": {
+            "sayi": 16,
+            "katman_sayisi": 4,
+            "rr_en_cok": 4,
+            "sure": "dogal",
+            "hiz_araliklari": [[0, 31], [32, 63], [64, 95], [96, 127]],
+            "katman_tepe_db": [-30.4, -24.9, -17.1, -13.0],
+            "ust_tepe_db": -13.03,
+            "sure_sn": [5.56, 7.98],
+            "merkez_hz": 8159,
+            "tepe_ani_sn": 0.05
+          },
+          "hh_kapali": {
+            "sayi": 16,
+            "katman_sayisi": 4,
+            "rr_en_cok": 4,
+            "sure": "dogal",
+            "hiz_araliklari": [[0, 31], [32, 63], [64, 95], [96, 127]],
+            "katman_tepe_db": [-42.0, -33.2, -27.4, -16.2],
+            "ust_tepe_db": -16.16,
+            "sure_sn": [0.56, 0.78],
+            "merkez_hz": 7875,
+            "tepe_ani_sn": 0.03
+          },
+          "hh_pedal": {
+            "sayi": 12,
+            "katman_sayisi": 3,
+            "rr_en_cok": 4,
+            "sure": "dogal",
+            "hiz_araliklari": [[0, 42], [43, 85], [86, 127]],
+            "katman_tepe_db": [-33.3, -23.4, -20.0],
+            "ust_tepe_db": -19.99,
+            "sure_sn": [1.72, 2.44],
+            "merkez_hz": 8483,
+            "tepe_ani_sn": 0.08
+          },
+          "hh_splash": {
+            "sayi": 4,
+            "katman_sayisi": 1,
+            "rr_en_cok": 4,
+            "sure": "dogal",
+            "hiz_araliklari": [[0, 127]],
+            "katman_tepe_db": [-30.8],
+            "ust_tepe_db": -30.77,
+            "sure_sn": [4.2, 4.6],
+            "merkez_hz": 9084,
+            "tepe_ani_sn": 0.09
+          },
+          "hh_yari": {
+            "sayi": 16,
+            "katman_sayisi": 4,
+            "rr_en_cok": 4,
+            "sure": "dogal",
+            "hiz_araliklari": [[0, 31], [32, 63], [64, 95], [96, 127]],
+            "katman_tepe_db": [-34.5, -27.5, -19.9, -15.9],
+            "ust_tepe_db": -15.93,
+            "sure_sn": [1.62, 1.99],
+            "merkez_hz": 8405,
+            "tepe_ani_sn": 0.05
+          },
+          "kick": {
+            "sayi": 16,
+            "katman_sayisi": 4,
+            "rr_en_cok": 4,
+            "sure": "dogal",
+            "hiz_araliklari": [[0, 31], [32, 63], [64, 95], [96, 127]],
+            "katman_tepe_db": [-42.4, -31.2, -18.4, -12.9],
+            "ust_tepe_db": -12.94,
+            "sure_sn": [1.93, 2.48],
+            "merkez_hz": 835,
+            "tepe_ani_sn": 0.05
+          },
+          "kick_kuru": {
+            "sayi": 16,
+            "katman_sayisi": 4,
+            "rr_en_cok": 4,
+            "sure": "dogal",
+            "hiz_araliklari": [[0, 31], [32, 63], [64, 95], [96, 127]],
+            "katman_tepe_db": [-40.8, -29.9, -20.9, -12.2],
+            "ust_tepe_db": -12.19,
+            "sure_sn": [1.71, 3.09],
+            "merkez_hz": 546,
+            "tepe_ani_sn": 0.05
+          },
+          "ride": {
+            "sayi": 12,
+            "katman_sayisi": 3,
+            "rr_en_cok": 4,
+            "sure": "dogal",
+            "hiz_araliklari": [[0, 42], [43, 85], [86, 127]],
+            "katman_tepe_db": [-36.7, -21.2, -15.5],
+            "ust_tepe_db": -15.52,
+            "sure_sn": [6.35, 10.85],
+            "merkez_hz": 7566,
+            "tepe_ani_sn": 0.03
+          },
+          "ride_can": {
+            "sayi": 9,
+            "katman_sayisi": 3,
+            "rr_en_cok": 3,
+            "sure": "dogal",
+            "hiz_araliklari": [[0, 42], [43, 85], [86, 127]],
+            "katman_tepe_db": [-35.4, -19.9, -18.0],
+            "ust_tepe_db": -18.0,
+            "sure_sn": [4.71, 8.07],
+            "merkez_hz": 6927,
+            "tepe_ani_sn": 0.03
+          },
+          "tom_alcak": {
+            "sayi": 16,
+            "katman_sayisi": 16,
+            "rr_en_cok": 1,
+            "sure": "dogal",
+            "hiz_araliklari": [
+              [0, 7],
+              [8, 15],
+              [16, 23],
+              [24, 31],
+              [32, 39],
+              [40, 47],
+              [48, 55],
+              [56, 63],
+              [64, 71],
+              [72, 79],
+              [80, 87],
+              [88, 95],
+              [96, 103],
+              [104, 111],
+              [112, 119],
+              [120, 127]
+            ],
+            "katman_tepe_db": [-36.9, -31.4, -27.5, -26.3, -21.8, -19.8, -15.1, -14.8, -12.3, -11.3, -9.2, -8.3, -7.0, -4.3, -3.4, -4.1],
+            "ust_tepe_db": -4.1,
+            "sure_sn": [2.4, 4.86],
+            "merkez_hz": 784,
+            "tepe_ani_sn": 0.04
+          },
+          "tom_alcak_cross": {
+            "sayi": 10,
+            "katman_sayisi": 10,
+            "rr_en_cok": 1,
+            "sure": "dogal",
+            "hiz_araliklari": [[0, 12], [13, 25], [26, 37], [38, 50], [51, 63], [64, 75], [76, 88], [89, 101], [102, 113], [114, 127]],
+            "katman_tepe_db": [-42.5, -35.0, -30.5, -30.1, -24.1, -22.5, -20.9, -19.7, -17.5, -12.3],
+            "ust_tepe_db": -12.35,
+            "sure_sn": [2.05, 2.82],
+            "merkez_hz": 2441,
+            "tepe_ani_sn": 0.03
+          },
+          "tom_alcak_kenar": {
+            "sayi": 12,
+            "katman_sayisi": 12,
+            "rr_en_cok": 1,
+            "sure": "dogal",
+            "hiz_araliklari": [
+              [0, 10],
+              [11, 21],
+              [22, 32],
+              [33, 42],
+              [43, 53],
+              [54, 63],
+              [64, 74],
+              [75, 85],
+              [86, 95],
+              [96, 106],
+              [107, 117],
+              [118, 127]
+            ],
+            "katman_tepe_db": [-46.8, -39.0, -35.9, -28.8, -24.0, -19.6, -17.1, -16.3, -16.3, -12.0, -11.7, -8.6],
+            "ust_tepe_db": -8.57,
+            "sure_sn": [3.16, 5.25],
+            "merkez_hz": 949,
+            "tepe_ani_sn": 0.04
+          },
+          "tom_alcak_rim": {
+            "sayi": 10,
+            "katman_sayisi": 10,
+            "rr_en_cok": 1,
+            "sure": "dogal",
+            "hiz_araliklari": [[0, 12], [13, 25], [26, 37], [38, 50], [51, 63], [64, 75], [76, 88], [89, 101], [102, 113], [114, 127]],
+            "katman_tepe_db": [-28.1, -25.7, -20.2, -19.1, -13.7, -14.3, -9.9, -6.3, -6.4, -7.6],
+            "ust_tepe_db": -7.63,
+            "sure_sn": [2.51, 4.83],
+            "merkez_hz": 1764,
+            "tepe_ani_sn": 0.03
+          },
+          "tom_alcak_sustur": {
+            "sayi": 16,
+            "katman_sayisi": 16,
+            "rr_en_cok": 1,
+            "sure": "dogal",
+            "hiz_araliklari": [
+              [0, 7],
+              [8, 15],
+              [16, 23],
+              [24, 31],
+              [32, 39],
+              [40, 47],
+              [48, 55],
+              [56, 63],
+              [64, 71],
+              [72, 79],
+              [80, 87],
+              [88, 95],
+              [96, 103],
+              [104, 111],
+              [112, 119],
+              [120, 127]
+            ],
+            "katman_tepe_db": [-37.7, -32.9, -30.0, -26.9, -22.8, -20.0, -16.8, -13.0, -12.9, -11.3, -9.8, -9.3, -7.4, -6.8, -4.9, -4.5],
+            "ust_tepe_db": -4.52,
+            "sure_sn": [1.81, 2.46],
+            "merkez_hz": 1187,
+            "tepe_ani_sn": 0.03
+          },
+          "tom_alcak_yari": {
+            "sayi": 16,
+            "katman_sayisi": 16,
+            "rr_en_cok": 1,
+            "sure": "dogal",
+            "hiz_araliklari": [
+              [0, 7],
+              [8, 15],
+              [16, 23],
+              [24, 31],
+              [32, 39],
+              [40, 47],
+              [48, 55],
+              [56, 63],
+              [64, 71],
+              [72, 79],
+              [80, 87],
+              [88, 95],
+              [96, 103],
+              [104, 111],
+              [112, 119],
+              [120, 127]
+            ],
+            "katman_tepe_db": [-40.4, -34.0, -29.6, -27.2, -24.0, -21.2, -19.8, -17.7, -15.6, -13.7, -12.9, -10.9, -7.7, -6.3, -3.1, -3.1],
+            "ust_tepe_db": -3.11,
+            "sure_sn": [1.94, 2.5],
+            "merkez_hz": 755,
+            "tepe_ani_sn": 0.05
+          },
+          "tom_yuksek": {
+            "sayi": 16,
+            "katman_sayisi": 16,
+            "rr_en_cok": 1,
+            "sure": "dogal",
+            "hiz_araliklari": [
+              [0, 7],
+              [8, 15],
+              [16, 23],
+              [24, 31],
+              [32, 39],
+              [40, 47],
+              [48, 55],
+              [56, 63],
+              [64, 71],
+              [72, 79],
+              [80, 87],
+              [88, 95],
+              [96, 103],
+              [104, 111],
+              [112, 119],
+              [120, 127]
+            ],
+            "katman_tepe_db": [-34.4, -25.7, -25.2, -20.8, -17.9, -14.1, -12.6, -12.4, -10.0, -9.2, -6.6, -7.0, -3.9, -4.7, -2.7, -3.2],
+            "ust_tepe_db": -3.24,
+            "sure_sn": [1.62, 2.23],
+            "merkez_hz": 1052,
+            "tepe_ani_sn": 0.04
+          },
+          "tom_yuksek_kenar": {
+            "sayi": 16,
+            "katman_sayisi": 16,
+            "rr_en_cok": 1,
+            "sure": "dogal",
+            "hiz_araliklari": [
+              [0, 7],
+              [8, 15],
+              [16, 23],
+              [24, 31],
+              [32, 39],
+              [40, 47],
+              [48, 55],
+              [56, 63],
+              [64, 71],
+              [72, 79],
+              [80, 87],
+              [88, 95],
+              [96, 103],
+              [104, 111],
+              [112, 119],
+              [120, 127]
+            ],
+            "katman_tepe_db": [-37.3, -36.2, -34.3, -30.8, -26.5, -26.0, -22.8, -23.1, -19.1, -19.5, -17.5, -16.9, -15.9, -10.8, -9.4, -8.8],
+            "ust_tepe_db": -8.79,
+            "sure_sn": [1.86, 3.01],
+            "merkez_hz": 1013,
+            "tepe_ani_sn": 0.04
+          },
+          "trampet": {
+            "sayi": 36,
+            "katman_sayisi": 36,
+            "rr_en_cok": 1,
+            "sure": "dogal",
+            "hiz_araliklari": [
+              [0, 3],
+              [4, 7],
+              [8, 10],
+              [11, 14],
+              [15, 17],
+              [18, 21],
+              [22, 24],
+              [25, 27],
+              [28, 31],
+              [32, 34],
+              [35, 38],
+              [39, 41],
+              [42, 45],
+              [46, 48],
+              [49, 52],
+              [53, 55],
+              [56, 59],
+              [60, 63],
+              [64, 66],
+              [67, 70],
+              [71, 73],
+              [74, 77],
+              [78, 80],
+              [81, 84],
+              [85, 87],
+              [88, 91],
+              [92, 95],
+              [96, 98],
+              [99, 102],
+              [103, 105],
+              [106, 109],
+              [110, 112],
+              [113, 116],
+              [117, 119],
+              [120, 123],
+              [124, 127]
+            ],
+            "katman_tepe_db": [-34.0, -32.8, -31.2, -28.8, -27.3, -23.5, -24.0, -23.8, -20.3, -19.1, -19.2, -18.5, -19.1, -17.8, -17.2, -16.5, -14.8, -14.4, -15.0, -12.9, -12.7, -12.1, -10.4, -9.7, -8.8, -8.9, -7.0, -7.5, -5.3, -5.0, -5.5, -3.6, -2.1, -1.1, -0.2, -0.2],
+            "ust_tepe_db": -0.23,
+            "sure_sn": [1.49, 2.06],
+            "merkez_hz": 3388,
+            "tepe_ani_sn": 0.04
+          },
+          "trampet_buzz": {
+            "sayi": 12,
+            "katman_sayisi": 12,
+            "rr_en_cok": 1,
+            "sure": "dogal",
+            "hiz_araliklari": [
+              [0, 10],
+              [11, 21],
+              [22, 32],
+              [33, 42],
+              [43, 53],
+              [54, 63],
+              [64, 74],
+              [75, 85],
+              [86, 95],
+              [96, 106],
+              [107, 117],
+              [118, 127]
+            ],
+            "katman_tepe_db": [-42.6, -35.0, -33.3, -27.0, -25.0, -23.7, -20.3, -17.4, -15.6, -11.3, -7.1, -6.9],
+            "ust_tepe_db": -6.89,
+            "sure_sn": [2.13, 2.6],
+            "merkez_hz": 2872,
+            "tepe_ani_sn": 0.04
+          },
+          "trampet_flam": {
+            "sayi": 12,
+            "katman_sayisi": 12,
+            "rr_en_cok": 1,
+            "sure": "dogal",
+            "hiz_araliklari": [
+              [0, 10],
+              [11, 21],
+              [22, 32],
+              [33, 42],
+              [43, 53],
+              [54, 63],
+              [64, 74],
+              [75, 85],
+              [86, 95],
+              [96, 106],
+              [107, 117],
+              [118, 127]
+            ],
+            "katman_tepe_db": [-34.8, -32.5, -24.4, -18.3, -14.7, -11.4, -10.4, -7.9, -8.2, -6.5, -5.0, -3.2],
+            "ust_tepe_db": -3.23,
+            "sure_sn": [1.69, 2.66],
+            "merkez_hz": 3053,
+            "tepe_ani_sn": 0.06
+          },
+          "trampet_kenar": {
+            "sayi": 36,
+            "katman_sayisi": 36,
+            "rr_en_cok": 1,
+            "sure": "dogal",
+            "hiz_araliklari": [
+              [0, 3],
+              [4, 7],
+              [8, 10],
+              [11, 14],
+              [15, 17],
+              [18, 21],
+              [22, 24],
+              [25, 27],
+              [28, 31],
+              [32, 34],
+              [35, 38],
+              [39, 41],
+              [42, 45],
+              [46, 48],
+              [49, 52],
+              [53, 55],
+              [56, 59],
+              [60, 63],
+              [64, 66],
+              [67, 70],
+              [71, 73],
+              [74, 77],
+              [78, 80],
+              [81, 84],
+              [85, 87],
+              [88, 91],
+              [92, 95],
+              [96, 98],
+              [99, 102],
+              [103, 105],
+              [106, 109],
+              [110, 112],
+              [113, 116],
+              [117, 119],
+              [120, 123],
+              [124, 127]
+            ],
+            "katman_tepe_db": [-43.2, -44.0, -41.2, -40.4, -38.9, -37.0, -35.2, -32.2, -31.2, -29.6, -26.9, -26.3, -25.6, -23.7, -22.6, -22.5, -20.4, -19.9, -18.8, -18.3, -16.7, -16.4, -14.6, -14.3, -13.4, -11.2, -10.3, -8.8, -8.6, -6.3, -4.7, -4.2, -5.3, -6.4, -2.6, -1.4],
+            "ust_tepe_db": -1.42,
+            "sure_sn": [1.16, 2.32],
+            "merkez_hz": 3394,
+            "tepe_ani_sn": 0.04
+          },
+          "trampet_rim": {
+            "sayi": 12,
+            "katman_sayisi": 12,
+            "rr_en_cok": 1,
+            "sure": "dogal",
+            "hiz_araliklari": [
+              [0, 10],
+              [11, 21],
+              [22, 32],
+              [33, 42],
+              [43, 53],
+              [54, 63],
+              [64, 74],
+              [75, 85],
+              [86, 95],
+              [96, 106],
+              [107, 117],
+              [118, 127]
+            ],
+            "katman_tepe_db": [-23.9, -20.2, -18.1, -10.7, -11.8, -6.7, -4.7, -8.9, -9.1, -4.6, -4.2, -2.2],
+            "ust_tepe_db": -2.23,
+            "sure_sn": [1.83, 2.75],
+            "merkez_hz": 2937,
+            "tepe_ani_sn": 0.03
+          },
+          "trampet_sustur": {
+            "sayi": 16,
+            "katman_sayisi": 16,
+            "rr_en_cok": 1,
+            "sure": "dogal",
+            "hiz_araliklari": [
+              [0, 7],
+              [8, 15],
+              [16, 23],
+              [24, 31],
+              [32, 39],
+              [40, 47],
+              [48, 55],
+              [56, 63],
+              [64, 71],
+              [72, 79],
+              [80, 87],
+              [88, 95],
+              [96, 103],
+              [104, 111],
+              [112, 119],
+              [120, 127]
+            ],
+            "katman_tepe_db": [-44.6, -40.5, -36.1, -30.1, -26.1, -19.7, -18.2, -17.4, -14.4, -12.0, -9.4, -8.2, -6.6, -4.0, -6.6, -5.4],
+            "ust_tepe_db": -5.43,
+            "sure_sn": [1.04, 1.27],
+            "merkez_hz": 3156,
+            "tepe_ani_sn": 0.03
+          },
+          "trampet_tremolo": {
+            "sayi": 5,
+            "katman_sayisi": 1,
+            "rr_en_cok": 5,
+            "sure": "surekli",
+            "hiz_araliklari": [[0, 127]],
+            "katman_tepe_db": [-15.4],
+            "ust_tepe_db": -15.4,
+            "sure_sn": [10.19, 14.33],
+            "merkez_hz": 2812,
+            "tepe_ani_sn": 0.04
+          },
+          "trampet_tremolo_son": {
+            "sayi": 6,
+            "katman_sayisi": 1,
+            "rr_en_cok": 6,
+            "sure": "dogal",
+            "hiz_araliklari": [[0, 127]],
+            "katman_tepe_db": [-17.5],
+            "ust_tepe_db": -17.5,
+            "sure_sn": [1.51, 1.86],
+            "merkez_hz": 3445,
+            "tepe_ani_sn": 0.04
+          },
+          "trampet_yari": {
+            "sayi": 16,
+            "katman_sayisi": 16,
+            "rr_en_cok": 1,
+            "sure": "dogal",
+            "hiz_araliklari": [
+              [0, 7],
+              [8, 15],
+              [16, 23],
+              [24, 31],
+              [32, 39],
+              [40, 47],
+              [48, 55],
+              [56, 63],
+              [64, 71],
+              [72, 79],
+              [80, 87],
+              [88, 95],
+              [96, 103],
+              [104, 111],
+              [112, 119],
+              [120, 127]
+            ],
+            "katman_tepe_db": [-44.2, -40.8, -36.6, -32.0, -27.4, -25.6, -24.4, -21.6, -18.8, -16.5, -14.3, -10.9, -7.8, -6.4, -5.6, -4.7],
+            "ust_tepe_db": -4.73,
+            "sure_sn": [1.14, 1.45],
+            "merkez_hz": 3507,
+            "tepe_ani_sn": 0.04
+          }
+        },
+        "eslenmeyen": ["virtuosity_drums/Programs/mappings/mid_all.sfz [snareoff_stickshot1] (SFZ grubu tur_esle'de yok (10 bölge))", "virtuosity_drums/Programs/mappings/mid_all.sfz [snareoff_center] (SFZ grubu tur_esle'de yok (12 bölge))", "virtuosity_drums/Programs/mappings/mid_all.sfz [snareoff_offcenter] (SFZ grubu tur_esle'de yok (12 bölge))", "virtuosity_drums/Programs/mappings/mid_all.sfz [snareoff_stickshot2] (SFZ grubu tur_esle'de yok (24 bölge))", "virtuosity_drums/Programs/mappings/mid_all.sfz [snareoff_muted] (SFZ grubu tur_esle'de yok (12 bölge))", "virtuosity_drums/Programs/mappings/mid_all.sfz [snareoff_halfopen] (SFZ grubu tur_esle'de yok (12 bölge))", "virtuosity_drums/Programs/mappings/mid_all.sfz [snareoff_crossstick] (SFZ grubu tur_esle'de yok (10 bölge))", "virtuosity_drums/Programs/mappings/mid_all.sfz [snareoff_buzz] (SFZ grubu tur_esle'de yok (12 bölge))", "virtuosity_drums/Programs/mappings/mid_all.sfz [snareoff_flam] (SFZ grubu tur_esle'de yok (12 bölge))", "virtuosity_drums/Programs/mappings/mid_all.sfz [snareoff_roll] (SFZ grubu tur_esle'de yok (5 bölge))", "virtuosity_drums/Programs/mappings/mid_all.sfz [snareoff_roll_end] (SFZ grubu tur_esle'de yok (6 bölge))"],
+        "eksik": ["12 dosya: SFZ crash_crash → crash: örnek dosyası indirilmemiş", "12 dosya: SFZ crash_sizzle → crash_cizirti: örnek dosyası indirilmemiş", "12 dosya: SFZ flatride_ride → duz_ride: örnek dosyası indirilmemiş", "4 dosya: SFZ flatride_crash → duz_ride_crash: örnek dosyası indirilmemiş"]
+      }
+    },
+    "perkusyon": {
+      "aciklama": "El perküsyonu ve orkestra vurmalıları (VCSL + VSCO 2 CE); türler arası kayıt düzeyi anlamsız, her tür kendi üst katmanına göre ayarlı",
+      "tur": "vurmali",
+      "kaynaklar": [
+        {
+          "klasor": "vcsl/Idiophones/Struck Idiophones/Shaker, Small",
+          "desen": "Mid_Shaker(?P<tur>Double_Down|Double_Up|HighFaster_Down|HighFaster_Up|LowFaster_Down|LowFaster_Up|_Roll_Fast|_Slap)_rr(?P<rr>\\d+)\\.wav",
+          "tur_esle": {
+            "_Slap": "shaker",
+            "Double_Down": "shaker_cift_asagi",
+            "Double_Up": "shaker_cift_yukari",
+            "HighFaster_Down": "shaker_ince_asagi",
+            "HighFaster_Up": "shaker_ince_yukari",
+            "LowFaster_Down": "shaker_kalin_asagi",
+            "LowFaster_Up": "shaker_kalin_yukari",
+            "_Roll_Fast": "shaker_tremolo"
+          }
+        },
+        {
+          "klasor": "vcsl/Idiophones/Struck Idiophones/Shaker, Large",
+          "desen": "LShaker_(?P<tur>Hit|Shake1D|Shake1U)_rr(?P<rr>\\d+)_Mid\\.wav",
+          "tur_esle": {"Hit": "shaker_buyuk", "Shake1D": "shaker_buyuk_asagi", "Shake1U": "shaker_buyuk_yukari"}
+        },
+        {
+          "klasor": "vcsl/Idiophones/Struck Idiophones/Woodblock",
+          "desen": "wood_click(?P<tur>\\d?)_(?:(?P<din>pp|mp|ff|f)|vl(?P<katman>\\d+))(?:_rr(?P<rr>\\d+))?\\.wav",
+          "tur_esle": {"": "tahta_blok", "2": "tahta_blok_2", "3": "tahta_blok_3"}
+        },
+        {
+          "klasor": "vcsl/Membranophones/Struck Membranophones/Frame Drum",
+          "desen": "HDrum(?P<tur>L_Hit|L_HitMuted|L_Hand|S_Hit|S_HitMuted|S_Hand)(?:_v(?P<katman>\\d+))?_rr(?P<rr>\\d+)_Sum\\.wav",
+          "tur_esle": {
+            "L_Hit": "cerceve_buyuk",
+            "L_HitMuted": "cerceve_buyuk_sustur",
+            "L_Hand": "cerceve_buyuk_el",
+            "S_Hit": "cerceve_kucuk",
+            "S_HitMuted": "cerceve_kucuk_sustur",
+            "S_Hand": "cerceve_kucuk_el"
+          }
+        },
+        {
+          "klasor": "vcsl/Idiophones/Struck Idiophones/Tambourine 1",
+          "desen": "Tamb1_(?P<tur>Hit|Roll|Shake)(?:_v(?P<katman>\\d+))?_rr(?P<rr>\\d+)_Mid\\.wav",
+          "tur_esle": {"Hit": "tef", "Roll": "tef_tremolo", "Shake": "tef_salla"}
+        },
+        {
+          "klasor": "vcsl/Idiophones/Struck Idiophones/Claps",
+          "desen": "(?P<tur>Clap|SoloClap)_(?:rr(?P<rr>\\d+)|vl(?P<katman>\\d+))\\.wav",
+          "tur_esle": {"SoloClap": "alkis", "Clap": "alkis_grup"}
+        },
+        {
+          "klasor": "vcsl/Idiophones/Struck Idiophones/Cajon",
+          "desen": "Cajon_(?P<tur>hit\\d)_(?P<din>pp|p|mp|f|fff)_rr(?P<rr>\\d+)\\.wav",
+          "tur_esle": {"hit1": "cajon_1", "hit2": "cajon_2", "hit3": "cajon_3"}
+        },
+        {
+          "klasor": "vcsl/Membranophones/Struck Membranophones/Bongos",
+          "desen": "Bongo(?P<tur>H_Hit1|H_HitMuted1|H_Roll|L_Hit1|L_HitMuted2|L_Roll)_v(?P<katman>\\d+)_rr(?P<rr>\\d+)_Mid\\.wav",
+          "tur_esle": {
+            "H_Hit1": "bongo_ince",
+            "H_HitMuted1": "bongo_ince_sustur",
+            "H_Roll": "bongo_ince_tremolo",
+            "L_Hit1": "bongo_kalin",
+            "L_HitMuted2": "bongo_kalin_sustur",
+            "L_Roll": "bongo_kalin_tremolo"
+          }
+        },
+        {
+          "klasor": "vcsl/Idiophones/Struck Idiophones/Mark Trees",
+          "desen": "Legacy/windchimes_(?P<tur>asc1|desc1|fastAsc1|random|slowAsc1|slowDesc1)\\.wav",
+          "tur_esle": {
+            "asc1": "can_agaci_yukari",
+            "desc1": "can_agaci_asagi",
+            "fastAsc1": "can_agaci_hizli",
+            "random": "can_agaci_rastgele",
+            "slowAsc1": "can_agaci_yavas_yukari",
+            "slowDesc1": "can_agaci_yavas_asagi"
+          }
+        },
+        {
+          "klasor": "vcsl/Idiophones/Struck Idiophones/Finger Cymbals",
+          "desen": "Fing_Cymb\\.wav",
+          "tur_sabit": "parmak_zili"
+        },
+        {
+          "klasor": "vcsl/Idiophones/Struck Idiophones/Cabasa",
+          "desen": "Cabasa1_(?P<tur>Hit|Rub)(?:_v(?P<katman>\\d+))?_rr(?P<rr>\\d+)_Mid\\.wav",
+          "tur_esle": {"Hit": "kabasa", "Rub": "kabasa_surt"}
+        },
+        {
+          "klasor": "vsco2ce/Percussion",
+          "desen": "BDrumNewhit_v(?P<katman>\\d+)_rr(?P<rr>\\d+)_Sum\\.wav",
+          "tur_sabit": "bas_davul"
+        },
+        {
+          "klasor": "vsco2ce/Percussion",
+          "desen": "Claves1_Hit_v(?P<katman>\\d+)_rr(?P<rr>\\d+)_Sum\\.wav",
+          "tur_sabit": "klave"
+        },
+        {
+          "klasor": "vsco2ce/Percussion",
+          "desen": "Sleighbells_Hit_v(?P<katman>\\d+)_rr(?P<rr>\\d+)_Mid\\.wav",
+          "tur_sabit": "cingirak"
+        },
+        {
+          "klasor": "vsco2ce/Percussion",
+          "desen": "Snare2-taps_v(?P<katman>\\d+)_rr(?P<rr>\\d+)_Sum\\.wav",
+          "tur_sabit": "trampet_orkestra"
+        },
+        {
+          "klasor": "vsco2ce/Percussion",
+          "desen": "Snare2-roll(?P<tur>NS|SN)_v(?P<katman>\\d+)_rr(?P<rr>\\d+)_Sum\\.wav",
+          "tur_esle": {"SN": "trampet_orkestra_tremolo", "NS": "trampet_orkestra_tremolo_2"}
+        },
+        {
+          "klasor": "vsco2ce/Percussion",
+          "desen": "Tamb1-(?P<tur>Hit|Roll|Shake)_v(?P<katman>\\d+)_rr(?P<rr>\\d+)_Sum\\.wav",
+          "tur_esle": {"Hit": "tef_orkestra", "Roll": "tef_orkestra_tremolo", "Shake": "tef_orkestra_salla"}
+        },
+        {
+          "klasor": "vsco2ce/Percussion",
+          "desen": "Triangle3-(?P<tur>HitFM|HitM|Hit)_v(?P<katman>\\d+)_rr(?P<rr>\\d+)_Sum\\.wav",
+          "tur_esle": {"Hit": "ucgen", "HitM": "ucgen_m", "HitFM": "ucgen_fm"}
+        },
+        {
+          "klasor": "vsco2ce/Percussion",
+          "desen": "susCymb1-cresc-(?P<tur>Long|Median|Short)_v1\\.wav",
+          "tur_esle": {"Short": "zil_kabarma_kisa", "Median": "zil_kabarma_orta", "Long": "zil_kabarma_uzun"}
+        }
+      ],
+      "sanal": {
+        "cerceve": {"tur": "cerceve_buyuk", "hiz": [0.0, 1.0]},
+        "zil_kabarma": {"tur": "zil_kabarma_orta", "hiz": [0.0, 1.0]}
+      },
+      "artik": {
+        "shaker_tremolo": {"sure": "surekli", "birakis_sn": 0.1},
+        "tef_tremolo": {"sure": "surekli", "birakis_sn": 0.12},
+        "tef_orkestra_tremolo": {"sure": "surekli", "birakis_sn": 0.12},
+        "trampet_orkestra_tremolo": {"sure": "surekli", "birakis_sn": 0.12},
+        "trampet_orkestra_tremolo_2": {"sure": "surekli", "birakis_sn": 0.12},
+        "bongo_ince_tremolo": {"sure": "surekli", "birakis_sn": 0.1},
+        "bongo_kalin_tremolo": {"sure": "surekli", "birakis_sn": 0.1}
+      },
+      "normal": "grup",
+      "hiz_aralik_db": 14,
+      "tarama": {
+        "ornek_sayisi": 178,
+        "gruplar": {
+          "alkis": {
+            "sayi": 4,
+            "katman_sayisi": 4,
+            "rr_en_cok": 1,
+            "sure": "dogal",
+            "katman_tepe_db": [-14.8, -8.8, -4.5, -0.8],
+            "ust_tepe_db": -0.75,
+            "sure_sn": [0.31, 0.63],
+            "merkez_hz": 3527,
+            "tepe_ani_sn": 0.07
+          },
+          "alkis_grup": {
+            "sayi": 6,
+            "katman_sayisi": 1,
+            "rr_en_cok": 6,
+            "sure": "dogal",
+            "katman_tepe_db": [-0.4],
+            "ust_tepe_db": -0.42,
+            "sure_sn": [0.47, 0.77],
+            "merkez_hz": 5148,
+            "tepe_ani_sn": 0.03
+          },
+          "bas_davul": {
+            "sayi": 6,
+            "katman_sayisi": 3,
+            "rr_en_cok": 2,
+            "sure": "dogal",
+            "katman_tepe_db": [-36.1, -23.0, -17.8],
+            "ust_tepe_db": -17.77,
+            "sure_sn": [1.27, 2.08],
+            "merkez_hz": 324,
+            "tepe_ani_sn": 0.03
+          },
+          "bongo_ince": {
+            "sayi": 6,
+            "katman_sayisi": 3,
+            "rr_en_cok": 2,
+            "sure": "dogal",
+            "katman_tepe_db": [-30.5, -22.8, -10.9],
+            "ust_tepe_db": -10.95,
+            "sure_sn": [0.83, 1.19],
+            "merkez_hz": 1100,
+            "tepe_ani_sn": 0.04
+          },
+          "bongo_ince_sustur": {
+            "sayi": 6,
+            "katman_sayisi": 3,
+            "rr_en_cok": 2,
+            "sure": "dogal",
+            "katman_tepe_db": [-19.3, -12.9, -9.8],
+            "ust_tepe_db": -9.8,
+            "sure_sn": [0.98, 1.22],
+            "merkez_hz": 1135,
+            "tepe_ani_sn": 0.03
+          },
+          "bongo_ince_tremolo": {
+            "sayi": 2,
+            "katman_sayisi": 2,
+            "rr_en_cok": 1,
+            "sure": "surekli",
+            "katman_tepe_db": [-18.6, -10.0],
+            "ust_tepe_db": -10.02,
+            "sure_sn": [3.2, 3.67],
+            "merkez_hz": 1296,
+            "tepe_ani_sn": 0.94
+          },
+          "bongo_kalin": {
+            "sayi": 6,
+            "katman_sayisi": 3,
+            "rr_en_cok": 2,
+            "sure": "dogal",
+            "katman_tepe_db": [-31.6, -19.2, -9.2],
+            "ust_tepe_db": -9.2,
+            "sure_sn": [0.96, 1.19],
+            "merkez_hz": 789,
+            "tepe_ani_sn": 0.04
+          },
+          "bongo_kalin_sustur": {
+            "sayi": 6,
+            "katman_sayisi": 3,
+            "rr_en_cok": 2,
+            "sure": "dogal",
+            "katman_tepe_db": [-33.2, -13.7, -8.1],
+            "ust_tepe_db": -8.14,
+            "sure_sn": [0.77, 1.15],
+            "merkez_hz": 898,
+            "tepe_ani_sn": 0.03
+          },
+          "bongo_kalin_tremolo": {
+            "sayi": 2,
+            "katman_sayisi": 2,
+            "rr_en_cok": 1,
+            "sure": "surekli",
+            "katman_tepe_db": [-17.2, -9.7],
+            "ust_tepe_db": -9.65,
+            "sure_sn": [2.96, 3.25],
+            "merkez_hz": 1159,
+            "tepe_ani_sn": 1.33
+          },
+          "cajon_1": {
+            "sayi": 6,
+            "katman_sayisi": 3,
+            "rr_en_cok": 2,
+            "sure": "dogal",
+            "katman_tepe_db": [-15.5, -7.7, -1.3],
+            "ust_tepe_db": -1.31,
+            "sure_sn": [1.04, 1.37],
+            "merkez_hz": 5556,
+            "tepe_ani_sn": 0.03
+          },
+          "cajon_2": {
+            "sayi": 6,
+            "katman_sayisi": 3,
+            "rr_en_cok": 2,
+            "sure": "dogal",
+            "katman_tepe_db": [-21.5, -8.8, -2.7],
+            "ust_tepe_db": -2.7,
+            "sure_sn": [1.2, 1.73],
+            "merkez_hz": 4847,
+            "tepe_ani_sn": 0.03
+          },
+          "cajon_3": {
+            "sayi": 6,
+            "katman_sayisi": 3,
+            "rr_en_cok": 2,
+            "sure": "dogal",
+            "katman_tepe_db": [-13.9, -4.5, -1.0],
+            "ust_tepe_db": -0.99,
+            "sure_sn": [1.25, 1.47],
+            "merkez_hz": 4937,
+            "tepe_ani_sn": 0.03
+          },
+          "can_agaci_asagi": {
+            "sayi": 1,
+            "katman_sayisi": 1,
+            "rr_en_cok": 1,
+            "sure": "dogal",
+            "katman_tepe_db": [-24.7],
+            "ust_tepe_db": -24.71,
+            "sure_sn": [9.88, 9.88],
+            "merkez_hz": 9767,
+            "tepe_ani_sn": 2.51
+          },
+          "can_agaci_hizli": {
+            "sayi": 1,
+            "katman_sayisi": 1,
+            "rr_en_cok": 1,
+            "sure": "dogal",
+            "katman_tepe_db": [-16.5],
+            "ust_tepe_db": -16.47,
+            "sure_sn": [13.32, 13.32],
+            "merkez_hz": 9770,
+            "tepe_ani_sn": 0.29
+          },
+          "can_agaci_rastgele": {
+            "sayi": 1,
+            "katman_sayisi": 1,
+            "rr_en_cok": 1,
+            "sure": "dogal",
+            "katman_tepe_db": [-18.2],
+            "ust_tepe_db": -18.24,
+            "sure_sn": [21.64, 21.64],
+            "merkez_hz": 9892,
+            "tepe_ani_sn": 6.13
+          },
+          "can_agaci_yavas_asagi": {
+            "sayi": 1,
+            "katman_sayisi": 1,
+            "rr_en_cok": 1,
+            "sure": "dogal",
+            "katman_tepe_db": [-29.1],
+            "ust_tepe_db": -29.13,
+            "sure_sn": [10.73, 10.73],
+            "merkez_hz": 8406,
+            "tepe_ani_sn": 4.51
+          },
+          "can_agaci_yavas_yukari": {
+            "sayi": 1,
+            "katman_sayisi": 1,
+            "rr_en_cok": 1,
+            "sure": "dogal",
+            "katman_tepe_db": [-26.5],
+            "ust_tepe_db": -26.48,
+            "sure_sn": [11.22, 11.22],
+            "merkez_hz": 8460,
+            "tepe_ani_sn": 5.91
+          },
+          "can_agaci_yukari": {
+            "sayi": 1,
+            "katman_sayisi": 1,
+            "rr_en_cok": 1,
+            "sure": "dogal",
+            "katman_tepe_db": [-22.3],
+            "ust_tepe_db": -22.32,
+            "sure_sn": [7.76, 7.76],
+            "merkez_hz": 8489,
+            "tepe_ani_sn": 1.36
+          },
+          "cerceve_buyuk": {
+            "sayi": 4,
+            "katman_sayisi": 2,
+            "rr_en_cok": 2,
+            "sure": "dogal",
+            "katman_tepe_db": [-29.5, -11.8],
+            "ust_tepe_db": -11.82,
+            "sure_sn": [3.26, 3.74],
+            "merkez_hz": 751,
+            "tepe_ani_sn": 0.03
+          },
+          "cerceve_buyuk_el": {
+            "sayi": 1,
+            "katman_sayisi": 1,
+            "rr_en_cok": 1,
+            "sure": "dogal",
+            "katman_tepe_db": [-56.0],
+            "ust_tepe_db": -55.99,
+            "sure_sn": [1.16, 1.16],
+            "merkez_hz": 4444,
+            "tepe_ani_sn": 0.1
+          },
+          "cerceve_buyuk_sustur": {
+            "sayi": 4,
+            "katman_sayisi": 2,
+            "rr_en_cok": 2,
+            "sure": "dogal",
+            "katman_tepe_db": [-28.8, -9.9],
+            "ust_tepe_db": -9.93,
+            "sure_sn": [1.63, 1.85],
+            "merkez_hz": 1094,
+            "tepe_ani_sn": 0.03
+          },
+          "cerceve_kucuk": {
+            "sayi": 4,
+            "katman_sayisi": 2,
+            "rr_en_cok": 2,
+            "sure": "dogal",
+            "katman_tepe_db": [-37.4, -18.2],
+            "ust_tepe_db": -18.2,
+            "sure_sn": [2.1, 2.79],
+            "merkez_hz": 915,
+            "tepe_ani_sn": 0.04
+          },
+          "cerceve_kucuk_el": {
+            "sayi": 1,
+            "katman_sayisi": 1,
+            "rr_en_cok": 1,
+            "sure": "dogal",
+            "katman_tepe_db": [-60.5],
+            "ust_tepe_db": -60.48,
+            "sure_sn": [0.84, 0.84],
+            "merkez_hz": 7058,
+            "tepe_ani_sn": 0.12
+          },
+          "cerceve_kucuk_sustur": {
+            "sayi": 4,
+            "katman_sayisi": 2,
+            "rr_en_cok": 2,
+            "sure": "dogal",
+            "katman_tepe_db": [-40.4, -18.8],
+            "ust_tepe_db": -18.76,
+            "sure_sn": [0.93, 1.02],
+            "merkez_hz": 1201,
+            "tepe_ani_sn": 0.03
+          },
+          "cingirak": {
+            "sayi": 2,
+            "katman_sayisi": 1,
+            "rr_en_cok": 2,
+            "sure": "dogal",
+            "katman_tepe_db": [-22.4],
+            "ust_tepe_db": -22.36,
+            "sure_sn": [2.46, 2.5],
+            "merkez_hz": 10453,
+            "tepe_ani_sn": 0.05
+          },
+          "kabasa": {
+            "sayi": 2,
+            "katman_sayisi": 1,
+            "rr_en_cok": 2,
+            "sure": "dogal",
+            "katman_tepe_db": [-19.6],
+            "ust_tepe_db": -19.61,
+            "sure_sn": [0.81, 0.89],
+            "merkez_hz": 8858,
+            "tepe_ani_sn": 0.03
+          },
+          "kabasa_surt": {
+            "sayi": 4,
+            "katman_sayisi": 2,
+            "rr_en_cok": 2,
+            "sure": "dogal",
+            "katman_tepe_db": [-30.6, -20.7],
+            "ust_tepe_db": -20.67,
+            "sure_sn": [0.98, 1.08],
+            "merkez_hz": 11478,
+            "tepe_ani_sn": 0.05
+          },
+          "klave": {
+            "sayi": 6,
+            "katman_sayisi": 3,
+            "rr_en_cok": 2,
+            "sure": "dogal",
+            "katman_tepe_db": [-37.9, -21.3, -12.0],
+            "ust_tepe_db": -12.01,
+            "sure_sn": [1.03, 1.51],
+            "merkez_hz": 3173,
+            "tepe_ani_sn": 0.03
+          },
+          "parmak_zili": {
+            "sayi": 1,
+            "katman_sayisi": 1,
+            "rr_en_cok": 1,
+            "sure": "dogal",
+            "katman_tepe_db": [-37.0],
+            "ust_tepe_db": -37.05,
+            "sure_sn": [6.34, 6.34],
+            "merkez_hz": 7746,
+            "tepe_ani_sn": 0.06
+          },
+          "shaker": {
+            "sayi": 2,
+            "katman_sayisi": 1,
+            "rr_en_cok": 2,
+            "sure": "dogal",
+            "katman_tepe_db": [-26.8],
+            "ust_tepe_db": -26.76,
+            "sure_sn": [0.68, 0.7],
+            "merkez_hz": 10487,
+            "tepe_ani_sn": 0.04
+          },
+          "shaker_buyuk": {
+            "sayi": 2,
+            "katman_sayisi": 1,
+            "rr_en_cok": 2,
+            "sure": "dogal",
+            "katman_tepe_db": [-12.4],
+            "ust_tepe_db": -12.36,
+            "sure_sn": [1.31, 1.31],
+            "merkez_hz": 6786,
+            "tepe_ani_sn": 0.04
+          },
+          "shaker_buyuk_asagi": {
+            "sayi": 2,
+            "katman_sayisi": 1,
+            "rr_en_cok": 2,
+            "sure": "dogal",
+            "katman_tepe_db": [-22.7],
+            "ust_tepe_db": -22.66,
+            "sure_sn": [1.28, 1.43],
+            "merkez_hz": 7334,
+            "tepe_ani_sn": 0.11
+          },
+          "shaker_buyuk_yukari": {
+            "sayi": 2,
+            "katman_sayisi": 1,
+            "rr_en_cok": 2,
+            "sure": "dogal",
+            "katman_tepe_db": [-27.2],
+            "ust_tepe_db": -27.22,
+            "sure_sn": [1.26, 1.53],
+            "merkez_hz": 6936,
+            "tepe_ani_sn": 0.19
+          },
+          "shaker_cift_asagi": {
+            "sayi": 2,
+            "katman_sayisi": 1,
+            "rr_en_cok": 2,
+            "sure": "dogal",
+            "katman_tepe_db": [-27.4],
+            "ust_tepe_db": -27.39,
+            "sure_sn": [0.26, 0.27],
+            "merkez_hz": 10647,
+            "tepe_ani_sn": 0.05
+          },
+          "shaker_cift_yukari": {
+            "sayi": 2,
+            "katman_sayisi": 1,
+            "rr_en_cok": 2,
+            "sure": "dogal",
+            "katman_tepe_db": [-35.6],
+            "ust_tepe_db": -35.63,
+            "sure_sn": [0.13, 0.17],
+            "merkez_hz": 10627,
+            "tepe_ani_sn": 0.08
+          },
+          "shaker_ince_asagi": {
+            "sayi": 2,
+            "katman_sayisi": 1,
+            "rr_en_cok": 2,
+            "sure": "dogal",
+            "katman_tepe_db": [-30.0],
+            "ust_tepe_db": -29.99,
+            "sure_sn": [0.14, 0.18],
+            "merkez_hz": 12202,
+            "tepe_ani_sn": 0.06
+          },
+          "shaker_ince_yukari": {
+            "sayi": 2,
+            "katman_sayisi": 1,
+            "rr_en_cok": 2,
+            "sure": "dogal",
+            "katman_tepe_db": [-22.3],
+            "ust_tepe_db": -22.34,
+            "sure_sn": [0.14, 0.18],
+            "merkez_hz": 11568,
+            "tepe_ani_sn": 0.03
+          },
+          "shaker_kalin_asagi": {
+            "sayi": 2,
+            "katman_sayisi": 1,
+            "rr_en_cok": 2,
+            "sure": "dogal",
+            "katman_tepe_db": [-27.4],
+            "ust_tepe_db": -27.36,
+            "sure_sn": [0.12, 0.17],
+            "merkez_hz": 11361,
+            "tepe_ani_sn": 0.06
+          },
+          "shaker_kalin_yukari": {
+            "sayi": 2,
+            "katman_sayisi": 1,
+            "rr_en_cok": 2,
+            "sure": "dogal",
+            "katman_tepe_db": [-23.5],
+            "ust_tepe_db": -23.45,
+            "sure_sn": [0.08, 0.12],
+            "merkez_hz": 11950,
+            "tepe_ani_sn": 0.04
+          },
+          "shaker_tremolo": {
+            "sayi": 2,
+            "katman_sayisi": 1,
+            "rr_en_cok": 2,
+            "sure": "surekli",
+            "katman_tepe_db": [-21.0],
+            "ust_tepe_db": -21.02,
+            "sure_sn": [2.56, 4.4],
+            "merkez_hz": 11406,
+            "tepe_ani_sn": 1.46
+          },
+          "tahta_blok": {
+            "sayi": 7,
+            "katman_sayisi": 4,
+            "rr_en_cok": 3,
+            "sure": "dogal",
+            "katman_tepe_db": [-29.9, -23.1, -8.3, -4.5],
+            "ust_tepe_db": -4.52,
+            "sure_sn": [0.31, 1.95],
+            "merkez_hz": 2358,
+            "tepe_ani_sn": 0.04
+          },
+          "tahta_blok_2": {
+            "sayi": 1,
+            "katman_sayisi": 1,
+            "rr_en_cok": 1,
+            "sure": "dogal",
+            "katman_tepe_db": [-18.5],
+            "ust_tepe_db": -18.47,
+            "sure_sn": [1.4, 1.4],
+            "merkez_hz": 4157,
+            "tepe_ani_sn": 0.03
+          },
+          "tahta_blok_3": {
+            "sayi": 2,
+            "katman_sayisi": 2,
+            "rr_en_cok": 1,
+            "sure": "dogal",
+            "katman_tepe_db": [-16.7, -11.9],
+            "ust_tepe_db": -11.89,
+            "sure_sn": [0.71, 0.92],
+            "merkez_hz": 2899,
+            "tepe_ani_sn": 0.05
+          },
+          "tef": {
+            "sayi": 2,
+            "katman_sayisi": 2,
+            "rr_en_cok": 1,
+            "sure": "dogal",
+            "katman_tepe_db": [-28.5, -16.4],
+            "ust_tepe_db": -16.41,
+            "sure_sn": [1.66, 1.92],
+            "merkez_hz": 10005,
+            "tepe_ani_sn": 0.06
+          },
+          "tef_orkestra": {
+            "sayi": 4,
+            "katman_sayisi": 2,
+            "rr_en_cok": 2,
+            "sure": "dogal",
+            "katman_tepe_db": [-30.3, -19.4],
+            "ust_tepe_db": -19.43,
+            "sure_sn": [1.65, 1.92],
+            "merkez_hz": 9883,
+            "tepe_ani_sn": 0.05
+          },
+          "tef_orkestra_salla": {
+            "sayi": 2,
+            "katman_sayisi": 1,
+            "rr_en_cok": 2,
+            "sure": "dogal",
+            "katman_tepe_db": [-27.4],
+            "ust_tepe_db": -27.45,
+            "sure_sn": [1.35, 1.47],
+            "merkez_hz": 10486,
+            "tepe_ani_sn": 0.13
+          },
+          "tef_orkestra_tremolo": {
+            "sayi": 3,
+            "katman_sayisi": 3,
+            "rr_en_cok": 1,
+            "sure": "surekli",
+            "katman_tepe_db": [-36.9, -30.8, -21.4],
+            "ust_tepe_db": -21.35,
+            "sure_sn": [9.7, 10.53],
+            "merkez_hz": 10423,
+            "tepe_ani_sn": 3.21
+          },
+          "tef_salla": {
+            "sayi": 2,
+            "katman_sayisi": 1,
+            "rr_en_cok": 2,
+            "sure": "dogal",
+            "katman_tepe_db": [-25.1],
+            "ust_tepe_db": -25.09,
+            "sure_sn": [1.35, 1.47],
+            "merkez_hz": 10795,
+            "tepe_ani_sn": 0.13
+          },
+          "tef_tremolo": {
+            "sayi": 3,
+            "katman_sayisi": 3,
+            "rr_en_cok": 1,
+            "sure": "surekli",
+            "katman_tepe_db": [-33.0, -28.1, -18.0],
+            "ust_tepe_db": -17.99,
+            "sure_sn": [9.7, 10.53],
+            "merkez_hz": 10390,
+            "tepe_ani_sn": 2.56
+          },
+          "trampet_orkestra": {
+            "sayi": 8,
+            "katman_sayisi": 4,
+            "rr_en_cok": 2,
+            "sure": "dogal",
+            "katman_tepe_db": [-31.8, -24.4, -16.9, -13.9],
+            "ust_tepe_db": -13.91,
+            "sure_sn": [0.72, 1.4],
+            "merkez_hz": 3660,
+            "tepe_ani_sn": 0.03
+          },
+          "trampet_orkestra_tremolo": {
+            "sayi": 3,
+            "katman_sayisi": 3,
+            "rr_en_cok": 1,
+            "sure": "surekli",
+            "katman_tepe_db": [-37.1, -18.2, -9.9],
+            "ust_tepe_db": -9.88,
+            "sure_sn": [9.51, 11.73],
+            "merkez_hz": 3385,
+            "tepe_ani_sn": 0.09
+          },
+          "trampet_orkestra_tremolo_2": {
+            "sayi": 3,
+            "katman_sayisi": 3,
+            "rr_en_cok": 1,
+            "sure": "surekli",
+            "katman_tepe_db": [-31.9, -18.8, -4.7],
+            "ust_tepe_db": -4.69,
+            "sure_sn": [6.39, 6.99],
+            "merkez_hz": 973,
+            "tepe_ani_sn": 0.58
+          },
+          "ucgen": {
+            "sayi": 4,
+            "katman_sayisi": 2,
+            "rr_en_cok": 2,
+            "sure": "dogal",
+            "katman_tepe_db": [-35.6, -23.8],
+            "ust_tepe_db": -23.79,
+            "sure_sn": [7.09, 11.9],
+            "merkez_hz": 8553,
+            "tepe_ani_sn": 0.03
+          },
+          "ucgen_fm": {
+            "sayi": 4,
+            "katman_sayisi": 2,
+            "rr_en_cok": 2,
+            "sure": "dogal",
+            "katman_tepe_db": [-33.1, -24.2],
+            "ust_tepe_db": -24.23,
+            "sure_sn": [0.82, 1.22],
+            "merkez_hz": 8152,
+            "tepe_ani_sn": 0.03
+          },
+          "ucgen_m": {
+            "sayi": 4,
+            "katman_sayisi": 2,
+            "rr_en_cok": 2,
+            "sure": "dogal",
+            "katman_tepe_db": [-33.6, -23.0],
+            "ust_tepe_db": -23.01,
+            "sure_sn": [1.24, 1.51],
+            "merkez_hz": 7698,
+            "tepe_ani_sn": 0.03
+          },
+          "zil_kabarma_kisa": {
+            "sayi": 1,
+            "katman_sayisi": 1,
+            "rr_en_cok": 1,
+            "sure": "dogal",
+            "katman_tepe_db": [-8.5],
+            "ust_tepe_db": -8.46,
+            "sure_sn": [12.03, 12.03],
+            "merkez_hz": 1133,
+            "tepe_ani_sn": 1.43
+          },
+          "zil_kabarma_orta": {
+            "sayi": 1,
+            "katman_sayisi": 1,
+            "rr_en_cok": 1,
+            "sure": "dogal",
+            "katman_tepe_db": [-9.8],
+            "ust_tepe_db": -9.8,
+            "sure_sn": [12.99, 12.99],
+            "merkez_hz": 1539,
+            "tepe_ani_sn": 3.83
+          },
+          "zil_kabarma_uzun": {
+            "sayi": 1,
+            "katman_sayisi": 1,
+            "rr_en_cok": 1,
+            "sure": "dogal",
+            "katman_tepe_db": [-10.2],
+            "ust_tepe_db": -10.22,
+            "sure_sn": [16.96, 16.96],
+            "merkez_hz": 1367,
+            "tepe_ani_sn": 7.19
+          }
+        }
+      }
+    }
+  },
+  "tarama_ozet": {"ses_dosyasi": 1306, "kurala_giren": 1306, "hicbir_kurala_girmeyen": []}
+}

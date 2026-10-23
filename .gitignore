@@ -15,3 +15,6 @@ kaynak/
 
 # Cowork oturumlarının çıktı klasörü (özet görseller): yerelde kalır
 Claude outputs/
+
+# Python önbelleği (scripts/ içindeki modüller importlib ile yüklenince oluşur)
+__pycache__/
