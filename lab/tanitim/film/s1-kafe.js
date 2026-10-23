@@ -1,5 +1,5 @@
 // Sahne 1, KAFE (#3–#5, k192–797; ARALIK ile kadro.json'dan 150 kare uzun). A (kısa boylu, yanaklı, kıvırcık saçlı genç kız) kalabalık bir
-// kafede tek başına; garsona seslenir, görülmez; yüzü asılır; yanağını avucuna yaslar, masada bir QR standı olsa sipariş
+// kafede tek başına; garsona seslenir, görülmez; yüzü asılır; yanağını yumruğuna yaslar, masada bir QR standı olsa sipariş
 // verebileceğini düşünür. Sahne SORUNDA biter: çözüm, ürün, renkli nesne yok.
 // v06 r2 (kullanıcının kare kare notları): "sağa sola bırakılmış aset" yerine derinlikte dizili kalabalık kafe; garson dik
 // ve canlı (bir elinde tepsi, öteki el konuşurken oynar, güler, başını sallar; A'ya hiç dönmez); A'nın eli organik
@@ -8,8 +8,9 @@
 // Oturan herkesin başı ufuk çizgisinin çevresinde kalır (kalabalık bandı); uzak olan küçük, açık ve ince çizgili (pus).
 // v06 r3 (kullanıcı 2026-10-23: "60 fps güzel ama her şey çok hızlı, sahne demlensin; geçişte ~100 kare sıkılma pozu;
 // yanaktaki el insan gibi olsun"): zaman çapaları Z'de (kur içinde). Önemli her andan sonra 0,4–0,8 sn nefes, üst üste
-// binen hareketler ayrık, garsonun ve figüranların mikro hareketleri seyrek, konuşma balonları ≥ 2 sn; yanak eli yeni
-// çizim (elYanak: yandan görünen el, başparmak çene altında, parmaklar yanağa kıvrık, yanak ezilir).
+// binen hareketler ayrık, garsonun ve figüranların mikro hareketleri seyrek, konuşma balonları ≥ 2 sn.
+// v06 r4 (kullanıcı 2026-10-23: "ilk karakterin eli, saksı sahnesindeki karakterin düşünürkenki eli gibi olsun, eli
+// yanağında kapalı halde"): yanak eli s3-balkon D'nin düşünme yumruğu (kol.js 'cene'); el yanağa giderken kapanır (elYumruk).
 // #3 (k192–263) Devir: v1'in son yüzü A, aynı yerde ve ölçekte; 58 k KM üstel geri çekilme, kafe genel planı (k194–216 kâğıttan
 //    belirir). Arka duvar: büyük camlar, kara tahta menü, tezgâh + espresso makinesi + barista; arka sırada dört masa (biri
 //    laptoplu), orta sırada iki masa (birer kişi sırtı dönük), sağ önde sırtı dönük bir kız. Garson sağdaki masanın müşterisiyle
@@ -18,12 +19,12 @@
 //    yüzü düşer, nefes. İkinci deneme (k376): yarı doğrulur, el daha yükseğe, "Bakar mısınız?!" (k396; birinciyi şişirir), iki
 //    kez sallar; garson kahkaha atar, eli göğsünde: A'ya dönmez. El havada asılı kalır (k436–462, karşılıksız), iner (k484).
 // #5 (k490–797) Yüz asılır: kaşlar iner, ağız aşağı, omuzlar düşer (k490–518); kamera A'ya ve balonun yerine yaklaşır; nefes.
-//    k544–574 el yanağa gider, k568–588 baş ele çöker, o yana yaslanır, yanak ezilir: sıkılmış. Düşünce balonu (k590), ~24 k
+//    k544–574 el kapanarak yanağa gider, k568–588 baş yumruğa çöker, o yana yaslanır, yanak ezilir: sıkılmış. Düşünce balonu (k590), ~24 k
 //    boş; sonra masa köşesi, çadır QR standı (cizimler.js), el yazısı iki satır, okutan telefon, vurgu halkası (k701). Kafe
 //    kâğıda doğru solar. k701–797 tutuş: iç çekiş (omuz kalkar, iner), göz kırpma, balon noktaları kabarır, çok yavaş itiş.
 //    k798 kesme (s2-atolye).
 // Kare hızları: HAREKET 60 fps (kullanıcı 2026-10-22: 12 fps adımlama kesik görünüyordu): gövde çöküşü ve eğimi, kollar
-// (dirsek ve bilek omuz çevresinde kutupsal ara değerle yay çizer), el biçimi (açık el ↔ yanak eli kıvrımı), garsonun
+// (dirsek ve bilek omuz çevresinde kutupsal ara değerle yay çizer), el biçimi (açık el ↔ yumruk kapanışı), garsonun
 // jestleri ve ağırlık aktarımı, sekmeler, kahkaha ve sallama çizgileri her karede izlerden hesaplanır (herKare). Yüz ifadesi
 // ve bakış ayrık çizimdir (göz kırpma 4 k); kamera / yazı / balon 60 fps; kaynama çekirdekte 8 fps.
 // Sözleşme: kur(ctx) yalnız ctx.tl'ye İÇ (mutlak) kare zamanlı tween ekler; window'a bir şey yazmaz.
@@ -117,6 +118,104 @@ function elHatti(T) {
   for (const d of [-62, -22, 22, 62]) { const c = Math.cos(d * D2R), s = Math.sin(d * D2R); hat.push([u[0] + B.r * (c * t2[0] + s * n2[0]), u[1] + B.r * (c * t2[1] + s * n2[1])]); }
   hat.push(topla(u, n2, B.r), topla(m, n2, B.r), topla(B.b, n, B.r * 1.05), [0.02, 0.19]);
   return { hat, F };
+}
+
+// ---------- Yumruk eli (yanağa yaslanan el; kullanıcı 2026-10-23: "saksı sahnesindeki karakterin düşünürkenki eli gibi
+// olsun, eli yanağında kapalı halde"). s3-balkon'da D'nin son pozu kol.js 'cene' gevşek yumruğudur: dört parmağın boğum
+// tümsekleri üstte yanağa dayanır, aralarında kısa parmak çizgileri, altında parmak uçlarının avuca girdiği kıvrım çizgisi,
+// başparmak yumruğun çene yanındaki kenarı boyunca uzanır. Burada aynı yumruk (ölçüleri kol.js'ten) masadaki gevşek elden
+// (kol.js 'dayanma' ölçüleri) kapanarak kurulur, c 0 → 1: avuca kıvrılan parmak önden bakışta kısalır, parmaklar boğum
+// tümseğine iner, aralarındaki oluk sığlaşır, uçlar basıklaşır. Masada el sırtı, yanakta avuç izleyiciye döner (başparmak
+// yanı ters yana geçer); el kenarına dönüp ince bir şeride inmesin diye gövde hiç aynalanmaz: yumruk v'de aynalı tanımlıdır
+// (kol.js 'cene', başparmak −1 ile aynı çizim) ve başparmak parmakların önünden öbür yana geçerek yumruğun çene yanındaki
+// kenarına yatar. Yerel çerçeve kol.js ile aynı: bilek (0,0), u parmaklara, v el sırtı görünürken başparmak yanına (+),
+// birim = el boyu.
+// parmak: [kök, yön (derece, + v'ye), boy, yarıçap], +v'den −v'ye (açık elde işaret → serçe, yumrukta serçe → işaret);
+// oluk: parmak arası çukurun kökten yüksekliği; bas: uçların basıklığı (1 yuvarlak); bp: başparmak [kök, yön, boy, yarıçap,
+// büküm]; yanB / yanS: avucun +v ve −v kenarı (bilekten ilk parmak köküne / son parmak kökünden bileğe; bilek ucu yenin içinde)
+const YUM = {
+  acik: {
+    parmak: [[[0.47, 0.16], 5, 0.42, 0.06], [[0.515, 0.055], 1, 0.46, 0.062], [[0.505, -0.055], -3, 0.43, 0.06], [[0.455, -0.155], -8, 0.35, 0.055]],
+    oluk: 0.02, bas: 1, bp: [[0.12, 0.17], 40, 0.36, 0.074, -4],
+    yanB: [[-0.14, 0.142], [0, 0.171], [0.17, 0.234], [0.33, 0.254], [0.45, 0.228]],
+    yanS: [[0.42, -0.214], [0.3, -0.226], [0.14, -0.198], [0, -0.159], [-0.14, -0.137]],
+  },
+  yumruk: {
+    parmak: [[[0.538, 0.148], 0, 0, 0.044], [[0.576, 0.048], 0, 0, 0.046], [[0.586, -0.058], 0, 0, 0.046], [[0.563, -0.162], 0, 0, 0.046]],
+    oluk: 0, bas: 0.55, bp: [[0.14, -0.2], -16, 0.38, 0.068, 6],
+    yanB: [[-0.14, 0.13], [0, 0.152], [0.16, 0.198], [0.34, 0.222], [0.47, 0.212]],
+    yanS: [[0.47, -0.218], [0.34, -0.228], [0.17, -0.208], [0, -0.162], [-0.14, -0.135]],
+  },
+};
+// kol.js 'cene' noktası (aynalı): boğumların ortası, yanağa değen yer (bilek bu noktadan geriye bulunur)
+const YUM_YANAK = [0.62, 0.02];
+const karis = (a, b, m) => (Array.isArray(a) ? a.map((x, i) => karis(x, b[i], m)) : a + (b - a) * m);
+const yumus = (a, b, x) => { const u = Math.min(1, Math.max(0, (x - a) / (b - a))); return u * u * (3 - 2 * u); };
+// Kırık çizgiyi yay uzunluğuna göre n noktaya eşit böler (uçlar dahil): biçim değişse de nokta sayısı ve sırası aynı kalır
+// (titreşim nokta sırasına bağlı: kare kare kaymasın)
+function esitBol(pts, n) {
+  const top = [0];
+  for (let i = 1; i < pts.length; i++) top.push(top[i - 1] + Math.hypot(pts[i][0] - pts[i - 1][0], pts[i][1] - pts[i - 1][1]));
+  const L = top[top.length - 1], out = [];
+  let j = 1;
+  for (let s = 0; s < n; s++) {
+    const d = (L * s) / (n - 1);
+    while (j < pts.length - 1 && top[j] < d) j++;
+    const a = pts[j - 1], b = pts[j], u = top[j] > top[j - 1] ? Math.min(1, (d - top[j - 1]) / (top[j] - top[j - 1])) : 0;
+    out.push([a[0] + (b[0] - a[0]) * u, a[1] + (b[1] - a[1]) * u]);
+  }
+  return out;
+}
+// Kırık çizginin baştan f oranı kadarı
+function yolKes(pts, f) {
+  const l = pts.slice(1).map((p, i) => Math.hypot(p[0] - pts[i][0], p[1] - pts[i][1]));
+  let kalan = Math.max(0, f) * l.reduce((a, b) => a + b, 0);
+  const out = [pts[0]];
+  for (let i = 0; i < l.length; i++) {
+    if (kalan >= l[i]) { out.push(pts[i + 1]); kalan -= l[i]; continue; }
+    const u = l[i] ? kalan / l[i] : 0;
+    out.push([pts[i][0] + (pts[i + 1][0] - pts[i][0]) * u, pts[i][1] + (pts[i + 1][1] - pts[i][1]) * u]);
+    break;
+  }
+  return out;
+}
+// Başparmak kapsülü (kol.js parmak ile aynı kurgu): kökten ortaya, ortadan büküm kadar dönerek uca; kökten uca %16 incelir.
+// L dış yan (+v), R avuç yanı; uc: uçtaki yarım daire (iç noktalar), kok: kökteki yarım daire (R0 → L0, uçlar dahil)
+function kapsulNok(b, a, l, r, k, geri = 0.06) {
+  const t = yon(a), t2 = yon(a + k);
+  const b0 = topla(b, t, -geri), m = topla(b, t, l * 0.5), u = topla(m, t2, l * 0.5 - r * 0.6);
+  const C = esitBol([b0, m, u], 6), R = C.map((_, i) => r * (1 - (0.16 * i) / 5));
+  const N = C.map((_, i) => { const p = C[Math.max(0, i - 1)], q = C[Math.min(5, i + 1)], d = Math.hypot(q[0] - p[0], q[1] - p[1]) || 1; return [-(q[1] - p[1]) / d, (q[0] - p[0]) / d]; });
+  const yarim = (c, tt, nn, rr, acilar) => acilar.map((d) => { const cs = Math.cos(d * D2R), sn = Math.sin(d * D2R); return [c[0] + rr * (cs * tt[0] + sn * nn[0]), c[1] + rr * (cs * tt[1] + sn * nn[1])]; });
+  const tU = dikV(N[5]).map((x) => -x), t0 = dikV(N[0]).map((x) => -x); // uçta ve kökte ileri yön (N'den −90°)
+  return {
+    L: C.map((p, i) => topla(p, N[i], R[i])), R: C.map((p, i) => topla(p, N[i], -R[i])),
+    uc: yarim(C[5], tU, N[5], R[5], [60, 30, 0, -30, -60]),
+    kok: yarim(C[0], t0.map((x) => -x), N[0], R[0], [-90, -60, -30, 0, 30, 60, 90]),
+  };
+}
+// Yumruk elinin c anındaki biçimi: dış hat (sabit nokta sayısı: avuç yanları + parmak başına 13 eşit aralıklı nokta),
+// parmak arası oluklar (çizgiler buradan iner) ve başparmak ölçüleri
+function yumrukHatti(c) {
+  const T = Object.fromEntries(Object.keys(YUM.acik).map((a) => [a, karis(YUM.acik[a], YUM.yumruk[a], c)]));
+  const F = T.parmak.map(([b, a, l, r]) => {
+    const t = yon(a), n = dikV(t), m = topla(b, t, l * 0.5), u = topla(m, t, Math.max(0, l * 0.5 - r)), ru = r * 0.86;
+    const yay = [];
+    for (let d = 90; d >= -90; d -= 15) { const cs = Math.cos(d * D2R) * T.bas, sn = Math.sin(d * D2R); yay.push([u[0] + ru * (cs * t[0] + sn * n[0]), u[1] + ru * (cs * t[1] + sn * n[1])]); }
+    return { b, t, n, r, arti: topla(m, n, r * 0.93), eksi: topla(m, n, -r * 0.93), yay };
+  });
+  const oluk = F.slice(0, -1).map((f, i) => {
+    const g = F[i + 1], a = topla(f.b, f.n, -f.r), b = topla(g.b, g.n, g.r), tm = [(f.t[0] + g.t[0]) / 2, (f.t[1] + g.t[1]) / 2];
+    return { p: topla([(a[0] + b[0]) / 2, (a[1] + b[1]) / 2], tm, T.oluk), t: tm };
+  });
+  const hat = [...T.yanB];
+  F.forEach((f, i) => {
+    const bas = i === 0 ? topla(f.b, f.n, f.r) : oluk[i - 1].p, son = i === F.length - 1 ? topla(f.b, f.n, -f.r) : oluk[i].p;
+    const p = esitBol([bas, f.arti, ...f.yay, f.eksi, son], 13);
+    hat.push(...(i === 0 ? p : p.slice(1)));
+  });
+  hat.push(...T.yanS);
+  return { hat, oluk, bp: T.bp };
 }
 
 export function kur(ctx) {
@@ -235,73 +334,30 @@ export function kur(ctx) {
     return out;
   }
 
-  // Yanağa yaslanan el (kullanıcı 2026-10-23: "elini yanağında tuttuğu kısımdaki el daha iyi çizilebilir, insan gibi").
-  // Önden bakışta avuç yanağa döner; izleyici eli başparmak yanından görür: dış kenarda elin sırtı ve boğum basamakları,
-  // önde işaret parmağı yanağın üstüne kıvrılır, ardındaki üç parmağın uçları dış kavis boyunca basamak basamak taşar,
-  // başparmak çenenin altına uzanır. Avucun içi izleyiciye bakmaz. Yerel çerçeve: bilek (0,0), u parmaklara, v avuç yanına
-  // (yüze doğru), birim = el boyu. c: kıvrım (0 gevşek el, 1 yanakta). Çizim sırası: arka parmaklar → el gövdesi + işaret
-  // (tek kontur) → başparmak (kökü avuca açık: dikiş çizgisi olmaz).
-  // Parmak: kök b, ilk yön a0 (derece, + avuca doğru), boğum boyları l, iki boğumdaki büküm k, yarıçaplar r (kök → uç)
-  function parmakHat(b, a0, [l1, l2, l3], [k1, k2], [r0, r1, r2, r3]) {
-    const d0 = yon(a0), d1 = yon(a0 + k1), d2 = yon(a0 + k1 + k2);
-    const n0 = dikV(d0), n1 = dikV(d1), n2 = dikV(d2);
-    const P0 = b, P1 = topla(P0, d0, l1), P2 = topla(P1, d1, l2), P3 = topla(P2, d2, l3 - r3);
-    const bir = (x, y) => { const l = Math.hypot(x, y) || 1; return [x / l, y / l]; };
-    const j1 = bir(n0[0] + n1[0], n0[1] + n1[1]), j2 = bir(n1[0] + n2[0], n1[1] + n2[1]);
-    const m1 = 1 / Math.cos((k1 * D2R) / 2), m2 = 1 / Math.cos((k2 * D2R) / 2);
-    const orta = (a, q) => [(a[0] + q[0]) / 2, (a[1] + q[1]) / 2];
-    // sırt yanı: bükülen boğum dışa hafif çıkıntı yapar; avuç yanı: boğum kırışığı biraz içeride
-    const dis = [topla(P0, n0, -r0), topla(orta(P0, P1), n0, -(r0 + r1) / 2), topla(P1, j1, -r1 * m1 * (1 + k1 / 500)),
-      topla(orta(P1, P2), n1, -(r1 + r2) / 2), topla(P2, j2, -r2 * m2 * (1 + k2 / 600)), topla(P3, n2, -r3)];
-    const uc = [45, 90, 135].map((f) => { const c = Math.cos(f * D2R), s = Math.sin(f * D2R); return [P3[0] - n2[0] * r3 * c + d2[0] * r3 * s, P3[1] - n2[1] * r3 * c + d2[1] * r3 * s]; });
-    const ic = [topla(P3, n2, r3), topla(orta(P2, P3), n2, (r2 + r3) / 2), topla(P2, j2, r2 * 0.9),
-      topla(orta(P1, P2), n1, (r1 + r2) / 2), topla(P1, j1, r1 * 0.9), topla(orta(P0, P1), n0, (r0 + r1) / 2), topla(P0, n0, r0)];
-    return { dis, uc, ic, P: [P0, P1, P2, P3], d: [d0, d1, d2], n: [n0, n1, n2], j: [j1, j2], r: [r0, r1, r2, r3] };
-  }
-  function elYanak({ bilek, aci, boy = 100, bs = -1, c = 1, ten, kaynama = 0, tohum = 1, w = 4.2 }) {
-    const L = (a, b) => a + (b - a) * c;
+  // Yumruk eli çizimi (dizge; biçim yumrukHatti'nde). c: kapanma (0 masadaki gevşek el, kol.js 'dayanma' ile aynı yan;
+  // 1 yanakta gevşek yumruk, kol.js 'cene' başparmak −1 ile aynı çizim); ku: u'da kısalma (masada yatan el önden kısalır, kol.js
+  // kisalma). Çizim sırası kol.js 'cene' ile aynı: el gövdesi (tek dış hat), parmak çizgileri ve kıvrım çizgisi (el kapandıkça
+  // uzar), önde başparmak (kökü açık el halinde avuca açık; yumruk kapandıkça kök kavsi de çizilir). Bütün çağrılar her karede
+  // aynı sırada (titreşim nokta sırasına bağlı: kaymasın).
+  function elYumruk({ bilek, aci, boy = 100, ku = 1, c = 1, ten, kaynama = 0, tohum = 1, w = 4.2 }) {
     const cs = Math.cos(aci * D2R), sn = Math.sin(aci * D2R);
-    const D = ([u, v]) => { const X = u * boy, V = v * boy * bs; return [bilek[0] + X * cs - V * sn, bilek[1] + X * sn + V * cs]; };
-    const ar = araclar(tohum, kaynama, 0.5);
-    let out = '';
-    // Ele gömülen yanak: başparmakla işaret arasındaki ağ, kıvrılan parmaklar ve çenenin arası ten rengiyle dolar (çene
-    // çizgisi elin içinde kaybolur, yanak avuca bastırılmış okunur; arkadan zemin görünmez). El kıvrıldıkça belirir.
-    if (c > 0.6) {
-      const yk = [[0.47, 0.04], [0.6, 0.08], [0.66, 0.16], [0.6, 0.25], [0.48, 0.31], [0.38, 0.33], [0.3, 0.29], [0.28, 0.23], [0.36, 0.18], [0.42, 0.12]];
-      out += `<path d="${yolCiz(yk.map(D), true, { sap: () => 0 })}" fill="${ten}" opacity="${Math.min(1, (c - 0.6) / 0.3).toFixed(2)}"/>`;
+    const D = ([u, v]) => { const X = u * boy * ku, V = v * boy; return [bilek[0] + X * cs - V * sn, bilek[1] + X * sn + V * cs]; };
+    const ar = araclar(tohum, kaynama, 0.55), ac = araclar(tohum + 3, kaynama, 0.4);
+    const { hat, oluk, bp } = yumrukHatti(c);
+    let out = ar.sk(hat.map(D), ten, w * 0.9, [2, 2]);
+    // parmak çizgileri: oluğun hemen altından avuca doğru (kol.js yumrukGovde ic); kıvrım çizgisi ortadan iki yana uzar
+    const g1 = yumus(0.4, 0.9, c), g2 = yumus(0.5, 0.95, c);
+    for (const o of oluk) {
+      const n = dikV(o.t), a = topla(o.p, o.t, -0.012);
+      out += ac.cz([a, topla(topla(a, o.t, -0.04 * g1), n, 0.003 * g1), topla(topla(a, o.t, -0.075 * g1), n, 0.006 * g1)].map(D), w * 0.6 * Math.min(1, g1 * 3));
     }
-    // Orta parmak işaretin ardında, ucu onun ucundan biraz taşar. Yüzük ve serçe avuca kıvrılı, işaretin ve avucun ardında
-    // kalır (ayrı çizgileri gürültü yapıyordu); yerleri sırttaki boğum basamağından okunur.
-    {
-      const h = parmakHat([0.47, -0.072], L(-2, 8), [0.265, 0.165, 0.125], [L(12, 30), L(5, 24)], [0.05, 0.046, 0.041, 0.037]);
-      out += ar.sk([...h.dis, ...h.uc, ...h.ic].map(D), ten, w * 0.8, [2, 2]);
-    }
-    // El gövdesi + işaret (tek kontur): bilekten sırt boyunca boğum çıkıntısına, işaretin sırtından ucuna, iç yanından
-    // köküne; başparmakla işaret arasındaki dolgun ağ (çene bu kavise oturur), avuçtan bileğe
-    const ip = parmakHat([0.465, -0.05], L(0, 10), [0.25, 0.155, 0.12], [L(10, 28), L(4, 20)], [0.05, 0.046, 0.041, 0.037]);
-    const govde = [[-0.06, -0.104], [0.12, -0.116], [0.27, -0.13], [0.35, -0.142], [0.4, -0.136], [0.44, -0.122], ...ip.dis, ...ip.uc, ...ip.ic,
-      [0.45, 0.06], [0.42, 0.13], [0.36, 0.19], [0.28, 0.24], [0.18, 0.21], [0.08, 0.16], [-0.06, 0.108]];
-    out += ar.sk(govde.map(D), ten, w * 0.92, [2, 2]);
-    const cz = (pts, oran) => { out += ar.cz(pts.map(D), w * oran); };
-    // işaret: orta boğumun sırtında kısa kırışık, uç boğumda tırnak
-    {
-      const [, P1, P2, P3] = ip.P, [, , d2] = ip.d, [, , n2] = ip.n, [j1] = ip.j, [, r1, r2, r3] = ip.r;
-      if (c > 0.3) cz([topla(P1, j1, -r1 * 1.02), topla(P1, j1, -r1 * 0.45)], 0.42);
-      cz([topla(topla(P2, d2, 0.035), n2, -r2 * 0.52), topla(topla(P3, d2, r3 * 0.2), n2, -r3 * 0.5)], 0.4);
-    }
-    // el biçimi: işaretin kökünde ağdan içeri kısa kırışık; sırtta kıvrık parmakların boğum basamağından inen kısa kavis
-    cz([[0.47, 0.05], [0.43, 0.01], [0.41, -0.03]], 0.4);
-    if (c > 0.5) cz([[0.36, -0.132], [0.4, -0.1], [0.43, -0.075]], 0.36);
-    // Başparmak: tenar tümseğinden çıkar, çenenin altına uzanır (kök avucun içinde: dolgu kapalı, kontur açık)
-    const bp = parmakHat([0.13, 0.06], L(40, 40), [0.13, 0.135, 0.12], [L(10, 14), L(6, 10)], [0.07, 0.06, 0.054, 0.047]);
-    const bpTum = [...bp.dis, ...bp.uc, ...bp.ic].map(D);
-    out += `<path d="${yolCiz(bpTum, true, { sap: () => 0 })}" fill="${ten}" transform="translate(2 2)"/>`;
-    cz([...bp.dis.slice(1), ...bp.uc, ...bp.ic.slice(0, -1)], 0.88);
-    // başparmak tırnağı (uç boğumun üst yanında kısa çizgi)
-    {
-      const [, , P2, P3] = bp.P, [, , d2] = bp.d, [, , n2] = bp.n, [, , r2, r3] = bp.r;
-      cz([topla(topla(P2, d2, 0.03), n2, -r2 * 0.5), topla(topla(P3, d2, r3 * 0.25), n2, -r3 * 0.48)], 0.4);
-    }
+    const KV = [[0.47, 0.19], [0.44, 0], [0.47, -0.19]], ara2 = (p, q, t) => [p[0] + (q[0] - p[0]) * t, p[1] + (q[1] - p[1]) * t];
+    out += ac.cz([ara2(KV[1], KV[0], g2), KV[1], ara2(KV[1], KV[2], g2)].map(D), w * 0.55 * Math.min(1, g2 * 3));
+    // Başparmak: dolgu kapalı, kontur dış yandan uca, uçtan avuç yanına; kök kavsi iki uçtan ortaya doğru kapanır
+    const K = kapsulNok(...bp), g3 = yumus(0.5, 1, c);
+    out += `<path d="${yolCiz([...K.L, ...K.uc, ...K.R.slice().reverse(), ...K.kok].map(D), true, { sap: () => 0 })}" fill="${ten}" transform="translate(2 2)"/>`;
+    const kA = esitBol(yolKes(K.kok.slice(0, 4), g3), 3), kB = esitBol(yolKes(K.kok.slice(3).reverse(), g3), 3);
+    out += ar.cz([...kB.slice().reverse(), ...K.L.slice(1), ...K.uc, ...K.R.slice().reverse(), ...kA.slice(1)].map(D), w * 0.9);
     return out;
   }
 
@@ -790,7 +846,7 @@ export function kur(ctx) {
   };
   const AKAL = 68; // kol kalınlığı (kapüşonlu: 64'ten biraz dolgun, kalkan kol çubuk gibi durmasın)
   const oA = omuzlar(Ap, { kalinlik: AKAL });
-  const hwA = Ap.yuzEn, ceneA = GOZ_Y + 4 + Ap.yuzBoy;
+  const hwA = Ap.yuzEn;
   const KS = yer(-1, 1); // kalkan kol: yatayda ekranın solu (A'nın sağ eli), dikeyde sağı; söz balonu öbür yanda
   const KT = KS < 0 ? 'sol' : 'sag';
   // Masada dinlenen kollar (sabit, kutu birimi; kol.js 'dayanma' eli)
@@ -814,34 +870,44 @@ export function kur(ctx) {
       const q = KALK[ad0];
       return { dirsek: [O[0] + s * q.d[0], O[1] + q.d[1]], bilek: [O[0] + s * q.b[0], O[1] + q.b[1]], org: { poz: 'acik', aci: s < 0 ? q.a : 180 - q.a, bs: -s, boy: 104, yay: 1, yuz: 'avuc' } };
     }
-    // Yanağa yaslanma (ekranın sağındaki kol, yandan görünen el: elYanak). Dirsek masada, omzun biraz dışında; ön kol
-    // dirsekten çene köşesine içe eğik uzanır; bilek çene köşesinin altında, el yüzün eğimiyle yanağa yaslanır (bilek hafif
-    // geriye bükülür). El yüzle birlikte döner (bilek gövde dönüşümüyle bulunur): iç çekişte baş ve el birlikte oynar.
-    // bilek yüz çerçevesinde (dönüşümden önce): çene köşesinin ~25 birim altı; böylece avuç çene köşesini alttan tutar,
-    // işaretin ucu gözün altına, başparmak çenenin altına gelir
-    const bilekY = donustur([200 + hwA * 0.87, ceneA + 29]);
-    if (ad0 === 'yanak') return { dirsek: [oA.sag[0] + 22, MB + 10], bilek: bilekY, yan: { c: 1, aci: -86 + A.egim, boy: 100 } };
+    // Yanağa yaslanma (ekranın sağındaki kol; s3-balkon KOLB.yanak gibi): gevşek yumruğun boğumları yanağa dayanır
+    // (YANAK: yüzün sağ kenarında, ağız hizasının biraz üstü), başparmak içte çene yanında. Dirsek masada, omzun biraz
+    // dışında; ön kol dirsekten yukarı kalkar. El yüzle birlikte döner (bilek gövde dönüşümüyle bulunur): iç çekişte baş ve
+    // yumruk birlikte oynar.
+    const bilekY = yumrukBilek(donustur(YANAK), YUM_ACI + A.egim, YUM_BOY);
+    if (ad0 === 'yanak') return { dirsek: [oA.sag[0] + 22, MB + 10], bilek: bilekY, yum: { c: 1, aci: YUM_ACI + A.egim, ku: 1, boy: YUM_BOY } };
     if (ad0 === 'yanak1') {
+      // yolun ortası: ön kol yarı kalkmış, el yarı kapalı, başparmak parmakların önünden geçiyor
       const b = [(DIN.sag.bilek[0] + bilekY[0]) / 2 + 26, (DIN.sag.bilek[1] + bilekY[1]) / 2 - 4], d = [oA.sag[0] + 22, MB + 8];
-      return { dirsek: d, bilek: b, yan: { c: 0.45, aci: Math.atan2(b[1] - d[1], b[0] - d[0]) / D2R + 8, boy: 98 } };
+      return { dirsek: d, bilek: b, yum: { c: 0.5, aci: Math.atan2(b[1] - d[1], b[0] - d[0]) / D2R + 6, ku: 0.86, boy: (DIN_EB + YUM_BOY) / 2 } };
     }
     return DIN[taraf];
   }
+  // Yumruk yanakta: el boyu (A'nın yüzüne oranı s3'teki D ile aynı: 116 / 67 ≈ 100 / 56), yön (dik yukarı, başla birlikte
+  // döner); dinlenen elin boyu kol.js'teki gibi ön kol boyundan (×0,72)
+  const YUM_BOY = 100, YUM_ACI = -98;
+  const DIN_EB = Math.hypot(DIN.sag.bilek[0] - DIN.sag.dirsek[0], DIN.sag.bilek[1] - DIN.sag.dirsek[1]) * 0.72;
+  const YANAK = [200 + hwA * 0.8, GOZ_Y + 4 + Ap.yuzBoy * 0.46];
+  // Yumruğun 'cene' noktası hedefe değsin diye bilek nerede olmalı (kol.js bilekBul)
+  function yumrukBilek(hedef, aci, boy) {
+    const X = YUM_YANAK[0] * boy, V = YUM_YANAK[1] * boy, cs = Math.cos(aci * D2R), sn = Math.sin(aci * D2R);
+    return [hedef[0] - (X * cs - V * sn), hedef[1] - (X * sn + V * cs)];
+  }
   const YAN = new Set(['yanak', 'yanak1']);
   // Adlı poz → sayısal durum. Masada dinlenen kolun organik karşılığı (yalnız ara karelerde çizilir): aynı yön, kısalmış avuç.
-  // yan: geçiş yanak pozuna (ya da ondan) ise el yandan görünen eldir (gevşek, avuç masaya dönük)
+  // yan: geçiş yanak pozuna (ya da ondan) ise el yumruk elidir; masada kol.js 'dayanma' ölçüleriyle gevşek (c 0) başlar
   function kolDurum(taraf, ad0, yan = false) {
     if (ad0 === 'dinlen') {
       const d = DIN[taraf];
-      if (yan) return { dirsek: d.dirsek, bilek: d.bilek, org: { tur: 'yan', c: 0.1, aci: d.elAci, boy: 96 } };
+      if (yan) return { dirsek: d.dirsek, bilek: d.bilek, org: { tur: 'yum', c: 0, aci: d.elAci, ku: d.kisalma, boy: DIN_EB } };
       return { dirsek: d.dirsek, bilek: d.bilek, org: { m: 0, aci: d.elAci, bs: taraf === 'sol' ? 1 : -1, boy: 100, en: 0.72, yay: 0.25, yuz: 'sirt' } };
     }
     const q = kolPoz(taraf, ad0), o = q.org;
-    if (q.yan) return { dirsek: q.dirsek, bilek: q.bilek, org: { tur: 'yan', ...q.yan } };
+    if (q.yum) return { dirsek: q.dirsek, bilek: q.bilek, org: { tur: 'yum', ...q.yum } };
     return { dirsek: q.dirsek, bilek: q.bilek, org: { m: o.poz === 'yanak' ? 1 : 0, aci: o.aci, bs: o.bs, boy: o.boy, en: o.en ?? 1, yay: o.yay ?? 1, yuz: o.yuz } };
   }
-  const orgAra = (p, q, t) => (p.tur === 'yan'
-    ? { tur: 'yan', c: ara(p.c, q.c, t), aci: p.aci + aciFark(p.aci, q.aci) * t, boy: ara(p.boy, q.boy, t) }
+  const orgAra = (p, q, t) => (p.tur === 'yum'
+    ? { tur: 'yum', c: ara(p.c, q.c, t), aci: p.aci + aciFark(p.aci, q.aci) * t, ku: ara(p.ku, q.ku, t), boy: ara(p.boy, q.boy, t) }
     : { m: ara(p.m, q.m, t), aci: p.aci + aciFark(p.aci, q.aci) * t, bs: ara(p.bs, q.bs, t), boy: ara(p.boy, q.boy, t), en: ara(p.en, q.en, t), yay: ara(p.yay, q.yay, t), yuz: t < 0.5 ? p.yuz : q.yuz });
   // A.kol[taraf] = [önceki poz, sonraki poz, t]: kol omuz çevresinde (gövdeyle birlikte) iki poz arasında yay çizer.
   // Masada dinlenen kol kol.js 'dayanma' eliyle çizilir; el masadan kalktığı ilk karede organik ele geçer.
@@ -855,7 +921,7 @@ export function kur(ctx) {
     const don = `translate(0 ${A.cok.toFixed(2)}) rotate(${A.egim.toFixed(3)} ${PIV[0]} ${PIV[1]})`;
     if (!A.kolVar) { aGovde.innerHTML = `${kes}<g clip-path="url(#s1-a-etek)"><g transform="${don}">${kisi}</g></g>`; aKol.innerHTML = ''; return; }
     const Gk = govdeKes(Ap, { id: 's1-a', kaynama: i, tohum: Ap.tohum });
-    aGovde.innerHTML = `${kes}<g clip-path="url(#s1-a-etek)"><g transform="${don}">${Gk.tanim}<g ${Gk.klip}>${kisi}</g>${Gk.kontur}</g></g>`;
+    aGovde.innerHTML = `${kes}<g clip-path="url(#s1-a-etek)"><g transform="${don}">${Gk.tanim}<g ${Gk.klip}>${kisi}</g>${Gk.kontur}${yanakEz(i)}</g></g>`;
     const ten = MONO.ten[Ap.ten];
     const ortak = { giysi: MONO.giysi[Ap.giysi], ten, kaynama: i, manset: 'ribana', kalinlik: AKAL };
     let s = '';
@@ -866,17 +932,19 @@ export function kur(ctx) {
       const P0 = kolDurum(taraf, a, yan), P1 = a === b ? P0 : kolDurum(taraf, b, yan);
       const q = a === b || t <= 0 ? P0 : { ...kolAra(omuz, P0.dirsek, P0.bilek, P1.dirsek, P1.bilek, t), org: orgAra(P0.org, P1.org, t) };
       // el kolun altında: yenin ağzı bileği örter
-      if (q.org.tur === 'yan') s += elYanak({ ...q.org, bilek: q.bilek, ten, kaynama: i, tohum: tohum + 5 });
+      if (q.org.tur === 'yum') s += elYumruk({ ...q.org, bilek: q.bilek, ten, kaynama: i, tohum: tohum + 5 });
       else s += elOrganik({ ...q.org, bilek: q.bilek, ten, kaynama: i, tohum: tohum + 5 });
       s += kolSVG({ ...ortak, omuz, dirsek: q.dirsek, bilek: q.bilek, el: 'acik', elBoy: 0.01, taraf, tohum });
     }
-    if (A.ezik > 0.02) {
-      // Ezilen yanak (el yanağa değince belirir, baş ele çöktükçe derinleşir): yanak göze doğru kalkar, alt göz kapağının
-      // altında yukarı kıvrık kısa çizgi (göz hafif kısılır)
-      const e = A.ezik, ar = araclar(29, i, 0.45);
-      s += ar.cz([donustur([200 + hwA * 0.24, GOZ_Y + 15 - 1 * e]), donustur([200 + hwA * 0.39, GOZ_Y + 11 - 3 * e]), donustur([200 + hwA * 0.55, GOZ_Y + 13 - 2 * e])], 2.2 + 0.8 * e);
-    }
     aKol.innerHTML = s;
+  }
+  // Ezilen yanak (s3-balkon yanakEz gibi; gövde svg'sinde, yumruk kol katmanında üstte): yumruk değince yumruğun üstünde,
+  // yanakta yukarı itilmiş kısa kavis belirir, baş yumruğa çöktükçe derinleşir (ölçü A'nın yüzüne oranlı: 56 / 67)
+  function yanakEz(i) {
+    const e = A.ezik;
+    if (e <= 0.02) return '';
+    const [tx, ty] = YANAK, ar = araclar(29, i, 0.45);
+    return ar.cz([[tx - 33, ty - 4 - e], [tx - 21, ty - 7 - 7 * e], [tx - 7.5, ty - 6 - 7 * e]], 2.4 * Math.min(1, e * 2.5));
   }
   A.kol = { sol: ['dinlen', 'dinlen', 0], sag: ['dinlen', 'dinlen', 0] };
   A.kolVar = false;
