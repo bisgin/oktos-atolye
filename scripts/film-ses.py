@@ -11,10 +11,11 @@ Amaç
     kadans, final = tam kadans. Ana tema dizi basamaklarıyla yazılıdır, her sahnede o sahnenin modunda dönüşür. Tekrar
     denetimi: akor ya da desen art arda en çok 2 ölçü (bilinçli ostinato hariç); cizelge ton_plani ve tekrar_denetimi.
   - v12a orkestra: yumuşak davullar, pedler, tokmaklı/telli çalgılar, kontrbas, flüt trili sahne düzenine göre (orkestra_kur).
-    Her çalgı bir ses kaynağıdır (kaynak_ciz): 'sentez' (numpy) ya da 'ornek' (OrnekCalici, kaynak/ses-ornek/harita.json);
+    Her çalgı bir ses kaynağıdır (kaynak_ciz): 'sentez' (numpy) ya da 'ornek' (scripts/ornek-calici.py, CC0 kütüphane);
     --kaynak ornek, --kaynak-calgi davul=ornek. Örneği olmayan çalgı sentezle çalar, cizelge "orkestra.kaynak"ta yazar.
-  - Tını: şık, tok, keskin; kırıcı, yorucu ve distorsiyonlu değil. Hazır müzik ya da ses örneği yok (indirme yok,
-    lisans derdi yok): piyano ve nesne sesleri sayısal olarak üretilir.
+  - Tını: şık, tok, keskin; kırıcı, yorucu ve distorsiyonlu değil. A yolu (varsayılan, sentez): hazır müzik ya da ses örneği
+    yok, her şey sayısal üretilir. B yolu (--kaynak ornek --kutuphane KÖK): CC0 örnek kütüphanesi (yerel, depoya girmez);
+    örneği olan çalgı örnekle, olmayan sentezle çalar; örneklerin düzeyi sentezdekine eşitlenir (yalnız tını değişir).
 
 Girdi
   - .impeccable/ses/isaretler.json : sayfanın ses işaretleri, toplam kare, sahne aralıkları (FİLM kareleri), kaymalar ve
@@ -1276,6 +1277,9 @@ def partisyon(isaretler, final_bilgi):
             pedal.append((pa, pb))
 
     N.sort(key=lambda p: (p['kare'], p['m']))
+    for p in N:
+        p['capada'] = p['kare'] in CAPA          # B: işaret karesindeki nota bir katman parlak (düzey aynı)
+        p['cekic'] = p['capada'] and p['parca'] in ('isaret', 'kesme')   # B: işaret notasına çekiç vurgusu (akorlara değil)
     # Akorlar elle çalınmış gibi alttan üste hafifçe açılır (bas tam karede; nota başına 6 ms, doruğa 9 ms).
     # İşaret ve kesme notaları ve çapa karesindeki akorlar kaydırılmaz: kareye tam oturur (doruğu işaret notası D5 taşır).
     gruplar_k = {}
@@ -1511,17 +1515,23 @@ def nota_ciz(m, v, birak, uzunluk_max, rng, P, hizli=False, pan_ek=0.0):
 
 
 def cal(notalar, pedal, susturma, secici, rng, hizli=False, P=PIYANO, calgi='piyano'):
-    """Piyano notalarını çalgının ses kaynağıyla (sentez: nota_ciz; örnek: OrnekCalici) çalar; pedal/damper bırakması aynı."""
+    """Piyano notalarını çalgının ses kaynağıyla (sentez: nota_ciz; örnek: ornek-calici) çalar; pedal/damper bırakması aynı."""
     N = kare_ornek(TOPLAM_KARE)
     kuru = np.zeros((2, N))
+    ayni = {}                                     # aynı tuşun (telin) sonraki vuruşu: B'de önceki titreşim orada kesilir
+    for p in sorted(notalar, key=lambda q: q['kare']):
+        ayni.setdefault(p['m'], []).append(p['kare'])
     for p in notalar:
         if not secici(p):
             continue
         bas = kare_ornek(p['kare']) + int(round(p.get('ofset_ms', 0.0) * SR / 1000))
+        sonraki = next((k for k in ayni[p['m']] if k > p['kare']), None)
         bk = birakma_karesi(p, pedal, susturma)
         p['birakma_kare'] = bk
         birak = kare_ornek(bk) - bas
-        y = kaynak_ciz(calgi, dict(m=p['m'], hiz=p['hiz'], birak=birak, uzunluk_max=N - bas, P=P), rng, hizli)
+        y = kaynak_ciz(calgi, dict(m=p['m'], hiz=p['hiz'], birak=birak, uzunluk_max=N - bas, P=P, kare=p['kare'],
+                                   capada=p.get('capada', False), cekic=p.get('cekic', False),
+                                   ayni_tel=None if sonraki is None else kare_ornek(sonraki) - bas), rng, hizli)
         L = min(y.shape[1], N - bas)
         kuru[:, bas:bas + L] += y[:, :L]
     return kuru
@@ -1765,9 +1775,17 @@ def keman_pizz(m, v, pan, rng):
 # Aynı nota çizelgesi (olaylar: kare, calgi, m, hiz, sure, pan, ...) iki yolla da çalınır. Seçim: --kaynak, --kaynak-calgi.
 # Örnek yoksa ya da okunamazsa çalgı sentezle çalar ve bu, cizelge "kaynak" raporuna yazılır.
 # =====================================================================================================
-ORNEK_KOK = KOK / 'kaynak' / 'ses-ornek'      # B yolu: CC0 örnekler (depoya girmez); harita.json: çalgı → örnek listesi
 KAYNAK_SECIMI = {'*': 'sentez'}               # çalgı adı ya da öneki ('davul', 'tokmak.kalimba') → 'sentez' | 'ornek'
-KAYNAK_RAPOR = {}                             # çalgı → kullanılan kaynak ve nedeni (cizelge)
+KAYNAK_RAPOR = {}                             # çalgı → istenen kaynak, kaç olay örnekle / sentezle çaldı, nedenler (cizelge)
+ORNEK_MODUL = Path(__file__).resolve().parent / 'ornek-calici.py'   # B yolu: örnek çalıcı (CC0 kütüphane, yerel kök)
+ORNEK = None          # ornek-calici FilmKaynagi; main kurar (--kutuphane ya da OKTOS_SES_KUTUPHANE)
+ORNEK_MOD = None      # ornek-calici modülü
+# ornek-calici.FILM_ESLEME'de olmayan film çalgıları → (örnek çalgı, artikülasyon)
+EK_ESLEME = {'keman.flautando': ('keman_grubu', 'sus'), 'keman.sordino': ('keman_grubu', 'sus'), 'keman.karsi': ('keman_grubu', 'sus'),
+             'keman.pizz.doku': ('keman_grubu', 'pizz')}
+ESLEM_DB = {}         # çalgı → örneğin düzeyi sentezdekine eşitlenirken uygulanan kazanç (dB): A/B'de yalnız tını değişir
+ORNEK_OKTAV = {}      # çalgı → örnek aralığı dışında kalıp bir oktav kaydırılarak çalınan olay sayısı
+ORNEK_HIZ = {'piyano.tema': 0.85}          # örnek katmanı seçimi: keçe temada daha yumuşak katman
 
 
 def kaynak_turu(calgi):
@@ -1780,120 +1798,291 @@ def kaynak_turu(calgi):
     return KAYNAK_SECIMI.get('*', 'sentez')
 
 
-def _wav_oku_genel(yol):
-    """PCM 16/24/32 bit ya da 32 bit kayan noktalı WAV → (kanal, örnek) float, örnekleme hızı."""
-    veri = Path(yol).read_bytes()
-    if veri[:4] != b'RIFF' or veri[8:12] != b'WAVE':
-        raise ValueError('WAV değil')
-    i, bicim, kanal, sr, bit, ham = 12, None, None, None, None, None
-    while i + 8 <= len(veri):
-        ad, boy = veri[i:i + 4], int.from_bytes(veri[i + 4:i + 8], 'little')
-        govde = veri[i + 8:i + 8 + boy]
-        if ad == b'fmt ':
-            bicim = int.from_bytes(govde[0:2], 'little')
-            kanal = int.from_bytes(govde[2:4], 'little')
-            sr = int.from_bytes(govde[4:8], 'little')
-            bit = int.from_bytes(govde[14:16], 'little')
-            if bicim == 0xFFFE and len(govde) >= 26:
-                bicim = int.from_bytes(govde[24:26], 'little')
-        elif ad == b'data':
-            ham = govde
-        i += 8 + boy + (boy & 1)
-    if ham is None or kanal is None:
-        raise ValueError('WAV başlığı eksik')
-    if bicim == 3 and bit == 32:
-        x = np.frombuffer(ham, '<f4').astype(float)
-    elif bicim == 1 and bit == 16:
-        x = np.frombuffer(ham, '<i2').astype(float) / 32768.0
-    elif bicim == 1 and bit == 32:
-        x = np.frombuffer(ham, '<i4').astype(float) / 2147483648.0
-    elif bicim == 1 and bit == 24:
-        b = np.frombuffer(ham[:len(ham) // 3 * 3], np.uint8).reshape(-1, 3)
-        x = (b[:, 0].astype(np.int32) | (b[:, 1].astype(np.int32) << 8) | (b[:, 2].astype(np.int32) << 16))
-        x = np.where(x >= 1 << 23, x - (1 << 24), x).astype(float) / 8388608.0
-    else:
-        raise ValueError(f'desteklenmeyen WAV biçimi ({bicim}, {bit} bit)')
-    x = x[:len(x) // kanal * kanal].reshape(-1, kanal).T
-    if kanal == 1:
-        x = np.vstack([x[0], x[0]])
-    return x[:2], sr
+def ornek_kur(kutuphane):
+    """scripts/ornek-calici.py'yi yükler (dosya adında tire: importlib) ve köprüsünü kurar. Kütüphane kökü argüman ya da
+    OKTOS_SES_KUTUPHANE (repoya yerel yol yazılmaz)."""
+    global ORNEK, ORNEK_MOD
+    import importlib.util
+    spec = importlib.util.spec_from_file_location('ornek_calici', ORNEK_MODUL)
+    mod = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(mod)
+    ORNEK_MOD = mod
+    ORNEK = mod.FilmKaynagi(kutuphane or None, sr=SR, fps=FPS)
+    return ORNEK
 
 
-class OrnekCalici:
-    """Örnek çalıcı (B yolu). ORNEK_KOK/harita.json:
-        {"tokmak.kalimba": [{"dosya": "kalimba/C5.wav", "nota": "C5", "hiz": [0.0, 1.0], "tek_atis": false}, ...], ...}
-    Olayın perdesine en yakın, hızı katmanın aralığına düşen örneği seçer; perdeyi yeniden örnekleyerek kaydırır
-    (en çok ±7 yarım ton), sürekli çalgıda olay süresi bitince 120 ms bırakma zarfı uygular; vurmalı (tek_atis) sonuna dek
-    çalar. Çıktı sentezle aynı biçimdedir: (2, L), t=0'dan; düzey çalgı kazancı ve hızla verilir."""
+def _ornek_var(calgi):
+    if ORNEK is None:
+        return False
+    if calgi in EK_ESLEME:
+        try:
+            return bool(ORNEK.calgi(EK_ESLEME[calgi][0]).gruplar)
+        except (OSError, ValueError):
+            return False
+    try:
+        return bool(ORNEK.var_mi(calgi))
+    except (OSError, ValueError):
+        return False
 
-    def __init__(self, kok):
-        self.kok, self.harita, self.onbellek = Path(kok), {}, {}
-        yol = self.kok / 'harita.json'
-        if yol.exists():
+
+def _ornek_ciz(calgi, olay):
+    if calgi in EK_ESLEME:
+        ad, artik = EK_ESLEME[calgi]
+        sure = olay['birak'] / SR if olay.get('birak') is not None else olay.get('sure', 24) / FPS
+        return ORNEK.calgi(ad).cal(olay['m'], float(olay.get('hiz', 0.5)), sure, artik=artik, rr_tohum=olay.get('kare'),
+                                   sustur=bool(olay.get('sustur')))
+    return ORNEK.ciz(calgi, olay)
+
+
+def _ornek_ciz_oktavli(calgi, olay):
+    """Örnek aralığı dışındaki nota bir (gerekirse iki) oktav kaydırılarak çalınır; sayısı raporlanır."""
+    try:
+        return _ornek_ciz(calgi, olay)
+    except ValueError as e:
+        m = olay.get('m')
+        if m is None or 'aralık dışı' not in str(e):
+            raise
+        for d in (-12, 12, -24, 24):
             try:
-                self.harita = json.loads(yol.read_text(encoding='utf-8'))
-            except (OSError, ValueError):
-                self.harita = {}
-
-    def var_mi(self, calgi):
-        return any((self.kok / k['dosya']).exists() for k in self.harita.get(calgi, []))
-
-    def _oku(self, dosya):
-        if dosya not in self.onbellek:
-            x, sr = _wav_oku_genel(self.kok / dosya)
-            if sr != SR:                          # örnekleme hızı farkı: doğrusal ara değer (yeterli; örnekler 44,1/48 kHz)
-                n = int(round(x.shape[1] * SR / sr))
-                t0, t1 = np.arange(x.shape[1]) / sr, np.arange(n) / SR
-                x = np.vstack([np.interp(t1, t0, x[c]) for c in range(2)])
-            x /= max(1e-9, float(np.max(np.abs(x))))
-            self.onbellek[dosya] = x
-        return self.onbellek[dosya]
-
-    def ciz(self, calgi, olay):
-        m, v = olay.get('m'), float(olay.get('hiz', 0.5))
-        aday = [k for k in self.harita.get(calgi, []) if (self.kok / k['dosya']).exists()]
-        aday = [k for k in aday if k.get('hiz', [0, 1])[0] <= v <= k.get('hiz', [0, 1])[1]] or aday
-        if m is not None:
-            aday = sorted(aday, key=lambda k: abs(midi(k.get('nota', 'C4')) - m) if k.get('nota') else 0)
-        k = aday[0]
-        x = self._oku(k['dosya'])
-        if m is not None and k.get('nota'):
-            oran = 2 ** (float(np.clip(m - midi(k['nota']), -7, 7)) / 12)
-            if abs(oran - 1) > 1e-6:
-                n = int(x.shape[1] / oran)
-                t1 = np.arange(n) * oran
-                x = np.vstack([np.interp(t1, np.arange(x.shape[1]), x[c]) for c in range(2)])
-        if not k.get('tek_atis', False):
-            birak = olay.get('birak') if olay.get('birak') is not None else kare_ornek(olay.get('sure', 24))
-            R = int(0.12 * SR)
-            L = min(x.shape[1], int(birak) + R)
-            x = x[:, :L].copy()
-            if L > birak:
-                x[:, int(birak):L] *= np.linspace(1, 0, L - int(birak))
-        return x * _hiz_g(v)
+                y = _ornek_ciz(calgi, dict(olay, m=m + d))
+            except ValueError:
+                continue
+            ORNEK_OKTAV[calgi] = ORNEK_OKTAV.get(calgi, 0) + 1
+            return y
+        raise
 
 
-ORNEK = None          # OrnekCalici, main kurar (--ornek-kok)
+def _kece_sonrasi(y):
+    """Örnek piyanoya keçe karakteri: hafif alçak geçiren (2,6 kHz, 6 dB/okt + 6 kHz üstü 24 dB/okt) ve 6 ms yumuşak vuruş."""
+    L = y.shape[1]
+    f = np.fft.rfftfreq(L, 1 / SR)
+    H = 1 / np.sqrt(1 + (f / 2600.0) ** 2) / np.sqrt(1 + (f / 6000.0) ** 8)
+    y = np.vstack([np.fft.irfft(np.fft.rfft(y[c]) * H, L) for c in range(2)])
+    a = min(L, int(0.006 * SR))
+    y[:, :a] *= 0.5 - 0.5 * np.cos(np.linspace(0, np.pi, a))
+    return y
+
+
+def _lp_sonrasi(fc, derece):
+    """Örnek sonrası yumuşak alçak geçiren (derece 4: 12 dB/okt, 8: 24 dB/okt)."""
+    def uygula(y):
+        L = y.shape[1]
+        f = np.fft.rfftfreq(L, 1 / SR)
+        H = 1 / np.sqrt(1 + (f / fc) ** derece)
+        return np.vstack([np.fft.irfft(np.fft.rfft(y[c]) * H, L) for c in range(2)])
+    return uygula
+
+
+# Örnek sonrası tını: tema keçe; keman grubu sordino gibi koyu (sentezdeki flautando/sordino karakteri, 2–5 kHz'i yormasın);
+# parlak perküsyon (tef, alkış, zil) hafif yumuşatılır
+TINI_SONRASI = {'piyano.tema': _kece_sonrasi,
+                'keman.flautando': _lp_sonrasi(1500.0, 8), 'keman.sordino': _lp_sonrasi(1500.0, 8), 'keman.karsi': _lp_sonrasi(1500.0, 8),
+                'ped.yayli': _lp_sonrasi(2200.0, 8), 'keman.pizz': _lp_sonrasi(2000.0, 4), 'keman.pizz.doku': _lp_sonrasi(2000.0, 4),
+                'davul.tef': _lp_sonrasi(4000.0, 4), 'davul.alkis': _lp_sonrasi(4000.0, 4), 'davul.zil': _lp_sonrasi(5000.0, 4)}
+def _atak_rampasi(sn):
+    def uygula(y):
+        a = min(y.shape[1], int(sn * SR))
+        y = y.copy()
+        y[:, :a] *= 0.5 - 0.5 * np.cos(np.linspace(0, np.pi, a))
+        return y
+    return uygula
+
+
+def _zincir(*fl):
+    def uygula(y):
+        for f in fl:
+            y = f(y)
+        return y
+    return uygula
+
+
+def _zarf_duzle(y, kisa=0.008, uzun=0.2):
+    """Uzun yaylı örneklerde vibrato/yay dalgalanmasını (genlik kıpırtısı) yumuşatır: kısa zarf uzun zarfa çekilir
+    (kazanç 0,5–2). Tını aynı kalır; dalgalanma yoğun dokuda sahte "başlangıç" ve yorgunluk yapmaz."""
+    e2 = y.mean(axis=0) ** 2 + 1e-12
+    ek = np.sqrt(kutu(e2, max(1, int(kisa * SR))))
+    eu = np.sqrt(kutu(e2, max(1, int(uzun * SR))))
+    return y * np.clip(eu / ek, 0.33, 3.0)
+
+
+for _c in ('keman.flautando', 'keman.sordino', 'keman.karsi'):
+    TINI_SONRASI[_c] = _zincir(TINI_SONRASI[_c], _zarf_duzle)
+TINI_SONRASI['ped.yayli'] = _zincir(_lp_sonrasi(2200.0, 8), _zarf_duzle, _atak_rampasi(0.6))  # yaylı ped: sentezdeki gibi yavaş atak
+CEKIC_VURGUSU_DB = -10.0    # B: işaret notasındaki örnek piyanoya çekiç tıkırtısı (sentez piyanonun çekiç gürültüsü), notanın
+                            # ilk 50 ms tepesine göre: gerçek kayıtların yoğun dokusunda başlangıç net kalsın
+
+
+def _cekic_vurgusu(y, m, v):
+    """Kısa bant geçiren gürültü (merkez 5·f0, 0,9–3,2 kHz; 2,5–6,5 ms sönüm): nota_ciz'in çekiç bileşeni."""
+    rng = np.random.default_rng(int(m) * 131 + int(v * 1000))
+    Lh = min(y.shape[1], int(0.04 * SR))
+    th = np.arange(Lh) / SR
+    f0 = 440.0 * 2 ** ((m - 69) / 12)
+    fh = min(3200.0, max(900.0, f0 * 5))
+    X = np.fft.rfft(rng.standard_normal(Lh))
+    fr = np.maximum(np.fft.rfftfreq(Lh, 1 / SR), 1)
+    gur = np.fft.irfft(X * np.exp(-0.5 * (np.log2(fr / fh) / 0.9) ** 2), Lh)
+    gur /= np.max(np.abs(gur)) + 1e-12
+    gur *= np.exp(-th / (0.0025 + 0.004 * (1 - v))) * (1 - np.exp(-th / 0.0004))
+    tepe = float(np.max(np.abs(y[:, :int(0.05 * SR)]))) if y.shape[1] else 0.0
+    y = y.copy()
+    y[:, :Lh] += gur * tepe * 10 ** (CEKIC_VURGUSU_DB / 20)
+    return y
+
+
+PIYANO_ORNEK_DAMPER_S = 0.07   # örnek piyanoda tuş bırakılınca (birak) sönüm: sentezdeki damper gibi kısa (örneğin kendi 0,3 s'si yerine)
+KEMAN_ORNEK_EK_DB = -2.0   # örnek keman grubu 1 kHz bandında sentez flautandodan belirgin: doku içinde biraz geride (yalnız B)
+KEMAN_ORNEK_ATAK = {'keman.flautando': 0.24, 'keman.karsi': 0.24, 'keman.sordino': 0.11}   # sentez tekniğinin atak süresi (s)
+ORNEK_CAPA_TAVAN = 0.7     # ... ama en çok bu hıza (yüksek katman tepesi sınırlayıcıyı çalıştırmasın)
+ORNEK_CAPA_HIZ = 1.4       # işaret karesindeki piyano notası örnekte bir katman parlak: başlangıç net duyulsun (yalnız B)
+HIZALAMA_YOK = {'keman.flautando', 'keman.sordino', 'keman.karsi', 'ped.yayli', 'nefesli.flut', 'davul.zil', 'ped.analog'}
+ORNEK_GECIKME = {}    # çalgı → örneklerin atak gecikmesi (ms; hizalanan), cizelge'de ortanca
+
+
+def _atak_gecikmesi(y, kesim_hz=1000.0, ust_ms=120.0):
+    """Örneğin "duyulan" başlangıcı: işaret doğrulamasının ölçeriyle aynı (kesim_hz üstü zarf, 3 ms RMS; sonraki 10 ms /
+    önceki 12–2 ms basamağı; alçak bantta 8 ms, 12 / 20–4 ms). Örnek bu kadar erken başlatılır ki ölçülen başlangıç olay
+    karesine otursun (sentezle aynı ölçek: BASLANGIC_SAPMA_MS). En çok 60 ms."""
+    n = min(y.shape[1], int(ust_ms / 1000 * SR))
+    if n < 64:
+        return 0
+    on = int(0.03 * SR)
+    x = np.concatenate([np.zeros(on), y[:, :n].mean(axis=0)])
+    f = np.maximum(np.fft.rfftfreq(len(x), 1 / SR), 1e-3)
+    H = (f / kesim_hz) ** 2 / np.sqrt(1 + (f / kesim_hz) ** 4)
+    yuk = np.fft.irfft(np.fft.rfft(x) * H, len(x))
+    w_ms, ileri, geri, ara = (3, 10, 12, 2) if kesim_hz >= 1000 else (8, 12, 20, 4)
+    h, w = SR // 1000, w_ms * SR // 1000
+    c2 = np.concatenate([[0.0], np.cumsum(yuk ** 2)])
+    son = np.arange(w, len(yuk), h)
+    p = (c2[son] - c2[son - w]) / w + 1e-18
+    cp = np.concatenate([[0.0], np.cumsum(p)])
+    i_ = np.arange(len(p))
+    a0, a1 = np.clip(i_ + 1, 0, len(p)), np.clip(i_ + 1 + ileri, 0, len(p))
+    b0, b1 = np.clip(i_ - geri, 0, len(p)), np.clip(i_ - ara, 0, len(p))
+    sonra = (cp[a1] - cp[a0]) / np.maximum(a1 - a0, 1)
+    once = (cp[b1] - cp[b0]) / np.maximum(b1 - b0, 1)
+    basamak = 10 * np.log10(np.maximum(sonra, 1e-18) / np.maximum(once, 1e-18))
+    zaman_ms = son / SR * 1000 - on / SR * 1000 - BASLANGIC_SAPMA_MS[w_ms]
+    gec = (zaman_ms > -5) & (i_ >= geri)
+    i = int(np.argmax(np.where(gec, basamak, -1e9)))
+    return int(np.clip(round(zaman_ms[i] / 1000 * SR), 0, int(0.06 * SR)))
+
+
+def _denge(y, pan):
+    """Stereo örneğe pan: görüntüyü bozmadan denge (tekleştirmeden)."""
+    if abs(pan) < 1e-6:
+        return y
+    p = float(np.clip(pan, -1, 1))
+    return np.vstack([y[0] * min(1.0, 1 - p), y[1] * min(1.0, 1 + p)])
+
+
+def _rapor(calgi, kullanilan, neden=None):
+    r = KAYNAK_RAPOR.setdefault(calgi, dict(istenen=kaynak_turu(calgi), ornek=0, sentez=0, nedenler=[]))
+    r[kullanilan] += 1
+    if neden and neden not in r['nedenler'] and len(r['nedenler']) < 3:
+        r['nedenler'].append(neden)
+
+
+def kaynak_ornekle(calgi, olay):
+    """Olayı örnekle çizer (eşleme kazancı ve çalgı kazancı UYGULANMAMIŞ, pan uygulanmış); olmazsa ValueError/OSError."""
+    v0 = float(olay.get('hiz', 0.5)) * ORNEK_HIZ.get(calgi, 1.0)
+    if olay.get('capada') and calgi.startswith('piyano') and v0 < ORNEK_CAPA_TAVAN:
+        v0 = min(ORNEK_CAPA_TAVAN, v0 * ORNEK_CAPA_HIZ)      # işaret notası bir katman parlak, ama tavanlı (sınırlayıcı çalışmasın)
+    o2 = dict(olay, hiz=min(1.0, v0)) if abs(v0 - float(olay.get('hiz', 0.5))) > 1e-9 else olay
+    y = np.asarray(_ornek_ciz_oktavli(calgi, o2), dtype=float)
+    if calgi in TINI_SONRASI:
+        y = TINI_SONRASI[calgi](y)
+    if calgi.startswith('piyano') and olay.get('m') is not None and y.shape[1]:
+        # Dinamik sentezle aynı: notanın tepesi planın hızına göre (PIYANO dinamik_db eğrisi); katman (tını) seçilen hızdan
+        # gelir. Böylece A ile B'de yalnız tını değişir, dinamik ve denge (sınırlayıcı, doruk) aynı kalır.
+        m_ = olay['m']
+        hedef = 10 ** ((PIYANO['dinamik_db'] * (float(olay.get('hiz', 0.5)) - 1) - 0.18 * max(0, m_ - 72)) / 20)
+        tepe = float(np.max(np.abs(y[:, :int(0.1 * SR)])))
+        if tepe > 0:
+            y = y * (hedef / tepe)
+    if calgi.startswith('piyano') and olay.get('cekic') and olay.get('m') is not None:
+        y = _cekic_vurgusu(y, olay['m'], float(o2.get('hiz', 0.5)))
+    if calgi.startswith('piyano') and olay.get('birak') is not None:
+        b, tau = int(olay['birak']), PIYANO_ORNEK_DAMPER_S
+        if olay.get('ayni_tel') is not None and 0 < int(olay['ayni_tel']) < b:
+            b, tau = int(olay['ayni_tel']), 0.02           # aynı tuş yeniden vurulur: önceki titreşim kesilir (aynı tel)
+        if 0 < b < y.shape[1]:
+            y = y.copy()
+            y[:, b:] *= np.exp(-np.arange(y.shape[1] - b) / (tau * SR))
+    if calgi not in HIZALAMA_YOK:
+        g = _atak_gecikmesi(y, 300.0 if calgi in ALCAK_DAVUL or calgi == 'bas.kontrbas' else 1000.0)
+        ORNEK_GECIKME.setdefault(calgi, []).append(round(g * 1000 / SR, 1))
+        if g:
+            y = y[:, g:].copy()
+            f = min(y.shape[1], int(0.0005 * SR))
+            y[:, :f] *= np.linspace(0, 1, f)
+    return _denge(y, olay.get('pan', 0.0))
+
+
+def kaynak_sentezle(calgi, olay, rng, hizli=False):
+    y = SENTEZ[calgi](olay, rng, hizli)
+    return _panla(y, olay.get('pan', 0.0)) if y.ndim == 1 else y
 
 
 def kaynak_ciz(calgi, olay, rng, hizli=False):
-    """Bir olayı çalgının seçili kaynağıyla çizer; dönüş (2, L), t=0'dan, pan uygulanmış."""
-    istenen = kaynak_turu(calgi)
-    if istenen == 'ornek' and ORNEK is not None and ORNEK.var_mi(calgi):
-        try:
-            y = ORNEK.ciz(calgi, olay)
-            KAYNAK_RAPOR[calgi] = dict(istenen='ornek', kullanilan='ornek')
-            return _panla(y, olay.get('pan', 0.0)) * 10 ** (CALGI_DB.get(calgi, 0.0) / 20)
-        except (OSError, ValueError, KeyError) as e:
-            KAYNAK_RAPOR[calgi] = dict(istenen='ornek', kullanilan='sentez', neden=f'örnek okunamadı: {e}')
-    elif istenen == 'ornek':
-        KAYNAK_RAPOR[calgi] = dict(istenen='ornek', kullanilan='sentez', neden='örnek yok (harita.json ya da dosya)')
+    """Bir olayı çalgının seçili kaynağıyla çizer; dönüş (2, L), t=0'dan, pan ve çalgı kazancı uygulanmış. 'ornek' istenip
+    örneği yoksa (ya da aralık dışıysa, okunamazsa) sentezle çalar; hepsi KAYNAK_RAPOR'a sayılır."""
+    g = 10 ** (CALGI_DB.get(calgi, 0.0) / 20)
+    if kaynak_turu(calgi) == 'ornek':
+        if _ornek_var(calgi):
+            try:
+                y = kaynak_ornekle(calgi, olay)
+                _rapor(calgi, 'ornek')
+                return y * g * 10 ** (ESLEM_DB.get(calgi, 0.0) / 20)
+            except (OSError, ValueError, KeyError) as e:
+                _rapor(calgi, 'sentez', f'örnek çalınamadı: {str(e)[:120]}')
+        else:
+            _rapor(calgi, 'sentez', 'örneği yok (sentezde kalır)')
     else:
-        KAYNAK_RAPOR.setdefault(calgi, dict(istenen='sentez', kullanilan='sentez'))
-    y = SENTEZ[calgi](olay, rng, hizli)
-    if y.ndim == 1:
-        y = _panla(y, olay.get('pan', 0.0))
-    return y * 10 ** (CALGI_DB.get(calgi, 0.0) / 20)
+        _rapor(calgi, 'sentez')
+    return kaynak_sentezle(calgi, olay, rng, hizli) * g
+
+
+def _bant_payi(y, f0=2000.0, f1=5000.0):
+    """(2–5 kHz enerjisi, toplam enerji): tek olayın tayfından (pay raporu için)."""
+    x = y.mean(axis=0) if y.ndim == 2 else y
+    X = np.abs(np.fft.rfft(x)) ** 2
+    f = np.fft.rfftfreq(len(x), 1 / SR)
+    return float(X[(f >= f0) & (f < f1)].sum()), float(X.sum())
+
+
+ORNEK_TINI = {}       # çalgı → örnek ve sentez 2–5 kHz payı (dB), eşleme kazancı, olay sayısı (cizelge)
+
+
+def eslem_hesapla(isler, hizli=False, ciz_ornek=None, ciz_sentez=None):
+    """Örnekle çalınacak çalgıların düzeyini sentezdekine eşitler (enerji, çalgı başına tek kazanç: örneklerin olaylar arası
+    dinamiği korunur). isler: [(calgi, olay)]. ciz_*: (calgi, olay, rng) → (2, L) (cümleli keman için ayrı çizici).
+    Aynı zamanda 2–5 kHz payını (örnek ve sentez) ORNEK_TINI'ye yazar."""
+    rng = np.random.default_rng(TOHUM + 77)
+    ciz_ornek = ciz_ornek or (lambda c, o: kaynak_ornekle(c, o))
+    ciz_sentez = ciz_sentez or (lambda c, o, r: kaynak_sentezle(c, o, r, hizli))
+    top = {}
+    for calgi, olay in isler:
+        if kaynak_turu(calgi) != 'ornek' or not _ornek_var(calgi):
+            continue
+        try:
+            yo = ciz_ornek(calgi, olay)
+        except (OSError, ValueError, KeyError):
+            continue
+        ys = ciz_sentez(calgi, olay, rng)
+        t = top.setdefault(calgi, [0.0, 0.0, 0.0, 0.0, 0])
+        b, a = _bant_payi(yo)
+        t[0] += a; t[2] += b
+        b, a = _bant_payi(ys)
+        t[1] += a; t[3] += b
+        t[4] += 1
+    for calgi, (eo, es, bo, bs, n) in top.items():
+        if eo > 0 and es > 0:
+            ESLEM_DB[calgi] = float(np.clip(10 * math.log10(es / eo), -30.0, 30.0))
+            ORNEK_TINI[calgi] = dict(olay=n, eslem_db=round(ESLEM_DB[calgi], 1),
+                                     ornek_2_5k_db=round(10 * math.log10(bo / eo + 1e-20), 1),
+                                     sentez_2_5k_db=round(10 * math.log10(bs / es + 1e-20), 1))
 
 
 def _panla(y, pan):
@@ -2266,6 +2455,7 @@ CALGI_DB = {'davul.kick': -4.0, 'davul.cerceve': -4.0, 'davul.tom': -4.0, 'davul
             'tel.arp': -8.0, 'ped.analog': -4.0, 'ped.yayli': -5.0, 'nefesli.flut': -15.0, 'keman.pizz': -6.0}
 ALCAK_DAVUL = {'davul.kick', 'davul.cerceve', 'davul.tom', 'davul.timpani'}    # enerjisi 500 Hz altında
 YAVAS_ATAK = {'ped.analog', 'ped.yayli', 'davul.zil', 'davul.supurme', 'nefesli.flut'}   # başlangıç doğrulamasına girmez
+EQ_ORNEK_FARK = dict(alt_raf_db=-1.0, parlak_db=2.5, parlak_f=1800.0, parlak_okt=1.6)   # B yolu: örnek piyano daha koyu/dolgun
 DAVUL_EQ = dict(EQ, sert_db=-6.0, sert_f=3500.0, sert_q=0.7, lp=7000.0)   # davul stem'i: 2–5 kHz'i yormasın
 DAVUL_HEDEF_DB = {'s1-kafe': -20.0, 's2-atolye': -21.0, 's4-frp': -19.0, 's4b-hizli': -17.0, 's5-kalabalik': -18.0, 's6-final': -17.0}
 FON_HEDEF_DB = {'s1-kafe': -14.0, 's2-atolye': -18.0, 's3-balkon': -13.0, 's4-frp': -17.0, 's4b-hizli': -17.0, 's6-final': -15.0}
@@ -2279,6 +2469,7 @@ def olaylari_cal(olaylar, stem, rng, hizli=False):
     """Bir stem'in olaylarını seçili kaynaklarla çalar (kuru, (2, N))."""
     N = kare_ornek(TOPLAM_KARE)
     kuru = np.zeros((2, N))
+    eslem_hesapla([(o['calgi'], o) for o in olaylar if stem_adi(o['calgi']) == stem], hizli)   # örnekliler: düzey sentezle eşit
     for o in olaylar:
         if stem_adi(o['calgi']) != stem:
             continue
@@ -2584,8 +2775,8 @@ def orkestra_karis(ORK, islak, ir, akt, notalar, susturma, hizli=False):
         w = eq_uygula(yanki_uygula(kuru, ir, YANKI['islak_db']), E) * sus
         if akt is not None:
             w = tema_cekil(w, akt)
-        if stem == 'fon':
-            w *= doku_zarfi(N, onemli, susturma)
+        if stem == 'fon' or (stem == 'davul' and ORNEK is not None):
+            w *= doku_zarfi(N, onemli, susturma)       # B: gerçek kayıtlı davul da işaret anlarında çekilir
         dk = k_agirlikli(w)
         kaz = {}
         for ad, hedef in hedefler.items():
@@ -2595,40 +2786,58 @@ def orkestra_karis(ORK, islak, ir, akt, notalar, susturma, hizli=False):
             em, ed = float(np.sum(ref[:, a:b] ** 2)), float(np.sum(dk[:, a:b] ** 2))
             if ed > 0 and em > 0:
                 kaz[ad] = float(np.clip(hedef - 10 * math.log10(ed / em), -40.0, 30.0))
-        w *= sahne_kazanci(N, kaz)
-        dk = k_agirlikli(w)
-        goreli = {}
-        for ad in kaz:
-            a, b = kare_ornek(SAHNELER[ad][0]), kare_ornek(SAHNELER[ad][1] + 1)
-            goreli[ad] = round(10 * math.log10(float(np.sum(dk[:, a:b] ** 2)) / float(np.sum(ref[:, a:b] ** 2)) + 1e-20), 1)
+        w0 = w
+        for tur in range(3):                      # sahne sınırında taşan kuyruklar (uzun örnekler) için iki düzeltme turu
+            w = w0 * sahne_kazanci(N, kaz)
+            dk = k_agirlikli(w)
+            goreli = {}
+            for ad in kaz:
+                a, b = kare_ornek(SAHNELER[ad][0]), kare_ornek(SAHNELER[ad][1] + 1)
+                goreli[ad] = 10 * math.log10(float(np.sum(dk[:, a:b] ** 2)) / float(np.sum(ref[:, a:b] ** 2)) + 1e-20)
+            if all(abs(goreli[ad] - hedefler[ad]) <= 0.2 for ad in kaz) or tur == 2:
+                break
+            kaz = {ad: kaz[ad] + hedefler[ad] - goreli[ad] for ad in kaz}
+        goreli = {ad: round(v, 1) for ad, v in goreli.items()}
         islak[stem] = w
         bilgi[stem] = dict(kazanc_db={k: round(v, 1) for k, v in kaz.items()}, goreli_db=goreli, hedef_db=hedefler)
     return bilgi
 
 
+def _cumle_ornekle(calgi, notlar, pan):
+    """Legato cümle örnekle: her nota ayrı örnek (sürekli artikülasyonun bırakışı bir sonrakine biner)."""
+    s0 = kare_ornek(notlar[0][0])
+    parca = []
+    atak = KEMAN_ORNEK_ATAK.get(calgi, 0.0)
+    for j, (k, m, d, v, _) in enumerate(notlar):
+        y = kaynak_ornekle(calgi, dict(m=m, hiz=v, sure=d + 3, kare=k))
+        if atak:                       # sentezdeki flautando/sordino gibi yavaş giriş; cümle içinde legato (kısa)
+            y = _atak_rampasi(atak if j == 0 else 0.06)(y)
+        parca.append((kare_ornek(k) - s0, y))
+    L = max(o + y.shape[1] for o, y in parca)
+    out = np.zeros((2, L))
+    for o, y in parca:
+        out[:, o:o + y.shape[1]] += y
+    return s0, _denge(out, pan)
+
+
 def kaynak_cumle(calgi, notlar, teknik, pan, rng, hizli=False):
-    """Legato cümle (keman): sentezde tek cümle (kaymalar, vibrato, yay); örnekte her nota ayrı örnek, uçları bindirilir.
-    Dönüş (başlangıç örneği, (2, L))."""
-    if kaynak_turu(calgi) == 'ornek' and ORNEK is not None and ORNEK.var_mi(calgi):
-        try:
-            s0 = kare_ornek(notlar[0][0])
-            parca = []
-            for k, m, d, v, _ in notlar:
-                y = ORNEK.ciz(calgi, dict(m=m, hiz=v, sure=d + 3))
-                parca.append((kare_ornek(k) - s0, y))
-            L = max(o + y.shape[1] for o, y in parca)
-            out = np.zeros((2, L))
-            for o, y in parca:
-                out[:, o:o + y.shape[1]] += y
-            KAYNAK_RAPOR[calgi] = dict(istenen='ornek', kullanilan='ornek')
-            return s0, _panla(out, pan) * 10 ** (CALGI_DB.get(calgi, 0.0) / 20)
-        except (OSError, ValueError, KeyError) as e:
-            KAYNAK_RAPOR[calgi] = dict(istenen='ornek', kullanilan='sentez', neden=f'örnek okunamadı: {e}')
-    elif kaynak_turu(calgi) == 'ornek':
-        KAYNAK_RAPOR[calgi] = dict(istenen='ornek', kullanilan='sentez', neden='örnek yok (harita.json ya da dosya)')
+    """Legato cümle (keman): sentezde tek cümle (kaymalar, vibrato, yay); örnekte keman grubu (sus) notaları, düzeyi
+    sentezdekine eşitlenmiş (ESLEM_DB). Dönüş (başlangıç örneği, (2, L))."""
+    g = 10 ** (CALGI_DB.get(calgi, 0.0) / 20)
+    if kaynak_turu(calgi) == 'ornek':
+        if _ornek_var(calgi):
+            try:
+                s0, y = _cumle_ornekle(calgi, notlar, pan)
+                _rapor(calgi, 'ornek')
+                return s0, y * g * 10 ** ((ESLEM_DB.get(calgi, 0.0) + KEMAN_ORNEK_EK_DB) / 20)
+            except (OSError, ValueError, KeyError) as e:
+                _rapor(calgi, 'sentez', f'örnek çalınamadı: {str(e)[:120]}')
+        else:
+            _rapor(calgi, 'sentez', 'örneği yok (sentezde kalır)')
     else:
-        KAYNAK_RAPOR.setdefault(calgi, dict(istenen='sentez', kullanilan='sentez'))
-    return keman_cumle(notlar, teknik, pan, rng, hizli)
+        _rapor(calgi, 'sentez')
+    s0, y = keman_cumle(notlar, teknik, pan, rng, hizli)
+    return s0, y * g
 
 
 SENTEZ['keman.pizz.doku'] = lambda o, rng, hizli: keman_pizz(o['m'], o['hiz'], o.get('pan', 0.0), rng)
@@ -3008,13 +3217,42 @@ def doku_cal(D, rng, hizli=False):
     _, rk = keman_cumle([(0, 74, 60, 0.2, 0)], 'flautando', 0.0, np.random.default_rng(2), hizli)
     olcek = float(np.sqrt(np.mean(rp ** 2)) / (np.sqrt(np.mean(rk[:, int(0.3 * SR):int(0.8 * SR)] ** 2)) + 1e-12))
     kem = np.zeros((2, N))
-    for c in D['keman']:
-        s0, y = kaynak_cumle(f'keman.{c["teknik"]}', c['notlar'], c['teknik'], c['pan'], rng, hizli)
+
+    def km_calgi(c):
+        return 'keman.karsi' if c['etiket'].startswith('karşı ezgi') else f'keman.{c["teknik"]}'
+    kemanlar = D['keman']
+    if any(kaynak_turu(km_calgi(c)) == 'ornek' for c in kemanlar):
+        # B: keman grubu örneği zaten bir grup; aynı perdeden üst üste binen ikinci tek-nota girişi (≤ 12 kare arayla)
+        # birleşir (+3 dB ilkine): iki kaydın vibratosu birbirini dövüp genlik dalgalanması yapmasın
+        tut, birlesik = [], {}
+        for c in sorted(kemanlar, key=lambda c: c['notlar'][0][0]):
+            if len(c['notlar']) == 1:
+                k, m, d, v, gl = c['notlar'][0]
+                es = next((t for t in tut if len(t['notlar']) == 1 and t['notlar'][0][1] == m
+                           and 0 <= k - t['notlar'][0][0] <= 12 and km_calgi(t) == km_calgi(c)), None)
+                if es is not None:
+                    k0, m0, d0, v0, g0 = es['notlar'][0]
+                    es['notlar'] = [(k0, m0, max(d0, k + d - k0), v0, g0)]
+                    birlesik[id(es)] = birlesik.get(id(es), 1) + 1
+                    continue
+            tut.append(dict(c))
+        for t in tut:
+            if id(t) in birlesik:
+                k0, m0, d0, v0, g0 = t['notlar'][0]
+                t['notlar'] = [(k0, m0, d0, min(1.0, v0 * math.sqrt(birlesik[id(t)])), g0)]
+        kemanlar = tut
+    # örnekli keman (keman grubu): düzeyi cümle cümle sentezle eşit (çalgı başına tek kazanç)
+    eslem_hesapla([(km_calgi(c), c) for c in kemanlar], hizli,
+                  ciz_ornek=lambda cg, c: _cumle_ornekle(cg, c['notlar'], c['pan'])[1],
+                  ciz_sentez=lambda cg, c, r: keman_cumle(c['notlar'], c['teknik'], c['pan'], r, hizli)[1])
+    eslem_hesapla([('keman.pizz.doku', dict(m=z['m'], hiz=z['hiz'], pan=z['pan'], kare=z['kare'])) for z in D['pizz']], hizli)
+    for c in kemanlar:
+        s0, y = kaynak_cumle(km_calgi(c), c['notlar'], c['teknik'], c['pan'], rng, hizli)
         L = min(y.shape[1], N - s0)
         if L > 0:
             kem[:, s0:s0 + L] += y[:, :L] * olcek
     for z in D['pizz']:
-        y = kaynak_ciz('keman.pizz.doku', dict(m=z['m'], hiz=z['hiz'], pan=z['pan']), rng, hizli)
+        y = kaynak_ciz('keman.pizz.doku', dict(m=z['m'], hiz=z['hiz'], pan=z['pan'], kare=z['kare']), rng, hizli)
         s0 = kare_ornek(z['kare'])
         L = min(y.shape[1], N - s0)
         kem[:, s0:s0 + L] += y[:, :L] * olcek
@@ -3181,6 +3419,9 @@ def eq_uygula(x, E):
     H *= 1 + (raf - 1) / (1 + (f / E['alt_raf_f']) ** 2)                            # tokluk: hafif alt raf
     cn = 10 ** (E['sert_db'] / 20)
     H *= 1 + (cn - 1) * np.exp(-0.5 * (np.log2(f / E['sert_f']) / (0.5 / E['sert_q'])) ** 2)  # 3,2 kHz yumuşatma
+    if E.get('parlak_db'):                                                            # B yolu: örnek piyanoya hafif parlaklık
+        cp = 10 ** (E['parlak_db'] / 20)
+        H *= 1 + (cp - 1) * np.exp(-0.5 * (np.log2(f / E['parlak_f']) / (E.get('parlak_okt', 1.5) / 2)) ** 2)
     H *= 1 / np.sqrt(1 + (f / E['lp']) ** 4)                                         # 12 kHz üstü yumuşak
     return np.vstack([np.fft.irfft(np.fft.rfft(x[c], nf) * H, nf)[:N] for c in range(2)])
 
@@ -3408,7 +3649,7 @@ def main():
     ap.add_argument('--orkestra-yok', action='store_true', help='v12a orkestrası (fon, doku çalgıları, yumuşak davullar) yok')
     ap.add_argument('--kaynak', default='sentez', choices=['sentez', 'ornek'], help='bütün çalgıların ses kaynağı (varsayılan sentez)')
     ap.add_argument('--kaynak-calgi', action='append', help='çalgı ya da önek başına kaynak: --kaynak-calgi davul=ornek (birden çok)')
-    ap.add_argument('--ornek-kok', default=str(ORNEK_KOK), help='örnek çalıcının kökü (harita.json burada)')
+    ap.add_argument('--kutuphane', default=None, help='örnek kütüphanesinin kökü (yoksa OKTOS_SES_KUTUPHANE); yalnız ornek kaynakta gerekir')
     ap.add_argument('--onceki', default='film-ses.wav', help='"kulak tırmalamasın" karşılaştırmasının önceki karışımı (.impeccable/ses/ içinde)')
     arg = ap.parse_args()
     global NESNE_PIYANO
@@ -3422,7 +3663,17 @@ def main():
         if tur_.strip() not in ('sentez', 'ornek'):
             ap.error(f'--kaynak-calgi {s_}: tür sentez ya da ornek olmalı')
         KAYNAK_SECIMI[ad_.strip()] = tur_.strip()
-    ORNEK = OrnekCalici(Path(arg.ornek_kok)) if 'ornek' in KAYNAK_SECIMI.values() else None
+    if 'ornek' in KAYNAK_SECIMI.values():
+        try:
+            ornek_kur(arg.kutuphane or os.environ.get('OKTOS_SES_KUTUPHANE'))
+        except (OSError, ValueError) as e:
+            ap.error(f'örnek çalıcı kurulamadı: {e}')
+        if kaynak_turu('piyano') == 'ornek':
+            EQ.update(EQ_ORNEK_FARK)        # örnek piyano sentezden koyu: alt raf yok, 1,8 kHz çevresi biraz açık
+            # Gerçek kayıtlar (yay, tokmak) işaret anlarında sentezden daha "dolu": doku ve orkestra işaret notalarında daha çok
+            # çekilir (doku hedefi aynı; kemanın doku içindeki payı KEMAN_ORNEK_EK_DB kadar geride)
+            global DOKU_CEKIL_DB
+            DOKU_CEKIL_DB = -12.0
     t0 = time.time()
     ff = ffmpeg_bul()
     rng = np.random.default_rng(TOHUM)
@@ -3449,6 +3700,8 @@ def main():
     )
     if P['tema']:
         kuru['tema'] = cal(notalar, pedal, susturma, lambda p: p['parca'] == 'tema', rng, arg.hizli, P=PIYANO_TEMA, calgi='piyano.tema')
+    piyano_tini = {ad: tayf_olc(x)['bant_db']['2-5k (sertlik)'] for ad, x in kuru.items()
+                   if ad in ('kesme', 'muzik', 'isaret', 'tema') and np.any(x)}     # kuru piyano stem'lerinin 2–5 kHz payı
     ir = yanki_ir(np.random.default_rng(TOHUM + 1), YANKI)
     islak = {ad: eq_uygula(yanki_uygula(x, ir, YANKI['islak_db']), EQ) for ad, x in kuru.items()}
     # Sessizlikte müzik ve yankısı susar; balon noktaları ve nesne sesleri susmaz. Dosya sonunda yumuşak kararma.
@@ -3723,6 +3976,10 @@ def main():
                                              tamam=olcum['doku']['keman_2_5k_db'] <= -18)
             hedefler['doku_goreli_db'] = dict(deger=doku_bilgi['goreli_db'], hedef='-10…-14 (sahne başına)',
                                               tamam=all(-14.5 <= v <= -9.5 for v in doku_bilgi['goreli_db'].values()))
+        if ORNEK is not None:
+            hedefler['ornek_2_5k_db'] = dict(
+                deger=dict({c: t['ornek_2_5k_db'] for c, t in ORNEK_TINI.items()}, **{f'piyano.{k}': v for k, v in piyano_tini.items()}),
+                hedef='rapor: örnekli çalgının kendi 2–5 kHz payı (kuru; karışım hedefi ≤ -18)', tamam=None)
         if ork_bilgi:
             if 'davul' in ork_bilgi:
                 hedefler['davul_2_5k_db'] = dict(deger=olcum['orkestra']['tayf_davul']['bant_db']['2-5k (sertlik)'],
@@ -3751,6 +4008,9 @@ def main():
                                 rol=e['rol'], db=e['db'], db_ayar=e.get('db_ayar'), etiket=e['etiket']) for e in nesneler],
             olcum=olcum, dogrulama=dogrulama,
             ton_plani=TON_PLANI, tekrar_denetimi=TEKRAR,
+            kaynak=dict(secim=dict(KAYNAK_SECIMI), calgilar=KAYNAK_RAPOR, ornek_tini=ORNEK_TINI, eslem_db=ESLEM_DB,
+                        oktav_kaydirilan=ORNEK_OKTAV, piyano_kuru_2_5k_db=piyano_tini,
+                        atak_hizalama_ms={c: float(np.median(v)) for c, v in ORNEK_GECIKME.items() if v}, eq=dict(EQ)),
         )
         if ORK is not None:
             cizelge['meta']['sentez'] += ('; v12a orkestra (ses kaynağı arayüzü: sentez | ornek): yumuşak davullar (fırça trampet ve '
@@ -3758,7 +4018,8 @@ def main():
                                           'timpani, zil kabarması), pedler (analog, yaylı), kalimba, marimba, glokenşpil, çan, arp, '
                                           'kontrbas pizzicato, flüt trili')
             cizelge['orkestra'] = dict(
-                kaynak_secimi=dict(KAYNAK_SECIMI), kaynak=KAYNAK_RAPOR, ornek_kok=str(Path(arg.ornek_kok).name),
+                kaynak_secimi=dict(KAYNAK_SECIMI), kaynak=KAYNAK_RAPOR, ornek_tini=ORNEK_TINI, oktav_kaydirilan=ORNEK_OKTAV,
+                ornek_calici='scripts/ornek-calici.py (kütüphane yerel, yolu yazılmaz)' if ORNEK is not None else None,
                 seviye=ork_bilgi, ozet=ORK['ozet'], ostinato=ORK['ostinato'], calgi_db=CALGI_DB,
                 olaylar=[dict(kare=o['kare'], sn=round(kare_sn(o['kare']), 3), calgi=o['calgi'], stem=stem_adi(o['calgi']),
                               nota=None if o['m'] is None else nota_adi(o['m']), hiz=o['hiz'], sure_kare=o['sure'], pan=o['pan'],
@@ -3800,7 +4061,8 @@ def main():
         if ork_bilgi:
             ozet['orkestra'] = dict(goreli_db={st: b['goreli_db'] for st, b in ork_bilgi.items()}, ozet=ORK['ozet'],
                                     bant_db={st: olcum['orkestra'][f'tayf_{st}']['bant_db'] for st in ork_bilgi},
-                                    kaynak={k: v['kullanilan'] for k, v in KAYNAK_RAPOR.items()})
+                                    kaynak={k: (v['ornek'], v['sentez']) for k, v in KAYNAK_RAPOR.items()},
+                                    ornek_tini=ORNEK_TINI, oktav_kaydirilan=ORNEK_OKTAV)
         ozet['tekrar'] = dict(tamam=TEKRAR['tamam'], akor_ihlal=TEKRAR['akor_ihlal'], desen_ihlal=TEKRAR['desen_ihlal'],
                               en_uzun=TEKRAR['en_uzun_ozdes_olcu_dizisi'])
         ozet['ton_plani'] = [(t['bolum'], t['ton'], t['akor_dizisi']) for t in TON_PLANI]
