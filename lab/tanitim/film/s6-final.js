@@ -1,4 +1,4 @@
-// Sahne 6, FİNAL (#6.1–#6.3, iç kare k2376–2925; filmin son sahnesi). Kalıp: s5-kalabalik.js (kur(ctx), MUTLAK kare zamanları).
+// Sahne 6, FİNAL (#6.1–#6.3, iç kare k2376–2814; filmin son sahnesi). Kalıp: s5-kalabalik.js (kur(ctx), MUTLAK kare zamanları).
 // DEVİR (kesme yok): s5'in son karesindeki (k2375) sekiz balon SON_BALONLAR'dan (s5-kalabalik.js) aynı yerde, aynı boyda,
 // aynı bulutla (ctx.balon, aynı tohum) ve aynı çizgilerle (cizimKur, aynı çizim tohumu ve kalınlık) AÇIK hâlde kurulur;
 // kenarlara çekilmiş kalabalık da SON_KISILER'den aynı yerde, aynı ölçek ve pozla (s5'in gövde uzatmasıyla) kurulur.
@@ -7,7 +7,7 @@
 // ifade, bakış ve göz kırpma ayrık çizim, yazıldıkları karede):
 // balonu sönen ortaya, inşaya bakar; ~30 k sonra gülümser; logo tamamlanınca gülümseme büyür (gözler de güler), sonra
 // OKTOS'a bakarlar; OKTOS'un tıkında yine; son tutuşta gülümseyerek bakar, kırpar, baş sallar. Ayrıntı: 13) Kişilerin takvimi.
-// #6.1 HASAT (k2376–2669): stil/logo2.js'teki inşa filme uyarlandı (biçim dönüşümü değil yapım; logo2.js'e dokunulmaz).
+// #6.1 HASAT (k2376–2558, 183 k; 2026-10-23 hızlandı, eskiden 294 k: "dönüşüm hızlanabilir"): stil/logo2.js'teki inşa filme uyarlandı (biçim dönüşümü değil yapım; logo2.js'e dokunulmaz).
 //   - Logo 29 dışbükey parça (stil/logo-veri.js); kenarlar aynı doğrudaki "çubuk"lara toplanır, çok uzun çubuk aynalı
 //     çiftiyle T-eklemden bölünür. Çubuklar logo2 sırasıyla gelir: dıştan içe (köşe, yan, alt kancalar, çarpı, halka),
 //     aynalı çiftler aynı karede; son parça halkanın içindeki küçük karo (kaynak noktaları vurgu renginde).
@@ -20,18 +20,20 @@
 //     kancaları kurmak için erken söner, halka üst köşelerden çapraz gelir.
 //   - Atama: Macar algoritması; maliyet = yol + açı + boy oranı (2,2 katını aşan uzama ağır) + dalga penceresi dışı.
 //     Kısa ayrıntılar (QR'ın küçük kareleri gibi) logoya gitmez: balon sönerken yerinde kısalıp erir.
-//   - Balon sönünce (kontur noktalara ayrılır) çizim eklemlerinden açılır, çizgiler 8–30 k içinde tek tek kalkar (logo2'de
+//   - Balon sönünce (kontur noktalara ayrılır, 15 k) çizim eklemlerinden açılır, çizgiler 6–21 k içinde tek tek kalkar (logo2'de
 //     sökülen parçalar 40–80 k enkaz gibi asılı kalıyordu); varış farkını uçuş süresi karşılar: geç gelecek çizgi yavaş süzülür.
-//     Fikirlerin açık renkli dolguları (cizimler.js) ayrılma anında yerinde kalır, 8 k'da solar: uçan çizgiler ve logo mürekkep.
+//     Fikirlerin açık renkli dolguları (cizimler.js) ayrılma anında yerinde kalır, 6 k'da solar: uçan çizgiler ve logo mürekkep.
 //   - Uçuş logo2 gibi: kopuştan sonra hemen yola çıkar, yolun ortasında döner ve doğrulur (sürü logonun 0°/45°/90°
 //     doğrultularına dizilir), kaynama söner, incelir, boyu çubuğa yaklaşır (yumuşak kontur düzleşirken yay boyunu korur:
 //     kısa kirişli eğri büzülmez); kenara parçanın dışından dikine gelir, hafifçe taşar, oturur, uçlar eklemlere
-//     uzanır, eklemde kaynak noktası. Parça kapanınca mürekkep kenardan içe dolar (9 k), sonra kenar çizgisi incelir.
+//     uzanır, eklemde kaynak noktası. Parça kapanınca mürekkep kenardan içe dolar (6 k), sonra kenar çizgisi incelir.
+//   - Hız (2026-10-23): varışlar eskinin %57'si sıklıkta yayılır (194 → 111 k), uçuş ~%67'ye kısaldı (çift başına 25–37 k),
+//     dalgalar arası bekleyiş ve sönme, kopuş, dolum kısaldı. Kaynak noktası ve oturuş tıkı aynı boyda: yalnız daha sık.
 //   - Dalgalar üst üste biner (bir dalga inerken sonraki çift söner): inşa boyunca boş an kalmaz.
-// #6.2 LOGO TAMAM (k2670): dikişler kalkar, tek logo yolu, %2 "tık" ('vurgu' doruk). Sonra NEFES (36 k): kalabalığın
-//      sıçraması ve gülümsemesi okunur. k2706–2770 OKTOS (Big Shoulders Display 900) harf harf maskeden yükselir (10 k
-//      arayla, 24 k EO); k2770 ikili (logo + OKTOS) birlikte kısa bir tık (%1,5, 16 k).
-// #6.3 SON TUTUŞ (k2786–2925, 140 k ≈ 2,3 sn): logo, OKTOS ve gülümseyen kalabalık; çok hafif kamera itişi (%3, ikilinin
+// #6.2 LOGO TAMAM (k2559): dikişler kalkar, tek logo yolu, %2 "tık" ('vurgu' doruk). Sonra NEFES (36 k): kalabalığın
+//      sıçraması ve gülümsemesi okunur. k2595–2659 OKTOS (Big Shoulders Display 900) harf harf maskeden yükselir (10 k
+//      arayla, 24 k EO); k2659 ikili (logo + OKTOS) birlikte kısa bir tık (%1,5, 16 k). (Hızlanmada ritim aynı, 111 k öne kaydı.)
+// #6.3 SON TUTUŞ (k2675–2814, 140 k ≈ 2,3 sn): logo, OKTOS ve gülümseyen kalabalık; çok hafif kamera itişi (%3, ikilinin
 //      ortasına), bir iki göz kırpma ve sakin baş sallama. Slogan yok (kullanıcı kararı, 2026-10-23): son kare logo + OKTOS
 //      + gülümseyen kalabalık. Sona dek kararma yok. Dil (ctx.DIL) bu sahnede bir şey değiştirmez.
 // SES İŞARETLERİ YÖNDEN BAĞIMSIZ (müzik tek ses dosyası): çubuk sırası ve bölünmesi yalnız logonun geometrisine bağlı,
@@ -45,8 +47,10 @@ import { kisiSVG, YAPI } from '../insan.js';
 
 // Bütün kareler s5'in son karesinden sonra (s5 devri 2351'den 2375'e uzadı: s6 iç kareleri de 24 k kaydı)
 const BAS = S5_ARALIK[1] + 1; // 2376
-const BEKLE = 22;     // devirden sonra sekiz fikir yerinde okunur; ilk çift ~BAS+19'da söner
-const TAKAS = BAS + 294;   // logo tamam: dikişler kalkar, tek yol, %2 tık ('vurgu' doruk)
+const BEKLE = 16;     // devirden sonra sekiz fikir yerinde okunur (s5 devrinin son kareleri de duruk); ilk çift ~BAS+21'de söner
+// Logo tamam: dikişler kalkar, tek yol, %2 tık ('vurgu' doruk). = ILK_VARIS + varış yayılımı (111 k; eskiden 194)
+// + son çubuğun oturma, dolum ve dikiş payı (18 k). Eskiden BAS + 294.
+const TAKAS = BAS + 183;
 const NEFES = 36;          // doruktan sonra nefes (eskiden 6 k): sıçrama ve gülümseme okunur, sonra OKTOS
 const AD = TAKAS + NEFES;  // OKTOS harf harf
 const HARF = { ara: 10, sure: 24, tik: 6 }; // harf aralığı, maskeden yükseliş (EO), harfin 'tik'i (yükselişin başından)
@@ -57,7 +61,8 @@ const TUTUS = 140;          // ≈2,3 sn: logo, OKTOS, gülümseyen kalabalık; 
 const ITIS = 1.03;          // kamera itişi (tutuş boyunca, son karede durur)
 const SON = TUT + TUTUS - 1;
 export const ARALIK = [BAS, SON]; // kadro.json'daki aralıktan kısa: son sahne (sonrası yok, kayma doğmaz)
-const ILK_VARIS = BAS + BEKLE + 8 + 48; // ilk çubuğun varışı: yönden bağımsız (dalga planı yöne göre değişse de)
+const ILK_VARIS = BAS + BEKLE + 6 + 32; // ilk çubuğun varışı (kopuş + olağan uçuş): yönden bağımsız (dalga planı yöne göre değişse de)
+const VARIS_ESKI = 194; // hızlanmadan önceki varış yayılımı (k): atamanın pencere cezası buna göre ölçeklenir (eşleşme aynı kalır)
 const LBOL = 165; // logo biriminde: bundan uzun çubuk aynalı çiftiyle bölünür (yönden bağımsız)
 
 // Yerleşim (slogan kalkınca yeniden dengelendi): ikili (logo + OKTOS) iki eksende ortalı. Yatay: logo2 boyunda, 50 px
@@ -76,10 +81,11 @@ const SIRA = [[21, 22], [27, 28], [15, 16], [7, 8], [11, 12], [3, 4], [25, 26], 
 const GRUPLAR = [['kose', 0, 3], ['yan', 3, 6], ['alt', 6, 9], ['carpi', 9, 12], ['halka', 12, 15]];
 const Z = {
   varisAra: 2, dilimAra: 3, sonNefes: 8, // göreli varış birimleri (sonra hasat aralığına ölçeklenir)
-  kopma: 8, yayilma: 22,                 // kalkıştan önce kopuş; bir balonun çizgileri sönmeden 8..30 k sonra, tek tek kalkar
-  Fmin: 28, Fmax: 96,                    // uçuş süresi sınırları
-  sonme: 22, eri: 12,                    // balonun sönmesi; fazla çizginin erimesi
-  oturma: 4, dolum: 9, incelme: 8, dikis: 6,
+  kopma: 6, yayilma: 15,                 // kalkıştan önce kopuş; bir balonun çizgileri sönmeden 6..21 k sonra, tek tek kalkar
+  adim: 2,                               // ardışık iki kalkış arası en çok (k)
+  Fmin: 20, Fmax: 62,                    // uçuş süresi sınırları
+  sonme: 15, eri: 9,                     // balonun sönmesi; fazla çizginin erimesi
+  oturma: 4, dolum: 6, incelme: 6, dikis: 5, // oturma (yay tıkı) eskisi gibi; dolum, incelme, dikiş kısaldı
 };
 
 // ---------- Yardımcılar
@@ -450,11 +456,13 @@ export function kur(ctx) {
   // yönden bağımsız. Uçuş süresi (F0) yöne göre değişir: sönme karesi ondan geri hesaplanır.
   pencereler.forEach((w) => {
     const ort = w.cubuklar.length ? w.cubuklar.reduce((a, c) => a + uzak(yakinUye(w.cift, c.orta).c, c.orta), 0) / w.cubuklar.length : 300;
-    w.cift.F0 = Math.round(Math.max(36, Math.min(54, 30 + ort / (24 * Math.sqrt(D.olcu)))));
+    // Çiftin olağan uçuşu (eskisinin ~%67'si: 36–54 → 25–37 k)
+    w.cift.F0 = Math.round(Math.max(25, Math.min(37, 20 + ort / (36 * Math.sqrt(D.olcu)))));
   });
   const A0 = ILK_VARIS;
   const Ason = TAKAS - (Z.oturma + Z.dolum + 3 + Z.dikis);
   const olc = (Ason - A0) / ((vMax - vMin) || 1);
+  const SIKIS = (Ason - A0) / VARIS_ESKI; // varışların sıkışma oranı (~0,57)
   for (const c of cubuklar) c.varis = Math.round(A0 + (c.v - vMin) * olc);
   const kapanis = PARCA.map((_, pi) => Math.max(Math.round(A0 + (dilimBasG[pi] - vMin) * olc), ...gerekli[pi].map((c) => c.varis)) + Z.oturma);
   pencereler.forEach((w) => {
@@ -474,7 +482,8 @@ export function kur(ctx) {
       const dAci = Math.abs(aciSar(2 * (h.th0 - c.th))) / 2; // yönsüz açı farkı (0..π/2)
       const oran = Math.abs(Math.log(c.L / h.L0));
       const erken = Math.max(0, w.t0 - c.varis), gec = Math.max(0, c.varis - w.t1);
-      let v = uzak(h.m0, c.orta) / Dn + 0.45 * (dAci / (Math.PI / 2)) + 0.8 * oran + 2.5 * Math.max(0, oran - LOG22) + 0.08 * erken + 0.03 * gec;
+      // Pencere dışı ceza eski kare ölçüsünde (SIKIS'a bölünür): hızlanma eşleşmeyi değiştirmez, yalnız zamanı sıkıştırır
+      let v = uzak(h.m0, c.orta) / Dn + 0.45 * (dAci / (Math.PI / 2)) + 0.8 * oran + 2.5 * Math.max(0, oran - LOG22) + (0.08 * erken + 0.03 * gec) / SIKIS;
       if (h.L0 < ESIK) v += 3; // kısa ayrıntı logoya gitmez (yalnız başka yol yoksa)
       return v;
     });
@@ -485,17 +494,17 @@ export function kur(ctx) {
   const atama = macar(C);
   cizgiler.forEach((h, i) => { h.cubuk = cubuklar[atama[i]] || null; if (h.cubuk) h.cubuk.cizgi = h; });
 
-  // ---------- 8) Sönme (çift birlikte), kalkış (sönmeden 8..22 k sonra, erken varan önce), uçuş süresi
+  // ---------- 8) Sönme (çift birlikte), kalkış (sönmeden 6..21 k sonra, erken varan önce), uçuş süresi
   for (const cift of ciftler) {
     const atanmis = cift.uyeler.flatMap((b) => b.cizgiler.filter((h) => h.cubuk));
     const ilk = atanmis.length ? Math.min(...atanmis.map((h) => h.cubuk.varis)) : cift.pencere.t0;
-    const sonme = Math.max(BAS + 14, ilk - Z.kopma - cift.F0);
+    const sonme = Math.max(BAS + 12, ilk - Z.kopma - cift.F0);
     cift.uyeler.forEach((b) => { b.sonme = sonme; });
   }
   let bekleyen = 0, enUzun = 0;
   for (const b of balonlar) {
     const at = b.cizgiler.filter((h) => h.cubuk).sort((x, y) => x.cubuk.varis - y.cubuk.varis);
-    const adim = at.length > 1 ? Math.min(2.5, Z.yayilma / (at.length - 1)) : 0;
+    const adim = at.length > 1 ? Math.min(Z.adim, Z.yayilma / (at.length - 1)) : 0;
     at.forEach((h, r) => {
       const v = h.cubuk.varis;
       let kalkis = b.sonme + Z.kopma + Math.round(r * adim);
@@ -512,7 +521,7 @@ export function kur(ctx) {
   function durus(h, f) {
     const sonme = h.b.sonme, p = h.pop, tau = f - sonme;
     const patlak = (t) => {
-      const ee = GERI3(kis(t / 10)), ek = h.cubuk ? GERI(kis((sonme + t - (h.kalkis - Z.kopma)) / Z.kopma)) : 0;
+      const ee = GERI3(kis(t / 8)), ek = h.cubuk ? GERI(kis((sonme + t - (h.kalkis - Z.kopma)) / Z.kopma)) : 0;
       const m = p.gevsek * ee + p.suzul * Math.max(0, t) + p.kopma * ek;
       return { c: [h.m0[0] + p.yon[0] * m, h.m0[1] + p.yon[1] * m], th: h.th0 + p.don * ee + p.don2 * ek };
     };
@@ -770,16 +779,16 @@ export function kur(ctx) {
       return;
     }
     // Sönme: kontur kesik çizgiye, sonra noktalara ayrılır; buluta en yakın nokta önce küçülür; dolgu solar.
-    // Çizim çizgilerine ayrılır (konturları artık uçan çizgiler taşır); renkli dolgular yerinde kalıp 8 k'da hızla solar,
-    // logoya yalnız mürekkep gider
-    const renk = 1 - P2O(kis(s / 8));
+    // Çizim çizgilerine ayrılır (konturları artık uçan çizgiler taşır); renkli dolgular yerinde kalıp 6 k'da hızla solar,
+    // logoya yalnız mürekkep gider. (Hızlanmada sönmenin bütün adımları ~%70'e kısaldı: 13 k'da biter, Z.sonme 15.)
+    const renk = 1 - P2O(kis(s / 6));
     b.cizimG.style.display = renk > 0.001 ? '' : 'none';
     for (const h of b.cizimH) { h.yol.style.display = 'none'; h.dolgu?.setAttribute('fill-opacity', renk.toFixed(3)); }
-    const per = 1000 / 26, a = P2I(kis(s / 10));
+    const per = 1000 / 26, a = P2I(kis(s / 7));
     bal.kontur.setAttribute('stroke-dasharray', `${(per * (1 - a) + 0.01).toFixed(2)} ${(per * a).toFixed(2)}`);
-    bal.kontur.setAttribute('stroke-width', (KONTUR * (1 - P2I(kis((s - 9) / 9)))).toFixed(2));
-    bal.dolgu.setAttribute('fill-opacity', (1 - P2O(kis((s - 1) / 11))).toFixed(3));
-    bal.noktalar.forEach((e, j) => e.setAttribute('transform', olcekle(b.nYerel[j], Math.max(0, 1 - EI(kis((s - 4 - (2 - j) * 3) / 8))))));
+    bal.kontur.setAttribute('stroke-width', (KONTUR * (1 - P2I(kis((s - 6) / 7)))).toFixed(2));
+    bal.dolgu.setAttribute('fill-opacity', (1 - P2O(kis((s - 1) / 8))).toFixed(3));
+    bal.noktalar.forEach((e, j) => e.setAttribute('transform', olcekle(b.nYerel[j], Math.max(0, 1 - EI(kis((s - 3 - (2 - j) * 2) / 6))))));
   }
   function ciz(fHam) {
     const f = Math.max(BAS, fHam), ki = kaynaIndis(f + KAYDIR); // kaynama film karesiyle (balonlar ve cizimKur gibi)
@@ -802,7 +811,7 @@ export function kur(ctx) {
       p.el.setAttribute('stroke-width', ara(D.ince, 2 * p.ic + 4, P2I(v)).toFixed(2));
     }
     for (const d of dikisler) {
-      const a = yumusak(d.bas, d.bas + 6, f) * (1 - yumusak(T.dikis, T.dikis + Z.dikis, f));
+      const a = yumusak(d.bas, d.bas + 5, f) * (1 - yumusak(T.dikis, T.dikis + Z.dikis, f));
       d.el.style.display = a > 0.01 ? '' : 'none';
       d.el.setAttribute('opacity', (0.75 * a).toFixed(3));
     }
