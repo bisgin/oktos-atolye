@@ -1,4 +1,4 @@
-// Sahne 1, KAFE (#3–#5, k192–647; ARALIK ile 72 kare uzadı). A (kısa boylu, yanaklı, kıvırcık saçlı genç kız) kalabalık bir
+// Sahne 1, KAFE (#3–#5, k192–797; ARALIK ile kadro.json'dan 150 kare uzun). A (kısa boylu, yanaklı, kıvırcık saçlı genç kız) kalabalık bir
 // kafede tek başına; garsona seslenir, görülmez; yüzü asılır; yanağını avucuna yaslar, masada bir QR standı olsa sipariş
 // verebileceğini düşünür. Sahne SORUNDA biter: çözüm, ürün, renkli nesne yok.
 // v06 r2 (kullanıcının kare kare notları): "sağa sola bırakılmış aset" yerine derinlikte dizili kalabalık kafe; garson dik
@@ -6,19 +6,24 @@
 // (tek dış hatlı avuç, ayrık ama doğal parmaklar); iki seslenmeden sonra yüz asılır; düşünürken yanağı avucunda (sıkılmış).
 // Derinlik: göz hizası kamerası. Her şey (o: ölçek, h: yerden yükseklik, kutu birimi) ile yerleşir: ekran y = H0 + (K − h)·o.
 // Oturan herkesin başı ufuk çizgisinin çevresinde kalır (kalabalık bandı); uzak olan küçük, açık ve ince çizgili (pus).
-// #3 (k192–299) Devir: v1'in son yüzü A, aynı yerde ve ölçekte; 58 k KM üstel geri çekilme, kafe genel planı (k194–216 kâğıttan
+// v06 r3 (kullanıcı 2026-10-23: "60 fps güzel ama her şey çok hızlı, sahne demlensin; geçişte ~100 kare sıkılma pozu;
+// yanaktaki el insan gibi olsun"): zaman çapaları Z'de (kur içinde). Önemli her andan sonra 0,4–0,8 sn nefes, üst üste
+// binen hareketler ayrık, garsonun ve figüranların mikro hareketleri seyrek, konuşma balonları ≥ 2 sn; yanak eli yeni
+// çizim (elYanak: yandan görünen el, başparmak çene altında, parmaklar yanağa kıvrık, yanak ezilir).
+// #3 (k192–263) Devir: v1'in son yüzü A, aynı yerde ve ölçekte; 58 k KM üstel geri çekilme, kafe genel planı (k194–216 kâğıttan
 //    belirir). Arka duvar: büyük camlar, kara tahta menü, tezgâh + espresso makinesi + barista; arka sırada dört masa (biri
 //    laptoplu), orta sırada iki masa (birer kişi sırtı dönük), sağ önde sırtı dönük bir kız. Garson sağdaki masanın müşterisiyle
 //    sohbette: konuşur (minik balonda karalama), elini oynatır, güler.
-// #4 (k300–431) A elini kaldırır (organik el, her karede ara değer), "Bakar mısınız?" (k310). Garson o sırada konuşuyor. İkinci deneme:
-//    A yarı doğrulur, el daha yükseğe, sallar, "Bakar mısınız?!" (k382; birinci balonu şişirir). Garson müşterinin şakasına
-//    kahkaha atar, eli göğsünde: A'ya dönmez. El iner (k418).
-// #5 (k432–647) Yüz asılır: kaşlar iner, ağız aşağı, omuzlar düşer (sikkin → ozlem, k432–466); kamera A'ya ve balonun
-//    yerine yaklaşır. k470 dirsek masaya, k475 yanak avuçta (gövde o yana yaslanır): sıkılmış, göz kapakları yarı inik.
-//    Düşünce balonu (k480): masa köşesi, çadır QR standı (cizimler.js), okutan telefon, vurgu halkası; el yazısı iki satır
-//    (tam cümle k524'ten SON'a ~120 k). Kafe kâğıda doğru solar. k648 kesme (s2-atolye).
+// #4 (k264–489) A elini kaldırır (18 k), "Bakar mısınız?" (k282, 2 sn). Garson müşterinin şakasına güler (k324): görülmez,
+//    yüzü düşer, nefes. İkinci deneme (k376): yarı doğrulur, el daha yükseğe, "Bakar mısınız?!" (k396; birinciyi şişirir), iki
+//    kez sallar; garson kahkaha atar, eli göğsünde: A'ya dönmez. El havada asılı kalır (k436–462, karşılıksız), iner (k484).
+// #5 (k490–797) Yüz asılır: kaşlar iner, ağız aşağı, omuzlar düşer (k490–518); kamera A'ya ve balonun yerine yaklaşır; nefes.
+//    k544–574 el yanağa gider, k568–588 baş ele çöker, o yana yaslanır, yanak ezilir: sıkılmış. Düşünce balonu (k590), ~24 k
+//    boş; sonra masa köşesi, çadır QR standı (cizimler.js), el yazısı iki satır, okutan telefon, vurgu halkası (k701). Kafe
+//    kâğıda doğru solar. k701–797 tutuş: iç çekiş (omuz kalkar, iner), göz kırpma, balon noktaları kabarır, çok yavaş itiş.
+//    k798 kesme (s2-atolye).
 // Kare hızları: HAREKET 60 fps (kullanıcı 2026-10-22: 12 fps adımlama kesik görünüyordu): gövde çöküşü ve eğimi, kollar
-// (dirsek ve bilek omuz çevresinde kutupsal ara değerle yay çizer), el biçimi (açık el ↔ yanak eli karışımı), garsonun
+// (dirsek ve bilek omuz çevresinde kutupsal ara değerle yay çizer), el biçimi (açık el ↔ yanak eli kıvrımı), garsonun
 // jestleri ve ağırlık aktarımı, sekmeler, kahkaha ve sallama çizgileri her karede izlerden hesaplanır (herKare). Yüz ifadesi
 // ve bakış ayrık çizimdir (göz kırpma 4 k); kamera / yazı / balon 60 fps; kaynama çekirdekte 8 fps.
 // Sözleşme: kur(ctx) yalnız ctx.tl'ye İÇ (mutlak) kare zamanlı tween ekler; window'a bir şey yazmaz.
@@ -26,7 +31,7 @@ import { kisiSVG, govdeOlcusu, boyKaymasi, yol as yolCiz, rng } from '../insan.j
 import { kolSVG, omuzlar, govdeKes } from '../kol.js';
 import { CIZIMLER, URUN_RENK } from './cizimler.js';
 
-export const ARALIK = [192, 647];
+export const ARALIK = [192, 797];
 
 const D2R = Math.PI / 180;
 const yon = (d) => [Math.cos(d * D2R), Math.sin(d * D2R)];
@@ -118,9 +123,25 @@ export function kur(ctx) {
   const { k, E, tl, gsap, el, cizgi, oval, W, H, DIKEY, PALET, MONO, BOY, GOZ_Y, VURGU, BALON, yer, adim, metin } = ctx;
   const M = PALET.murekkep;
   const [BAS, SON] = ARALIK;
-  ctx.vurus(3, 'Kafe: A tek başına', BAS, 299);
-  ctx.vurus(4, 'Bakar mısınız?', 300, 431);
-  ctx.vurus(5, 'Yüz asılır, QR olsa…', 432, SON);
+  // Zaman çapaları (iç kare). Kullanıcı 2026-10-23: "bütün video çok hızlı, her sahnenin biraz demlenmesi lazım". Her önemli
+  // andan sonra kısa nefes (0,4–0,8 sn); üst üste binen hareketler ayrık; konuşma balonları en az 2 sn ekranda; sonda
+  // sıkılmış poz ~95 k tutulur, sonra atölyeye kesme.
+  const Z = {
+    kalk1: 264,  // 1. kaldırış (18 k), el yukarıda söz
+    soz1: 282,   // "Bakar mısınız?" (balon 120 k ekranda)
+    gormez: 324, // garson müşterinin şakasına güler: görülmedi; A'nın yüzü düşer, ~30 k nefes
+    kalk2: 376,  // 2. kaldırış: yarı doğrulur, el daha yükseğe (20 k)
+    soz2: 396,   // "Bakar mısınız?!" (balon 122 k ekranda); el iki kez sallanır (yarım salınım 10 k)
+    sustu: 436,  // sallama biter, el havada asılı: karşılıksız (~26 k nefes)
+    inis: 462,   // el iner (22 k), A oturur
+    asil: 490,   // yüz asılır: kaşlar iner, omuzlar düşer (28 k), kamera yaklaşır; ~26 k nefes
+    yanak: 544,  // el yanağa gider (30 k), baş ele çöker (20 k), yanak ezilir
+    dusun: 590,  // düşünce balonu açılır (24 k), ~24 k boş nefes, sonra içi çizilir, el yazısı yazılır
+    tut: 701,    // her şey yerinde (halka bitti): sıkılmış poz SON'a dek ~96 k tutulur (iç çekiş, göz kırpma, çok yavaş itiş)
+  };
+  ctx.vurus(3, 'Kafe: A tek başına', BAS, Z.kalk1 - 1);
+  ctx.vurus(4, 'Bakar mısınız?', Z.kalk1, Z.asil - 1);
+  ctx.vurus(5, 'Yüz asılır, QR olsa…', Z.asil, SON);
 
   const L = ctx.katman('s1-kafe', 10);
   gsap.set(L.div, { autoAlpha: 0 });
@@ -172,9 +193,9 @@ export function kur(ctx) {
     tl.to(g, { y: dy, duration: k(d / 2), ease: 'sine.out' }, k(n));
     tl.to(g, { y: 0, duration: k(d / 2), ease: 'sine.in' }, k(n + d / 2));
   };
-  // Sürekli salınım (konuşurken, gülerken): n'den başlayıp adet kez 0 → dy → 0, her biri 10 k
-  const salin = (g, n, adet, dy = -2) => {
-    if (adet > 0) tl.fromTo(g, { y: 0 }, { y: dy, duration: k(5), ease: 'sine.inOut', yoyo: true, repeat: adet * 2 - 1, immediateRender: false }, k(n));
+  // Sürekli salınım (konuşurken, gülerken): n'den başlayıp adet kez 0 → dy → 0, her biri d k (kahkaha 10, sohbet 16)
+  const salin = (g, n, adet, dy = -2, d = 10) => {
+    if (adet > 0) tl.fromTo(g, { y: 0 }, { y: dy, duration: k(d / 2), ease: 'sine.inOut', yoyo: true, repeat: adet * 2 - 1, immediateRender: false }, k(n));
   };
   // Kutu birimli dizge çizimleri (insan.js titreşimi + kaynama): garsonun alt gövdesi, tepsi, organik el
   function araclar(tohum, i, genlik = 1) {
@@ -210,6 +231,76 @@ export function kur(ctx) {
     } else if (ad === 'acik') {
       cz([[0.16, -0.04], [0.36, -0.06]], 0.36);
       cz([[0.16, 0.06], [0.36, 0.08]], 0.36);
+    }
+    return out;
+  }
+
+  // Yanağa yaslanan el (kullanıcı 2026-10-23: "elini yanağında tuttuğu kısımdaki el daha iyi çizilebilir, insan gibi").
+  // Önden bakışta avuç yanağa döner; izleyici eli başparmak yanından görür: dış kenarda elin sırtı ve boğum basamakları,
+  // önde işaret parmağı yanağın üstüne kıvrılır, ardındaki üç parmağın uçları dış kavis boyunca basamak basamak taşar,
+  // başparmak çenenin altına uzanır. Avucun içi izleyiciye bakmaz. Yerel çerçeve: bilek (0,0), u parmaklara, v avuç yanına
+  // (yüze doğru), birim = el boyu. c: kıvrım (0 gevşek el, 1 yanakta). Çizim sırası: arka parmaklar → el gövdesi + işaret
+  // (tek kontur) → başparmak (kökü avuca açık: dikiş çizgisi olmaz).
+  // Parmak: kök b, ilk yön a0 (derece, + avuca doğru), boğum boyları l, iki boğumdaki büküm k, yarıçaplar r (kök → uç)
+  function parmakHat(b, a0, [l1, l2, l3], [k1, k2], [r0, r1, r2, r3]) {
+    const d0 = yon(a0), d1 = yon(a0 + k1), d2 = yon(a0 + k1 + k2);
+    const n0 = dikV(d0), n1 = dikV(d1), n2 = dikV(d2);
+    const P0 = b, P1 = topla(P0, d0, l1), P2 = topla(P1, d1, l2), P3 = topla(P2, d2, l3 - r3);
+    const bir = (x, y) => { const l = Math.hypot(x, y) || 1; return [x / l, y / l]; };
+    const j1 = bir(n0[0] + n1[0], n0[1] + n1[1]), j2 = bir(n1[0] + n2[0], n1[1] + n2[1]);
+    const m1 = 1 / Math.cos((k1 * D2R) / 2), m2 = 1 / Math.cos((k2 * D2R) / 2);
+    const orta = (a, q) => [(a[0] + q[0]) / 2, (a[1] + q[1]) / 2];
+    // sırt yanı: bükülen boğum dışa hafif çıkıntı yapar; avuç yanı: boğum kırışığı biraz içeride
+    const dis = [topla(P0, n0, -r0), topla(orta(P0, P1), n0, -(r0 + r1) / 2), topla(P1, j1, -r1 * m1 * (1 + k1 / 500)),
+      topla(orta(P1, P2), n1, -(r1 + r2) / 2), topla(P2, j2, -r2 * m2 * (1 + k2 / 600)), topla(P3, n2, -r3)];
+    const uc = [45, 90, 135].map((f) => { const c = Math.cos(f * D2R), s = Math.sin(f * D2R); return [P3[0] - n2[0] * r3 * c + d2[0] * r3 * s, P3[1] - n2[1] * r3 * c + d2[1] * r3 * s]; });
+    const ic = [topla(P3, n2, r3), topla(orta(P2, P3), n2, (r2 + r3) / 2), topla(P2, j2, r2 * 0.9),
+      topla(orta(P1, P2), n1, (r1 + r2) / 2), topla(P1, j1, r1 * 0.9), topla(orta(P0, P1), n0, (r0 + r1) / 2), topla(P0, n0, r0)];
+    return { dis, uc, ic, P: [P0, P1, P2, P3], d: [d0, d1, d2], n: [n0, n1, n2], j: [j1, j2], r: [r0, r1, r2, r3] };
+  }
+  function elYanak({ bilek, aci, boy = 100, bs = -1, c = 1, ten, kaynama = 0, tohum = 1, w = 4.2 }) {
+    const L = (a, b) => a + (b - a) * c;
+    const cs = Math.cos(aci * D2R), sn = Math.sin(aci * D2R);
+    const D = ([u, v]) => { const X = u * boy, V = v * boy * bs; return [bilek[0] + X * cs - V * sn, bilek[1] + X * sn + V * cs]; };
+    const ar = araclar(tohum, kaynama, 0.5);
+    let out = '';
+    // Ele gömülen yanak: başparmakla işaret arasındaki ağ, kıvrılan parmaklar ve çenenin arası ten rengiyle dolar (çene
+    // çizgisi elin içinde kaybolur, yanak avuca bastırılmış okunur; arkadan zemin görünmez). El kıvrıldıkça belirir.
+    if (c > 0.6) {
+      const yk = [[0.47, 0.04], [0.6, 0.08], [0.66, 0.16], [0.6, 0.25], [0.48, 0.31], [0.38, 0.33], [0.3, 0.29], [0.28, 0.23], [0.36, 0.18], [0.42, 0.12]];
+      out += `<path d="${yolCiz(yk.map(D), true, { sap: () => 0 })}" fill="${ten}" opacity="${Math.min(1, (c - 0.6) / 0.3).toFixed(2)}"/>`;
+    }
+    // Orta parmak işaretin ardında, ucu onun ucundan biraz taşar. Yüzük ve serçe avuca kıvrılı, işaretin ve avucun ardında
+    // kalır (ayrı çizgileri gürültü yapıyordu); yerleri sırttaki boğum basamağından okunur.
+    {
+      const h = parmakHat([0.47, -0.072], L(-2, 8), [0.265, 0.165, 0.125], [L(12, 30), L(5, 24)], [0.05, 0.046, 0.041, 0.037]);
+      out += ar.sk([...h.dis, ...h.uc, ...h.ic].map(D), ten, w * 0.8, [2, 2]);
+    }
+    // El gövdesi + işaret (tek kontur): bilekten sırt boyunca boğum çıkıntısına, işaretin sırtından ucuna, iç yanından
+    // köküne; başparmakla işaret arasındaki dolgun ağ (çene bu kavise oturur), avuçtan bileğe
+    const ip = parmakHat([0.465, -0.05], L(0, 10), [0.25, 0.155, 0.12], [L(10, 28), L(4, 20)], [0.05, 0.046, 0.041, 0.037]);
+    const govde = [[-0.06, -0.104], [0.12, -0.116], [0.27, -0.13], [0.35, -0.142], [0.4, -0.136], [0.44, -0.122], ...ip.dis, ...ip.uc, ...ip.ic,
+      [0.45, 0.06], [0.42, 0.13], [0.36, 0.19], [0.28, 0.24], [0.18, 0.21], [0.08, 0.16], [-0.06, 0.108]];
+    out += ar.sk(govde.map(D), ten, w * 0.92, [2, 2]);
+    const cz = (pts, oran) => { out += ar.cz(pts.map(D), w * oran); };
+    // işaret: orta boğumun sırtında kısa kırışık, uç boğumda tırnak
+    {
+      const [, P1, P2, P3] = ip.P, [, , d2] = ip.d, [, , n2] = ip.n, [j1] = ip.j, [, r1, r2, r3] = ip.r;
+      if (c > 0.3) cz([topla(P1, j1, -r1 * 1.02), topla(P1, j1, -r1 * 0.45)], 0.42);
+      cz([topla(topla(P2, d2, 0.035), n2, -r2 * 0.52), topla(topla(P3, d2, r3 * 0.2), n2, -r3 * 0.5)], 0.4);
+    }
+    // el biçimi: işaretin kökünde ağdan içeri kısa kırışık; sırtta kıvrık parmakların boğum basamağından inen kısa kavis
+    cz([[0.47, 0.05], [0.43, 0.01], [0.41, -0.03]], 0.4);
+    if (c > 0.5) cz([[0.36, -0.132], [0.4, -0.1], [0.43, -0.075]], 0.36);
+    // Başparmak: tenar tümseğinden çıkar, çenenin altına uzanır (kök avucun içinde: dolgu kapalı, kontur açık)
+    const bp = parmakHat([0.13, 0.06], L(40, 40), [0.13, 0.135, 0.12], [L(10, 14), L(6, 10)], [0.07, 0.06, 0.054, 0.047]);
+    const bpTum = [...bp.dis, ...bp.uc, ...bp.ic].map(D);
+    out += `<path d="${yolCiz(bpTum, true, { sap: () => 0 })}" fill="${ten}" transform="translate(2 2)"/>`;
+    cz([...bp.dis.slice(1), ...bp.uc, ...bp.ic.slice(0, -1)], 0.88);
+    // başparmak tırnağı (uç boğumun üst yanında kısa çizgi)
+    {
+      const [, , P2, P3] = bp.P, [, , d2] = bp.d, [, , n2] = bp.n, [, , r2, r3] = bp.r;
+      cz([topla(topla(P2, d2, 0.03), n2, -r2 * 0.5), topla(topla(P3, d2, r3 * 0.25), n2, -r3 * 0.48)], 0.4);
     }
     return out;
   }
@@ -692,7 +783,7 @@ export function kur(ctx) {
   // A'nın duruşu: cok (çöküş, birim; − doğrulma), egim (gövdenin yana yaslanması, derece; kalça çevresinde). Gövde
   // svg'de döner/iner; kollar dünyada kalır (masadaki dirsek ve el yerinde), omuzlar ve yüz noktaları aynı dönüşümle bulunur.
   const PIV = [200, MB + 20];
-  const A = { kol: null, ifade: 'merak', bakis: [0, 0], cok: 0, egim: 0 };
+  const A = { kol: null, ifade: 'merak', bakis: [0, 0], cok: 0, egim: 0, ezik: 0 };
   const donustur = (q, cok = A.cok, egim = A.egim) => {
     const c = Math.cos(egim * D2R), s = Math.sin(egim * D2R), dx = q[0] - PIV[0], dy = q[1] - PIV[1];
     return [PIV[0] + dx * c - dy * s, PIV[1] + dx * s + dy * c + cok];
@@ -723,30 +814,40 @@ export function kur(ctx) {
       const q = KALK[ad0];
       return { dirsek: [O[0] + s * q.d[0], O[1] + q.d[1]], bilek: [O[0] + s * q.b[0], O[1] + q.b[1]], org: { poz: 'acik', aci: s < 0 ? q.a : 180 - q.a, bs: -s, boy: 104, yay: 1, yuz: 'avuc' } };
     }
-    // Yanağa yaslanma (ekranın sağındaki kol): dirsek masada, bilek çenenin altında, avuç yanağı tutar; parmaklar şakağa
-    const bilekY = donustur([200 + hwA * 1.06, ceneA + 34]);
-    if (ad0 === 'yanak') return { dirsek: [oA.sag[0] + 10, MB + 8], bilek: bilekY, org: { poz: 'yanak', aci: -95 + A.egim, bs: -1, boy: 100, en: 0.86, yuz: 'sirt' } };
+    // Yanağa yaslanma (ekranın sağındaki kol, yandan görünen el: elYanak). Dirsek masada, omzun biraz dışında; ön kol
+    // dirsekten çene köşesine içe eğik uzanır; bilek çene köşesinin altında, el yüzün eğimiyle yanağa yaslanır (bilek hafif
+    // geriye bükülür). El yüzle birlikte döner (bilek gövde dönüşümüyle bulunur): iç çekişte baş ve el birlikte oynar.
+    // bilek yüz çerçevesinde (dönüşümden önce): çene köşesinin ~25 birim altı; böylece avuç çene köşesini alttan tutar,
+    // işaretin ucu gözün altına, başparmak çenenin altına gelir
+    const bilekY = donustur([200 + hwA * 0.87, ceneA + 29]);
+    if (ad0 === 'yanak') return { dirsek: [oA.sag[0] + 22, MB + 10], bilek: bilekY, yan: { c: 1, aci: -86 + A.egim, boy: 100 } };
     if (ad0 === 'yanak1') {
-      const b = [(DIN.sag.bilek[0] + bilekY[0]) / 2 + 30, (DIN.sag.bilek[1] + bilekY[1]) / 2 - 10];
-      return { dirsek: [oA.sag[0] + 22, MB + 6], bilek: b, org: { poz: 'yanak', aci: -76, bs: -1, boy: 100, en: 0.9, yuz: 'sirt' } };
+      const b = [(DIN.sag.bilek[0] + bilekY[0]) / 2 + 26, (DIN.sag.bilek[1] + bilekY[1]) / 2 - 4], d = [oA.sag[0] + 22, MB + 8];
+      return { dirsek: d, bilek: b, yan: { c: 0.45, aci: Math.atan2(b[1] - d[1], b[0] - d[0]) / D2R + 8, boy: 98 } };
     }
     return DIN[taraf];
   }
-  // Adlı poz → sayısal durum. Masada dinlenen kolun organik karşılığı (yalnız ara karelerde çizilir): aynı yön, kısalmış avuç
-  function kolDurum(taraf, ad0) {
+  const YAN = new Set(['yanak', 'yanak1']);
+  // Adlı poz → sayısal durum. Masada dinlenen kolun organik karşılığı (yalnız ara karelerde çizilir): aynı yön, kısalmış avuç.
+  // yan: geçiş yanak pozuna (ya da ondan) ise el yandan görünen eldir (gevşek, avuç masaya dönük)
+  function kolDurum(taraf, ad0, yan = false) {
     if (ad0 === 'dinlen') {
       const d = DIN[taraf];
+      if (yan) return { dirsek: d.dirsek, bilek: d.bilek, org: { tur: 'yan', c: 0.1, aci: d.elAci, boy: 96 } };
       return { dirsek: d.dirsek, bilek: d.bilek, org: { m: 0, aci: d.elAci, bs: taraf === 'sol' ? 1 : -1, boy: 100, en: 0.72, yay: 0.25, yuz: 'sirt' } };
     }
     const q = kolPoz(taraf, ad0), o = q.org;
+    if (q.yan) return { dirsek: q.dirsek, bilek: q.bilek, org: { tur: 'yan', ...q.yan } };
     return { dirsek: q.dirsek, bilek: q.bilek, org: { m: o.poz === 'yanak' ? 1 : 0, aci: o.aci, bs: o.bs, boy: o.boy, en: o.en ?? 1, yay: o.yay ?? 1, yuz: o.yuz } };
   }
-  const orgAra = (p, q, t) => ({ m: ara(p.m, q.m, t), aci: p.aci + aciFark(p.aci, q.aci) * t, bs: ara(p.bs, q.bs, t), boy: ara(p.boy, q.boy, t), en: ara(p.en, q.en, t), yay: ara(p.yay, q.yay, t), yuz: t < 0.5 ? p.yuz : q.yuz });
+  const orgAra = (p, q, t) => (p.tur === 'yan'
+    ? { tur: 'yan', c: ara(p.c, q.c, t), aci: p.aci + aciFark(p.aci, q.aci) * t, boy: ara(p.boy, q.boy, t) }
+    : { m: ara(p.m, q.m, t), aci: p.aci + aciFark(p.aci, q.aci) * t, bs: ara(p.bs, q.bs, t), boy: ara(p.boy, q.boy, t), en: ara(p.en, q.en, t), yay: ara(p.yay, q.yay, t), yuz: t < 0.5 ? p.yuz : q.yuz });
   // A.kol[taraf] = [önceki poz, sonraki poz, t]: kol omuz çevresinde (gövdeyle birlikte) iki poz arasında yay çizer.
   // Masada dinlenen kol kol.js 'dayanma' eliyle çizilir; el masadan kalktığı ilk karede organik ele geçer.
   let aAnah = '';
   function aCiz(i = kaynaSon) {
-    const anah = `${i}|${A.kolVar}|${A.kol.sol.join()}|${A.kol.sag.join()}|${A.ifade}|${A.bakis}|${f2(A.cok)}|${f2(A.egim)}`;
+    const anah = `${i}|${A.kolVar}|${A.kol.sol.join()}|${A.kol.sag.join()}|${A.ifade}|${A.bakis}|${f2(A.cok)}|${f2(A.egim)}|${f2(A.ezik)}`;
     if (anah === aAnah) return;
     aAnah = anah;
     const kisi = kisiSVG(Ap, { kaynama: i, ifade: A.ifade, bakis: A.bakis, mono: true });
@@ -761,16 +862,19 @@ export function kur(ctx) {
     for (const taraf of ['sag', 'sol']) {
       const [a, b, t] = A.kol[taraf], omuz = donustur(oA[taraf]), tohum = taraf === 'sag' ? 22 : 21;
       if (a === 'dinlen' && (b === 'dinlen' || t <= 0)) { s += kolSVG({ ...ortak, omuz, ...DIN[taraf], taraf, tohum }); continue; }
-      const P0 = kolDurum(taraf, a), P1 = a === b ? P0 : kolDurum(taraf, b);
+      const yan = YAN.has(a) || YAN.has(b);
+      const P0 = kolDurum(taraf, a, yan), P1 = a === b ? P0 : kolDurum(taraf, b, yan);
       const q = a === b || t <= 0 ? P0 : { ...kolAra(omuz, P0.dirsek, P0.bilek, P1.dirsek, P1.bilek, t), org: orgAra(P0.org, P1.org, t) };
-      // organik el kolun altında: yenin ağzı bileği örter
-      s += elOrganik({ ...q.org, bilek: q.bilek, ten, kaynama: i, tohum: tohum + 5 });
+      // el kolun altında: yenin ağzı bileği örter
+      if (q.org.tur === 'yan') s += elYanak({ ...q.org, bilek: q.bilek, ten, kaynama: i, tohum: tohum + 5 });
+      else s += elOrganik({ ...q.org, bilek: q.bilek, ten, kaynama: i, tohum: tohum + 5 });
       s += kolSVG({ ...ortak, omuz, dirsek: q.dirsek, bilek: q.bilek, el: 'acik', elBoy: 0.01, taraf, tohum });
     }
-    if (A.kol.sag[0] === 'yanak' && A.kol.sag[1] === 'yanak') {
-      // avucun ittiği yanak: gözün altında yukarı kalkmış kısa kıvrım (el yanağa değdiği karede belirir)
-      const ar = araclar(29, i, 0.5);
-      s += ar.cz([donustur([200 + hwA * 0.42, GOZ_Y + 30]), donustur([200 + hwA * 0.6, GOZ_Y + 22]), donustur([200 + hwA * 0.76, GOZ_Y + 26])], 2.8);
+    if (A.ezik > 0.02) {
+      // Ezilen yanak (el yanağa değince belirir, baş ele çöktükçe derinleşir): yanak göze doğru kalkar, alt göz kapağının
+      // altında yukarı kıvrık kısa çizgi (göz hafif kısılır)
+      const e = A.ezik, ar = araclar(29, i, 0.45);
+      s += ar.cz([donustur([200 + hwA * 0.24, GOZ_Y + 15 - 1 * e]), donustur([200 + hwA * 0.39, GOZ_Y + 11 - 3 * e]), donustur([200 + hwA * 0.55, GOZ_Y + 13 - 2 * e])], 2.2 + 0.8 * e);
     }
     aKol.innerHTML = s;
   }
@@ -798,7 +902,7 @@ export function kur(ctx) {
   kameraUstel(BAS, 58, K0, K1);
   // Genel planda ölü kare yok: sahne ortası çevresinde %3 doğrusal itiş (#3 sonu ve #4 boyunca)
   const K4 = odakK(1.03, [W / 2, H / 2]);
-  tl.fromTo(ctx.kamera, K1, { ...K4, duration: k(432 - 250), ease: 'none', immediateRender: false }, k(250));
+  tl.fromTo(ctx.kamera, K1, { ...K4, duration: k(Z.asil - 250), ease: 'none', immediateRender: false }, k(250));
 
   // ---------- Konuşma balonları (sesli söz): kalkan elin öbür yanında, yüzün yanında. Kuyruk ağız hizasında ağzı gösterir
   // ama yüzün ve halka küpenin dışında durur (kuyruk yanağın üstünden geçmesin)
@@ -808,8 +912,9 @@ export function kur(ctx) {
   const kb2 = ctx.konus(L, metin('Bakar mısınız?!', 'Excuse me?!'), { x: P.konus2.x, y: P.konus2.y, boyut: P.konus2.boyut, kuyruk: agiz, tohum: 741, aci: -3 * KY });
   // Caveat'in eğik "?" kıvrımı yazı kutusunun sağından taşar; yazma maskesi onu kesmesin diye kutuya sağ pay
   for (const p of [kb1.p, kb2.p]) p.style.paddingRight = '0.3em';
-  kb1.ac(310, 16); ctx.isaret(310, 'konusma'); kb1.kapat(382, 4);
-  kb2.ac(382, 12); ctx.isaret(382, 'konusma'); kb2.kapat(430, 10);
+  // Her söz en az 2 sn okunur: birinci balon ikincisi açılırken söner (aynı yerde, ikincisi onu şişirir)
+  kb1.ac(Z.soz1, 16); ctx.isaret(Z.soz1, 'konusma'); kb1.kapat(Z.soz2, 6);
+  kb2.ac(Z.soz2, 14); ctx.isaret(Z.soz2, 'konusma'); kb2.kapat(Z.soz2 + 112, 10);
 
   // ---------- Düşünce balonu (#5) ve içi: masa köşesi, çadır QR standı, telefon + okutma çizgileri, vurgu halkası
   const BL = P.balon, bc = BL.c, br = BL.r;
@@ -828,11 +933,13 @@ export function kur(ctx) {
     const koken = `${(((en.p[0] - (bc[0] - br[0])) / (2 * br[0])) * 100).toFixed(0)}% ${(((en.p[1] - (bc[1] - br[1])) / (2 * br[1])) * 100).toFixed(0)}%`;
     return ctx.balon(L.svg, { c: bc, r: br, noktalar, tohum: 53, koken });
   })();
-  bal.ac(480);
-  ctx.isaret(480, 'dusunce');
-  // A iç sesine dalarken kafe kâğıda doğru solar (odak; kenarlarda yarım figüran yüzü göze batmasın)
-  tl.to(arka, { opacity: yer(0.4, 0.3), duration: k(40), ease: 'power1.inOut' }, k(484));
-  tl.to(menuG, { opacity: yer(0.4, 0.12), duration: k(40), ease: 'power1.inOut' }, k(484));
+  bal.ac(Z.dusun);
+  ctx.isaret(Z.dusun, 'dusunce');
+  // A iç sesine dalarken kafe kâğıda doğru solar (balon açıldıktan sonra; odak, kenarlarda yarım figüran yüzü göze batmasın)
+  tl.to(arka, { opacity: yer(0.4, 0.3), duration: k(40), ease: 'power1.inOut' }, k(Z.dusun + 20));
+  tl.to(menuG, { opacity: yer(0.4, 0.12), duration: k(40), ease: 'power1.inOut' }, k(Z.dusun + 20));
+  // Tutuşta balon noktaları hafifçe kabarıp iner (balon kaynamaya devam eder; tutuş ölü kare olmasın)
+  tl.to(bal.noktalar, { y: -3, duration: k(20), ease: 'sine.inOut', yoyo: true, repeat: 3, stagger: k(6), immediateRender: false }, k(Z.tut));
   const ic = bal.ic;
   const IC = P.ic, qb = br[1] * IC.qb, qx = bc[0] + br[0] * IC.qx, qy = bc[1] + br[1] * IC.qy;
   // Masa köşesi (A'nın kendi masası, aynı tonlar): üst yüz + ön kalınlık. Sol uç açık, balonun içinde biter.
@@ -883,13 +990,15 @@ export function kur(ctx) {
     return bit;
   }
   // Kesikli çizgiler DrawSVG ile çizilmez (kesik düz çizgiye döner): belirerek gelir, her karede akarak kayar (tarama)
+  // Balon açılınca ~24 k boş kalır (nefes); sonra masa ve stand, el yazısı, telefon, tarama, halka sırayla (birbirini ezmeden)
+  const IB = Z.dusun + 48;
   for (const h of isin) { gsap.set(h.g, { autoAlpha: 0 }); tl.set(h.g, { autoAlpha: 0 }, k(BAS)); }
-  ciz([masaUst, masaKal], 492, 10, { stagger: 2 });
-  ciz(qr, 498, 9, { stagger: 1.1 });
-  ciz([tel, ekran, yarik, ...cerceve], 514, 9, { stagger: 1.2 });
-  tl.to(isin.map((h) => h.g), { autoAlpha: 1, duration: k(6), ease: 'none', stagger: k(2) }, k(528));
-  tl.fromTo(isin.map((h) => h.yol), { strokeDashoffset: 0 }, { strokeDashoffset: -19 * 20, duration: k(SON + 1 - 528), ease: 'none', immediateRender: false }, k(528));
-  const halkaBit = ciz([halka], 538, 16, { ease: 'power1.inOut' });
+  ciz([masaUst, masaKal], IB, 10, { stagger: 2 });
+  ciz(qr, IB + 4, 9, { stagger: 1.1 });
+  ciz([tel, ekran, yarik, ...cerceve], IB + 22, 9, { stagger: 1.2 });
+  tl.to(isin.map((h) => h.g), { autoAlpha: 1, duration: k(6), ease: 'none', stagger: k(2) }, k(IB + 40));
+  tl.fromTo(isin.map((h) => h.yol), { strokeDashoffset: 0 }, { strokeDashoffset: -19 * Math.round((SON + 1 - IB - 40) / 16), duration: k(SON + 1 - IB - 40), ease: 'none', immediateRender: false }, k(IB + 40));
+  const halkaBit = ciz([halka], IB + 46, 16, { ease: 'power1.inOut' });
   ctx.isaret(halkaBit, 'vurgu');
 
   // El yazısı (iç ses): balonun üst yarısında iki satır; balon oturduktan sonra yazılır
@@ -897,9 +1006,9 @@ export function kur(ctx) {
   const satir1 = ctx.elYazisi(L.div, metin('Şurada bir <b>QR</b> olsa da', 'If only there were'), { x: yaziX, y: yaziY, boyut: yb, aci: -2 });
   const satir2 = ctx.elYazisi(L.div, metin('sipariş verebilsem…', 'a <b>QR</b> to order…'), { x: yaziX + yb * 0.9, y: yaziY + yb * 1.08, boyut: yb, aci: -2 });
   for (const p of [satir1, satir2]) p.style.paddingRight = '0.3em';
-  // tam cümle k524'ten SON'a ~120 k ekranda
-  ctx.yazElYazisi(satir1, 494, 18);
-  ctx.yazElYazisi(satir2, 508, 16);
+  // tam cümle ~k684'ten SON'a ~110 k ekranda (yazılırken ~36 k daha)
+  ctx.yazElYazisi(satir1, IB + 10, 20);
+  ctx.yazElYazisi(satir2, IB + 28, 18);
 
   // #5 kamera: yüz asılırken (k432) A'ya ve balonun açılacağı yere yaklaşır (70 k KM, üstel), sonra yavaş %2 itiş. Kadraj,
   // balonun gerçek dış hattı (örneklenmiş, tümsekler dahil) ile A'nın başı + masanın sağ köşesini birlikte, itişin sonunda da
@@ -910,47 +1019,56 @@ export function kur(ctx) {
     const yolE = bal.kontur, uz = yolE.getTotalLength();
     for (let s2 = 0; s2 <= uz; s2 += 6) { const p = yolE.getPointAtLength(s2); ekle(p.x, p.y); }
     ekle(P.A.x - P.masa.yari - 10, aUst + 80 * Ao); ekle(ms.onKose[0] + 20, ms.onKose[1] + 24);
-    const pay = 32, son = Math.min((W - 2 * pay) / (b[2] - b[0]), (H - 2 * pay) / (b[3] - b[1])), s5 = son / 1.02;
+    const pay = 32, son = Math.min((W - 2 * pay) / (b[2] - b[0]), (H - 2 * pay) / (b[3] - b[1])), s5 = son / 1.03;
     const c5 = [(b[0] + b[2]) / 2, (b[1] + b[3]) / 2];
     const K5 = odakK(s5, c5), K6 = odakK(son, c5);
-    kameraUstel(432, 70, K4, K5);
-    tl.fromTo(ctx.kamera, K5, { ...K6, duration: k(SON + 1 - 502), ease: 'none', immediateRender: false }, k(502));
+    // yüz asılırken yaklaşır (58 k), el kalkmadan oturur; sonra SON'a dek çok yavaş %3 itiş (tutuşun nefesi)
+    kameraUstel(Z.asil, 58, K4, K5);
+    tl.fromTo(ctx.kamera, K5, { ...K6, duration: k(SON + 1 - Z.asil - 58), ease: 'none', immediateRender: false }, k(Z.asil + 58));
   }
 
   // ---------- Oyunculuk: A (her karede izlerden: aIz(f) → A, sonra aCiz). Kollar ve gövde akar; ifade ve bakış ayrık.
   // #3: devirde v1'in son pozunda (merak, bakış düz, kolsuz gövde); k200 göz kırpar (kollar bu karede gelir), garsona bakar.
-  // #4: el kalkar (önce dışa açılır, sonra yukarı), ağız açılır: söz; ikinci deneme yarı doğrulur, el daha yükseğe, sallar
-  // (sallama: iki poz arasında sine salınım, 10 k), el iner (k425 'tik'). #5a: yüz asılır, omuzlar düşer (çöküş akar).
-  // #5b: dirsek masaya, el yanağa gelirken parmaklar bitişir (açık el → yanak eli), gövde o yana yaslanır.
+  // #4: el kalkar (önce dışa açılır, sonra yukarı, 18 k), ağız açılır: söz; el havada bekler, garson güler (görmedi), yüz
+  // düşer, nefes. İkinci deneme: yarı doğrulur, el daha yükseğe, iki kez sallar (yarım salınım 10 k), el havada asılı kalır
+  // (karşılıksız), iner (22 k, 'tik'). #5a: yüz asılır, omuzlar düşer (28 k), nefes. #5b: el yanağa gider (30 k; parmaklar
+  // kıvrılır), baş ele çöker ve o yana yaslanır (20 k), yanak ezilir. Tutuş: iç çekiş (omuz kalkar, iner), göz kırpma.
   const izKalk = [
-    [200, 'dinlen'], [299, 'dinlen'], [303, 'kalk1a', 'sine.in'], [308, 'kalk1', 'sine.out'],
-    [367, 'kalk1'], [371, 'kalk2a', 'sine.in'], [377, 'kalk2', 'sine.out'], [380, 'kalk2'],
-    [385, 'salla'], [390, 'kalk2'], [395, 'salla'], [400, 'kalk2'], [405, 'salla'], [410, 'kalk2'],
-    [413, 'kalk2'], [420, 'ini1', 'sine.in'], [425, 'dinlen', 'sine.out'],
+    [200, 'dinlen'], [Z.kalk1, 'dinlen'], [Z.kalk1 + 9, 'kalk1a', 'sine.in'], [Z.kalk1 + 18, 'kalk1', 'sine.out'],
+    [Z.kalk2, 'kalk1'], [Z.kalk2 + 10, 'kalk2a', 'sine.in'], [Z.kalk2 + 20, 'kalk2', 'sine.out'],
+    [Z.soz2 + 10, 'salla'], [Z.soz2 + 20, 'kalk2'], [Z.soz2 + 30, 'salla'], [Z.sustu, 'kalk2'],
+    [Z.inis, 'kalk2'], [Z.inis + 11, 'ini1', 'sine.in'], [Z.inis + 22, 'dinlen', 'sine.out'],
   ];
-  const izYanak = [[465, 'dinlen'], [470, 'yanak1', 'sine.in'], [477, 'yanak', 'sine.out']];
+  const izYanak = [[Z.yanak, 'dinlen'], [Z.yanak + 15, 'yanak1', 'sine.in'], [Z.yanak + 30, 'yanak', 'sine.out']];
   const KOL_IZ = {
     sol: KT === 'sol' ? izKalk : [[200, 'dinlen']],
     sag: KT === 'sag' ? [...izKalk, ...izYanak] : [[200, 'dinlen'], ...izYanak],
   };
-  // Çöküş (− doğrulma) ve eğim: yarı doğrulma (k367–377), geri oturma (k413–426), yüz asılırken omuzlar düşer
-  // (k428–448), yanağa yaslanırken gövde çöker ve o yana eğilir (k465–478; son duruş SON_DURUS: balon ona göre kurulu)
-  const COK = izSayi([BAS, 0], [367, 0], [377, -14, E.KM], [413, -14], [426, 0, E.KM], [428, 0], [448, 24, 'power2.out'], [465, 24], [478, SON_DURUS.cok, E.KM]);
-  const EGIM = izSayi([BAS, 0], [465, 0], [478, SON_DURUS.egim, E.KM]);
+  // Çöküş (− doğrulma) ve eğim: yarı doğrulma (2. kaldırışla), geri oturma (el inerken), yüz asılırken omuzlar düşer,
+  // el yanağa değince baş ele çöker ve o yana eğilir (son duruş SON_DURUS: balon ona göre kurulu). Tutuşta iç çekiş:
+  // omuzlar kalkar (nefes alır), sonra biraz daha aşağı iner (verir) ve yerine oturur
+  const T0 = Z.tut;
+  const COK = izSayi([BAS, 0], [Z.kalk2, 0], [Z.kalk2 + 20, -14, E.KM], [Z.inis + 2, -14], [Z.inis + 24, 0, E.KM],
+    [Z.asil, 0], [Z.asil + 28, 24, 'power2.out'], [Z.yanak + 24, 24], [Z.yanak + 44, SON_DURUS.cok, E.KM],
+    [T0 + 12, SON_DURUS.cok], [T0 + 32, SON_DURUS.cok - 6, 'sine.inOut'], [T0 + 58, SON_DURUS.cok + 4, 'sine.inOut'], [T0 + 80, SON_DURUS.cok + 1, 'sine.inOut']);
+  const EGIM = izSayi([BAS, 0], [Z.yanak + 24, 0], [Z.yanak + 44, SON_DURUS.egim, E.KM],
+    [T0 + 12, SON_DURUS.egim], [T0 + 32, SON_DURUS.egim - 0.6, 'sine.inOut'], [T0 + 58, SON_DURUS.egim + 0.5, 'sine.inOut'], [T0 + 80, SON_DURUS.egim, 'sine.inOut']);
+  // Yanağın ezilmesi: el değdiği an başlar, baş çöktükçe derinleşir, iç çekişte nefes verirken biraz artar
+  const EZIK = izSayi([Z.yanak + 26, 0], [Z.yanak + 44, 1, 'sine.out'], [T0 + 32, 0.85, 'sine.inOut'], [T0 + 58, 1.12, 'sine.inOut'], [T0 + 80, 1, 'sine.inOut']);
   // Yüz (ayrık): [kare, ifade, bakış?]; göz kırpma 4 k; ifade değişimi hareketin doruğunda (el yukarı varınca söz)
   const A_YUZ = [
-    [BAS, 'merak', [0, 0]], [200, 'kirp'], [204, 'notr', [1, 0]], [225, 'notr', [0, 1]], [240, 'merak', [1, -1]],
-    [260, 'notr', [1, 0]], [270, 'kirp'], [274, 'merak', [1, -1]],
-    [308, 'saskin'], [330, 'merak', [1, -1]], [345, 'notr', [1, 0]], [355, 'sikkin', [1, -1]],
-    [370, 'merak', [1, -1]], [378, 'saskin'], [400, 'merak', [1, -1]], [420, 'notr', [1, -1]],
-    [430, 'sikkin', [1, 0]], [445, 'ozlem', [0, 1]], [455, 'kirp'], [459, 'ozlem', [0, 1]],
-    [470, 'sikkin', [0, 1]], [485, 'sikkin', [1, -1]], [540, 'kirp'], [544, 'sikkin', [1, -1]],
-    [580, 'sikkin', [0, 0]], [600, 'kirp'], [604, 'sikkin', [1, -1]],
+    [BAS, 'merak', [0, 0]], [200, 'kirp'], [204, 'notr', [1, 0]], [232, 'merak', [1, -1]],
+    [Z.soz1 - 2, 'saskin'], [Z.soz1 + 26, 'merak', [1, -1]],
+    [Z.gormez + 8, 'notr', [1, 0]], [Z.gormez + 24, 'kirp'], [Z.gormez + 28, 'notr', [1, 0]], [Z.kalk2 - 6, 'merak', [1, -1]],
+    [Z.soz2 - 2, 'saskin'], [Z.sustu + 4, 'notr', [1, 0]],
+    [Z.asil, 'sikkin', [1, 0]], [Z.asil + 16, 'ozlem', [0, 1]], [Z.asil + 38, 'kirp'], [Z.asil + 42, 'ozlem', [0, 1]],
+    [Z.yanak + 20, 'sikkin', [0, 1]], [Z.dusun - 4, 'sikkin', [1, -1]],
+    [T0 + 66, 'kirp'], [T0 + 70, 'sikkin', [1, -1]],
   ];
   function aIz(f) {
     A.kolVar = f >= 200;
     A.kol = { sol: izAra(KOL_IZ.sol, f), sag: izAra(KOL_IZ.sag, f) };
-    A.cok = COK(f); A.egim = EGIM(f);
+    A.cok = COK(f); A.egim = EGIM(f); A.ezik = EZIK(f);
     let ifade = A_YUZ[0][1], bakis = A_YUZ[0][2];
     for (const [n, fa, b] of A_YUZ) { if (n > f) break; ifade = fa; if (b) bakis = b; }
     A.ifade = ifade; A.bakis = bakis;
@@ -973,22 +1091,23 @@ export function kur(ctx) {
     gsap.set(g, { autoAlpha: 0 }); tl.set(g, { autoAlpha: 0 }, k(BAS));
     return { g, hs };
   });
-  tl.to(sallaG[0].g, { autoAlpha: 1, duration: k(4), ease: 'sine.out' }, k(382));
-  tl.to(sallaG[0].g, { autoAlpha: 0, duration: k(5), ease: 'sine.in' }, k(410));
+  tl.to(sallaG[0].g, { autoAlpha: 1, duration: k(4), ease: 'sine.out' }, k(Z.soz2 + 2));
+  tl.to(sallaG[0].g, { autoAlpha: 0, duration: k(5), ease: 'sine.in' }, k(Z.sustu - 2));
   const sallaKur = (f) => {
     const [a, b, t] = izAra(KOL_IZ[KT], f);
     const u = a === 'salla' ? 1 - t : b === 'salla' ? t : 0;
     sallaG[0].hs.forEach((h, j) => { h.pts = sallaNok(u, j); h.ciz(); });
   };
-  ctx.isaret(adim(424), 'tik'); // el masaya iner
-  // #5a: yüz asılır: kaşlar iner, ağız aşağı, omuzlar düşer; boş tabağa bakar
-  ctx.isaret(426, 'sessizlik', { bitis: 478 });
-  // #5b: dirsek masaya
-  ctx.isaret(adim(470), 'tik'); // dirsek masaya
+  ctx.isaret(Z.inis + 22, 'tik'); // el masaya iner
+  // #5a: yüz asılır: kaşlar iner, ağız aşağı, omuzlar düşer; boş tabağa bakar (el yanağa varana dek müzik susar)
+  ctx.isaret(Z.inis + 22, 'sessizlik', { bitis: Z.yanak + 30 });
+  // #5b: el yanağa varır, dirsek ağırlığı alır
+  ctx.isaret(Z.yanak + 30, 'tik');
 
-  // ---------- Oyunculuk: garson ve müşteri. Garson konuşur, anlatır, kahkaha atar; A'nın iki seslenmesi de onun sözüne /
-  // kahkahasına denk gelir. Bakışı hep müşteride (ekranın sağı, aşağı). Jest kolu iki poz arasında ~9 k'da akar (anahtardan
-  // 2 k önce başlar), ağırlık 12 k'da bir bacaktan öbürüne geçer; ifade ayrık. Sekme, kahkaha ve baş sallama sine ile.
+  // ---------- Oyunculuk: garson ve müşteri. Garson konuşur, anlatır, dinler, kahkaha atar; A'nın iki seslenmesi de
+  // müşterinin şakasına attığı kahkahaya denk gelir. Bakışı hep müşteride (ekranın sağı, aşağı). Kullanıcı 2026-10-23:
+  // daha az ama daha net hareket: jest 26–60 k'da bir değişir, iki poz arasında 14 k'da akar (anahtardan 2 k önce başlar),
+  // ağırlık 18 k'da bir bacaktan öbürüne geçer; ifade ayrık. Sekme, kahkaha ve baş sallama sine ile.
   const musteri = kisiAd(6).h, musteri2 = kisiAd(7)?.h; // dikeyde müşterinin sırtı dönük arkadaşı yok
   musteri.poz({ ifade: 'mutlu', bakis: [-1, -1] });
   const mBalon = minikBalon(kisiAd(6).g, musteri.goz, 1, kisiAd(6).o, 771, 50 * kisiAd(6).o);
@@ -1007,18 +1126,16 @@ export function kur(ctx) {
   };
   // [kare, garson durumu]
   const GAKIS = [
-    [BAS, { ifade: 'mutlu', bakis: [1, 1], jest: 'anlat', agirlik: 1 }],
-    [204, { jest: 'anlat2' }], [214, { jest: 'yukari', ifade: 'merak' }], [224, { jest: 'anlat', ifade: 'mutlu' }], [234, { jest: 'anlat2' }],
-    [244, { jest: 'kalca', ifade: 'merak', agirlik: -1 }],                                   // dinler
-    [284, { jest: 'gogus', ifade: 'mutlu' }],                                                  // güler
-    [302, { jest: 'anlat', agirlik: 1 }], [312, { jest: 'yukari', ifade: 'merak' }], [322, { jest: 'anlat2', ifade: 'mutlu' }], [332, { jest: 'yukari' }], [342, { jest: 'anlat' }],
-    [352, { jest: 'kalca', ifade: 'merak', agirlik: -1 }],
-    [384, { jest: 'gogus', ifade: 'mutlu', agirlik: 1 }],                                      // kahkaha (A'nın ikinci seslenmesi)
-    [418, { jest: 'anlat' }], [428, { jest: 'yukari', ifade: 'merak' }], [438, { jest: 'anlat2', ifade: 'mutlu' }], [448, { jest: 'anlat' }],
-    [460, { jest: 'kalca', ifade: 'merak', agirlik: -1 }],
-    [500, { jest: 'gogus', ifade: 'mutlu' }],
-    [522, { jest: 'anlat', agirlik: 1 }], [534, { jest: 'yukari' }], [546, { jest: 'anlat2' }], [558, { jest: 'sark', ifade: 'notr' }],
-    [580, { jest: 'kalca', ifade: 'merak', agirlik: -1 }], [612, { jest: 'anlat', ifade: 'mutlu', agirlik: 1 }], [626, { jest: 'yukari' }],
+    [BAS, { ifade: 'mutlu', bakis: [1, 1], jest: 'anlat', agirlik: 1 }],                     // anlatır
+    [222, { jest: 'yukari', ifade: 'merak' }], [248, { jest: 'anlat2', ifade: 'mutlu' }],
+    [274, { jest: 'kalca', ifade: 'merak', agirlik: -1 }],                                   // müşteriyi dinler
+    [Z.gormez, { jest: 'gogus', ifade: 'mutlu' }],                                           // şakaya güler: A'yı görmez
+    [358, { jest: 'anlat', agirlik: 1 }],                                                     // karşılık verir
+    [Z.soz2 + 6, { jest: 'gogus', ifade: 'mutlu' }],                                         // kahkaha (A'nın ikinci seslenmesi)
+    [442, { jest: 'anlat2' }],
+    [486, { jest: 'kalca', ifade: 'merak', agirlik: -1 }],                                   // dinler
+    [546, { jest: 'anlat', ifade: 'mutlu', agirlik: 1 }], [604, { jest: 'yukari', ifade: 'merak' }], [630, { jest: 'anlat2', ifade: 'mutlu' }],
+    [672, { jest: 'kalca', ifade: 'merak', agirlik: -1 }], [736, { jest: 'anlat', ifade: 'mutlu', agirlik: 1 }],
   ];
   // Akan izler: jest ve ağırlık anahtarları geçiş bitişine (anahtar + 7, ağırlıkta + 10) varılacak biçimde yazılır
   const gIz = (alan, sure, son) => {
@@ -1033,8 +1150,8 @@ export function kur(ctx) {
     return iz;
   };
   const sonraki = (alan) => (kk) => { const s = GAKIS.map(([n, d]) => (d[alan] != null && n !== BAS ? adim(n) - 2 : null)).filter((x) => x != null && x > kk - 2); return s.length ? s[0] : Infinity; };
-  const G_JEST = gIz('jest', 9, sonraki('jest'));
-  const G_AGIR = gIz('agirlik', 12, sonraki('agirlik'));
+  const G_JEST = gIz('jest', 14, sonraki('jest'));
+  const G_AGIR = gIz('agirlik', 18, sonraki('agirlik'));
   const AGIR = (f) => { const [a, b, t] = izAra(G_AGIR, f); return ara(a, b, t); };
   function garsonIz(f) {
     const [a, b, t] = izAra(G_JEST, f);
@@ -1046,34 +1163,36 @@ export function kur(ctx) {
   const gulmeIz = (f) => {
     for (const [n0, n1] of GULUS) if (f >= n0 - 1 && f <= n1) { gulmeKur(0.5 - 0.5 * Math.cos((2 * Math.PI * (f - n0)) / 10)); return; }
   };
-  for (const [a, b] of [[200, 242], [302, 350], [418, 458], [522, 562], [612, 647]]) balonAc(gBalon, a, b);
-  for (const [a, b] of [[248, 282], [356, 382], [464, 498], [584, 610]]) balonAc(mBalon, a, b);
-  for (const n of [252, 266, 362, 470, 486, 590]) zipla(gSar, adim(n), 3, 8); // dinlerken başını sallar
-  gulus(284, 300); gulus(384, 414); gulus(500, 516);
-  // müşteri: konuşurken 'merak'/'mutlu', garson güldürünce kahkaha
-  const MAKIS = [[BAS, 'mutlu'], [214, 'merak'], [234, 'mutlu'], [248, 'merak'], [266, 'mutlu'], [302, 'notr'], [322, 'mutlu'], [356, 'merak'], [384, 'mutlu'], [418, 'notr'], [438, 'mutlu'], [464, 'merak'], [500, 'mutlu'], [522, 'notr'], [584, 'merak'], [612, 'mutlu']];
+  // garson konuşur (minik balon) → müşteri konuşur → garson güler; seyrek baş sallama
+  for (const [a, b] of [[200, 270], [358, 396], [442, 484], [546, 600], [632, 668], [740, SON + 6]]) balonAc(gBalon, a, b);
+  for (const [a, b] of [[278, 322], [490, 540], [676, 730]]) balonAc(mBalon, a, b);
+  for (const n of [290, 306, 504, 522, 694]) zipla(gSar, adim(n), 3, 10); // dinlerken başını sallar
+  gulus(Z.gormez, Z.gormez + 30); gulus(Z.soz2 + 6, Z.soz2 + 40);
+  // müşteri: konuşurken 'mutlu', dinlerken 'merak', garson güldürünce kahkaha
+  const MAKIS = [[BAS, 'merak'], [248, 'mutlu'], [278, 'mutlu'], [358, 'merak'], [Z.soz2 + 6, 'mutlu'], [442, 'merak'], [490, 'mutlu'], [546, 'merak'], [604, 'mutlu'], [676, 'mutlu'], [736, 'merak']];
   for (const [n, f] of MAKIS) poz(adim(n), () => musteri.poz({ ifade: f, bakis: [-1, -1] }));
-  for (const n of [258, 290, 366, 392, 474, 508]) zipla(musteri.g, adim(n));
-  if (musteri2) for (const n of [222, 292, 340, 396, 446, 506, 560]) zipla(musteri2.g, adim(n));
+  for (const n of [292, 330, 408, 420, 504, 694]) zipla(musteri.g, adim(n));
+  if (musteri2) for (const n of [236, 336, 414, 520, 640, 760]) zipla(musteri2.g, adim(n));
 
   // ---------- Oyunculuk: öteki masalar (sohbet, bakış, göz kırpma 4 k; konuşan sine ile sekerek konuşur, sırtı dönükler
   // başını sallar)
   {
     const t4a = kisiAd(4), t4b = kisiAd(5);
     const b4a = minikBalon(t4a.g, t4a.h.goz, -1, t4a.o, 701, 50 * t4a.o), b4b = minikBalon(t4b.g, t4b.h.goz, 1, t4b.o, 704);
-    const sira = [[0, 200, 238], [1, 246, 290], [0, 298, 334], [1, 342, 384], [0, 394, 430], [1, 468, 506], [0, 528, 566], [1, 588, 628]];
+    // sohbet sırası (uzun, sakin dönüşler; konuşan 16 k'lık yumuşak sekmeyle konuşur)
+    const sira = [[0, 200, 252], [1, 264, 322], [0, 336, 392], [1, 408, 462], [0, 478, 534], [1, 550, 606], [0, 622, 680], [1, 696, 754]];
     for (const [j, a, b] of sira) {
       const kon = j ? t4b : t4a, din = j ? t4a : t4b;
       balonAc(j ? b4b : b4a, a, b);
       poz(adim(a), () => { kon.h.poz({ ifade: 'mutlu' }); din.h.poz({ ifade: 'merak' }); });
-      salin(kon.h.g, adim(a), Math.ceil((b - 5 - adim(a)) / 10));
+      salin(kon.h.g, adim(a), Math.ceil((b - 5 - adim(a)) / 16), -2, 16);
       poz(adim(b), () => { kon.h.poz({ ifade: 'notr' }); din.h.poz({ ifade: 'notr' }); });
     }
     poz(BAS, () => t4a.h.poz({ ifade: 'notr', bakis: [1, 0] }));
     // arka sıra, laptoplu, ön sağdaki kız, barista: tohumlu küçük canlılık
     const canli = (h, tohum, bakislar, ifadeler = ['notr', 'mutlu', 'merak', 'notr']) => {
       const r = rng(tohum);
-      for (let n = BAS + 4 + Math.floor(r() * 18); n < SON - 10; n += 34 + Math.floor(r() * 30)) {
+      for (let n = BAS + 4 + Math.floor(r() * 18); n < SON - 10; n += 52 + Math.floor(r() * 40)) {
         const f = ifadeler[Math.floor(r() * ifadeler.length)], b = bakislar[Math.floor(r() * bakislar.length)];
         poz(adim(n), () => h.poz({ ifade: f, bakis: b }));
         if (r() < 0.45) { poz(adim(n + 14), () => h.poz({ ifade: 'kirp' })); poz(adim(n + 14) + 4, () => h.poz({ ifade: f })); }
@@ -1087,7 +1206,7 @@ export function kur(ctx) {
     const konusmaPen = (h) => sira.filter(([j]) => (j ? t4b : t4a).h === h).map(([, a, b]) => [adim(a) - 8, b + 2]);
     sirt.forEach((q, j) => {
       const r = rng(960 + j), pen = konusmaPen(q.h);
-      for (let n = BAS + 10 + Math.floor(r() * 20); n < SON; n += 40 + Math.floor(r() * 30)) { const kk = adim(n); if (!pen.some(([a, b]) => kk >= a && kk <= b)) zipla(q.h.g, kk); }
+      for (let n = BAS + 10 + Math.floor(r() * 20); n < SON; n += 64 + Math.floor(r() * 40)) { const kk = adim(n); if (!pen.some(([a, b]) => kk >= a && kk <= b)) zipla(q.h.g, kk, -2, 10); }
     });
   }
 
@@ -1096,7 +1215,7 @@ export function kur(ctx) {
     if (f < BAS - 1 || f > SON + 1) return;
     aIz(f); aCiz();
     garsonIz(f); garsonCiz();
-    if (f >= 380 && f <= 416) sallaKur(f);
+    if (f >= Z.soz2 - 2 && f <= Z.sustu + 4) sallaKur(f);
     gulmeIz(f);
   });
   // Kur anında ilk durum (devir karesi)
