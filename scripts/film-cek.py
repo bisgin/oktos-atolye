@@ -8,6 +8,7 @@
 # Çıktı:  .impeccable/film/<CIKTI_ADI>.mp4 (+ .webm), kareler .impeccable/film/<CIKTI_ADI>-kare/ (yerel, depoya girmez)
 # Gerekenler: playwright (pip), kurulu Microsoft Edge (ayrı tarayıcı indirilmez), ffmpeg (winget Gyan.FFmpeg).
 # Tekrar çalıştırmak güvenli: kare klasörünü ve videoyu baştan yazar. --dry-run yalnız ne yapacağını yazar.
+# --devam: klasörü silmez, yalnız eksik kareleri çeker. Tarayıcı çekim sırasında düşerse betik kendisi de 3 kez yeniden açar.
 import argparse, glob, os, shutil, subprocess, sys, time
 
 sys.stdout.reconfigure(encoding="utf-8")
@@ -37,6 +38,7 @@ def main():
     a.add_argument("--tavan", help="bit hızı tavanı (ör. 1.2M); verilmezse CRF 18")
     a.add_argument("--olcek", help="çıktı boyutu, ör. 720x1280")
     a.add_argument("--poster", action="store_true", help="ilk kareyi WebP poster olarak yaz")
+    a.add_argument("--devam", action="store_true", help="kare klasörünü silme, yalnız eksik kareleri çek (yarıda kalan çekim)")
     a.add_argument("--dry-run", action="store_true")
     o = a.parse_args()
 
@@ -47,27 +49,51 @@ def main():
     if o.dry_run:
         print(f"çekilecek: {url} {o.en}x{o.boy} {o.fps} fps → {kare_dir} → {o.ad}.mp4")
         return
-    shutil.rmtree(kare_dir, ignore_errors=True)
+    if not o.devam:
+        shutil.rmtree(kare_dir, ignore_errors=True)
     os.makedirs(kare_dir, exist_ok=True)
 
-    from playwright.sync_api import sync_playwright
+    from playwright.sync_api import sync_playwright, Error as PwHata
     t0 = time.time()
+    hatalar = []
+    kare_yolu = lambda i: os.path.join(kare_dir, f"k_{i:05d}.png")
     with sync_playwright() as p:
-        b = p.chromium.launch(channel="msedge", headless=not o.gorunur, args=["--ignore-gpu-blocklist", "--enable-gpu-rasterization"])
-        pg = b.new_page(viewport={"width": o.en, "height": o.boy}, device_scale_factor=1)
-        hatalar = []
-        pg.on("pageerror", lambda e: hatalar.append(str(e)))
-        pg.goto(url)
-        pg.wait_for_function("window.tanitimHazir === true", timeout=90000)
-        sure = pg.evaluate("tanitim.sure()")
-        n = int(round(sure * o.fps))
-        print(f"süre {sure:.2f} sn, {n} kare")
-        for i in range(n):
-            pg.evaluate(f"tanitim.kare({i / o.fps})")
-            pg.screenshot(path=os.path.join(kare_dir, f"k_{i:05d}.png"), type="png")
-            if i % 60 == 0:
-                print(f"  {i}/{n}  ({time.time() - t0:.0f} sn)")
-        b.close()
+        # Tarayıcı dışarıdan kapanırsa (2026-10-25: iki çekim aynı saniyede düştü) yeniden açıp eksik kareden sürer.
+        # Kareler deterministik (tanitim.kare(t) anı eksiksiz kurar), yani yarıda kalan çekime devam etmek güvenli.
+        for deneme in range(4):
+            b = None
+            try:
+                b = p.chromium.launch(channel="msedge", headless=not o.gorunur, args=["--ignore-gpu-blocklist", "--enable-gpu-rasterization"])
+                pg = b.new_page(viewport={"width": o.en, "height": o.boy}, device_scale_factor=1)
+                pg.on("pageerror", lambda e: hatalar.append(str(e)))
+                pg.goto(url)
+                pg.wait_for_function("window.tanitimHazir === true", timeout=90000)
+                sure = pg.evaluate("tanitim.sure()")
+                n = int(round(sure * o.fps))
+                for fazla in glob.glob(os.path.join(kare_dir, "k_*.png")):  # süre kısalmışsa artakalan kareler videoya girmesin
+                    if int(os.path.basename(fazla)[2:7]) >= n:
+                        os.remove(fazla)
+                eksik = [i for i in range(n) if not (os.path.exists(kare_yolu(i)) and os.path.getsize(kare_yolu(i)) > 0)]
+                # var olan son kare yazılırken kesilmiş olabilir: onu da yeniden çek
+                if eksik and eksik[0] > 0:
+                    eksik.insert(0, eksik[0] - 1)
+                print(f"süre {sure:.2f} sn, {n} kare; çekilecek {len(eksik)}")
+                for j, i in enumerate(eksik):
+                    pg.evaluate(f"tanitim.kare({i / o.fps})")
+                    pg.screenshot(path=kare_yolu(i), type="png")
+                    if j % 60 == 0:
+                        print(f"  {i}/{n}  ({time.time() - t0:.0f} sn)")
+                b.close()
+                break
+            except PwHata as e:
+                print(f"tarayıcı düştü ({str(e).splitlines()[0][:120]}); yeniden açılıyor ({deneme + 1}/3)")
+                try:
+                    if b:
+                        b.close()
+                except PwHata:
+                    pass
+                if deneme == 3:
+                    sys.exit("çekim tamamlanamadı; --devam ile yeniden çalıştır")
     if hatalar:
         print("SAYFA HATALARI:", *hatalar[:5], sep="\n  ")
 
