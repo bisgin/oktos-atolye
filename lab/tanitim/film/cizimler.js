@@ -35,6 +35,23 @@ export const CIZIMLER = {
     { p: [[0.04, 0.0], [0.12, 0.0]] },
     { p: [[-0.14, 0.22], [0.14, 0.22]] },
   ],
+  // Kafe (A, 2026-10-25 K1): peçeteye karaladığı kendi yaratığı (boynuzlu, iri gözlü, oturan kedi-yaratık); QR standının yerine.
+  // s1-kafe peçete karalaması, balondaki 3B hâli, kalabalık ve final aynı noktaları kullanır. Sıra: gövde (ön ayak arası
+  // çentikli), kuyruk, baş (kedi kulaklı), iki boynuz, iki göz, iki bebek, ağız. 25 uzun kenar (gövde 8, kuyruk 3, baş 10,
+  // boynuz 2 + 2); göz ve ağız kısa ayrıntı. Renk: limon gövde ve baş, şeftali boynuz (finalde lila d20 ve gök telefon
+  // standıyla karışmasın)
+  yaratik: [
+    { p: [[-0.3, 0.46], [-0.03, 0.46], [0, 0.36], [0.03, 0.46], [0.3, 0.46], [0.34, 0.3], [0.26, 0.12], [0.18, -0.02], [-0.18, -0.02], [-0.26, 0.12], [-0.34, 0.3]], kapali: true, r: 'limon' },
+    { p: [[0.31, 0.41], [0.46, 0.36], [0.47, 0.2], [0.36, 0.1]] },
+    { p: [[-0.27, -0.03], [-0.36, -0.17], [-0.33, -0.32], [-0.38, -0.47], [-0.18, -0.38], [0.18, -0.38], [0.38, -0.47], [0.33, -0.32], [0.36, -0.17], [0.27, -0.03]], kapali: true, r: 'limon' },
+    { p: [[-0.13, -0.385], [-0.04, -0.385], [-0.19, -0.52]], kapali: true, r: 'seftali' },
+    { p: [[0.04, -0.385], [0.13, -0.385], [0.19, -0.52]], kapali: true, r: 'seftali' },
+    { p: oval(-0.14, -0.21, 0.1, 0.11, 0, 360, 14), kapali: true, r: 'beyaz', yumusak: true },
+    { p: oval(0.14, -0.21, 0.1, 0.11, 0, 360, 14), kapali: true, r: 'beyaz', yumusak: true },
+    { p: oval(-0.16, -0.18, 0.05, 0.065, 0, 360, 10), kapali: true, r: 'koyu', yumusak: true },
+    { p: oval(0.12, -0.18, 0.05, 0.065, 0, 360, 10), kapali: true, r: 'koyu', yumusak: true },
+    { p: [[-0.06, -0.075], [-0.03, -0.05], [0, -0.075], [0.03, -0.05], [0.06, -0.075]] },
+  ],
   // Atölye (B): üstten bölmeli vida organizeri
   organizer: [
     { p: [[-0.46, -0.3], [0.46, -0.3], [0.46, 0.3], [-0.46, 0.3]], kapali: true, r: 'nane' },

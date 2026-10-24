@@ -6,25 +6,31 @@
 //      her gözünde bir filiz. k60 başını kaldırıp gülümser; elinin tersiyle alnını siler, alnında toprak izi kalır.
 //      Kasalar baskı ürünümüz gibi: dış duvarlarda katman çizgileri, her katta altlığın (taşma tablası) kenarı. Tezgâh ve
 //      kasalar küçük bir perspektif izdüşümüyle (kamera3: Y yukarı, Z kameraya, mm) çizilir; ızgara gerçek kısalmayla okunur.
-// #4b.2 (k156–263) QR, modem: rafta yönlendirici (anten, yanıp sönen ışıklar), üstünde dik QR plakası (Wi-Fi simgesi).
-//      Telefon tutan el alttan girer; vizörde QR, köşe işaretleri kilitlenir, küçük turuncu tik (tik).
-// #4b.3 (k264–371) QR, kafe masası: mermer masa, çadır QR standı (cizimler.js qrStandi biçimi, gerçek QR deseniyle), buharı
-//      tüten fincan, küçük vazo; bir el ikinci fincanı tabağıyla masaya bırakır (tik) ve sağ üste çekilir.
-// #4b.4 (k372–491) QR, kartvizit: başka bir masa KUŞ BAKIŞI (ahşap tahtalar, defter, kalem, fincan, saksı, telefon); el
-//      QR'lı kartviziti kadrajın ortasına kaydırır (tik), kalkıp çekilir (kol.js elUstten).
+// #4b.2 (k156–263) Çanta süsü: süse yakın plan (ürün kahraman, kadraj boyunun ~%30'u): koyu bez çantanın fermuarı, halka,
+//      çantanın kenarı; kişinin yüzü kadraj dışında, omzu ve askı görünür; arkada okul dolapları. k14'te kişi sola döner
+//      (gövde kayar, hafif yatar); çanta askıdan, kedi silüetli süs fermuar sürgüsünden sarkaç gibi sallanıp söner (iki
+//      zincirli sarkaç, kurulumda bir kez hesaplanır). Süs sedef dokulu (lilaAcik + açık parıltı bandı, salınımla kayar); en
+//      yüksek salınımda kısa bir yıldız parıltısı, ortasında küçük turuncu tik (tik). Kamera çekim boyunca süse iter.
+// #4b.3 (k264–371) Yayıncı: genç yayıncı masada, kulaklıklı; önde tripodlu kamera. k26 kameranın ışığı yanar (tik), arkadaki
+//      raftaki kalın 3B "PİKSEL" harflerinin ardındaki pastel ışık güçlenir; kameraya bakar, gülümser, el sallar, konuşur.
+//      Harfler ve maskot (özgün, piksel gözlü küp yaratık) renkli; kişi, oda ve kamera mono. Platform arayüzü ya da işareti yok.
+// #4b.4 (k372–491) Maske: ayna karşısında genç bir cosplayer (özgün kostüm: pelerin, geometrik etekli kapelet, altıgen toka).
+//      Kıpçak esinli yüz maskesini iki eliyle kenarından tutup yüzüne kaldırır, k34'te oturur (tik), eller iner; k54–68
+//      aynaya döner. Ayna önce sırtını, dönünce maskeli yüzünü (aynalı) gösterir; küçük bir baş sallar; döndükten sonra
+//      kamera aynadaki maskeli yansımaya iter (maske kapanışta büyük). Maske özgün desen:
+//      alın çıkıntısı, kaş ve burun kabartması, bıyık kabartması, zikzak bant, perçinler; açık limon, kabartmalar şeftali.
 // Sözleşme: kur(ctx) yalnız ctx.tl'ye İÇ kare zamanlı tween ekler (ARALIK [0, SON]); her çekim kendi katmanında, kamerayı
-// kendi ilk karesinde koyar. QR desenleri tohumlu (sürüm 1 iskeleti: üç konum karesi, zamanlama şeritleri) ve durağan;
-// konturlar kaynar (8 fps). Bütün hareket 60 fps ve ctx.herKare ile kare numarasından hesaplanır (geri sarmada da aynı
-// kare): bahçıvanın kolları anahtar pozlar arasında her karede ara değerle (kol.js her karede yeniden çizilir), gövdesi
-// yumuşak iner kalkar; el, fincan, kart ve buhar da her karede. Ayrık kalanlar: yüz ifadesi, bakış, modem ışıkları ve
-// çizgi kaynaması. Turuncu yalnız #4b.2'deki tikte.
-import { kisiSVG, MONO, PALET, BOY, GOZ_Y, yol, rng, oval } from '../insan.js';
-import { kolSVG, omuzlar, govdeKes, bilekBul, elNoktasi, elUstten } from '../kol.js';
-import { CIZIMLER, URUN_RENK } from './cizimler.js';
+// kendi ilk karesinde koyar; konturlar kaynar (8 fps). Bütün hareket 60 fps ve ctx.herKare ile kare numarasından hesaplanır
+// (geri sarmada da aynı kare): kollar anahtar pozlar arasında her karede ara değerle (kol.js her karede yeniden çizilir),
+// gövde, çanta, süs, maske ve baş da her karede. Ayrık kalanlar: yüz ifadesi, bakış, kamera ışığının yanışı, maskotun göz
+// kırpması ve çizgi kaynaması. Turuncu yalnız #4b.2'deki parıltının tikinde.
+import { kisiSVG, MONO, PALET, BOY, GOZ_Y, YAPI, yol, rng, oval } from '../insan.js';
+import { kolSVG, kolIK, omuzlar, govdeKes, bilekBul, elNoktasi } from '../kol.js';
+import { URUN_RENK } from './cizimler.js';
 
 export const ARALIK = [0, 491];
 const [BAS, SON] = ARALIK;
-// Çekim sınırları (iç kare): bahçıvan, modem, kafe, kartvizit
+// Çekim sınırları (iç kare): bahçıvan, çanta süsü, yayıncı, maske
 const K1 = 0, K2 = 156, K3 = 264, K4 = 372;
 const D2R = Math.PI / 180;
 const M = PALET.murekkep;
@@ -79,34 +85,23 @@ function yDortgen(x0, y0, x1, y1, r, ad = 24) {
   return kenarla(k, ad, true);
 }
 const dYol = (pts) => 'M' + pts.map((p) => `${f1(p[0])} ${f1(p[1])}`).join('L') + 'Z';
-// Çift doğrusal dörtgen eşlemesi: A sol üst, B sağ üst, Cc sağ alt, D sol alt; (u, v) ∈ [0, 1]
-const dortgen = (A, B, Cc, D) => (u, v) => {
-  const a = (1 - u) * (1 - v), b = u * (1 - v), c = u * v, d = (1 - u) * v;
-  return [a * A[0] + b * B[0] + c * Cc[0] + d * D[0], a * A[1] + b * B[1] + c * Cc[1] + d * D[1]];
+// a→b doğrusu boyunca w enli bant (dörtgen)
+const bant = (a, b, w) => {
+  const l = Math.hypot(b[0] - a[0], b[1] - a[1]) || 1, n = [-(b[1] - a[1]) / l * w / 2, (b[0] - a[0]) / l * w / 2];
+  return [[a[0] + n[0], a[1] + n[1]], [b[0] + n[0], b[1] + n[1]], [b[0] - n[0], b[1] - n[1]], [a[0] - n[0], a[1] - n[1]]];
 };
-
-// ---------- QR (sürüm 1 iskeleti, 21×21): üç konum karesi + ayırma bandı, zamanlama şeritleri, tohumlu veri modülleri.
-// Gerçek bir bağlantıyı kodlamaz (animatik); okunuşu QR gibidir.
-function qrDesen(tohum, n = 21) {
-  const r = rng(tohum * 7 + 3);
-  const m = Array.from({ length: n }, () => Array(n).fill(false));
-  const ayrik = (x, y) => (x < 8 && y < 8) || (x > n - 9 && y < 8) || (x < 8 && y > n - 9);
-  for (let y = 0; y < n; y++) for (let x = 0; x < n; x++) if (!ayrik(x, y)) m[y][x] = r() < 0.48;
-  for (let i = 8; i < n - 8; i++) { m[6][i] = i % 2 === 0; m[i][6] = i % 2 === 0; }
-  const konum = (x0, y0) => { for (let y = 0; y < 7; y++) for (let x = 0; x < 7; x++) m[y0 + y][x0 + x] = Math.max(Math.abs(x - 3), Math.abs(y - 3)) !== 2; };
-  konum(0, 0); konum(n - 7, 0); konum(0, n - 7);
-  return m;
-}
-// Koyu modüllerin tek yolu (komşu kareler aynı yolda: dikiş çıkmaz). map: (u, v) → ekran; sessiz bölge modül cinsinden
-function qrYol(m, map, sessiz = 1.5) {
-  const n = m.length, top = n + 2 * sessiz, p = (i, j) => map((i + sessiz) / top, (j + sessiz) / top);
-  let d = '';
-  for (let j = 0; j < n; j++) for (let i = 0; i < n; i++) if (m[j][i]) {
-    const q = [p(i, j), p(i + 1, j), p(i + 1, j + 1), p(i, j + 1)];
-    d += `M${f1(q[0][0])} ${f1(q[0][1])}L${f1(q[1][0])} ${f1(q[1][1])}L${f1(q[2][0])} ${f1(q[2][1])}L${f1(q[3][0])} ${f1(q[3][1])}Z`;
-  }
-  return d;
-}
+// Beşinci derece yumuşak adım (ivmesi de sürekli: sarkacı sarsıntısız sürer)
+const sm5 = (x) => { const t = sinir(x, 0, 1); return t * t * t * (t * (t * 6 - 15) + 10); };
+// Kalın harf iskeletleri (birim: harf boyu; y aşağı, 0 tepe, 1 taban). e: eğri (noktalar olduğu gibi), yoksa düz kenarlar
+// sıklaştırılır. İ'nin noktası sıfır boylu çizgidir (yuvarlak uç daire olur).
+const HARF = {
+  P: { en: 0.54, c: [{ p: [[0, 1], [0, 0]] }, { e: 1, p: [[0, 0], [0.3, 0], [0.52, 0.1], [0.54, 0.28], [0.44, 0.46], [0.24, 0.52], [0, 0.52]] }] },
+  'İ': { en: 0, c: [{ p: [[0, 0], [0, 1]] }, { p: [[0, -0.32], [0.001, -0.32]] }] },
+  K: { en: 0.54, c: [{ p: [[0, 0], [0, 1]] }, { p: [[0.52, 0], [0.04, 0.54]] }, { p: [[0.2, 0.4], [0.56, 1]] }] },
+  S: { en: 0.52, c: [{ e: 1, p: [[0.5, 0.12], [0.34, 0], [0.12, 0.02], [0.02, 0.18], [0.12, 0.4], [0.38, 0.54], [0.52, 0.74], [0.42, 0.96], [0.18, 1], [0, 0.88]] }] },
+  E: { en: 0.48, c: [{ p: [[0.48, 0], [0, 0], [0, 1], [0.48, 1]] }, { p: [[0, 0.5], [0.38, 0.5]] }] },
+  L: { en: 0.46, c: [{ p: [[0, 0], [0, 1], [0.46, 1]] }] },
+};
 
 // ---------- Küçük perspektif kamera (mm; Y yukarı, Z kameraya doğru, yuvarlanma yok): P(nokta) → ekran, m(nokta) → px/mm
 function kamera3(goz, hedef, f, [sx, sy]) {
@@ -131,21 +126,21 @@ function yerel(X, Z, aci) {
 }
 
 export function kur(ctx) {
-  const { k, E, tl, gsap, el, cizgi, W, H, VURGU, yer } = ctx;
+  const { k, E, tl, gsap, el, cizgi, W, H, yer } = ctx;
   let tohumSayac = 4100;
   const T = () => tohumSayac++;
   const C = (ust, pts, o = {}) => cizgi(ust, pts, { tohum: T(), ...o });
   const es = (e) => (typeof e === 'function' ? e : gsap.parseEase(e));
-  const EO = es(E.EO), EI = es(E.EI), BO = es('back.out(1.7)'), P3O = es('power3.out');
+  const EO = es(E.EO), KMf = es(E.KM), P2IO = es('power2.inOut');
   // f karesinin [k0, k1] içindeki ilerlemesi (0→1, eğri e)
   const ilerle = (f, k0, k1, e = (x) => x) => e(sinir((f - k0) / (k1 - k0), 0, 1));
   let kayIndis = 0; // çekirdeğin son kaynama indisi (herKare çizimleri aynı çizimle yeniden kurar)
   ctx.kaynayanlar.add((i) => { kayIndis = i; });
 
   ctx.vurus('4b.1', 'Bahçıvan: fide diker, alnını siler', K1, K2 - 1);
-  ctx.vurus('4b.2', 'QR: modemin üstünde, telefonla okutulur', K2, K3 - 1);
-  ctx.vurus('4b.3', 'QR: kafe masasında, fincan bırakılır', K3, K4 - 1);
-  ctx.vurus('4b.4', 'QR: kuş bakışı kartvizit kaydırılır', K4, SON);
+  ctx.vurus('4b.2', 'Çanta süsü: döner, kedi süs sallanır, parıldar', K2, K3 - 1);
+  ctx.vurus('4b.3', 'Yayıncı: kamera ışığı yanar, el sallar (PİKSEL)', K3, K4 - 1);
+  ctx.vurus('4b.4', 'Maske: takar, aynaya döner, baş sallar', K4, SON);
 
   // Her çekim kendi katmanında: k0'da açılır, k1 + 1'de kapanır. Görünürlük tl.set ile değil, her karede kare numarasından
   // kurulur: ARALIK 0'dan başladığı için alt çizelgenin tam 0. anındaki set ve call'lar GSAP'ta uygulanmıyor (çocuk zamanı
@@ -173,15 +168,6 @@ export function kur(ctx) {
   tl.set(ctx.itme, { x: 0, y: 0 }, k(BAS));
   // Bir grubun dönüşümünü yaz (herKare): öteleme, dönme (derece), ölçek
   const donustur = (g, x, y, r = 0, s = 1) => g.setAttribute('transform', `translate(${f1(x)} ${f1(y)}) rotate(${f1(r)}) scale(${(+s).toFixed(4)})`);
-
-  // QR çizimi: beyaz zemin dörtgeni + koyu modüller (durağan) + ince kontur (kaynar)
-  const qrKoy = (ust, A, B, Cc, D, tohum, { zemin = TON.beyaz, kontur = 2.4 } = {}) => {
-    const g = el(ust, 'g');
-    el(g, 'path', { d: dYol([A, B, Cc, D]), fill: zemin });
-    el(g, 'path', { d: qrYol(qrDesen(tohum), dortgen(A, B, Cc, D)), fill: M });
-    if (kontur) C(g, kenarla([A, B, Cc, D], 18), { kapali: true, kalinlik: kontur, genlik: 0.5, renk: TON.cizgi });
-    return g;
-  };
 
   // =========================================================================== #4b.1 BAHÇIVAN (k0–155)
   ctx.isaret(K1, 'kesme');
@@ -579,323 +565,595 @@ export function kur(ctx) {
   tl.set(fideG, { autoAlpha: 1 }, k(K1 + 20));
   kamera(K1, K2 - 1, B1.kam[0], B1.kam[1]);
 
-  // =========================================================================== #4b.2 QR, MODEM (k156–263)
-  ctx.isaret(K2, 'kesme');
-  const L2 = katmanAc('s4b-modem', K2, K3 - 1);
-  const B2 = yer({
-    r: { x: 780, y: 700, s: 1 }, raf: { y: 700, s: 1 }, priz: [330, 480], tel: { x: 1390, y: 620, s: 1, aci: -9 }, gir: [430, 720, 16],
-    kam: [[1000, 600, 1.16], [985, 590, 1.22]],
-  }, {
-    r: { x: 540, y: 1150, s: 1.3 }, raf: { y: 1150, s: 1.3 }, priz: [250, 760], tel: { x: 720, y: 1520, s: 1.3, aci: -7 }, gir: [300, 860, 12],
-    kam: [[540, 1160, 1.26], [548, 1148, 1.32]],
-  });
-  {
-    // duvar prizi ve kablo (açık gri), raf
-    const [px, py] = B2.priz, s = B2.r.s;
-    C(L2.svg, yDortgen(px - 46 * s, py - 46 * s, px + 46 * s, py + 46 * s, 12 * s, 20), { kapali: true, dolgu: '#e2ddd3', kalinlik: 4, renk: '#8d867a' });
-    for (const dx of [-14, 14]) el(L2.svg, 'ellipse', { cx: f1(px + dx * s), cy: f1(py), rx: f1(5 * s), ry: f1(8 * s), fill: '#8d867a' });
-    C(L2.svg, [[px, py + 12 * s], [px + 20 * s, py + 120 * s], [lerp(px, B2.r.x, 0.5), B2.r.y - 40 * s], [B2.r.x - 200 * B2.r.s, B2.r.y - 90 * B2.r.s]], { kalinlik: 4.5, renk: '#8d867a' });
-    const ry = B2.raf.y, rs = B2.raf.s;
-    C(L2.svg, kenarla([[-80, ry - 40 * rs], [W + 80, ry - 40 * rs], [W + 80, ry + 18 * rs], [-80, ry + 18 * rs]], 60), { kapali: true, dolgu: TON.ahsap, kalinlik: 4.4 });
-    C(L2.svg, kenarla([[-80, ry + 18 * rs], [W + 80, ry + 18 * rs], [W + 80, ry + 58 * rs], [-80, ry + 58 * rs]], 60), { kapali: true, dolgu: TON.ahsapOn, kalinlik: 4.4 });
-    for (const x of [W * 0.18, W * 0.82]) C(L2.svg, kenarla([[x - 14, ry + 58 * rs], [x + 14, ry + 58 * rs], [x + 14, ry + 200 * rs], [x - 14, ry + 200 * rs]], 30), { kapali: true, dolgu: TON.ahsapK, kalinlik: 4 });
-  }
-  // Yönlendirici (yerel: ön yüzün alt ortası 0,0) ve üstünde QR plakası
-  const gR = el(L2.svg, 'g', { transform: `translate(${B2.r.x} ${B2.r.y}) scale(${B2.r.s})` });
-  const LED = [];
-  {
-    el(gR, 'ellipse', { cx: 30, cy: 4, rx: 290, ry: 16, fill: '#000', opacity: 0.08 });
-    for (const yon of [-1, 1]) {
-      const b0 = [yon * 196, -124], u = [Math.sin(yon * 8 * D2R), -Math.cos(yon * 8 * D2R)], n = [-u[1], u[0]], L = 238, r = 11;
-      const pt = (t, o2) => [b0[0] + u[0] * L * t + n[0] * o2, b0[1] + u[1] * L * t + n[1] * o2];
-      C(gR, [pt(0, -r), pt(0.5, -r), pt(1, -r * 0.9), pt(1.04, 0), pt(1, r * 0.9), pt(0.5, r), pt(0, r)], { kapali: true, dolgu: '#8d867a', kalinlik: 4 });
-      C(gR, [pt(0.12, -r * 1.3), pt(0.12, r * 1.3)], { kalinlik: 3 });
-    }
-    C(gR, kenarla([[-262, -100], [262, -100], [240, -134], [-240, -134]], 30), { kapali: true, dolgu: '#a59e91', kalinlik: 4.4, kay: [2, 2] });
-    for (let i = 0; i < 6; i++) C(gR, [[-150 + i * 22, -110], [-140 + i * 22, -126]], { kalinlik: 2.6, renk: '#6f695f', genlik: 0.4 });
-    C(gR, yDortgen(-262, -100, 262, 0, 14, 30), { kapali: true, dolgu: '#8d867a', kalinlik: 4.4 });
-    for (let i = 0; i < 6; i++) {
-      const x = -190 + i * 40;
-      LED.push(C(gR, yDortgen(x - 10, -54, x + 10, -46, 4, 8), { kapali: true, dolgu: i % 2 ? TON.beyaz : '#5f5a53', kalinlik: 2.4, kay: [0, 0] }));
-    }
-    C(gR, [[150, -50], [226, -50]], { kalinlik: 3, renk: '#5f5a53' });
-    for (const x of [-210, 210]) C(gR, kenarla([[x - 22, 0], [x + 22, 0], [x + 18, 8], [x - 18, 8]], 10), { kapali: true, dolgu: '#5f5a53', kalinlik: 3 });
-    // QR plakası (dik, ayaklı; ürünümüz, nane): ayak, sağ yan kalınlık, ön yüz, Wi-Fi simgesi, QR (beyaz zeminde), yazı çizgisi
-    const gP = el(gR, 'g', { transform: 'translate(36 -118)' });
-    C(gP, kenarla([[-94, -6], [94, -6], [98, 10], [-98, 10]], 20), { kapali: true, dolgu: koyult(NANE, 0.22), kalinlik: 3.6 });
-    C(gP, kenarla([[80, -222], [92, -216], [92, -4], [80, -6]], 20), { kapali: true, dolgu: koyult(NANE, 0.14), kalinlik: 3.4, kay: [0, 0] });
-    C(gP, yDortgen(-80, -226, 80, -4, 12, 24), { kapali: true, dolgu: NANE, kalinlik: 4.2, kay: [2, 2] });
-    for (const [r, n] of [[30, 8], [19, 6]]) C(gP, oval(0, -176, r, r * 0.9, 225, 315, n), { kalinlik: 4 });
-    el(gP, 'circle', { cx: 0, cy: -178, r: 4.5, fill: M });
-    qrKoy(gP, [-58, -160], [58, -160], [58, -44], [-58, -44], 21, { kontur: 0 });
-    C(gP, [[-36, -26], [36, -26]], { kalinlik: 4, renk: '#6f695f' });
-  }
-  // Telefon tutan el (yerel: telefonun ortası 0,0). Sıra: parmak uçları ve avuç telefonun arkasında, başparmak önünde.
-  const gT = el(L2.svg, 'g');
-  const telKilit = el(gT, 'g'), telTik = el(gT, 'g');
-  {
-    const ten = MONO.ten[1], giy = MONO.giysi[5];
-    const g0 = el(gT, 'g');
-    gT.insertBefore(g0, telKilit);
-    for (const [x, y] of [[-112, 26], [-117, 76], [-111, 126]]) C(g0, oval(x, y, 19, 23, 0, 360, 12, 2), { kapali: true, dolgu: ten, kalinlik: 3.8, kay: [1.5, 1.5] });
-    // yen (bileğin altından kadraj dışına), sonra avucun kökü ve bilek tek dış hatla (telefonun arkasından sağ alta taşar)
-    C(g0, [[88, 330], [184, 300], [330, 640], [190, 700]], { kapali: true, dolgu: giy, kalinlik: 4.2 });
-    C(g0, [[-40, 200], [40, 150], [112, 136], [138, 186], [140, 246], [162, 300], [184, 330], [104, 352], [86, 300], [52, 256], [0, 238]], { kapali: true, dolgu: ten, kalinlik: 4.2, kay: [2, 2] });
-    C(g0, [[118, 176], [126, 222], [124, 250]], { kalinlik: 2.2 });
-    C(g0, [[96, 344], [180, 316]], { kalinlik: 3.4 });
-    C(g0, yDortgen(-110, -222, 110, 222, 30, 30), { kapali: true, dolgu: TON.koyu, kalinlik: 4.4 });
-    C(g0, yDortgen(-97, -206, 97, 208, 20, 30), { kapali: true, dolgu: '#d8d2c7', kalinlik: 2.6, kay: [0, 0] });
-    C(g0, yDortgen(-26, -200, 26, -190, 5, 10), { kapali: true, dolgu: TON.koyu, kalinlik: 2, kay: [0, 0] });
-    // vizörde plaka: nane yüz, Wi-Fi yayı, QR
-    C(g0, yDortgen(-76, -150, 76, 104, 10, 24), { kapali: true, dolgu: NANE, kalinlik: 2.6, renk: '#8d867a', kay: [0, 0] });
-    C(g0, oval(0, -104, 22, 20, 225, 315, 6), { kalinlik: 3.4 });
-    qrKoy(g0, [-56, -84], [56, -84], [56, 28], [-56, 28], 21, { kontur: 0 });
-  }
-  {
-    // köşe işaretleri (kilitlenince daralır) ve tik rozeti (turuncu, küçük)
-    const c = [0, -28], a = 74;
-    for (const [sx, sy] of [[-1, -1], [1, -1], [1, 1], [-1, 1]]) C(telKilit, [[c[0] + sx * a, c[1] + sy * (a - 26)], [c[0] + sx * a, c[1] + sy * a], [c[0] + sx * (a - 26), c[1] + sy * a]], { kalinlik: 6, renk: TON.beyaz, genlik: 0.5 });
-    for (const [sx, sy] of [[-1, -1], [1, -1], [1, 1], [-1, 1]]) C(telKilit, [[c[0] + sx * a, c[1] + sy * (a - 26)], [c[0] + sx * a, c[1] + sy * a], [c[0] + sx * (a - 26), c[1] + sy * a]], { kalinlik: 3, renk: M, genlik: 0.5 });
-    C(telTik, oval(0, 0, 26, 26, 0, 360, 16, 2), { kapali: true, dolgu: TON.beyaz, kalinlik: 3.4, kay: [0, 0] });
-    C(telTik, [[-12, 1], [-3, 10], [13, -9]], { kalinlik: 6, renk: VURGU, genlik: 0.4 });
-    // başparmak telefonun sağ kenarının önünde
-    const ten = MONO.ten[1];
-    C(gT, [[128, 132], [110, 92], [80, 50], [66, 38], [60, 52], [74, 82], [98, 150]], { kapali: true, dolgu: ten, kalinlik: 4, kay: [1.5, 1.5] });
-    C(gT, [[66, 54], [74, 48], [80, 56]], { kalinlik: 2.2 });
-  }
-  const TIK2 = K2 + 56;
-  ctx.isaret(TIK2, 'tik');
-  ctx.herKare((f) => {
-    if (f < K2 - 1 || f > K3) return;
-    const t = ilerle(f, K2 + 8, K2 + 34, EO), G = B2.gir, Tl = B2.tel;
-    donustur(gT, Tl.x + G[0] * (1 - t), Tl.y + G[1] * (1 - t), Tl.aci + G[2] * (1 - t), Tl.s);
-    const kil = 1.12 - 0.12 * ilerle(f, K2 + 44, K2 + 52, EO);
-    donustur(telKilit, 0, -28 * (1 - kil), 0, kil);
-    const tk = f < TIK2 ? 0 : BO(sinir((f - TIK2) / 10, 0, 1));
-    donustur(telTik, 0, 156, 0, Math.max(0.001, tk));
-    telTik.setAttribute('opacity', f < TIK2 ? 0 : 1);
-    // ışıklar: 2. ve 4. ışık 10 karede bir yanıp söner (ışık, hareket değil: ayrık kalır)
-    const yan = Math.floor((f - K2) / 10) % 2 === 0;
-    LED[1].dolgu.setAttribute('fill', yan ? TON.beyaz : '#5f5a53');
-    LED[3].dolgu.setAttribute('fill', yan ? '#5f5a53' : TON.beyaz);
-  });
-  kamera(K2, K3 - 1, B2.kam[0], B2.kam[1]);
-
-  // =========================================================================== #4b.3 QR, KAFE MASASI (k264–371)
-  ctx.isaret(K3, 'kesme');
-  const L3 = katmanAc('s4b-kafe', K3, K4 - 1);
-  const B3 = yer({
-    m: { cx: 960, cy: 800, rx: 720, ry: 190, s: 1 }, pencere: [70, 40, 1180, 520], lamba: [1480, 340], fincan: [-360, 340],
-    kam: [[960, 690, 1.22], [990, 700, 1.28]],
-  }, {
-    m: { cx: 540, cy: 1240, rx: 500, ry: 150, s: 0.95 }, pencere: [90, 300, 1000, 880], lamba: [800, 560], fincan: [-290, 285],
-    kam: [[540, 1160, 1.36], [552, 1168, 1.42]],
-  });
-  const m3 = B3.m, s3 = m3.s;
-  {
-    // pencere (açık gri kayıtlar) ve sarkan lamba
-    const [x0, y0, x1, y1] = B3.pencere, ac = { kalinlik: 5, renk: '#d6d0c5', genlik: 0.8 };
-    C(L3.svg, kenarla([[x0, y0], [x1, y0], [x1, y1], [x0, y1]], 60), { kapali: true, kalinlik: 6, renk: '#d6d0c5' });
-    C(L3.svg, kenarla([[(x0 + x1) / 2, y0], [(x0 + x1) / 2, y1]], 60, false), ac);
-    C(L3.svg, kenarla([[x0, lerp(y0, y1, 0.42)], [x1, lerp(y0, y1, 0.42)]], 60, false), ac);
-    const [lx, ly] = B3.lamba;
-    C(L3.svg, [[lx, -40], [lx + 2, ly - 60 * s3]], { kalinlik: 3, renk: '#a59e91' });
-    C(L3.svg, kenarla([[lx - 26 * s3, ly - 62 * s3], [lx + 26 * s3, ly - 62 * s3], [lx + 74 * s3, ly], [lx - 74 * s3, ly]], 20), { kapali: true, dolgu: '#bdb6a9', kalinlik: 4, renk: '#8d867a' });
-    C(L3.svg, oval(lx, ly + 6 * s3, 20 * s3, 13 * s3, 0, 180, 8, 2), { kalinlik: 3, renk: '#8d867a' });
-  }
-  // Masa: ayak, kalınlık, mermer üst (damarlar)
-  {
-    const { cx, cy, rx, ry } = m3;
-    C(L3.svg, kenarla([[cx - 34 * s3, cy + ry], [cx + 34 * s3, cy + ry], [cx + 30 * s3, H + 600], [cx - 30 * s3, H + 600]], 50), { kapali: true, dolgu: '#8d867a', kalinlik: 4.4 });
-    const on = oval(cx, cy, rx, ry, 0, 180, 30, 2.1);
-    C(L3.svg, [...on, ...on.slice().reverse().map(([x, y]) => [x, y + 22 * s3])], { kapali: true, dolgu: '#bdb6a9', kalinlik: 4.4 });
-    C(L3.svg, oval(cx, cy, rx, ry, 0, 360, 56, 2.1), { kapali: true, dolgu: '#e6e1d8', kalinlik: 4.4 });
-    for (const [a, b, c2, d] of [[-0.8, 0.1, -0.35, 0.55], [0.2, -0.6, 0.62, 0.1], [0.45, 0.4, 0.86, 0.22]]) {
-      C(L3.svg, [[cx + a * rx, cy + b * ry], [cx + lerp(a, c2, 0.5) * rx + 14, cy + lerp(b, d, 0.5) * ry - 8], [cx + c2 * rx, cy + d * ry]], { kalinlik: 2, renk: '#cfc9bd', genlik: 0.8 });
-    }
-  }
-  // QR standı (ürünümüz, gök): cizimler.js qrStandi gövdesi (çadır ön yüzü + taban), sağda çadırın öbür kanadı; panelde gerçek QR
-  {
-    const boy = 300 * s3, sx = m3.cx, sy = m3.cy - 52 * s3;
-    const Q = ([x, y]) => [sx + x * boy, sy + (y - 0.42) * boy];
-    el(L3.svg, 'ellipse', { cx: f1(sx + 30 * s3), cy: f1(sy + 4 * s3), rx: f1(150 * s3), ry: f1(24 * s3), fill: '#000', opacity: 0.08 });
-    const on = CIZIMLER.qrStandi[0].p, taban = CIZIMLER.qrStandi[1].p;
-    C(L3.svg, kenarla([[0.22, -0.42], [0.29, -0.39], [0.41, 0.40], [0.32, 0.42]].map(Q), 16), { kapali: true, dolgu: koyult(URUN_RENK.gok, 0.16), kalinlik: 3.8, kay: [1.5, 1.5] });
-    C(L3.svg, kenarla([[taban[0][0], 0.405], [taban[1][0], 0.405], [taban[1][0], 0.45], [taban[0][0], 0.45]].map(Q), 18), { kapali: true, dolgu: koyult(URUN_RENK.gok, 0.3), kalinlik: 3.6 });
-    C(L3.svg, kenarla(on.map(Q), 18), { kapali: true, dolgu: URUN_RENK.gok, kalinlik: 4.4, kay: [2, 2] });
-    const yuz = dortgen(Q(on[1]), Q(on[2]), Q(on[3]), Q(on[0]));
-    qrKoy(L3.svg, yuz(0.2, 0.1), yuz(0.8, 0.1), yuz(0.8, 0.5), yuz(0.2, 0.5), 33);
-    C(L3.svg, [yuz(0.3, 0.64), yuz(0.7, 0.64)], { kalinlik: 4, renk: '#6f695f' });
-    C(L3.svg, [yuz(0.36, 0.76), yuz(0.64, 0.76)], { kalinlik: 3, renk: '#8d867a' });
-  }
-  // Fincan (yerel: tabağın ortası 0,0): tabak, gövde, kulp, ağız, kahve
-  function fincan(ust) {
-    C(ust, oval(0, 0, 98, 27, 0, 360, 22, 2), { kapali: true, dolgu: TON.beyaz, kalinlik: 4 });
-    C(ust, oval(0, -2, 54, 13, 0, 360, 16, 2), { kalinlik: 2, renk: TON.cizgi, genlik: 0.5, kapali: true });
-    C(ust, [[54, -64], [88, -62], [92, -42], [72, -28], [48, -26]], { kalinlik: 5.5 });
-    C(ust, [[-58, -78], [-55, -42], [-40, -12], [0, -4], [40, -12], [55, -42], [58, -78], ...oval(0, -78, 58, 15, 0, 180, 12, 2)], { kapali: true, dolgu: TON.beyaz, kalinlik: 4.2 });
-    C(ust, oval(0, -78, 58, 15, 0, 360, 20, 2), { kapali: true, dolgu: TON.beyaz, kalinlik: 4 });
-    C(ust, oval(0, -77, 49, 11, 0, 360, 18, 2), { kapali: true, dolgu: TON.toprak, kalinlik: 2.2, kay: [0, 0] });
-  }
-  const F1 = [m3.cx + B3.fincan[0] * s3, m3.cy + 34 * s3], F2 = [m3.cx + B3.fincan[1] * s3, m3.cy + 56 * s3];
-  {
-    // küçük vazo ve dal (arka solda)
-    const vx = m3.cx - 190 * s3, vy = m3.cy - 96 * s3, v = s3;
-    C(L3.svg, [[vx, vy - 60 * v], [vx - 10 * v, vy - 130 * v], [vx + 4 * v, vy - 170 * v]], { kalinlik: 3 });
-    for (const [dx, dy, a] of [[-10, -128, -1], [4, -168, 1], [-4, -100, 1]]) C(L3.svg, [[vx + dx * v, vy + dy * v], [vx + (dx + a * 14) * v, vy + (dy - 18) * v], [vx + (dx + a * 30) * v, vy + (dy - 8) * v], [vx + (dx + a * 14) * v, vy + (dy + 2) * v]], { kapali: true, dolgu: TON.yaprak, kalinlik: 2.6, kay: [1, 1] });
-    C(L3.svg, kenarla([[vx - 16 * v, vy], [vx + 16 * v, vy], [vx + 22 * v, vy - 40 * v], [vx + 9 * v, vy - 62 * v], [vx - 9 * v, vy - 62 * v], [vx - 22 * v, vy - 40 * v]], 12), { kapali: true, dolgu: '#cfc9bd', kalinlik: 3.8 });
-  }
-  const gF1 = el(L3.svg, 'g', { transform: `translate(${f1(F1[0])} ${f1(F1[1])}) scale(${s3})` });
-  el(gF1, 'ellipse', { cx: 14, cy: 8, rx: 104, ry: 24, fill: '#000', opacity: 0.08 });
-  fincan(gF1);
-  C(gF1, [[60, -8], [96, 2], [128, 4]], { kalinlik: 4.5, renk: '#6f695f' }); // kaşık
-  // buhar: üç dalgalı çizgi, 12 fps'te kıvrılır
-  const buhar = [-20, 4, 26].map((x) => C(gF1, [[x, -96], [x, -150]], { kalinlik: 3.6, renk: '#a59e91', genlik: 0.6 }));
-  // İkinci fincan ve onu tabağından tutan el (parmak uçları tabağın altında, el sırtı ve başparmak üstte)
-  const gF2p = el(L3.svg, 'g'), gF2 = el(L3.svg, 'g'), gF2e = el(L3.svg, 'g');
-  const gF2g = el(gF2, 'ellipse', { cx: 14, cy: 8, rx: 104, ry: 24, fill: '#000', opacity: 0.08 });
-  fincan(gF2);
-  {
-    const ten = MONO.ten[3], giy = MONO.giysi[2];
-    for (const [x, y] of [[50, 33], [72, 34], [93, 31]]) C(gF2p, oval(x, y, 12, 11, 0, 360, 10, 2), { kapali: true, dolgu: ten, kalinlik: 3.2, kay: [1, 1] });
-    // ön kol: sağ üstten çapraz iner (sıvalı yen), bilek; el sırtı tabağın sağ kenarını tutar. El fincana göre küçük
-    // kalmasın diye tutuş noktası (100, 0) çevresinde 1,35 kat (parmak uçları tabağın altında yerinde kalır)
-    const gx = el(gF2e, 'g', { transform: 'translate(100 0) scale(1.35) translate(-100 0)' });
-    C(gx, [[300, -146], [560, -300], [640, -190], [342, -64]], { kapali: true, dolgu: giy, kalinlik: 3.4 });
-    C(gx, [[184, -64], [320, -132], [350, -70], [210, 6]], { kapali: true, dolgu: ten, kalinlik: 3.4, kay: [2, 2] });
-    C(gx, [[300, -146], [342, -64]], { kalinlik: 2.6 });
-    C(gx, [[212, -74], [150, -60], [104, -34], [94, -6], [112, 16], [170, 18], [222, 4]], { kapali: true, dolgu: ten, kalinlik: 3.2, kay: [1.5, 1.5] });
-    C(gx, [[120, -24], [134, -10]], { kalinlik: 1.8 });
-    C(gx, [[146, -36], [160, -22]], { kalinlik: 1.8 });
-  }
-  // başparmak tabağın kenarının üstünde (el sırtıyla aynı ölçekte)
-  const gBas = el(gF2e, 'g', { transform: 'translate(100 0) scale(1.35) translate(-100 0)' });
-  C(gBas, [[118, -24], [80, -31], [62, -27], [64, -15], [82, -12], [120, -8]], { kapali: true, dolgu: MONO.ten[3], kalinlik: 3, kay: [1.5, 1.5] });
-  const TIK3 = K3 + 36;
-  ctx.isaret(TIK3, 'tik');
-  ctx.herKare((f) => {
-    if (f < K3 - 1 || f > K4) return;
-    // fincan 4–36 arası iner (EO), değişte 2 px oturur
-    const t = ilerle(f, K3 + 4, TIK3, EO), dx = 560 * (1 - t), dy = -420 * (1 - t), sc = 1 + 0.12 * (1 - t);
-    const otur = f >= TIK3 && f < TIK3 + 6 ? 2 * Math.sin((f - TIK3) / 6 * Math.PI) : 0;
-    const x = F2[0] + dx * s3, y = F2[1] + dy * s3 + otur;
-    donustur(gF2, x, y, 0, sc * s3);
-    gF2g.setAttribute('opacity', t < 0.95 ? 0 : 0.08);
-    // el bırakır (k44 parmak uçları tabağın altından çıkar: gizlenir), 48–76 sağ üste çekilir
-    const c = ilerle(f, K3 + 48, K3 + 76, EI);
-    const ex = x + 760 * c * s3, ey = y - 380 * c * s3;
-    donustur(gF2p, ex, ey, 0, sc * s3);
-    gF2p.setAttribute('opacity', f >= K3 + 44 ? 0 : 1);
-    donustur(gF2e, ex, ey, 0, sc * s3);
-    // buhar (her karede): her çizgi yukarı doğru kıvrılır, faz kayar (eski 12 fps hızıyla aynı: 5 karede 0,9)
-    const faz = ((f - K3) / 5) * 0.9;
-    buhar.forEach((h, j) => {
-      const x0 = [-20, 4, 26][j], pts = [];
-      for (let i = 0; i <= 6; i++) { const yy = -96 - i * 18 - j * 6; pts.push([x0 + Math.sin(faz + i * 0.9 + j * 2.1) * (4 + i * 1.6), yy]); }
-      h.pts = pts; h.ciz(kayIndis);
+  // Kalın 3B harfler: iskelet çizgileri yuvarlak uçlu kalın kalemle; mürekkep kenar, yan yüz (derinlik) iskeletin sağ alta
+  // kaydırılmış kopyaları, ön yüzde sol üstten ince parlama. Her iskeletin yolu kaynamada bir kez hesaplanır, kopyalara yazılır.
+  function harfKur(ust, metin, { cx, taban, boy, renkler, tohum }) {
+    const sw = boy * 0.24, cer = Math.max(4, boy * 0.034), der = boy * 0.09, adim = 4, yon = [0.74, 0.5];
+    const hs = [...metin].map((h) => HARF[h]), ara = boy * 0.4;
+    const gen = hs.reduce((t, h) => t + h.en * boy, 0) + ara * (hs.length - 1);
+    const yT = taban - sw / 2 - cer - boy;
+    const katlar = [0, 1, 2, 3, 4].map(() => el(ust, 'g')); // derinlik kenarı, yan yüz, ön kenar, ön yüz, parlama
+    const izler = [];
+    let x = cx - gen / 2;
+    hs.forEach((h, j) => {
+      const renk = renkler[j % renkler.length], yan = koyult(renk, 0.18);
+      for (const k of h.c) {
+        let pts = k.p.map(([u, v]) => [x + u * boy, yT + v * boy]);
+        if (!k.e) pts = kenarla(pts, boy * 0.1, false);
+        const yollar = [];
+        const yap = (g, r, w, dx, dy, op = 1) => yollar.push(el(g, 'path', { fill: 'none', stroke: r, 'stroke-width': f1(w), 'stroke-linecap': 'round', 'stroke-linejoin': 'round', transform: `translate(${f1(dx)} ${f1(dy)})`, opacity: op }));
+        for (let a = adim; a >= 1; a--) { const o = der * a / adim; yap(katlar[0], M, sw + 2 * cer, yon[0] * o, yon[1] * o); yap(katlar[1], yan, sw, yon[0] * o, yon[1] * o); }
+        yap(katlar[2], M, sw + 2 * cer, 0, 0);
+        yap(katlar[3], renk, sw, 0, 0);
+        yap(katlar[4], '#ffffff', sw * 0.22, -sw * 0.16, -sw * 0.16, 0.55);
+        izler.push({ pts, yollar, sp: ctx.sapma(tohum + izler.length * 5, 1.1) });
+      }
+      x += h.en * boy + ara;
     });
-  });
-  kamera(K3, K4 - 1, B3.kam[0], B3.kam[1]);
+    const ciz = (i) => { for (const z of izler) { const d = yol(z.pts, false, z.sp(Math.max(0, i))); for (const p of z.yollar) p.setAttribute('d', d); } };
+    ciz(kayIndis);
+    ctx.kaynayanlar.add(ciz);
+  }
 
-  // =========================================================================== #4b.4 QR, KARTVİZİT, KUŞ BAKIŞI (k372–491)
-  ctx.isaret(K4, 'kesme');
-  const L4 = katmanAc('s4b-kart', K4, SON);
-  const B4 = yer({
-    kart: [960, 560], s: 1, defter: [330, 250, -8], fincan: [1590, 250], saksi: [150, 930], tel: [1730, 800, 14], plank: 168,
-    gir: [600, 780, -22], kam: [[960, 540, 1.0], [952, 548, 1.06]],
+  // Kol pozu karışımı (60 fps): eklemler doğrusal, el biçimi ve yüzü yarı yolda değişir
+  const karis = (A, B, u) => ({
+    ...(u < 0.5 ? A : B),
+    dirsek: [lerp(A.dirsek[0], B.dirsek[0], u), lerp(A.dirsek[1], B.dirsek[1], u)],
+    bilek: [lerp(A.bilek[0], B.bilek[0], u), lerp(A.bilek[1], B.bilek[1], u)],
+    elAci: lerp(A.elAci, B.elAci, u), kisalma: lerp(A.kisalma ?? 1, B.kisalma ?? 1, u), basparmak: lerp(A.basparmak ?? 1, B.basparmak ?? 1, u),
+  });
+
+  // =========================================================================== #4b.2 ÇANTA SÜSÜ (k156–263)
+  // Süse yakın plan (ürün kahraman): koyu bez çantanın fermuarı, halka ve sağ kenarı; kedi süs kadraj boyunun ~%30'u. Kişinin
+  // yüzü kadrajın üstünde kalır; omuz, askı ve gövdenin sallanması görünür. k14'te kişi sola döner: gövde kayar, hafifçe
+  // yatar. Çanta askı noktasından (S), süs fermuar sürgüsünden (Z) sarkaç gibi sallanır: iki zincirli sönümlü sarkaç, kutu
+  // biriminde (ölçekten bağımsız), kurulumda bir kez 1/8 kare adımla hesaplanır, her kare tablodan okunur (geri sarmada da
+  // aynı kare). Açılar mutlak (dikeyden); grup dönüşümlerinde üst grubun dönüşü çıkarılır. Kamera çekim boyunca süse iter.
+  ctx.isaret(K2, 'kesme');
+  const L2 = katmanAc('s4b-canta', K2, K3 - 1);
+  const B2 = yer({
+    kisi: { x: 482, yuzY: -75.6, s: 2.2 }, dolap: { x0: -60, ad: 236, y1: 1000, v: 150 }, kam: [[1000, 585, 1.1], [1010, 595, 1.22]],
   }, {
-    kart: [540, 900], s: 1.15, defter: [300, 340, -8], fincan: [880, 380], saksi: [150, 1720], tel: [940, 1450, 14], plank: 190,
-    gir: [520, 1100, -22], kam: [[540, 960, 1.0], [540, 930, 1.06]],
+    kisi: { x: 28, yuzY: -4, s: 2.8 }, dolap: { x0: -40, ad: 224, y1: 1760, v: 420 }, kam: [[589, 900, 1.1], [630, 880, 1.2]],
   });
   {
-    // tahtalar (yatay), damarlar
-    const a = B4.plank, r = rng(404);
-    for (let y = -a, i = 0; y < H + a; y += a, i++) {
-      C(L4.svg, kenarla([[-60, y], [W + 60, y], [W + 60, y + a], [-60, y + a]], 80), { kapali: true, dolgu: i % 2 ? '#d8d2c7' : '#cfc9bd', kalinlik: 3, renk: '#8d867a', kay: [0, 0] });
-      for (let j = 0; j < 2; j++) {
-        const yy = y + a * (0.3 + 0.4 * j), x0 = r() * W * 0.4, x1 = x0 + W * (0.35 + r() * 0.3);
-        C(L4.svg, [[x0, yy], [lerp(x0, x1, 0.33), yy + 6], [lerp(x0, x1, 0.66), yy - 4], [x1, yy + 3]], { kalinlik: 1.8, renk: '#b0a99c', genlik: 0.6 });
+    // arka plan: okul koridoru dolapları (açık gri; havalandırma yarıkları, kulp), altta zemin
+    const D = B2.dolap, ac = '#d6d0c5';
+    for (let x = D.x0, i = 0; x < W + 60; x += D.ad, i++) {
+      C(L2.svg, kenarla([[x + 6, -40], [x + D.ad - 6, -40], [x + D.ad - 6, D.y1], [x + 6, D.y1]], 60), { kapali: true, dolgu: i % 2 ? '#e9e4db' : '#e3ded4', kalinlik: 4, renk: ac, kay: [0, 0] });
+      for (let j = 0; j < 4; j++) C(L2.svg, [[x + D.ad * 0.32, D.v + j * 22], [x + D.ad * 0.68, D.v + j * 22]], { kalinlik: 3.4, renk: ac, genlik: 0.5 });
+      C(L2.svg, [[x + D.ad - 32, D.y1 * 0.46], [x + D.ad - 32, D.y1 * 0.46 + 64]], { kalinlik: 6, renk: '#c4bdb1' });
+    }
+    C(L2.svg, kenarla([[-80, D.y1], [W + 80, D.y1], [W + 80, H + 80], [-80, H + 80]], 80), { kapali: true, dolgu: '#d8d2c7', kalinlik: 4.4, renk: '#bdb6a9', kay: [0, 0] });
+  }
+  const p2 = ctx.rastgeleKisi(4423, {
+    kadin: true, yas: 'genc', sacStil: 'kivircik', sac: 1, ten: 3, giysi: 1, yaka: 'kapusonlu', yapi: 'orta', yanak: 0.3,
+    yuzEn: 60, yuzBoy: 76, gozluk: null, sakal: null, kupe: 'halka', cil: true, piercing: ['burun'],
+  });
+  const k2 = B2.kisi, s2 = k2.s, x02 = k2.x - 200 * s2, y02 = k2.yuzY - (GOZ_Y + 4) * s2;
+  // Yakın planda çizgiler kalınlaşmasın: kutu birimindeki kalınlık, kayma ve titreme s = 2 kişisinin dünyadaki değerine iner
+  const ki2 = Math.min(1, 2 / s2);
+  const C2 = (ust, pts, o = {}) => C(ust, pts, { ...o, kalinlik: (o.kalinlik ?? 5) * ki2, kay: (o.kay ?? [3, 3]).map((v) => v * ki2), genlik: (o.genlik ?? 1.2) * ki2 });
+  const ince2 = (str) => (ki2 >= 1 ? str : str.replace(/stroke-width="([\d.]+)"/g, (m, w) => `stroke-width="${(w * ki2).toFixed(2)}"`)
+    .replace(/translate\(3 3\)/g, `translate(${f1(3 * ki2)} ${f1(3 * ki2)})`));
+  const gSal = el(L2.svg, 'g');
+  const gK2 = el(gSal, 'g', { transform: `translate(${f1(x02)} ${f1(y02)}) scale(${s2})` });
+  const gBeden2 = el(gK2, 'g'), gCanta = el(gK2, 'g');
+  // Askı noktası S (sol omzun tepesi, ekranın sağı) ve süsün asıldığı fermuar sürgüsü Z (çantanın ön yüzünün üstünde: süs
+  // koyu kumaşın önünde sallanır), kutu birimi. Kısa saplı bez çanta: ağzı koltuk altının biraz altında, gövdeye yaslı
+  const S2 = [300, 306], Z2 = [440, 412];
+  {
+    const CANTA = '#57524b', CEP = '#5f5a53', ASKI = '#6f695f', DIKIS = '#8d867a';
+    // gövde (altta hafif genişler), ön cep (üstü dikişli), kumaş kırışıkları, dokuma etiket
+    C2(gCanta, kenarla([[244, 400], [520, 400], [534, 732], [232, 732]], 30), { kapali: true, dolgu: CANTA, kalinlik: 3.4, kay: [2, 2] });
+    C2(gCanta, kenarla([[262, 560], [506, 560], [510, 712], [258, 712]], 30), { kapali: true, dolgu: CEP, kalinlik: 2.6, kay: [1.5, 1.5] });
+    C2(gCanta, kenarla([[266, 572], [502, 572]], 30, false), { kalinlik: 1.4, renk: DIKIS, genlik: 0.4 }).yol.setAttribute('stroke-dasharray', `${f1(6 * ki2)} ${f1(5 * ki2)}`);
+    C2(gCanta, [[300, 470], [292, 520], [296, 552]], { kalinlik: 1.6, renk: '#46423d', genlik: 0.5 });
+    C2(gCanta, [[478, 476], [486, 520], [482, 552]], { kalinlik: 1.6, renk: '#46423d', genlik: 0.5 });
+    C2(gCanta, kenarla([[276, 676], [328, 676], [328, 700], [276, 700]], 14), { kapali: true, dolgu: '#a59e91', kalinlik: 2, kay: [1, 1] });
+    // fermuar bandı, metal dişler (sürgünün iki yanında), ağız dikişi
+    C2(gCanta, kenarla([[250, 400], [514, 400], [514, 412], [250, 412]], 30), { kapali: true, dolgu: '#46423d', kalinlik: 2.2, kay: [0, 0] });
+    C2(gCanta, kenarla([[254, 406], [510, 406]], 30, false), { kalinlik: 4.5, renk: '#bdb6a9', genlik: 0.3 }).yol.setAttribute('stroke-dasharray', `${f1(2.2 * ki2)} ${f1(2.6 * ki2)}`);
+    C2(gCanta, kenarla([[248, 423], [516, 423]], 30, false), { kalinlik: 1.4, renk: DIKIS, genlik: 0.4 }).yol.setAttribute('stroke-dasharray', `${f1(6 * ki2)} ${f1(5 * ki2)}`);
+    // askılar: iki bant omuzdan çantanın ön yüzüne iner, uçları çapraz dikişli yamalarla
+    for (const [a, b] of [[[294, 300], [262, 446]], [[306, 300], [388, 446]]]) C2(gCanta, kenarla(bant(a, b, 16), 24), { kapali: true, dolgu: ASKI, kalinlik: 3, kay: [1.5, 1.5] });
+    for (const x of [262, 388]) {
+      C2(gCanta, kenarla([[x - 11, 434], [x + 11, 434], [x + 11, 458], [x - 11, 458]], 10), { kapali: true, dolgu: ASKI, kalinlik: 2.4, kay: [1, 1] });
+      C2(gCanta, [[x - 7, 438], [x + 7, 454]], { kalinlik: 1.4, renk: DIKIS });
+      C2(gCanta, [[x + 7, 438], [x - 7, 454]], { kalinlik: 1.4, renk: DIKIS });
+    }
+    // fermuar sürgüsü (açık metal; Z'nin hemen üstünde)
+    C2(gCanta, yDortgen(Z2[0] - 9, Z2[1] - 13, Z2[0] + 9, Z2[1] + 2, 3, 6), { kapali: true, dolgu: '#cfc9bd', kalinlik: 2.4, kay: [1, 1] });
+  }
+  // Süs (yerel: Z, aşağı sarkar): çekecin dili, halka; oturan kedi silüeti (sivri kulaklar, boyun girintisi, kuyruğu önden
+  // dolanıp ucu kalkık), kazınmış kapalı gözler, burun ve bıyıklar. Sedef: açık lila zeminde açık parıltı bandı (gradyan;
+  // salınım açısıyla kayar), kenarda beyaz parlama çizgisi. Koyu kumaşın önünde açık süs: kontur net okunur.
+  const gSus = el(gCanta, 'g');
+  const sedef = el(el(L2.svg, 'defs'), 'linearGradient', { id: 's4b-sedef', x1: 0, y1: 0, x2: 1, y2: 1 });
+  for (const [o, c] of [[0, URUN_RENK.lilaAcik], [0.36, '#f8f4fd'], [0.5, '#e6f3ee'], [0.64, '#f2e8f8'], [1, URUN_RENK.lilaAcik]]) el(sedef, 'stop', { offset: o, 'stop-color': c });
+  let parlama2;
+  const gPar = el(gSus, 'g');
+  {
+    const KAZI = koyult(URUN_RENK.lilaAcik, 0.35);
+    C2(gSus, yDortgen(-5.5, -2, 5.5, 32, 4, 6), { kapali: true, dolgu: '#cfc9bd', kalinlik: 2.2, kay: [1, 1] });
+    el(gSus, 'circle', { cx: 0, cy: 27, r: 2.4, fill: '#46423d' });
+    const olc = 1, oy = 27, Q = (pts) => pts.map(([x, y]) => [x * olc, oy + y * olc]);
+    C2(gSus, Q([[18, 112], [40, 121], [56, 113], [62, 98], [55, 91], [51, 102], [42, 110], [24, 106]]), { kapali: true, dolgu: 'url(#s4b-sedef)', kalinlik: 2.8, kay: [1, 1] });
+    C2(gSus, Q([[0, 22], [6, 22], [16, 8], [22, 0], [24, 14], [25, 30], [28, 44], [24, 58], [14, 65], [20, 74], [30, 92], [32, 108], [24, 118], [0, 120],
+      [-24, 118], [-32, 108], [-30, 92], [-20, 74], [-14, 65], [-24, 58], [-28, 44], [-25, 30], [-24, 14], [-22, 0], [-16, 8], [-6, 22]]),
+    { kapali: true, dolgu: 'url(#s4b-sedef)', kalinlik: 3, kay: [1, 1] });
+    // asma halkası (başın tepesinde, kulakların arasında) ve çekecin halkası
+    C2(gSus, oval(0, 46, 3.5, 3.5, 0, 360, 8, 2), { kapali: true, kalinlik: 1.8, genlik: 0.3 });
+    C2(gSus, oval(0, 36, 6, 6, 0, 360, 12, 2), { kapali: true, kalinlik: 2.2, genlik: 0.3 });
+    for (const yon of [-1, 1]) {
+      C2(gSus, Q([[yon * 16, 42], [yon * 11, 45], [yon * 6, 42]]), { kalinlik: 1.5, renk: KAZI, genlik: 0.3 });
+      C2(gSus, Q([[yon * 13, 53], [yon * 27, 50]]), { kalinlik: 1.2, renk: KAZI, genlik: 0.2 });
+      C2(gSus, Q([[yon * 13, 56], [yon * 26, 60]]), { kalinlik: 1.2, renk: KAZI, genlik: 0.2 });
+    }
+    C2(gSus, Q([[-3, 50], [3, 50], [0, 53]]), { kapali: true, dolgu: KAZI, kalinlik: 1.2, renk: KAZI, genlik: 0.2, kay: [0, 0] });
+    parlama2 = C2(gSus, Q([[-24, 84], [-29, 98], [-27, 110]]), { kalinlik: 2.6, renk: '#ffffff', genlik: 0.3 });
+    // parıltı: dört uçlu yıldız (dik durur: süsün dönüşü geri alınır), ortasında küçük turuncu tik
+    const yil = [];
+    for (let i = 0; i < 8; i++) { const a = (i * 45 - 90) * D2R, r = i % 2 ? 3.6 : 15; yil.push([r * Math.cos(a), r * Math.sin(a)]); }
+    C2(gPar, yil, { kapali: true, dolgu: '#fbf9f5', kalinlik: 1.8, genlik: 0.2, kay: [0, 0] });
+    C2(gPar, [[0, -2.6], [2.6, 0], [0, 2.6], [-2.6, 0]], { kapali: true, dolgu: '#94400f', kalinlik: 0.8, renk: '#94400f', genlik: 0.1, kay: [0, 0] });
+    gSus.appendChild(gPar);
+  }
+  // ---------- Salınım (kutu birimi): gövde (dx, eğim) → askı S → çanta açısı ψ → sürgü Z → süs açısı θ; tablolar kare başına
+  const N2 = K3 - K2;
+  const salDx = (t) => -30 * sm5((t - 14) / 18) + 6.9 * sm5((t - 34) / 26);
+  const salR = (t) => (-2.6 * sm5((t - 14) / 18) + 1.3 * sm5((t - 34) / 30)) * D2R;
+  const P2 = [200, 800]; // eğilmenin dönme merkezi (kalça, kadraj dışı)
+  const V2 = [Z2[0] - S2[0], Z2[1] - S2[1]];
+  const Sdun = (t) => {
+    const r = salR(t), x = S2[0] - P2[0], y = S2[1] - P2[1];
+    return [P2[0] + x * Math.cos(r) - y * Math.sin(r) + salDx(t), P2[1] + x * Math.sin(r) + y * Math.cos(r)];
+  };
+  const DX2 = [], R2 = [], PSI = [], TH = [];
+  {
+    // çanta: ağır ve gövdeye yaslı (çok sönümlü); süs: kısa, az sönümlü. g = ω²L (kutu/kare²); pivotun ivmesi sanal kuvvet.
+    // Açılar SVG dönüş yönünde (saat yönü +, y aşağı): sarkacın ucu pivot + L·(−sin, cos), sola ivmelenen pivot ucu sağa savurur
+    const wb = 2 * Math.PI / 46, zb = 0.6, Lb = 400, wc = 2 * Math.PI / 28, zc = 0.07, Lc = 32;
+    const gb = wb * wb * Lb, gc = wc * wc * Lc, alt = 8, dt = 1 / alt, h = 0.25;
+    let psi = 0, dpsi = 0, th = 0, dth = 0;
+    for (let n = 0; n < N2; n++) {
+      DX2.push(salDx(n)); R2.push(salR(n) / D2R); PSI.push(psi / D2R); TH.push(th / D2R);
+      for (let j = 0; j < alt; j++) {
+        const t = n + j * dt, a = Sdun(t - h), b = Sdun(t), c = Sdun(t + h);
+        const aS = [(a[0] - 2 * b[0] + c[0]) / h / h, (a[1] - 2 * b[1] + c[1]) / h / h];
+        const ddpsi = -(1 - aS[1] / gb) * wb * wb * Math.sin(psi) + aS[0] / Lb * Math.cos(psi) - 2 * zb * wb * dpsi;
+        const cs = Math.cos(psi), sn = Math.sin(psi), rv = [V2[0] * cs - V2[1] * sn, V2[0] * sn + V2[1] * cs];
+        const aZ = [aS[0] - dpsi * dpsi * rv[0] - ddpsi * rv[1], aS[1] - dpsi * dpsi * rv[1] + ddpsi * rv[0]];
+        const ddth = -(1 - aZ[1] / gc) * wc * wc * Math.sin(th) + aZ[0] / Lc * Math.cos(th) - 2 * zc * wc * dth;
+        dpsi += ddpsi * dt; psi += dpsi * dt; dth += ddth * dt; th += dth * dt;
       }
     }
   }
+  // En yüksek salınım: parıltı ve ses işareti orada
+  let PK = 0;
+  TH.forEach((v, i) => { if (Math.abs(v) > Math.abs(TH[PK])) PK = i; });
+  ctx.isaret(K2 + PK, 'tik');
+  // Yüz (ayrık; kadrajın üstünde, dikeyde çenesi görünür): önce önüne bakar; k12 sesi duyup sola bakar, k30 gülümser
+  const YUZ2 = [[0, 'notr', [1, 0]], [12, 'notr', [-1, 0]], [30, 'mutlu', [-1, 0]], [74, 'mutlu', [-1, -1]]];
+  const P2d = [x02 + P2[0] * s2, y02 + P2[1] * s2];
+  let anahtar2 = '';
+  ctx.herKare((f) => {
+    if (f < K2 - 1 || f > K3) return;
+    const n = sinir(f - K2, 0, N2 - 1);
+    gSal.setAttribute('transform', `translate(${f1(DX2[n] * s2)} 0) rotate(${R2[n].toFixed(3)} ${f1(P2d[0])} ${f1(P2d[1])})`);
+    gCanta.setAttribute('transform', `rotate(${(PSI[n] - R2[n]).toFixed(3)} ${S2[0]} ${S2[1]})`);
+    gSus.setAttribute('transform', `translate(${Z2[0]} ${Z2[1]}) rotate(${(TH[n] - PSI[n]).toFixed(3)})`);
+    // sedef: parıltı bandı salınımla kayar; süs en büyük salınımın yönüne savrulunca kenarı ışığı yakalar
+    const u = TH[n] * D2R, a0 = -0.2 - u * 1.2;
+    sedef.setAttribute('x1', a0.toFixed(3)); sedef.setAttribute('y1', a0.toFixed(3));
+    sedef.setAttribute('x2', (a0 + 1.4).toFixed(3)); sedef.setAttribute('y2', (a0 + 1.4).toFixed(3));
+    parlama2.g.setAttribute('opacity', (0.25 + 0.65 * sinir(TH[n] * Math.sign(TH[PK]) / 30, 0, 1)).toFixed(3));
+    // parıltı: tepeye 3 karede çıkar, 2 kare durur, 9 karede söner (her karede)
+    const sc = n < PK - 3 ? 0 : n <= PK ? EO((n - PK + 3) / 3) : 1 - ilerle(n, PK + 2, PK + 11, (x) => x * x);
+    gPar.setAttribute('transform', `translate(24 63) rotate(${(-TH[n] + (n - PK) * 3).toFixed(2)}) scale(${Math.max(0.001, sc).toFixed(3)})`);
+    gPar.setAttribute('opacity', sc > 0.01 ? 1 : 0);
+    let y = YUZ2[0];
+    for (const d of YUZ2) if (n >= d[0]) y = d;
+    const a = `${kayIndis}|${y[1]}|${y[2]}`;
+    if (a !== anahtar2) { anahtar2 = a; gBeden2.innerHTML = ince2(kisiSVG(p2, { kaynama: kayIndis, ifade: y[1], bakis: y[2], mono: true })); }
+  });
+  kamera(K2, K3 - 1, B2.kam[0], B2.kam[1]);
+
+  // =========================================================================== #4b.3 YAYINCI (k264–371)
+  // Genç yayıncı masada, kulaklıklı; önde tripodlu kamera (objektifi ona bakar). k26 kameranın ışığı yanar (tik), arkadaki
+  // "PİKSEL" harflerinin ardındaki pastel ışık güçlenir; kameraya bakar, gülümser, el sallar (bilek ve el açısı her karede)
+  // ve konuşur (ağız ayrık). Harfler ve maskot renkli; kişi, oda ve kamera mono. Sohbet arayüzü ya da platform işareti yok.
+  ctx.isaret(K3, 'kesme');
+  const L3 = katmanAc('s4b-yayin', K3, K4 - 1);
+  const B3 = yer({
+    kisi: { x: 720, kenar: 800, s: 1.7 }, raf: { x0: 880, x1: 2000, y: 440 }, harf: { cx: 1290, taban: 440, boy: 150 }, maskot: [1760, 440, 1],
+    panel: { x0: 70, y0: 90, n: [3, 2], a: 124 }, kamera: [215, 790, 1], mik: [870, 470, -42], klavye: [720, 905], fare: [1060, 925],
+    kam: [[960, 540, 1.05], [990, 520, 1.11]],
+  }, {
+    kisi: { x: 540, kenar: 1350, s: 1.7 }, raf: { x0: -40, x1: 1120, y: 560 }, harf: { cx: 470, taban: 560, boy: 120 }, maskot: [905, 560, 0.85],
+    panel: { x0: 820, y0: 640, n: [2, 3], a: 116 }, kamera: [190, 1560, 1], mik: [690, 1010, -40], klavye: [540, 1455], fare: [835, 1475],
+    kam: [[540, 1000, 1.1], [545, 980, 1.16]],
+  });
+  const defs3 = el(L3.svg, 'defs');
+  for (const [id, renk] of [['s4b-isik1', '#e4d9f6'], ['s4b-isik2', URUN_RENK.seftali], ['s4b-lamba', '#fffdf6']]) {
+    const g = el(defs3, 'radialGradient', { id });
+    for (const [o, op] of [[0, 0.95], [0.5, 0.55], [1, 0]]) el(g, 'stop', { offset: o, 'stop-color': renk, 'stop-opacity': op });
+  }
   {
-    // defter (spiralli, çizgili) ve üstünde kalem
-    const [dx, dy, da] = B4.defter;
-    const g = el(L4.svg, 'g', { transform: `translate(${dx} ${dy}) rotate(${da})` });
-    el(g, 'rect', { x: -212, y: -150, width: 440, height: 320, rx: 8, fill: '#000', opacity: 0.08 });
-    C(g, kenarla([[-220, -160], [220, -160], [220, 160], [-220, 160]], 40), { kapali: true, dolgu: TON.beyaz, kalinlik: 4.2, kay: [2, 2] });
-    for (let i = 0; i < 6; i++) C(g, kenarla([[-190, -90 + i * 40], [190, -90 + i * 40]], 60, false), { kalinlik: 1.6, renk: '#bdb6a9', genlik: 0.4 });
-    for (let i = 0; i < 11; i++) C(g, oval(-180 + i * 36, -160, 8, 12, 0, 360, 10, 2), { kapali: true, kalinlik: 3, genlik: 0.4 });
-    C(g, [[-120, 110], [150, 30], [160, 44], [-112, 124]], { kapali: true, dolgu: '#6f695f', kalinlik: 3.6 });
-    C(g, [[150, 30], [180, 26], [160, 44]], { kapali: true, dolgu: '#cfc9bd', kalinlik: 3 });
-    // fincan (üstten): tabak, kulp, fincan, kahve, köpükte kalp
-    const [fx, fy] = B4.fincan, gf = el(L4.svg, 'g', { transform: `translate(${fx} ${fy})` });
-    el(gf, 'circle', { cx: 10, cy: 12, r: 122, fill: '#000', opacity: 0.08 });
-    C(gf, oval(0, 0, 120, 120, 0, 360, 24, 2), { kapali: true, dolgu: TON.beyaz, kalinlik: 4.2 });
-    C(gf, kenarla([[58, -18], [118, -40], [126, -18], [66, 6]], 14), { kapali: true, dolgu: TON.beyaz, kalinlik: 4 });
-    C(gf, oval(0, 0, 74, 74, 0, 360, 20, 2), { kapali: true, dolgu: TON.beyaz, kalinlik: 4.2 });
-    C(gf, oval(0, 0, 60, 60, 0, 360, 18, 2), { kapali: true, dolgu: '#6f695f', kalinlik: 2.6, kay: [0, 0] });
-    C(gf, [[0, 18], [-22, -2], [-14, -18], [0, -8], [14, -18], [22, -2]], { kapali: true, dolgu: '#d8d2c7', kalinlik: 2.2, renk: '#d8d2c7', kay: [0, 0] });
-    // saksı (üstten): ağız, toprak, ışınsal yapraklar
-    const [sx, sy] = B4.saksi, gs = el(L4.svg, 'g', { transform: `translate(${sx} ${sy})` });
-    C(gs, oval(0, 0, 130, 130, 0, 360, 24, 2), { kapali: true, dolgu: '#a59e91', kalinlik: 4.2 });
-    C(gs, oval(0, 0, 106, 106, 0, 360, 22, 2), { kapali: true, dolgu: TON.toprak, kalinlik: 3, kay: [0, 0] });
-    for (let i = 0; i < 7; i++) {
-      const a = (i / 7) * 360 + 10, u = [Math.cos(a * D2R), Math.sin(a * D2R)], n = [-u[1], u[0]], L = 150 + (i % 3) * 22;
-      C(gs, [[0, 0], [u[0] * L * 0.5 + n[0] * 34, u[1] * L * 0.5 + n[1] * 34], [u[0] * L, u[1] * L], [u[0] * L * 0.5 - n[0] * 34, u[1] * L * 0.5 - n[1] * 34]], { kapali: true, dolgu: i % 2 ? '#bdb6a9' : '#cfc9bd', kalinlik: 3.6, kay: [2, 2] });
-      C(gs, [[u[0] * 20, u[1] * 20], [u[0] * L * 0.85, u[1] * L * 0.85]], { kalinlik: 2, renk: '#8d867a' });
+    // duvarda ses yalıtım panelleri (oluklar sırayla yatay ve dikey)
+    const Pn = B3.panel;
+    for (let i = 0; i < Pn.n[0]; i++) for (let j = 0; j < Pn.n[1]; j++) {
+      const x = Pn.x0 + i * Pn.a, y = Pn.y0 + j * Pn.a, a = Pn.a - 10, yat = (i + j) % 2;
+      C(L3.svg, kenarla([[x, y], [x + a, y], [x + a, y + a], [x, y + a]], 30), { kapali: true, dolgu: yat ? '#ddd7cc' : '#d6d0c5', kalinlik: 3, renk: '#bdb6a9', kay: [0, 0] });
+      for (let q = 1; q < 4; q++) { const t = q / 4; C(L3.svg, yat ? [[x + 8, y + a * t], [x + a - 8, y + a * t]] : [[x + a * t, y + 8], [x + a * t, y + a - 8]], { kalinlik: 2, renk: '#bdb6a9', genlik: 0.5 }); }
     }
-    // telefon (ekranı kapalı)
-    const [tx, ty, ta] = B4.tel, gt = el(L4.svg, 'g', { transform: `translate(${tx} ${ty}) rotate(${ta})` });
-    el(gt, 'rect', { x: -98, y: -196, width: 216, height: 420, rx: 30, fill: '#000', opacity: 0.08 });
-    C(gt, yDortgen(-108, -210, 108, 210, 30, 30), { kapali: true, dolgu: TON.koyu, kalinlik: 4.2 });
-    C(gt, yDortgen(-96, -196, 96, 198, 20, 30), { kapali: true, dolgu: '#5f5a53', kalinlik: 2.4, kay: [0, 0] });
   }
-  // Kartvizit (ürünümüz, limon; yerel: kartın ortası 0,0): gölge, kalınlık, üst yüz (baskı çizgileri), işaret, ad çizgileri, QR
-  const gK4 = el(L4.svg, 'g');
-  const gKart = el(gK4, 'g'), gEl4 = el(gK4, 'g');
+  // Harflerin ardındaki yumuşak pastel ışık (iki leke: lila ve şeftali); kamera ışığı yanınca güçlenir
+  const H3 = B3.harf;
+  const isik3 = el(L3.svg, 'g', { opacity: 0.5 });
+  el(isik3, 'ellipse', { cx: H3.cx - H3.boy * 0.9, cy: H3.taban - H3.boy * 0.75, rx: H3.boy * 2.7, ry: H3.boy * 1.3, fill: 'url(#s4b-isik1)' });
+  el(isik3, 'ellipse', { cx: H3.cx + H3.boy * 1.3, cy: H3.taban - H3.boy * 0.7, rx: H3.boy * 2.2, ry: H3.boy * 1.15, fill: 'url(#s4b-isik2)' });
   {
-    const kw = 190, kh = 120;
-    el(gKart, 'path', { d: dYol(yDortgen(-kw + 10, -kh + 14, kw + 10, kh + 14, 14, 40)), fill: '#000', opacity: 0.1 });
-    C(gKart, yDortgen(-kw, -kh + 5, kw, kh + 5, 14, 30), { kapali: true, dolgu: koyult(URUN_RENK.limon, 0.22), kalinlik: 3.6, kay: [0, 0] });
-    C(gKart, yDortgen(-kw, -kh, kw, kh, 14, 30), { kapali: true, dolgu: URUN_RENK.limon, kalinlik: 4.2, kay: [0, 0] });
-    const id = 's4b-kart-klip', defs = el(gKart, 'defs'), kp = el(defs, 'clipPath', { id });
-    el(kp, 'path', { d: dYol(yDortgen(-kw + 4, -kh + 4, kw - 4, kh - 4, 12, 30)) });
-    const gc = el(gKart, 'g', { 'clip-path': `url(#${id})` });
-    let d = '';
-    for (let x = -kw - kh * 2; x < kw; x += 11) d += `M${x} ${kh}L${x + kh * 2} ${-kh}`;
-    el(gc, 'path', { d, stroke: '#1d1d20', 'stroke-width': 1, opacity: 0.06, fill: 'none' });
-    C(gKart, yDortgen(-160, -92, -112, -44, 10, 12), { kapali: true, dolgu: URUN_RENK.beyaz, kalinlik: 3 });
-    C(gKart, oval(-136, -68, 12, 12, 0, 360, 10, 2), { kapali: true, kalinlik: 3 });
-    C(gKart, [[-160, -6], [-24, -6]], { kalinlik: 9 });
-    C(gKart, [[-160, 24], [-62, 24]], { kalinlik: 5, renk: '#5f5a53' });
-    C(gKart, [[-160, 66], [-54, 66]], { kalinlik: 3.6, renk: '#8d867a' });
-    C(gKart, [[-160, 88], [-80, 88]], { kalinlik: 3.6, renk: '#8d867a' });
-    qrKoy(gKart, [22, -86], [168, -86], [168, 60], [22, 60], 57, { kontur: 0 });
+    // raf: ön kalınlık ve iki dirsek
+    const R = B3.raf;
+    C(L3.svg, kenarla([[R.x0, R.y], [R.x1, R.y], [R.x1, R.y + 26], [R.x0, R.y + 26]], 60), { kapali: true, dolgu: TON.ahsapOn, kalinlik: 4.2 });
+    for (const t of [0.2, 0.72]) { const x = lerp(R.x0, R.x1, t); C(L3.svg, [[x, R.y + 26], [x, R.y + 72], [x - 44, R.y + 26]], { kapali: true, dolgu: TON.ahsapK, kalinlik: 3.4 }); }
   }
-  // El (kol.js elUstten, üstten): parmaklar kartın sağ alt çeyreğinde; kaynamada yeniden kurulur
-  const EL4 = { merkez: [178, 150], aci: -126, boy: 236 };
-  let sonEl4 = -1;
-  const el4Ciz = (i) => {
-    if (i === sonEl4) return;
-    const t = tl.time(); if (t < k(K4) - 0.02 || t >= k(SON + 1)) return;
-    sonEl4 = i;
-    gEl4.innerHTML = elUstten({
-      merkez: EL4.merkez, aci: EL4.aci, boy: EL4.boy, ten: MONO.ten[4], giysi: MONO.giysi[1], taraf: 'sag', tutma: false,
-      kaynama: i, tohum: 23, kolUzun: 760, kalinlik: EL4.boy * 0.46, kolBoyu: 'uzun', manset: 'ribana',
-    });
+  harfKur(L3.svg, 'PİKSEL', { ...H3, renkler: ['gok', 'lila', 'nane', 'limon', 'seftali', 'mercan'].map((r) => URUN_RENK[r]), tohum: 5401 });
+  // Maskot (özgün): piksel gözlü küp yaratık, tepede şeftali uçlu anten; yan yüzü derinlik verir
+  const gozler3 = [];
+  {
+    const [mx, my, ms] = B3.maskot, gM = el(L3.svg, 'g', { transform: `translate(${mx} ${my}) scale(${ms})` });
+    for (const sx of [-1, 1]) C(gM, yDortgen(sx * 22 - 13, -16, sx * 22 + 13, 0, 5, 8), { kapali: true, dolgu: koyult(NANE, 0.16), kalinlik: 3.6, kay: [1, 1] });
+    C(gM, kenarla([[44, -104], [58, -96], [58, -22], [44, -12]], 16), { kapali: true, dolgu: koyult(NANE, 0.24), kalinlik: 3.6, kay: [0, 0] });
+    C(gM, [[2, -110], [8, -132]], { kalinlik: 3.6 });
+    C(gM, yDortgen(-1, -148, 17, -130, 3, 6), { kapali: true, dolgu: URUN_RENK.seftali, kalinlik: 3.4, kay: [1, 1] });
+    C(gM, yDortgen(-48, -112, 48, -12, 20, 16), { kapali: true, dolgu: NANE, kalinlik: 4, kay: [2, 2] });
+    for (const sx of [-1, 1]) gozler3.push(el(gM, 'rect', { x: sx * 16 - 6, y: -78, width: 12, height: 14, fill: M }));
+    for (const [x, y] of [[-14, -52], [-7, -46], [0, -46], [7, -46], [14, -52]]) el(gM, 'rect', { x: x - 3.5, y: y - 3.5, width: 7, height: 7, fill: M });
+    for (const sx of [-1, 1]) el(gM, 'ellipse', { cx: sx * 32, cy: -52, rx: 7, ry: 4.5, fill: URUN_RENK.mercan, opacity: 0.8 });
+    C(gM, [[-36, -96], [-24, -102]], { kalinlik: 3.2, renk: '#ffffff' });
+  }
+  // Yayıncı (insan.js + kol.js): gövde masanın arkasında, kollar masanın üstünde
+  const p3 = ctx.rastgeleKisi(5311, {
+    kadin: false, yas: 'genc', sacStil: 'twist', sac: 0, ten: 4, giysi: 1, yaka: 'kapusonlu', yapi: 'orta', yanak: 0.15,
+    yuzEn: 62, yuzBoy: 78, gozluk: null, sakal: null, kulaklik: true, kupe: false, cil: false, piercing: ['kas'],
+  });
+  const k3 = B3.kisi, s3 = k3.s, x03 = k3.x - 200 * s3, y03 = k3.kenar - 470 * s3;
+  const gGovde3 = el(L3.svg, 'g'), gMasa3 = el(L3.svg, 'g'), gKol3 = el(L3.svg, 'g'), gIsik3 = el(L3.svg, 'g', { opacity: 0 }), gOn3 = el(L3.svg, 'g');
+  const yap3 = (g) => el(g, 'svg', { viewBox: `0 0 ${BOY.en} ${BOY.boy}`, width: BOY.en * s3, height: BOY.boy * s3, x: x03, y: y03, overflow: 'visible' });
+  const sGovde3 = yap3(gGovde3), sKol3 = yap3(gKol3);
+  const kb3 = ([X, Y]) => [(X - x03) / s3, (Y - y03) / s3]; // dünya → kutu
+  let fareG;
+  {
+    // masa (üst yüz), klavye (uzak kenarı dar yamuk, tuş sıraları), fare altlığı ve fare
+    const ky = k3.kenar;
+    C(gMasa3, kenarla([[-80, ky], [W + 80, ky], [W + 80, H + 80], [-80, H + 80]], 80), { kapali: true, dolgu: '#cfc9bd', kalinlik: 4.4, kay: [0, 0] });
+    C(gMasa3, kenarla([[-80, ky + 12], [W + 80, ky + 12]], 80, false), { kalinlik: 2, renk: '#e2ddd3', genlik: 0.5 });
+    const [kx, kyy] = B3.klavye;
+    C(gMasa3, kenarla([[kx - 236, kyy - 44], [kx + 236, kyy - 44], [kx + 262, kyy + 48], [kx - 262, kyy + 48]], 30), { kapali: true, dolgu: '#e2ddd3', kalinlik: 3.6, kay: [2, 2] });
+    for (let i = 0; i < 4; i++) {
+      const t = (i + 0.6) / 4.4, y = lerp(kyy - 44, kyy + 48, t), w = lerp(236, 262, t) - 20;
+      C(gMasa3, kenarla([[kx - w, y], [kx + w, y]], 40, false), { kalinlik: 9, renk: '#bdb6a9', genlik: 0.3 }).yol.setAttribute('stroke-dasharray', '16 7');
+    }
+    const [fx, fy] = B3.fare;
+    C(gMasa3, yDortgen(fx - 90, fy - 42, fx + 90, fy + 46, 12, 30), { kapali: true, dolgu: '#bdb6a9', kalinlik: 3, kay: [0, 0] });
+    fareG = el(gMasa3, 'g');
+    C(fareG, oval(0, 0, 30, 22, 0, 360, 14, 2.2), { kapali: true, dolgu: '#e2ddd3', kalinlik: 3.4, kay: [1.5, 1.5] });
+    C(fareG, [[0, -22], [0, -6]], { kalinlik: 2 });
+  }
+  {
+    // mikrofon: masa kıskacından iki parçalı kol, kapsül (ızgara çizgileri, koyu bilezik)
+    const [mx, my, ma] = B3.mik, ky = k3.kenar;
+    const kis = [mx + 300, ky + 6], dz = [mx + 190, my + 150], uc = [mx + 30, my + 40];
+    C(gOn3, kenarla([[kis[0] - 22, ky - 6], [kis[0] + 22, ky - 6], [kis[0] + 22, ky + 30], [kis[0] - 22, ky + 30]], 14), { kapali: true, dolgu: '#5f5a53', kalinlik: 3.6 });
+    C(gOn3, [kis, dz], { kalinlik: 10, renk: '#6f695f' });
+    C(gOn3, [dz, uc], { kalinlik: 9, renk: '#6f695f' });
+    C(gOn3, oval(dz[0], dz[1], 11, 11, 0, 360, 10, 2), { kapali: true, dolgu: '#8d867a', kalinlik: 3 });
+    const gm = el(gOn3, 'g', { transform: `translate(${mx} ${my}) rotate(${ma})` });
+    C(gm, yDortgen(-25, -66, 25, 54, 22, 14), { kapali: true, dolgu: '#8d867a', kalinlik: 4, kay: [2, 2] });
+    for (const y of [-46, -32, -18]) C(gm, [[-18, y], [18, y]], { kalinlik: 2, renk: '#5f5a53', genlik: 0.4 });
+    C(gm, kenarla([[-26, 2], [26, 2], [26, 16], [-26, 16]], 12), { kapali: true, dolgu: '#5f5a53', kalinlik: 3, kay: [0, 0] });
+  }
+  // Kamera (önde, tripodda; objektif yayıncıya döner). Işık: tepede objektifle aynı yöne bakan küçük LED panel; yanınca
+  // yüzü beyazlar, hale ve kısa ışınlar çıkar, yayıncının göğsüne doğru kenarı yumuşak bir ışık kaması düşer (gIsik3)
+  let lamba3, hale3, isinlar3;
+  {
+    const [cx3, cy3, cs] = B3.kamera, gC = el(gOn3, 'g', { transform: `translate(${cx3} ${cy3}) scale(${cs})` });
+    for (const [a, b] of [[[-10, 86], [-150, 430]], [[0, 86], [26, 460]], [[10, 86], [170, 420]]]) C(gC, kenarla(bant(a, b, 18), 40), { kapali: true, dolgu: '#6f695f', kalinlik: 4.4, kay: [1.5, 1.5] });
+    C(gC, kenarla([[-40, 60], [40, 60], [30, 92], [-30, 92]], 20), { kapali: true, dolgu: '#5f5a53', kalinlik: 4.4 });
+    hale3 = el(gC, 'circle', { cx: 70, cy: -103, r: 84, fill: 'url(#s4b-lamba)', opacity: 0 });
+    C(gC, kenarla([[-84, -64], [-44, -64], [-44, -86], [-84, -86]], 20), { kapali: true, dolgu: '#6f695f', kalinlik: 4 });
+    C(gC, [[14, -64], [14, -88]], { kalinlik: 7, renk: '#46423d' });
+    C(gC, yDortgen(-24, -122, 62, -86, 6, 16), { kapali: true, dolgu: '#6f695f', kalinlik: 4, kay: [1.5, 1.5] });
+    C(gC, yDortgen(-104, -64, 100, 64, 16, 30), { kapali: true, dolgu: '#5f5a53', kalinlik: 5, kay: [2, 2] });
+    C(gC, kenarla([[100, -48], [178, -52], [178, 52], [100, 48]], 24), { kapali: true, dolgu: '#46423d', kalinlik: 5, kay: [2, 2] });
+    for (const x of [124, 150]) C(gC, [[x, -48], [x, 48]], { kalinlik: 2.6, renk: '#8d867a' });
+    C(gC, oval(180, 0, 14, 50, 0, 360, 16, 2), { kapali: true, dolgu: '#8d867a', kalinlik: 4.4, kay: [0, 0] });
+    C(gC, yDortgen(-86, -40, -26, 30, 8, 14), { kapali: true, dolgu: '#8d867a', kalinlik: 3 });
+    lamba3 = C(gC, kenarla([[62, -124], [76, -128], [76, -80], [62, -84]], 10), { kapali: true, dolgu: '#46423d', kalinlik: 3.6, kay: [0, 0] });
+    for (const y of [-114, -104, -94]) C(gC, [[66, y], [72, y - 1]], { kalinlik: 2, renk: '#8d867a', genlik: 0.2 });
+    isinlar3 = el(gC, 'g', { opacity: 0 });
+    for (const a of [-50, -25, 0, 25, 50]) { const c = Math.cos(a * D2R), s = Math.sin(a * D2R); C(isinlar3, [[72 + c * 24, -104 + s * 24], [72 + c * 44, -104 + s * 44]], { kalinlik: 3.4, renk: '#8d867a' }); }
+    // ışık kaması (dünya): panelin yüzünden yayıncıya doğru genişler, uzakta söner
+    const E3 = [cx3 + 76 * cs, cy3 - 104 * cs], yuzY3 = k3.kenar - 470 * k3.s + (GOZ_Y + 4) * k3.s, uzak = k3.x + 210;
+    const kg = el(defs3, 'linearGradient', { id: 's4b-kama', gradientUnits: 'userSpaceOnUse', x1: E3[0], y1: 0, x2: uzak, y2: 0 });
+    for (const [o, op] of [[0, 0.6], [1, 0.06]]) el(kg, 'stop', { offset: o, 'stop-color': '#ffffff', 'stop-opacity': op });
+    // kenarlar bulanık (sert çizgi yok); üst kenar çenenin altından geçer: ışık yüzü kesmez, göğse ve masaya düşer
+    const fb = el(defs3, 'filter', { id: 's4b-kama-yumusak', x: '-30%', y: '-30%', width: '160%', height: '160%' });
+    el(fb, 'feGaussianBlur', { stdDeviation: 14 });
+    el(gIsik3, 'path', { d: dYol([[E3[0], E3[1] - 18], [uzak, yuzY3 + 125], [uzak, k3.kenar + 90], [E3[0], E3[1] + 18]]), fill: 'url(#s4b-kama)', filter: 'url(#s4b-kama-yumusak)' });
+  }
+  // Kollar (kutu birimi): sol el klavyede, sağ el farede; ışıktan sonra sol kol kalkar ve el sallar (bilek salınır, el
+  // sırtı ve kenarı görünür: avuç izleyiciye dönmez)
+  const KAL3 = 58, EB3 = 100, o3 = omuzlar(p3, { kalinlik: KAL3 });
+  const DIN3 = {
+    sol: { dirsek: [o3.sol[0] - 30, o3.sol[1] + 104], bilek: kb3([B3.klavye[0] - 150, B3.klavye[1] - 16]), el: 'dayanma', elAci: 22, kisalma: 0.6, basparmak: 1, yuz: 'sirt' },
+    sag: { dirsek: [o3.sag[0] + 36, o3.sag[1] + 100], bilek: kb3([B3.fare[0] - 4, B3.fare[1] - 40]), el: 'dayanma', elAci: 82, kisalma: 0.6, yuz: 'sirt' },
   };
-  ctx.kaynayanlar.add(el4Ciz);
-  const TIK4 = K4 + 40;
-  ctx.isaret(TIK4, 'tik');
+  const SAL3 = (n) => {
+    const t = (n - 48) / 22 * Math.PI * 2, gen = 1 - 0.6 * ilerle(n, 88, 107);
+    const bilek = [26 + 14 * Math.sin(t) * gen, 172 - 5 * Math.abs(Math.sin(t)) * gen];
+    return { dirsek: kolIK(o3.sol, bilek, 136, 140, -1), bilek, el: 'acik', elAci: -96 + 20 * Math.sin(t + 0.7) * gen, yuz: 'sirt', basparmak: 0.6, kisalma: 1 };
+  };
+  const ISIK3 = 26;
+  ctx.isaret(K3 + ISIK3, 'tik');
+  // Yüz (ayrık): ekranına bakar; ışık yanınca kameraya döner, gülümser; k54–100 konuşur (ağız 5 karede bir açılır)
+  const YUZ3 = [[0, 'notr', [0, 2]], [30, 'notr', [-1, 0]], [34, 'mutlu', [-1, 0]]];
+  let anahtar3 = '';
+  ctx.herKare((f) => {
+    if (f < K3 - 1 || f > K4) return;
+    const n = sinir(f - K3, 0, K4 - K3 - 1);
+    const acik = n >= ISIK3;
+    lamba3.dolgu.setAttribute('fill', acik ? '#fbf9f5' : '#46423d');
+    hale3.setAttribute('opacity', acik ? (0.9 * ilerle(n, ISIK3, ISIK3 + 4, EO)).toFixed(3) : 0);
+    gIsik3.setAttribute('opacity', acik ? ilerle(n, ISIK3, ISIK3 + 5, EO).toFixed(3) : 0);
+    isinlar3.setAttribute('opacity', acik && n < ISIK3 + 14 ? 1 : 0);
+    isik3.setAttribute('opacity', (0.5 + 0.5 * ilerle(n, ISIK3, ISIK3 + 12, EO)).toFixed(3));
+    // maskot bir kez göz kırpar (ayrık)
+    const kirp = n >= 70 && n < 75;
+    for (const g of gozler3) { g.setAttribute('y', kirp ? -70 : -78); g.setAttribute('height', kirp ? 4 : 14); }
+    // fare: ışıktan önce el fareyi hafifçe oynatır (her karede)
+    const fx = n < ISIK3 ? 6 * Math.sin(n / 6) * (1 - n / ISIK3) : 0;
+    fareG.setAttribute('transform', `translate(${f1(B3.fare[0] + fx)} ${B3.fare[1]})`);
+    let y = YUZ3[0];
+    for (const d of YUZ3) if (n >= d[0]) y = d;
+    let ifade = y[1];
+    if (n >= 54 && n < 100) ifade = Math.floor((n - 54) / 5) % 2 === 0 ? 'saskin' : 'merak';
+    const sol = n < 34 ? DIN3.sol : n < 48 ? karis(DIN3.sol, SAL3(48), sm((n - 34) / 14)) : SAL3(n);
+    const sag = { ...DIN3.sag, bilek: [DIN3.sag.bilek[0] + fx / s3, DIN3.sag.bilek[1]] };
+    const ortak = { giysi: MONO.giysi[p3.giysi], ten: MONO.ten[p3.ten], kalinlik: KAL3, kaynama: kayIndis, elBoy: EB3, manset: 'ribana' };
+    sKol3.innerHTML = kolSVG({ ...ortak, omuz: o3.sol, taraf: 'sol', tohum: 71, ...sol }) + kolSVG({ ...ortak, omuz: o3.sag, taraf: 'sag', tohum: 72, ...sag });
+    const a = `${kayIndis}|${ifade}|${y[2]}`;
+    if (a !== anahtar3) {
+      anahtar3 = a;
+      const G = govdeKes(p3, { id: 's4b-yayinci', kaynama: kayIndis, tohum: p3.tohum });
+      sGovde3.innerHTML = G.tanim + `<g ${G.klip}>${kisiSVG(p3, { kaynama: kayIndis, ifade, bakis: y[2], mono: true })}</g>${G.kontur}`;
+    }
+  });
+  kamera(K3, K4 - 1, B3.kam[0], B3.kam[1]);
+
+  // =========================================================================== #4b.4 MASKE (k372–491)
+  // Ayna karşısında genç bir cosplayer (özgün kostüm: tunik, arkada pelerin, omuzlarda geometrik etekli kapelet, altıgen
+  // toka). Maskeyi iki eliyle kenarından tutup göğsünden yüzüne kaldırır, k34'te oturur (tik), eller iner; k54–68 aynaya
+  // döner (önden arkaya; yatay basılma). Ayna önce sırtını (kollar başın yanında), dönünce maskeli yüzünü (aynalı) gösterir;
+  // küçük bir baş sallar. Baş ve gövde kişinin aynı çiziminden iki kırpımla: baş sallanırken omuzlar yerinde kalır.
+  ctx.isaret(K4, 'kesme');
+  const L4 = katmanAc('s4b-maske', K4, SON);
+  const B4 = yer({
+    kisi: { x: 560, yuzY: 430, s: 2.0 }, ayna: { x0: 940, y0: 50, x1: 1580, y1: 1160 }, yans: { x: 1200, yuzY: 440, s: 1.15 },
+    pano: [60, 70, 330, 300], pencere: [1370, 150, 1510, 420], kam: [[910, 560, 1.06], [960, 540, 1.1], [1190, 430, 1.85]],
+  }, {
+    kisi: { x: 360, yuzY: 1180, s: 2.0 }, ayna: { x0: 250, y0: 90, x1: 1040, y1: 1430 }, yans: { x: 680, yuzY: 760, s: 1.25 },
+    pano: [30, 110, 230, 360], pencere: [830, 180, 970, 440], kam: [[540, 1000, 1.06], [560, 960, 1.1], [670, 745, 2.0]],
+  });
+  const defs4 = el(L4.svg, 'defs');
+  const LIMON = URUN_RENK.limon, SEFTALI = URUN_RENK.seftali, PEL = '#a59e91', PEL_SIRT = '#8d867a', PEL_IC = '#5f5a53';
+  const p4 = ctx.rastgeleKisi(6203, {
+    kadin: true, yas: 'genc', sacStil: 'topuz', sac: 0, ten: 1, giysi: 5, yaka: 'balikci', yapi: 'orta', yanak: 0.2,
+    yuzEn: 60, yuzBoy: 76, gozluk: null, sakal: null, kupe: false, cil: false, piercing: ['kulak'],
+  });
+  // Delikli kapalı şekil (dolgu çift-tek kuralıyla: delikten alttaki görünür); kaynar
+  function delikli(ust, konturlar, { dolgu, kalinlik = 3.4, tohum, genlik = 0.9, kay = [2, 2] }) {
+    const g = el(ust, 'g');
+    const d = el(g, 'path', { fill: dolgu, 'fill-rule': 'evenodd', transform: `translate(${kay[0]} ${kay[1]})` });
+    const c = el(g, 'path', { fill: 'none', stroke: M, 'stroke-width': kalinlik, 'stroke-linecap': 'round', 'stroke-linejoin': 'round' });
+    const sp = konturlar.map((_, j) => ctx.sapma(tohum + j * 7, genlik));
+    const ciz = (i) => { const yd = konturlar.map((k, j) => yol(k, true, sp[j](Math.max(0, i)))).join(' '); d.setAttribute('d', yd); c.setAttribute('d', yd); };
+    ciz(kayIndis);
+    ctx.kaynayanlar.add(ciz);
+    return g;
+  }
+  // Maske (kutu birimi, yüze oturmuş hali; tutulurken grubu kaydırılır). Kıpçak esinli özgün desen: alın çıkıntısı, kaş
+  // kavisleri burun sırtında birleşir, bıyık kabartması alt kenarı kurar (ağız açıkta); zikzak alın bandı, perçinler, yanak
+  // üçgenleri, metal parlaması. Zemin açık limon, kabartmalar şeftali.
+  function maskeKur(ust, hw, hh) {
+    const cx = 200, cy = GOZ_Y + 4, G = GOZ_Y, ay = cy + hh * 0.52, tepe = cy - 6 - hh;
+    const ayna = (pts) => pts.map(([x, y]) => [2 * cx - x, y]);
+    const yarim = [
+      [cx, tepe - 12], [cx + 9, cy - hh * 0.9], [cx + 16, cy - hh * 0.8], [cx + hw * 0.62, cy - hh * 0.76], [cx + hw * 0.96, cy - hh * 0.5],
+      [cx + hw * 1.06, cy - hh * 0.12], [cx + hw * 1.02, cy + hh * 0.16], [cx + hw * 0.9, cy + hh * 0.34], [cx + hw * 0.94, ay - 8],
+      [cx + hw * 0.84, ay + 5], [cx + hw * 0.62, ay - 2], [cx + hw * 0.3, ay - 9], [cx, ay - 13],
+    ];
+    const dis = [...yarim, ...ayna(yarim.slice(1, -1)).reverse()];
+    const goz = (yon) => { const gx = cx + yon * hw * 0.38; return [[gx - yon * 15, G + 2], [gx - yon * 6, G - 5], [gx + yon * 8, G - 6], [gx + yon * 16, G - 3], [gx + yon * 8, G + 5], [gx - yon * 6, G + 6]]; };
+    delikli(ust, [dis, goz(-1), goz(1)], { dolgu: LIMON, kalinlik: 3.4, tohum: 6301 });
+    const kab = { kapali: true, dolgu: SEFTALI, kalinlik: 2.6, kay: [1.5, 1.5], genlik: 0.6 };
+    for (const yon of [-1, 1]) {
+      C(ust, [[cx + yon * hw * 0.9, G - 8], [cx + yon * hw * 0.62, G - 25], [cx + yon * hw * 0.3, G - 27], [cx + yon * 5, G - 16], [cx + yon * 5, G - 9], [cx + yon * hw * 0.3, G - 16], [cx + yon * hw * 0.62, G - 14], [cx + yon * hw * 0.86, G - 2]], kab);
+      C(ust, [[cx + yon * 3, G + 30], [cx + yon * hw * 0.32, ay - 17], [cx + yon * hw * 0.62, ay - 13], [cx + yon * hw * 0.8, ay - 22], [cx + yon * hw * 0.88, ay - 12], [cx + yon * hw * 0.62, ay - 5], [cx + yon * hw * 0.3, ay - 9], [cx + yon * 2, ay - 12]], kab);
+    }
+    C(ust, [[cx - 6, G - 12], [cx + 6, G - 12], [cx + 8, G + 20], [cx + 3, G + 28], [cx - 3, G + 28], [cx - 8, G + 20]], kab);
+    C(ust, [[cx, cy - hh * 0.9 + 3], [cx + 7, cy - hh * 0.8], [cx, cy - hh * 0.7], [cx - 7, cy - hh * 0.8]], { ...kab, kalinlik: 2.2 });
+    const zik = [];
+    for (let i = 0; i <= 10; i++) zik.push([cx + hw * (-0.62 + i * 0.124), cy - hh * (i % 2 ? 0.56 : 0.65)]);
+    C(ust, zik, { kalinlik: 2, genlik: 0.4 });
+    for (const yon of [-1, 1]) {
+      for (const [u, v] of [[0.92, -0.3], [0.99, 0.0], [0.86, 0.26]]) C(ust, oval(cx + yon * hw * u, cy + hh * v, 3, 3, 0, 360, 8, 2), { kapali: true, dolgu: koyult(LIMON, 0.14), kalinlik: 1.4, genlik: 0.2, kay: [0.5, 0.5] });
+      const tx = cx + yon * hw * 0.64, ty = cy + hh * 0.1;
+      C(ust, [[tx - 7, ty - 5], [tx + 7, ty - 5], [tx, ty + 6]], { kapali: true, kalinlik: 1.8, genlik: 0.3 });
+    }
+    C(ust, [[cx - hw * 0.72, cy - hh * 0.5], [cx - hw * 0.44, cy - hh * 0.62]], { kalinlik: 3.4, renk: '#ffffff', genlik: 0.3 });
+    C(ust, [[cx + hw * 0.74, cy + hh * 0.02], [cx + hw * 0.8, cy + hh * 0.2]], { kalinlik: 3, renk: '#ffffff', genlik: 0.3 });
+  }
+  // Kişi figürü (kutu birimi). Sıra: pelerin arkası → (arkadan bakışta kollar) → gövde → pelerin, kapelet → baş → maske,
+  // kayış → (önden kollar: maskeyi kenarından tutan eller en önde)
+  function figur(ust, p, { id, x, yuzY, s }) {
+    const hw = p.yuzEn * (YAPI[p.yapi] || YAPI.orta).yuz, hh = p.yuzBoy, cx = 200, cy = GOZ_Y + 4, ceneY = cy + hh;
+    const gY = ceneY + (p.boy === 'uzun' ? 8 : 0), omuzY = gY + 40, x0 = x - cx * s, y0 = yuzY - cy * s;
+    const kutu = el(ust, 'g');
+    const defs = el(kutu, 'defs');
+    const kirp = (ad, a, b) => { const c = el(defs, 'clipPath', { id: `${id}-${ad}`, clipPathUnits: 'userSpaceOnUse' }); el(c, 'rect', { x: -1200, y: a, width: 2800, height: b - a }); };
+    kirp('bas', -1200, ceneY + 8); kirp('govde', ceneY - 2, 2400);
+    // ince kırpım: boyun hattının altında yalnız |x − cx| < 120 kalır (insan.js'in yuvarlak dış omzu pelerinin dışına taşmasın)
+    el(el(defs, 'clipPath', { id: `${id}-ince`, clipPathUnits: 'userSpaceOnUse' }), 'path', { d: `M-1200 -1200L1600 -1200L1600 ${gY}L${cx + 120} ${gY}L${cx + 120} 2400L${cx - 120} 2400L${cx - 120} ${gY}L-1200 ${gY}Z` });
+    const gPelA = el(kutu, 'g'), gKolA = el(kutu, 'g'), gGovde = el(kutu, 'g', { 'clip-path': `url(#${id}-govde)` }), gPel = el(kutu, 'g');
+    const gBasD = el(kutu, 'g'), gBas = el(gBasD, 'g', { 'clip-path': `url(#${id}-bas)` }), gEnse = el(gBasD, 'g'), gMaske = el(gBasD, 'g'), gKayis = el(gBasD, 'g');
+    const gKolO = el(kutu, 'g');
+    maskeKur(gMaske, hw, hh);
+    // ense saçı (arkadan bakışta): topuzun altında saç enseye iner, başın arkasındaki açık oval küçülür, yalnız ince ense kalır
+    C(gEnse, [[cx - hw - 4, cy + hh * 0.3], [cx - hw * 0.96, cy + hh * 0.62], [cx - hw * 0.62, cy + hh * 0.8], [cx - hw * 0.2, cy + hh * 0.86], [cx, cy + hh * 0.82],
+      [cx + hw * 0.2, cy + hh * 0.86], [cx + hw * 0.62, cy + hh * 0.8], [cx + hw * 0.96, cy + hh * 0.62], [cx + hw + 4, cy + hh * 0.3], [cx, cy + hh * 0.24]],
+    { kapali: true, dolgu: MONO.sac[p.sac], kalinlik: 3.6, kay: [1.5, 1.5] });
+    for (const u of [-0.5, 0, 0.45]) C(gEnse, [[cx + u * hw, cy + hh * 0.36], [cx + u * hw * 0.9, cy + hh * 0.74]], { kalinlik: 2, renk: '#5f5a53', genlik: 0.4 });
+    // kayış: maskeyi arkadan tutan deri bant ve tokası (yalnız arkadan bakışta)
+    C(gKayis, [[cx - hw - 4, GOZ_Y - 14], [cx - hw * 0.5, GOZ_Y - 10], [cx, GOZ_Y - 9], [cx + hw * 0.5, GOZ_Y - 10], [cx + hw + 4, GOZ_Y - 14], [cx + hw + 4, GOZ_Y - 2], [cx + hw * 0.5, GOZ_Y + 2], [cx, GOZ_Y + 3], [cx - hw * 0.5, GOZ_Y + 2], [cx - hw - 4, GOZ_Y - 2]], { kapali: true, dolgu: '#5f5a53', kalinlik: 3, kay: [1, 1] });
+    C(gKayis, kenarla([[cx - 9, GOZ_Y - 13], [cx + 9, GOZ_Y - 13], [cx + 9, GOZ_Y + 6], [cx - 9, GOZ_Y + 6]], 8), { kapali: true, dolgu: '#d8d2c7', kalinlik: 2.6, kay: [1, 1] });
+    // Pelerin dizgeleri (kutu birimi, kaynar)
+    const pelArka = (kay) => dizge(p.tohum + 401, kay).sk([[cx - 124, omuzY + 6], [cx - 230, 900], [cx + 230, 900], [cx + 124, omuzY + 6]], PEL_IC);
+    // omuz yakası: boyundan omuz eklemlerinin iç yanına iner (kollar dışından çıkar); zikzak etek, iç dikiş, sıra üçgen süs
+    const kapelet = (kay) => {
+      const { cz, sk } = dizge(p.tohum + 411, kay);
+      const etek = [];
+      for (let i = 0; i <= 8; i++) etek.push([cx - 112 + i * 28, omuzY + (i % 2 ? 66 : 88)]);
+      let str = sk([[cx + hw * 0.56, gY + 6], [cx + 96, omuzY + 2], [cx + 114, omuzY + 26], [cx + 116, omuzY + 76], ...etek.slice().reverse(),
+        [cx - 116, omuzY + 76], [cx - 114, omuzY + 26], [cx - 96, omuzY + 2], [cx - hw * 0.56, gY + 6], [cx, gY + 28]], PEL);
+      str += cz(etek.map(([ex, ey]) => [ex, ey - 16]), 1.8, '#e2ddd3', 0.9);
+      for (let i = 0; i < 4; i++) { const ex = cx - 72 + i * 48, ey = omuzY + 40; str += cz([[ex - 8, ey - 5], [ex, ey + 6], [ex + 8, ey - 5]], 2.2, '#e2ddd3'); }
+      return str;
+    };
+    const toka = (kay) => {
+      const { cz, sk } = dizge(p.tohum + 421, kay, 0.6);
+      const h6 = Array.from({ length: 6 }, (_, k) => { const a = (30 + k * 60) * D2R; return [cx + 16 * Math.cos(a), gY + 34 + 16 * Math.sin(a)]; });
+      return sk(h6, '#d8d2c7', 3, [1.5, 1.5]) + cz([[cx, gY + 25], [cx + 7, gY + 34], [cx, gY + 43], [cx - 7, gY + 34], [cx, gY + 25]], 2);
+    };
+    const sirt = (kay) => {
+      const { cz, sk } = dizge(p.tohum + 431, kay);
+      let str = sk([[cx - hw * 0.6, gY + 4], [cx - 124, omuzY + 14], [cx - 215, 900], [cx + 215, 900], [cx + 124, omuzY + 14], [cx + hw * 0.6, gY + 4], [cx, gY + 12]], PEL_SIRT);
+      for (const u of [-0.5, -0.1, 0.32]) str += cz([[cx + u * 110, omuzY + 130], [cx + u * 160, 620], [cx + u * 190, 880]], 2.4, PEL_IC, 0.8);
+      return str;
+    };
+    const yanKontur = (kay) => { const { cz } = dizge(p.tohum + 441, kay); return [-1, 1].map((y) => cz([[cx + y * 118, omuzY + 16], [cx + y * 116, 600], [cx + y * 112, 900]])).join(''); };
+    let anahtar = '', sonO = null, sonA = null;
+    const F = { hw, hh, cx, cy, ceneY, omuzY };
+    // kesik (önden, kollar kalkık): gövdenin yanı göğüs hattından kesilir (kol.js govdeKes), kol omuzdan çıkar. Öbür hallerde
+    // ince kırpım: omuzlar pelerinin altında kalır, silüeti pelerin kurar (kostüm incelir)
+    F.durum = ({ arka = false, ifade = 'notr', bakis = [0, 0], kolOn = '', kolArka = '', maske = null, kayis = false, bas = 0, sx = 1, ayna = false, dx = 0, kesik = false }) => {
+      const a = `${kayIndis}|${arka}|${ifade}|${bakis}|${kesik}`;
+      if (a !== anahtar) {
+        anahtar = a;
+        const k = kisiSVG(p, { kaynama: kayIndis, ifade, bakis, mono: true, arka });
+        const G = kesik && !arka ? govdeKes(p, { id: `${id}-gk`, kaynama: kayIndis, tohum: p.tohum }) : null;
+        gGovde.innerHTML = G ? G.tanim + `<g ${G.klip}>${k}</g>${G.kontur}` : `<g clip-path="url(#${id}-ince)">${k}</g>${arka ? '' : yanKontur(kayIndis)}`;
+        gBas.innerHTML = k;
+        gPelA.innerHTML = arka ? '' : pelArka(kayIndis);
+        gPel.innerHTML = arka ? sirt(kayIndis) + kapelet(kayIndis) : kapelet(kayIndis) + toka(kayIndis);
+      }
+      if (kolOn !== sonO) { sonO = kolOn; gKolO.innerHTML = kolOn; }
+      if (kolArka !== sonA) { sonA = kolArka; gKolA.innerHTML = kolArka; }
+      gMaske.setAttribute('visibility', maske ? 'visible' : 'hidden');
+      if (maske) gMaske.setAttribute('transform', `translate(0 ${f1(maske.dy)}) rotate(${f1(maske.r)} ${cx} ${cy})`);
+      gKayis.setAttribute('visibility', kayis ? 'visible' : 'hidden');
+      gEnse.setAttribute('visibility', arka ? 'visible' : 'hidden');
+      gBasD.setAttribute('transform', `translate(${cx} ${f1(ceneY + bas)}) scale(1 ${(1 - bas * 0.007).toFixed(4)}) translate(${-cx} ${-ceneY})`);
+      kutu.setAttribute('transform', `translate(${f1(x0 + dx)} ${f1(y0)}) scale(${s}) translate(${cx} 0) scale(${((ayna ? -1 : 1) * sx).toFixed(4)} 1) translate(${-cx} 0)`);
+    };
+    return F;
+  }
+  {
+    // duvarda mantar pano: iğnelenmiş iki eskiz (maskenin ön çizimi, pelerin kalıbı)
+    const [x0, y0, x1, y1] = B4.pano, w = x1 - x0, h = y1 - y0;
+    C(L4.svg, kenarla([[x0, y0], [x1, y0], [x1, y1], [x0, y1]], 40), { kapali: true, dolgu: '#d8d2c7', kalinlik: 4, renk: '#8d867a' });
+    C(L4.svg, kenarla([[x0 + w * 0.08, y0 + h * 0.1], [x0 + w * 0.52, y0 + h * 0.07], [x0 + w * 0.55, y0 + h * 0.86], [x0 + w * 0.1, y0 + h * 0.9]], 20), { kapali: true, dolgu: TON.beyaz, kalinlik: 3, kay: [2, 2] });
+    const mx = x0 + w * 0.31, my = y0 + h * 0.46, r = w * 0.14;
+    C(L4.svg, [[mx, my - r * 1.3], [mx + r, my - r * 0.6], [mx + r * 0.9, my + r * 0.5], [mx, my + r * 0.9], [mx - r * 0.9, my + r * 0.5], [mx - r, my - r * 0.6]], { kapali: true, kalinlik: 2.4, renk: '#6f695f' });
+    for (const yon of [-1, 1]) C(L4.svg, [[mx + yon * r * 0.8, my - r * 0.2], [mx + yon * r * 0.4, my - r * 0.5], [mx, my - r * 0.25]], { kalinlik: 2, renk: '#6f695f' });
+    C(L4.svg, kenarla([[x0 + w * 0.6, y0 + h * 0.16], [x0 + w * 0.92, y0 + h * 0.2], [x0 + w * 0.9, y0 + h * 0.8], [x0 + w * 0.62, y0 + h * 0.76]], 20), { kapali: true, dolgu: '#f4f1ea', kalinlik: 3, kay: [2, 2] });
+    C(L4.svg, [[x0 + w * 0.68, y0 + h * 0.3], [x0 + w * 0.84, y0 + h * 0.3], [x0 + w * 0.88, y0 + h * 0.66], [x0 + w * 0.66, y0 + h * 0.64]], { kapali: true, kalinlik: 2, renk: '#8d867a' });
+    for (const [px, py] of [[x0 + w * 0.3, y0 + h * 0.1], [x0 + w * 0.76, y0 + h * 0.19]]) el(L4.svg, 'circle', { cx: f1(px), cy: f1(py), r: 6, fill: '#6f695f' });
+  }
+  // Ayna: ahşap çerçeve (iç pah), cam; camın içinde yansıyan oda (pencere), yansıyan kişi, parlama şeritleri
+  let gCam;
+  {
+    const A = B4.ayna;
+    C(L4.svg, yDortgen(A.x0, A.y0, A.x1, A.y1, 80, 30), { kapali: true, dolgu: '#a59e91', kalinlik: 4.4, kay: [3, 3] });
+    C(L4.svg, yDortgen(A.x0 + 12, A.y0 + 12, A.x1 - 12, A.y1 - 12, 70, 30), { kapali: true, kalinlik: 2, renk: '#8d867a', genlik: 0.6 });
+    const cam = yDortgen(A.x0 + 30, A.y0 + 30, A.x1 - 30, A.y1 - 30, 56, 30);
+    const kp = el(defs4, 'clipPath', { id: 's4b-cam' });
+    el(kp, 'path', { d: dYol(cam) });
+    gCam = el(L4.svg, 'g', { 'clip-path': 'url(#s4b-cam)' });
+    el(gCam, 'path', { d: dYol(cam), fill: '#dbd6cd' });
+    const [wx0, wy0, wx1, wy1] = B4.pencere;
+    C(gCam, kenarla([[wx0, wy0], [wx1, wy0], [wx1, wy1], [wx0, wy1]], 30), { kapali: true, dolgu: '#eeeae2', kalinlik: 3, renk: '#a59e91', kay: [0, 0] });
+    C(gCam, [[(wx0 + wx1) / 2, wy0], [(wx0 + wx1) / 2, wy1]], { kalinlik: 2.6, renk: '#a59e91' });
+    C(gCam, [[wx0, lerp(wy0, wy1, 0.45)], [wx1, lerp(wy0, wy1, 0.45)]], { kalinlik: 2.6, renk: '#a59e91' });
+    B4.cam = cam;
+  }
+  const YN = figur(gCam, p4, { id: 's4b-yans', ...B4.yans });
+  {
+    // camın parlama şeritleri (yansımanın üstünde, yarı saydam)
+    const A = B4.ayna, w = A.x1 - A.x0;
+    el(gCam, 'path', { d: dYol([[A.x0 + w * 0.66, A.y0], [A.x0 + w * 0.76, A.y0], [A.x0 + w * 0.3, A.y1], [A.x0 + w * 0.2, A.y1]]), fill: '#ffffff', opacity: 0.16 });
+    el(gCam, 'path', { d: dYol([[A.x0 + w * 0.82, A.y0], [A.x0 + w * 0.85, A.y0], [A.x0 + w * 0.39, A.y1], [A.x0 + w * 0.36, A.y1]]), fill: '#ffffff', opacity: 0.22 });
+    C(L4.svg, B4.cam, { kapali: true, kalinlik: 3, renk: '#6f695f', kay: [0, 0] });
+  }
+  const FG = figur(L4.svg, p4, { id: 's4b-cos', ...B4.kisi });
+  // Kollar (kutu birimi): eller maskenin iki kenarını 'tutma' pozuyla kavrar (parmaklar maskenin önünde, avuç kenarın
+  // dışında); dirsek göğüste aşağıdan yüzde yana ve yukarı açılır. Bırakınca eller kadrajın altına iner.
+  const KAL4 = 52, EB4 = 88, o4 = omuzlar(p4, { kalinlik: KAL4 });
+  const MK = (yon, dy, r) => {
+    const hx = yon * (FG.hw * 1.04 - 7), hy = 6, a = r * D2R;
+    return [200 + hx * Math.cos(a) - hy * Math.sin(a), FG.cy + hx * Math.sin(a) + hy * Math.cos(a) + dy];
+  };
+  const tut4 = (yon, dy, r, t) => {
+    const elAci = (yon < 0 ? -12 : 192) + r, bs = yon < 0 ? 1 : -1;
+    const bilek = bilekBul({ el: 'tutma', hedef: MK(yon, dy, r), elAci, elBoy: EB4, basparmak: bs, ad: 'tut' });
+    const E0 = [200 + yon * 182, 492], E1 = [200 + yon * 244, 250];
+    return { dirsek: [lerp(E0[0], E1[0], t) + yon * 42 * Math.sin(Math.PI * t), lerp(E0[1], E1[1], t)], bilek, el: 'tutma', elAci, basparmak: bs, kisalma: 1, yuz: 'sirt' };
+  };
+  const in4 = (yon) => ({ dirsek: [200 + yon * 176, 470], bilek: [200 + yon * 150, 650], el: 'acik', elAci: yon < 0 ? 96 : 84, basparmak: yon < 0 ? 1 : -1, kisalma: 1, yuz: 'sirt' });
+  const OTUR = 34, DON0 = 54, DON1 = 68;
+  const kol4 = (n, dy, r, t) => {
+    const ortak = { giysi: MONO.giysi[p4.giysi], ten: MONO.ten[p4.ten], kalinlik: KAL4, kaynama: kayIndis, elBoy: EB4 };
+    const u = ilerle(n, 40, 52, P2IO);
+    let str = '';
+    for (const yon of [-1, 1]) {
+      const A = tut4(yon, dy, r, t);
+      str += kolSVG({ ...ortak, omuz: yon < 0 ? o4.sol : o4.sag, taraf: yon < 0 ? 'sol' : 'sag', tohum: yon < 0 ? 81 : 82, ...(u > 0 ? karis(A, in4(yon), u) : A) });
+    }
+    return str;
+  };
+  ctx.isaret(K4 + OTUR, 'tik');
   ctx.herKare((f) => {
     if (f < K4 - 1 || f > SON + 1) return;
-    if (sonEl4 < 0) el4Ciz(kayIndis);
-    const s = B4.s, t = ilerle(f, K4 + 4, TIK4, P3O), G = B4.gir;
-    donustur(gK4, B4.kart[0] + G[0] * (1 - t), B4.kart[1] + G[1] * (1 - t), -6 + G[2] * (1 - t), s);
-    // el kalkar (hafif büyür) ve sağ alta çekilir
-    const c = ilerle(f, K4 + 48, K4 + 80, EI);
-    donustur(gEl4, 560 * c, 900 * c, 0, 1 + 0.07 * ilerle(f, K4 + 46, K4 + 56, EO));
+    const n = sinir(f - K4, 0, SON - K4);
+    // maske: 6–34 göğüsten yüze kalkar, 34'te oturur (2,5 birim sekme)
+    const t = ilerle(n, 6, OTUR, P2IO);
+    const sek = n >= OTUR && n < OTUR + 8 ? -2.5 * Math.sin((n - OTUR) / 8 * Math.PI) : 0;
+    const dy = 165 * (1 - t) + sek, r = 7 * (1 - t);
+    // dönüş: yatay basılır (gövdenin derinliği kadar, %45'in altına inmez), yarı yolda önden arkaya geçer; aynaya doğru kayar
+    const u = ilerle(n, DON0, DON1, KMf), arka = u >= 0.5, sx = 0.45 + 0.55 * Math.abs(Math.cos(Math.PI * u));
+    const kollar = arka ? '' : kol4(n, dy, r, t);
+    const bas = 7 * Math.sin(Math.PI * ilerle(n, 80, 96)) + 4 * Math.sin(Math.PI * ilerle(n, 100, 112));
+    const yuz = n < 10 ? ['merak', [0, 2]] : ['kararli', [0, 0]];
+    FG.durum({ arka, ifade: yuz[0], bakis: yuz[1], kolOn: kollar, maske: arka ? null : { dy, r }, kayis: arka, bas: arka ? bas : 0, sx, dx: 26 * u, kesik: true });
+    YN.durum({ arka: !arka, ifade: n >= 98 ? 'mutlu' : 'kararli', bakis: [0, 0], kolArka: kollar, maske: arka ? { dy: 0, r: 0 } : null, kayis: !arka && n >= OTUR, bas: arka ? bas : 0, sx, ayna: arka, dx: -10 * u, kesik: false });
   });
-  kamera(K4, SON, B4.kam[0], B4.kam[1]);
+  // Kamera: dönüşe dek hafif kayar; döndükten sonra (son ~50 kare) aynadaki maskeli yansımaya iter: maske kapanışta büyük
+  {
+    const [A, A2, B] = B4.kam.map((q) => ctx.odak(q[0], q[1], q[2]));
+    ctx.kameraKoy(K4, A);
+    tl.fromTo(ctx.kamera, A, { ...A2, duration: k(DON1), ease: 'none', immediateRender: false }, k(K4));
+    tl.fromTo(ctx.kamera, A2, { ...B, duration: k(SON + 1 - K4 - DON1), ease: 'sine.inOut', immediateRender: false }, k(K4 + DON1));
+  }
 }

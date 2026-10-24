@@ -13,7 +13,7 @@
     "s6-final": [2376, 2997]
   },
   "kisiler": {
-    "A": { "sahne": "s1-kafe", "rol": "kafedeki kız; garsona seslenir, görülmez; QR standı ister", "nota": "D4",
+    "A": { "sahne": "s1-kafe", "rol": "kafedeki kız; garsona seslenir, görülmez; sıkılıp peçeteye kendi yaratığını çizer; garson peçeteyi götürür", "nota": "D4",
       "p": { "tohum": 211, "kadin": true, "yas": "genc", "sacStil": "kivircik", "sac": 1, "ten": 3, "boy": "kisa", "yapi": "orta", "yanak": 0.7, "kupe": "halka", "yaka": "kapusonlu", "giysi": 3, "gozluk": null, "sakal": null, "cil": true } },
     "Garson": { "sahne": "s1-kafe", "rol": "uzun, zayıf garson; konuşan masaya bakar, A'yı görmez",
       "p": { "tohum": 223, "kadin": false, "yas": "genc", "sacStil": "undercut", "sac": 0, "ten": 5, "boy": "uzun", "yapi": "zayif", "yaka": "gomlek", "giysi": 5, "gozluk": null, "sakal": "keci", "kupe": false, "piercing": ["kulak"] } },
