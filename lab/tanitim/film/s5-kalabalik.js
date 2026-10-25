@@ -19,7 +19,7 @@
 //      Garson (kupa altlığı). Fikir değişir: zar kulesi → deste kutusu, Text Flip → fidget, kulaklık askısı → kablo klipsi.
 // #5.4 DEVİR (k2312–2375, 64 k; kadro.json'daki 40 k'dan uzun, ARALIK): yedi balon söner; kalabalık kaybolmaz, ortadan
 //      ikiye ayrılıp ritimle kenarlara çekilir (60 fps, küçük adım sekmeleri; yatayda sol/sağ alt köşeler, dikeyde altta
-//      iki köşe, biraz geri çekilerek). Önce yürüdükleri yana, varınca yukarı bakarlar (merak). Sekiz balon (yaratik,
+//      iki köşe, biraz geri çekilerek). Önce yürüdükleri yana, varınca yukarı bakarlar (merak). Sekiz balon (qrStandi,
 //      organizer, saksi, d20, piyon, kutuOyunu, yapboz, telefonStandi; cizimler.js) sahiplerinin başlarının üstüne süzülüp
 //      son boyuna büyür: alt kat bağlı kuyrukla, üst kat kısa kuyrukla sahibine doğru. Orta logoya, OKTOS'a, slogana boş.
 //      k2375'te kamera odak(0,0,1): dünya = ekran. Son yerleşim SON_BALONLAR ve SON_KISILER (s6 bunları okur).
@@ -246,7 +246,7 @@ const AKIS = {
   E: { cik: 2118, balon: 2140, cizim: 'd20' },                 // önce N1'e ve N2'ye bakar, fikri sonra gelir
   B: { cik: 2142, balon: 2150, cizim: 'organizer' },
   E4: { cik: 2152, balon: 2160, cizim: 'zarKulesi', degis: [2244, 'desteKutusu'] },
-  A: { cik: 2162, balon: 2170, cizim: 'yaratik' },              // kafede peçeteye çizdiği kendi yaratığı
+  A: { cik: 2162, balon: 2170, cizim: 'qrStandi' },
   N4: { cik: 2172, balon: 2180, cizim: 'textFlip', degis: [2258, 'fidget'] },
   E3: { cik: 2182, balon: 2190, cizim: 'piyon' },
   N5: { cik: 2192, balon: 2200, cizim: 'kulaklikAskisi', degis: [2272, 'kabloKlipsi'] },
@@ -329,7 +329,7 @@ const SON_YER = {
       { kod: 'B', cizim: 'organizer', c: [190, 484], r: [134, 92], icBoy: 190, rKal: 156 },
       { kod: 'D', cizim: 'saksi', c: [470, 494], r: [124, 94], icBoy: 172, rKal: 144 },
       { kod: 'E', cizim: 'd20', c: [1450, 494], r: [128, 92], icBoy: 166, rKal: 148 },
-      { kod: 'A', cizim: 'yaratik', c: [1730, 484], r: [126, 96], icBoy: 164, rKal: 146 },
+      { kod: 'A', cizim: 'qrStandi', c: [1730, 484], r: [126, 96], icBoy: 170, rKal: 146 },
     ],
   },
   // Dikey: kalabalık altta kalır, ortadan açılıp köşelere yığılır (sol 8, sağ 7; N6 sola, N1 sağa geçer: sahipler 4/4) ve
@@ -344,7 +344,7 @@ const SON_YER = {
     balonlar: [
       { kod: 'N2', cizim: 'yapboz', c: [168, 1110], r: [114, 82], icBoy: 162, rKal: 160, kisa: true },
       { kod: 'N6', cizim: 'telefonStandi', c: [410, 1124], r: [108, 80], icBoy: 150, rKal: 156, kisa: true },
-      { kod: 'A', cizim: 'yaratik', c: [670, 1124], r: [108, 84], icBoy: 146, rKal: 154, kisa: true },
+      { kod: 'A', cizim: 'qrStandi', c: [670, 1124], r: [108, 84], icBoy: 152, rKal: 154, kisa: true },
       { kod: 'E', cizim: 'd20', c: [912, 1110], r: [114, 82], icBoy: 150, rKal: 156, kisa: true },
       { kod: 'B', cizim: 'organizer', c: [176, 1392], r: [118, 80], icBoy: 168, rKal: 160 },
       { kod: 'E2', cizim: 'kutuOyunu', c: [416, 1372], r: [112, 82], icBoy: 164, rKal: 168 },
