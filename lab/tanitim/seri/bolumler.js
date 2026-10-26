@@ -29,6 +29,8 @@ export const MALZEMELER = {
   pla: { ad: 'PLA mat' },
   petg: { ad: 'PETG parlak' },
   recine: { ad: 'Şeffaf reçine' },
+  seffaf: { ad: 'Şeffaf reçine' }, // zar: PS1 dilinde sıralı desenli yarı saydam
+  renkli: { ad: 'Renkli reçine' },
   tas: { ad: 'Taş tozu' },
   mermer: { ad: 'Mermer epoksi' },
 };
@@ -85,50 +87,134 @@ export const BOLUMLER = {
       // cagri: 'Fikrini getir · oktosworkshop.com', (bölüme özel çağrı gerekirse)
     },
   },
-  // ---------- Taslaklar (iskelet hazır; kesim, odak ve bağdaştırıcı doldurulunca açılır). seri.js taslağı çalıştırmaz.
+  // ---------- Balkon / saksı (tasarım sütunu)
   balkon: {
-    taslak: true,
     ad: 'Balkon / saksı (tasarım)',
-    kesit: { modul: 's3-balkon', kesimler: null, sesler: { tik: 'tik', dusunce: 'dusunce' } },
-    urun: { bagdastirici: 'saksi', baslik: 'SAKSI', not: 'tools/vase geometrisi; kaydırıcılar ör. BOY, ÇAP, MALZEME' },
+    kesit: {
+      modul: 's3-balkon',
+      // #11 kapı ve güneş (1226–1345: kapıya yürür, kanat açılır, ışık, balkona çıkar, güneşte gülümser), #12 çiçekler:
+      // "Çiçeklerim çok güzel…" (yazı ~1365'ten 1500'e), kırık ağızdan topak düşer (1436), kaş iner. #13: çene elde, düşünce
+      // balonu, "Keşke bunlara da güzel kıyafetler giydirebilsem…" (~1530'dan sona), saksı balonda üç kez biçimlenir; son
+      // biçim (uzun ince, lila) oturunca 1676'da kırılma. "Keşke böyle bir aracım olsaydı…" (1690+) BİLEREK dışarıda:
+      // araç çağrışımı yok (kullanıcı 2026-10-26).
+      kesimler: [[1226, 1500], [1506, 1676]],
+      sesler: { tik: 'tik', dusunce: 'dusunce', toprak: 'toprak' },
+    },
+    kirilma: { odak: [710, 670], zoom: 1.5, vurus: [[2, 0, 0], [5, 40, -60], [8, -36, 52]] },
+    urun: {
+      bagdastirici: 'saksi',
+      cihaz: 'OKTOS TEZGÂHI', baslik: 'SAKSI', panel: 'UYARLAMA',
+      durum: [[0, 'ÇİÇEKLERE UYARLANIYOR'], [150, 'MALZEMEYE UYARLANIYOR']],
+      kamera: { mesafe: 640, aci: 14, hedefZ: 128, fov: 50, kaydir: 34 },
+      tabla: { R: 118 },
+      renk: { pla: '#c4683f', petg: '#2f7d6d' }, // pişmiş toprak rengi PLA, koyu yeşil parlak PETG
+      kaydiricilar: [
+        { id: 'h', etiket: 'BOY', bas: 110, son: 170, adim: 10, min: 60, max: 220, birim: 'MM', k: [22, 70] },
+        { id: 'bel', etiket: 'BEL', bas: 118, son: 78, adim: 5, min: 40, max: 140, birim: 'MM', k: [80, 136] },
+      ],
+      malzeme: { etiket: 'MALZEME', sira: ['pla', 'tas', 'mermer', 'petg'], k: [150, 192, 234] },
+      imlec: [0, 76, 144],
+      tam: null,
+      donusBaslangic: -20,
+    },
     metin: { damga: 'CANLANDI.' },
   },
+  // ---------- FRP masası / zar seti (niş oyun sütunu)
   frp: {
-    taslak: true,
     ad: 'FRP masası / zar (niş oyun)',
-    kesit: { modul: 's4-frp', kesimler: null, sesler: { tik: 'tik', dusunce: 'dusunce', zar: 'tik' } },
-    urun: { bagdastirici: 'zar', baslik: 'ZAR', not: 'ürün ve geometri kaynağı belirlenecek (zar kulesi / tepsisi?)' },
+    kesit: {
+      modul: 's4-frp',
+      // #14 E zarları yumruğunda sallar, herkes eğilir, atar (1664–1747); #15 3B yakın plan: tavla zarları düşer, seker,
+      // durur (1752–1900). #16 E3 kartı alır, "Keşke piyonlarımız gerçek olsa…" (~2025'ten), E: "Keşke FRP zarlarımız
+      // olsa…" iki satır yazılınca (2125) 64 kare tutulur (yavaş itiş): üçüncü satır ("kendimiz tasarlayabildiğimiz…")
+      // BİLEREK dışarıda (kullanıcı 2026-10-26: "kendin tasarla" çağrışımı yok). #17'den: üçü düşünür, E'nin balonunda
+      // zarlar taştan reçineye döner (2310–2424); kırılma E'nin zar balonuna vurur.
+      kesimler: [[1664, 1747], [1752, 1900], [2012, 2125, 64], [2310, 2424]],
+      tutOdak: [600, 470],
+      sesler: { tik: 'tik', dusunce: 'dusunce', zar: 'zar' },
+    },
+    kirilma: { odak: [840, 825], zoom: 1.55, vurus: [[2, 0, 0], [5, -60, 30], [8, 54, -36]] },
+    urun: {
+      bagdastirici: 'zar',
+      cihaz: 'OKTOS TEZGÂHI', baslik: 'ZAR SETİ', panel: 'UYARLAMA',
+      durum: [[0, 'OYUNA UYARLANIYOR'], [124, 'MALZEMEYE UYARLANIYOR']],
+      kamera: { mesafe: 250, aci: 34, hedefZ: 6, fov: 50, kaydir: 44 },
+      tabla: { R: 74, ust: '#2c3a36' }, // koyu oyun keçesi: şeffaf zar ve numaralar seçilsin
+      kaydiricilar: [
+        { id: 'b', etiket: 'BOYUT', bas: 16, son: 24, adim: 1, min: 10, max: 30, birim: 'MM', k: [20, 60] },
+        { id: 'k', etiket: 'KENAR', bas: 0, son: 3, adim: 0.5, min: 0, max: 4, birim: 'MM', ondalik: 1, k: [70, 106] },
+      ],
+      malzeme: { etiket: 'MALZEME', sira: ['seffaf', 'renkli', 'mermer', 'tas'], k: [124, 150, 176] },
+      imlec: [0, 66, 116],
+      tam: null,
+      donusBaslangic: 10,
+    },
     metin: { damga: 'CANLANDI.' },
   },
+  // ---------- Kafe / QR standı
   kafe: {
-    taslak: true,
     ad: 'Kafe / QR standı',
-    kesit: { modul: 's1-kafe', kesimler: null, sesler: { tik: 'tik', dusunce: 'dusunce' } },
-    urun: { bagdastirici: 'qr', baslik: 'QR STANDI', not: 'tools/qr masa standı; kaydırıcılar ör. EN, BOY, MALZEME' },
+    kesit: {
+      modul: 's1-kafe',
+      // #4 A elini kaldırır, "Bakar mısınız?" (282'den), garson güler, görmez (236–372); ikinci deneme "Bakar mısınız?!",
+      // el havada asılı (376–474). #5 yüz asılır, el yanağa (490–596); düşünce balonu, masa, QR standı, "Şurada bir QR
+      // olsa da sipariş verebilsem…" (~660'tan), vurgu halkası, tutuş (604–797).
+      kesimler: [[236, 372], [376, 474], [490, 596], [604, 797]],
+      sesler: { tik: 'tik', dusunce: 'dusunce' },
+    },
+    kirilma: { odak: [440, 710], zoom: 1.5, vurus: [[2, 0, 0], [5, 50, -40], [8, -46, 36]] },
+    urun: {
+      bagdastirici: 'qr',
+      cihaz: 'OKTOS TEZGÂHI', baslik: 'QR STANDI', panel: 'UYARLAMA',
+      durum: [[0, 'MASAYA UYARLANIYOR'], [122, 'MALZEMEYE UYARLANIYOR']],
+      kamera: { mesafe: 370, aci: 15, hedefZ: 56, fov: 50, kaydir: 36 },
+      tabla: { R: 96 },
+      renk: { pla: '#5a8fcf' }, // balondaki standın mavisi
+      kaydiricilar: [
+        // BOY: kod boyu S değişir, menüde karonun boyu yazar (alt pay 11 + kod + başlık %28: tools/qr ile aynı)
+        { id: 'S', etiket: 'BOY', bas: 50, son: 74, adim: 4, min: 30, max: 100, birim: 'MM', k: [20, 56], goster: (S) => Math.round(11 + S * 1.28) },
+        { id: 'en', etiket: 'EN', bas: 80, son: 110, adim: 5, min: 50, max: 140, birim: 'MM', k: [66, 104] },
+      ],
+      malzeme: { etiket: 'MALZEME', sira: ['pla', 'petg', 'mermer', 'tas'], k: [122, 144, 166] },
+      imlec: [0, 62, 110],
+      tam: null,
+      donusBaslangic: -24,
+    },
     metin: { damga: 'CANLANDI.' },
   },
 };
 
-// Kesim listesinin toplam uzunluğu ve seri karesi → kaynak (film iç) karesi
+// Kesim: [baş, son] ya da [baş, son, tut] (son kare tut kadar daha bekler; yavaş itişle). Uzunluk = son − baş + 1 + tut.
+const kesimBoyu = ([b, s, t = 0]) => s - b + 1 + t;
 export function kesitUzunlugu(kesimler) {
-  return kesimler.reduce((a, [b, s]) => a + (s - b + 1), 0);
+  return kesimler.reduce((a, k) => a + kesimBoyu(k), 0);
 }
+// Seri karesi → kaynak (film iç) karesi
 export function kaynakKaresi(kesimler, f) {
   let n = Math.max(0, f);
-  for (const [b, s] of kesimler) {
-    const L = s - b + 1;
-    if (n < L) return b + n;
+  for (const k of kesimler) {
+    const L = kesimBoyu(k);
+    if (n < L) return Math.min(k[0] + n, k[1]);
     n -= L;
   }
-  const son = kesimler[kesimler.length - 1];
-  return son[1]; // kesitten sonrası: son kare donar (kırılmanın donuk karesi)
+  return kesimler[kesimler.length - 1][1]; // kesitten sonrası: son kare donar (kırılmanın donuk karesi)
+}
+// Seri karesi bir tutmanın içindeyse ilerleme (0–1), değilse null
+export function tutmaIlerleme(kesimler, f) {
+  let o = 0;
+  for (const [b, s, t = 0] of kesimler) {
+    const L = s - b + 1;
+    if (t > 0 && f >= o + L && f < o + L + t) return (f - o - L + 1) / t;
+    o += L + t;
+  }
+  return null;
 }
 // Kaynak karesi → seri karesi (ses işaretleri için; kesitte yoksa null)
 export function seriKaresi(kesimler, m) {
   let o = 0;
-  for (const [b, s] of kesimler) {
-    if (m >= b && m <= s) return o + (m - b);
-    o += s - b + 1;
+  for (const k of kesimler) {
+    if (m >= k[0] && m <= k[1]) return o + (m - k[0]);
+    o += kesimBoyu(k);
   }
   return null;
 }

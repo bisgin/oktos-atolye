@@ -11,7 +11,7 @@
 // Sorgu: ?bolum=atolye (varsayılan) ?cek=1 ?t=9.2 (kareyi dondur) ?hiz=0.5 ?sayac=1
 import { gsap } from 'gsap';
 import { CustomEase } from 'gsap/CustomEase.js';
-import { BOLUMLER, MALZEMELER, SERI, zamanCizelgesi, kaynakKaresi, seriKaresi } from './seri/bolumler.js';
+import { BOLUMLER, MALZEMELER, SERI, zamanCizelgesi, kaynakKaresi, seriKaresi, tutmaIlerleme } from './seri/bolumler.js';
 import { BAGDASTIRICILAR } from './seri/urunler.js';
 import { ps1Kur, rng } from './seri/ps1.js';
 import { patlama, hitmarker, odakCizgileri } from './seri/patlama.js';
@@ -49,37 +49,32 @@ if (q.get('sayac') === '1') sayac.hidden = false;
 if (Z.K + SERI.kirilma >= Z.damga) hatalar.push(`kesit çok uzun (${Z.K} k): PS1'e yer kalmadı`);
 
 // ---------- 1) Kesit: film iframe'i (hazır olunca tanitim nesnesi)
-ifr.src = `film.html?yon=dikey&cek=1&yalniz=${encodeURIComponent(B.kesit.modul)}&ic=1`;
-async function kesitHazir() {
+// Film YALNIZ İLERİ sarılır: geri sarmada (seek) filmin tween'leri tutarsız kalabiliyor (s3'te 2026-10-26: geri sarıp
+// yeniden ilerleyince konuşma yazısı görünmez kaldı). Geri gerekirse iframe baştan yüklenir; kare kare çekim zaten
+// hep ileri gider. Böylece kare(t) her sırada aynı görüntüyü verir (geri sarmada ~birkaç sn yükleme).
+const KESIT_URL = `film.html?yon=dikey&cek=1&yalniz=${encodeURIComponent(B.kesit.modul)}&ic=1`;
+let FT = null, sonKaynak = -1;
+async function kesitYukle() {
+  const eski = ifr.contentWindow;
+  if (eski && eski.tanitim) eski.__eski = true; // yeniden yüklenirken eski belgenin "hazır"ı sayılmasın
+  ifr.src = `${KESIT_URL}&y=${Date.now()}`;
   const t0 = performance.now();
   for (;;) {
     const w = ifr.contentWindow;
-    if (w && w.tanitimHazir === true && w.tanitim) return w.tanitim;
+    if (w && !w.__eski && w.tanitimHazir === true && w.tanitim) {
+      // Filmin kamera katmanı will-change: transform taşır: tarayıcı taramayı geçmişe göre (kimi karede yeniden, kimi
+      // karede eski ölçekten büyüterek) yapar, aynı kare farklı çıkar. Yalnız bu iframe'de kapatılır (dosyaya dokunulmaz).
+      for (const id of ['kamera', 'itme']) { const e = ifr.contentDocument.getElementById(id); if (e) e.style.willChange = 'auto'; }
+      FT = w.tanitim; sonKaynak = -1;
+      return FT;
+    }
     if (performance.now() - t0 > 90000) throw new Error('kesit iframe 90 sn içinde hazır olmadı');
     await new Promise((r) => setTimeout(r, 100));
   }
 }
-let FT = null, sonKaynak = -1;
-// Isınma (önlem): GSAP "to" tween'leri başlangıç değerini ilk çizildikleri anda kaydeder; açılışta sahnenin bütün aralığı
-// bir kez kare kare oynatılır (filmin kendi çekimi gibi), sonraki atlamalar aynı kayıtlı değerleri kullanır. Denetim
-// (2026-10-26): aynı kare farklı sıralarla çekildiğinde fark yalnız tek tük piksel (deep-fry eşiği).
-function kesitIsit() {
-  // Filmin kamera katmanı will-change: transform taşır: tarayıcı taramayı geçmişe göre (kimi karede yeniden, kimi karede
-  // eski ölçekten büyüterek) yapar, kesim atlamalarında aynı kare farklı çıkar. Yalnız bu iframe'de kapatılır (dosyaya
-  // dokunulmaz): her kare o anki ölçeğinde taranır.
-  for (const id of ['kamera', 'itme']) { const e = ifr.contentDocument.getElementById(id); if (e) e.style.willChange = 'auto'; }
-  const s = (FT.sahneler?.() || []).find((x) => x.m === B.kesit.modul);
-  const [a, z] = s ? [s.bas, s.son] : [0, Math.max(...B.kesit.kesimler.flat())];
-  const t0 = performance.now();
-  for (let m = a; m <= z; m++) FT.kare(m / FPS);
-  FT.kare(1e-4);
-  sonKaynak = 0;
-  return Math.round(performance.now() - t0);
-}
-function kesitSur(m) {
+async function kesitSur(m) {
   if (m === sonKaynak) return;
-  // Geri sarmada baştan ileri (filmin tl.call'ları sırayla çalışsın: kare(t) her yönden aynı görüntü)
-  if (m < sonKaynak) FT.kare(1e-4);
+  if (m < sonKaynak) await kesitYukle();
   FT.kare(m / FPS);
   sonKaynak = m;
 }
@@ -119,7 +114,7 @@ $('cagri').style.top = CAGRI_Y + 'px';
 
 // ---------- 4) Kare: bütün durum f'nin saf işlevi
 let ps1 = null;
-function kare(t) {
+async function kare(t) {
   const f = sinir(Math.round(t * FPS), 0, Z.toplam - 1);
   const r = f - Z.kirilma, p = f - Z.ps1, d = f - Z.damga, e = f - Z.final;
 
@@ -128,11 +123,16 @@ function kare(t) {
   const pt = r - 8, delik = P1.delik(pt), delikTam = P1.delikTam(pt);
   const kesitGorunur = r < 0 || !delikTam;
   kesitKap.style.display = kesitGorunur ? '' : 'none';
-  if (kesitGorunur && FT) kesitSur(kaynakKaresi(B.kesit.kesimler, Math.min(f, Z.K - 1)));
+  if (kesitGorunur && FT) await kesitSur(kaynakKaresi(B.kesit.kesimler, Math.min(f, Z.K - 1)));
   // Zoom punch (kırılma): odağa 3 karede vurur, sonra yavaş sürünür; hafif eğilir
-  let zoom = 1, egim = 0;
+  let zoom = 1, egim = 0, koken = odak;
   if (r >= 0) { zoom = 1 + (B.kirilma.zoom - 1) * EO(ara(r, 0, 4)) + 0.05 * ara(r, 4, 16); egim = -2.2 * EO(ara(r, 0, 4)); }
-  kesitKap.style.transformOrigin = `${odak[0]}px ${odak[1]}px`;
+  else {
+    // Kesimdeki tutma (son kare bekler): yavaş itiş, donuk kare ölü durmasın
+    const tq = tutmaIlerleme(B.kesit.kesimler, f);
+    if (tq != null) { zoom = 1 + 0.07 * (0.5 - 0.5 * Math.cos(Math.PI * tq)); koken = B.kesit.tutOdak || [W / 2, H / 2]; }
+  }
+  kesitKap.style.transformOrigin = `${koken[0]}px ${koken[1]}px`;
   kesitKap.style.transform = zoom !== 1 ? `scale(${zoom.toFixed(4)}) rotate(${egim.toFixed(2)}deg)` : '';
 
   const ps1Gorunur = (delik || delikTam) && e < 0;
@@ -234,25 +234,28 @@ try {
 { const c = $('cagri'); c.style.display = 'block'; final.style.display = 'block'; const w = c.scrollWidth; if (w > 980) c.style.fontSize = (56 * 980 / w).toFixed(1) + 'px'; final.style.display = 'none'; }
 try {
   [FT, ps1] = await Promise.all([
-    kesitHazir(),
+    kesitYukle(),
     ps1Kur({
       canvas: $('ps1'), urun: B.urun, bagdastirici: BAGDASTIRICILAR[B.urun.bagdastirici](),
       malzemeAdlari: Object.fromEntries(Object.entries(MALZEMELER).map(([k, v]) => [k, v.ad])), sure: Z.ps1Sure,
     }),
   ]);
   for (const h of FT.hatalar || []) hatalar.push('film: ' + h);
-  window.tanitim.isinmaMs = kesitIsit();
   ISARET = isaretleriKur();
 } catch (err) {
   console.error(err);
   hatalar.push(String(err?.message || err));
 }
 hataEl.textContent = hatalar.join('\n');
-kare(0);
+await kare(0);
 if (CEKIM) window.tanitimHazir = true;
 else if (q.get('t') !== null) kare(+q.get('t'));
 else {
   const hiz = +(q.get('hiz') || 1), t0 = performance.now();
-  const dongu = () => { kare((((performance.now() - t0) / 1000) * hiz) % (Z.toplam / FPS)); requestAnimationFrame(dongu); };
+  let mesgul = false; // kare() geri sarmada iframe'i yeniden yükler: bitmeden yenisi başlamasın
+  const dongu = async () => {
+    if (!mesgul) { mesgul = true; try { await kare((((performance.now() - t0) / 1000) * hiz) % (Z.toplam / FPS)); } finally { mesgul = false; } }
+    requestAnimationFrame(dongu);
+  };
   requestAnimationFrame(dongu);
 }

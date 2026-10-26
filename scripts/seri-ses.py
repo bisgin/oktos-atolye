@@ -55,9 +55,9 @@ TEPE_DBTP = -1.0
 DUZEY = {
     'boom': 0, 'patlama': -2, 'damga': -3, 'woosh': -8, 'hit': -8, 'mozaik': -12, 'panel': -16, 'kaydir': -15,
     'imlec': -13, 'malzeme': -10, 'tamam': -9, 'logo': -10, 'harf': -19, 'cagri': -14,
-    'tik': -14, 'vida': -13, 'dusunce': -15,
+    'tik': -14, 'vida': -13, 'dusunce': -15, 'zar': -12, 'toprak': -14,
 }
-PAN = {'hit': 0.45, 'tik': 0.2, 'vida': 0.0, 'kaydir': 0.1, 'harf': 0.3, 'patlama': 0.0}
+PAN = {'hit': 0.45, 'tik': 0.2, 'vida': 0.0, 'kaydir': 0.1, 'harf': 0.3, 'patlama': 0.0, 'zar': 0.35}
 
 
 # =====================================================================================================
@@ -280,6 +280,28 @@ def ses_vida(r, ek):
         f = 2800 + r.random() * 3200
         y[a:a + L] += np.sin(2 * math.pi * f * t) * zarf(L, 0.0002, 0.006) * (1 - j / 18) * (0.6 + 0.4 * r.random())
     y += suz(r.standard_normal(len(y)), 'lp', 400) * zarf(len(y), 0.001, 0.03) * 0.8
+    return normal(y), 0.0
+
+
+def ses_zar(r, ek):
+    # Reçine zar masaya çarpar: sert, kısa, iki tepeli tık (gövde 2,2 kHz + parlak 5,1 kHz), çok kısa gürültü
+    t = zaman(0.05)
+    n = len(t)
+    d = 1 + (r.random() - 0.5) * 0.12
+    y = (np.sin(2 * math.pi * 2200 * d * t) * zarf(n, 0.0003, 0.012) + 0.5 * np.sin(2 * math.pi * 5100 * d * t) * zarf(n, 0.0002, 0.006))
+    y += suz(r.standard_normal(n), 'hp', 3000) * zarf(n, 0.0002, 0.003) * 0.8
+    return normal(y), 0.0
+
+
+def ses_toprak(r, ek):
+    # Topak düşer: yumuşak, boğuk gümleme + birkaç kırıntı tıkı
+    t = zaman(0.3)
+    n = len(t)
+    y = suz(r.standard_normal(n), 'lp', 320) * zarf(n, 0.002, 0.05) * 3.0
+    for _ in range(6):
+        a = int((0.02 + r.random() * 0.15) * SR)
+        L = int(0.004 * SR)
+        y[a:a + L] += suz(r.standard_normal(L), 'hp', 1800) * 0.25
     return normal(y), 0.0
 
 
