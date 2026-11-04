@@ -39,6 +39,11 @@
 <header class="topbar">
   <a class="brand" href="../index.html"><img src="../core/logo-beyaz.svg" alt="" width="36" height="28"><span>Oktos Workshop</span></a>
   <span class="spacer"></span>
+  <nav class="sitenav" aria-label="Site">
+    <a href="../index.html" data-i18n="nav.olustur">Hizmetler</a>
+    <a href="../urunler/" data-i18n="nav.urunler">Ürünler</a>
+    <a href="./" aria-current="page" data-i18n="nav.portfolyo">Portfolyo</a>
+  </nav>
   <div class="lang" role="group" aria-label="Dil / Language"><button type="button" data-lang="tr">TR</button><button type="button" data-lang="en">EN</button></div>
 </header>
 
@@ -78,6 +83,11 @@
   import { odaPanel } from '../core/oda-panel.js';
   import { odaTuru } from '../core/oda-tur.js';
   import { t, getLang, setLang } from '../core/i18n.js';
+  // Üst çubuk (Hizmetler · Ürünler · Portfolyo): metinleri site-metin.js kaydeder, dil değişince yenilenir
+  import '../core/site-metin.js';
+  import { onLang as navDil } from '../core/i18n.js';
+  const navYaz = () => document.querySelectorAll('.sitenav [data-i18n]').forEach((a) => { a.textContent = t(a.dataset.i18n); });
+  navYaz(); navDil(navYaz);
   import { odaKarakteri } from '../core/oda-karakter.js';
   import { odaSunumu } from '../core/oda-sunum.js';
   import * as THREE from 'three';

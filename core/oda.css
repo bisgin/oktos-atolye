@@ -27,6 +27,9 @@
    şeffaf zeminli beyaz Oktos logosu (core/logo-beyaz.svg). Renkler yakın plan panelininkiyle aynı aile. */
 .topbar { background: #111214; border-bottom-color: rgb(243 238 229 / 0.1); }
 .topbar .brand { color: #f3eee5; }
+.topbar .sitenav a { color: rgb(243 238 229 / 0.7); }
+.topbar .sitenav a:hover { background: rgb(243 238 229 / 0.08); color: #f3eee5; }
+.topbar .sitenav a[aria-current] { color: #f3eee5; }
 .topbar .lang { border-color: rgb(243 238 229 / 0.22); }
 .topbar .lang button { color: rgb(243 238 229 / 0.7); }
 .topbar .lang button.on { background: #f3eee5; color: #111214; }

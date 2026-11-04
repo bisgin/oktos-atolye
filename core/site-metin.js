@@ -29,7 +29,7 @@ addStrings({
     'giris.urun.d': 'Atölyenin tasarlayıp bastığı parçalardan seç.',
     'giris.urun.n': '{n} ürün',
     // Oluştur (araç listesi; bugüne dek ana sayfadaydı)
-    'araclar.title': 'Oluştur',
+    'araclar.title': 'Hizmetler',
     'araclar.h1': 'Ölçünü gir, atölye bassın.',
     'araclar.intro': 'Organizer, vazo, kalemlik, clicker. Bir şablon seç, ölçünü gir, önizle; baskıyı Oktos yapar. Kurulum yok, üyelik yok.',
     'araclar.aria': 'Araçlar',
@@ -129,7 +129,7 @@ addStrings({
     'giris.urun': 'Ready-made products',
     'giris.urun.d': 'Choose from pieces the workshop designed and printed.',
     'giris.urun.n': '{n} products',
-    'araclar.title': 'Create',
+    'araclar.title': 'Services',
     'araclar.h1': 'Enter your size. The workshop prints it.',
     'araclar.intro': 'Organizers, vases, pen cups, clickers. Pick a preset, enter your size, preview it; Oktos prints it. No install, no sign-up.',
     'araclar.aria': 'Tools',
