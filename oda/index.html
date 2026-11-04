@@ -1,10 +1,10 @@
 <!doctype html>
-<html lang="tr" class="story-on">
+<html lang="tr" class="story-on oda-tam">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Atölye odası · Oktos Workshop</title>
-<meta name="description" content="Oktos atölyesinde tasarlanıp basılan ürünler ve İbrahim Arda Bişgin'in portfolyosu bir odanın içinde, kendi yerlerinde: kart anahtarlıklar, minifigürler, diorama plakaları, maske, balbal biblolar; kitaplıkta tasarım çalışmaları, rafta kutu oyunları, ekranda dijital modelden döküme süreç. Birine tıkla, yakından bak.">
+<meta name="description" content="İbrahim Arda Bişgin'in portfolyosu, atölye odasının içinde: kitaplıkta Modern Balbal büstleri ve tasarım çalışmaları, rafta kutu oyunları, ekranda dijital modelden döküme süreç, armut koltukta hakkımda. Biggie gezdiriyor.">
 <link rel="canonical" href="https://oktos.org/oda/">
 <meta name="theme-color" content="#111214">
 <link rel="icon" href="../core/icon.svg" type="image/svg+xml">
@@ -62,12 +62,11 @@
     </div>
   </div>
   <nav class="story-strip"></nav>
-  <button type="button" class="oda-next"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20 12a8 8 0 1 1-2.35-5.65"/><path d="M20 4.5V9h-4.5"/></svg></button>
   <div class="story-veil"><div class="oda-yukle" role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0"><i></i></div></div>
-  <!-- Biggie'li sunum (core/oda-sunum.js): açılış yazıları, "kobe" balonu, "Çalışmaya dön" -->
+  <!-- Biggie'li sunum (core/oda-sunum.js): açılış yazıları, "kobe" balonu, kitaplıktaki büstlerin noktaları (v8) -->
   <div class="oda-acilis" hidden><p class="oa-ad"><span class="oa-isim"></span><span class="oa-unvan"></span></p><p class="oa-cumle"></p></div>
   <div class="oda-balon" aria-hidden="true" hidden></div>
-  <button type="button" class="oda-calisma" hidden></button>
+  <div class="oda-bust-noktalar" hidden></div>
   <p class="story-live" aria-live="polite"></p>
 </section>
 
@@ -77,11 +76,9 @@
   // ?kamera=, ?demo=1. Göreli yollar lab/ ile aynı derinlikte (../core/, ../urunler/).
   import { mountStory } from '../core/story.js';
   import { ODA_STORY, PORTFOLYO_DURAK } from '../core/story-data.js';
-  import { GORUNEN, yuvaBul } from '../core/oda-yerler.js';
   import { catiPanel } from '../core/cati-panel.js';
   import * as odaScene from '../core/oda-sahne.js';
   import { odaPanel } from '../core/oda-panel.js';
-  import { odaTuru } from '../core/oda-tur.js';
   import { t, getLang, setLang } from '../core/i18n.js';
   // Üst çubuk (Hizmetler · Ürünler · Portfolyo): metinleri site-metin.js kaydeder, dil değişince yenilenir
   import '../core/site-metin.js';
@@ -121,9 +118,6 @@
     addEventListener('oda-kurulum', (e) => { il.k = e.detail; ciz(); });
     ciz();
   }
-  const nextBtn = document.querySelector('.oda-next');
-  nextBtn.setAttribute('aria-label', t('oda.next'));
-  nextBtn.title = t('oda.next');
   const reduce = matchMedia('(prefers-reduced-motion: reduce)').matches || params.get('mod') === 'still';
   // Biggie'li rehberli sunum (core/oda-sunum.js, 2026-11-03): ?giris=dans (varsayılan: açılış yazıları Biggie'nin dansı
   // üstünde) | yukleme (yazılar oda yüklenirken başlar); ?sunum=0 kapalı (eski davranış: Biggie masaya oturur)
@@ -138,25 +132,20 @@
   // onReady). ?portfolyo=0 kapalı (ölçüm: scripts/donma-olc.py --varyant)
   const portfolyoAcik = params.get('portfolyo') !== '0';
   odaScene.options.portfolyo = portfolyoAcik;
-  // Yakın plan paneli: başlık, cümle, ürün seçici, fiyat ve durum, Satın al / Sipariş ver, Tüm ürünler (core/oda-panel.js)
+  // Yakın plan paneli (core/oda-panel.js): başlık ve cümle; v8'de bütün duraklar portfolyo (ürün seçici ve düğmesi yok)
   const panel = odaPanel(root, { lang, reduce });
-  // Portfolyo durakları (2026-11-03, çatı katından taşındı): kitaplıkta işler, dioramalar ve araçlar (ışık kutusu), ekranda
-  // süreç adımları (seçilen adım TV'de oynar), hakkımda yazısı. Ürün kartının yanında ek içerik olarak (core/cati-panel.js)
-  const portPanel = catiPanel(root, { lang, reduce, ekran: () => story?.api?.portfolyo?.ekran ?? null });
+  // Durakların kart içeriği (core/cati-panel.js oda kipi): armutta hakkımda yazısı, kitaplıkta raflardan işler (ışık kutusu)
+  // ve eldeki büstün bilgisi, ekranda süreç adımları (seçilen adım TV'de oynar). v8: araçlar ve dioramalar odada yok
+  const portPanel = catiPanel(root, { lang, reduce, oda: true, ekran: () => story?.api?.portfolyo?.ekran ?? null });
   const kartAc = (h, c) => { panel.onCard(h, c); portPanel.onCard(h, c); };
   // Denetleyici kendi değişkeninde: kurulmadan önce window.story, id="story" bölümünün kendisidir
-  // Kaydırmalı tur (core/oda-tur.js): genel plan, sonra görünen ürün yuvaları ZONES sırasıyla (GORUNEN)
-  let story = null, tur = null, hazir = false;
-  // Ürün yuvalarından sonra portfolyo durakları (kitaplık, kutu oyunları, ekran, hakkımda)
-  const duraklar = [...GORUNEN.map((z) => z.id), ...(portfolyoAcik ? PORTFOLYO_DURAK : [])];
-  // ?odak=<yuva> (/urunler/'deki "Odada gör"; /portfolyo/ → ?odak=kitaplik): açılışta o durağa yakınlaşır; eski durak
-  // kimliği de olur (?odak=kalemlik → figur). Gizli ya da bilinmeyen durakta yok sayılır, tur her zamanki gibi başlar
-  const odak = (() => {
-    const p = params.get('odak');
-    if (portfolyoAcik && PORTFOLYO_DURAK.includes(p)) return p;
-    const y = yuvaBul(p);
-    return y && duraklar.includes(y.id) ? y.id : null;
-  })();
+  // v8 (2026-11-04, kullanıcı kararı): oda yalnız portfolyo; altı durak (PORTFOLYO_DURAK), kaydırmalı tur, alttaki
+  // "Atölyeden çıkanlar" şeridi, "Ürünleri gez" ve "sıradaki" düğmesi kalktı. İşaretçiye (ya da eşyaya) tıklanınca Biggie
+  // oraya gider, kamera durağa gelir, kart açılır (core/oda-sunum.js sec); "Geri" ve Esc genel plana döner
+  let story = null, hazir = false;
+  const duraklar = portfolyoAcik ? PORTFOLYO_DURAK : [];
+  // ?odak=<durak> (/portfolyo/ → ?odak=kitaplik): açılışta o durağa gider; bilinmeyen durak yok sayılır
+  const odak = (() => { const p = params.get('odak'); return duraklar.includes(p) ? p : null; })();
   // Karakter (bizzikoloşko, core/oda-karakter.js): odayla birlikte yüklenmeye başlar ama odayı bekletmez; sayfa açılırken
   // üst kattan iner, kapıda dans eder, masaya oturur (hareket azaltmada doğrudan masada). Dosyası yoksa oda onsuz açılır.
   // Deneme parametresi: ?karakter=0 kapalı, =masa masada başlar, =ip | merdiven iniş aracını seçer
@@ -178,9 +167,10 @@
     // core/oda-panel.js'ten). Buraya yalnız adressiz bir ürün düşer: 2B ürün listesi açılır
     onPick: () => { location.href = '../urunler/index.html'; },
     onSkip: () => { location.href = '../index.html'; },
-    // Giriş bitince kamerayı tur sürer; turdayken tıklama önce tura sorulur
-    onReady: () => { hazir = true; portfolyoYukle(); if (tur) turuBaslat(); },
-    onActivate: (h) => { sunum?.tikla(h?.id); return tur?.sec(h) ?? false; },
+    // Giriş bitince kamerayı sunum sürer (baslat)
+    onReady: () => { hazir = true; portfolyoYukle(); baslat(); },
+    // Kamera sayfanın (story.drive): durağa tıklama ve "Geri" sunuma gider (Biggie, kamera, kart)
+    onActivate: (h) => sunum?.sec(h?.id ?? null) ?? false,
     onCard: kartAc,
   });
   panel.attach(story);
@@ -206,34 +196,18 @@
       if (Math.abs(dy) > 40) { kat(dy > 0); dokunY = null; }
     }, { passive: true });
   }
-  // ?kamera=a|b|c|d|eski: tıklamayla durağa geçiş biçimi (varsayılan A, doğrudan uçuş); ?demo=1 tıklamaları kendisi yapar
-  const kamera = ['a', 'b', 'c', 'd', 'eski'].includes(params.get('kamera')) ? params.get('kamera') : 'a';
-  function demoBaslat() { if (params.has('demo')) tur.demo([...duraklar, null]); }
-  // Tur, sunum varsa açılış bitince başlar (yazılar ve telefonda Biggie'yi izleyen kamera bitene dek kamerayı sunum sürer)
-  function turuBaslat() { const bas = () => { tur.hazir(); demoBaslat(); }; if (sunum) sunum.hazir(bas); else bas(); }
-  tur = odaTuru(root, story, {
-    duraklar: [null, ...duraklar],
-    metin: { baslik: t('oda.tur.baslik'), basla: t('oda.tur.basla') },
-    reduce, bekle: !!odak, gecis: kamera,
-    onDurak: (id) => sunum?.turDurak(id), // v6: sıradaki başlığa geçilince Biggie o istasyona yürüyüp eylemini başlatır
-  });
-  if (hazir) turuBaslat();
+  // Açılış bitince (sunum varsa yazılar ve telefondaki takip kamerası bitince) kamerayı sunum sürer; ?odak= varsa o durağa
+  let basladi = false;
+  function baslat() {
+    if (basladi || !story) return;
+    basladi = true;
+    const bas = () => { if (sunum) sunum.basla(); if (odak) { if (sunum) sunum.git(odak); else story.focus(odak); } };
+    if (sunum) sunum.hazir(bas); else bas();
+  }
+  if (hazir) baslat();
   // Deneme parametresi (çekim için): ?bak=0.4 kenar bakışını o açıya çevirir (radyan, artı sola)
   if (params.get('bak') && story.debug.look) story.debug.look.yaw = Number(params.get('bak'));
-  if (odak && PORTFOLYO_DURAK.includes(odak)) portfolyoYukle();
-  if (odak) story.focus(odak);
-  // ?adim=2: yakın plandaki yuvada o kadar ürün ilerler (çekim için)
-  for (let i = 0; i < Number(params.get('adim') || 0) && story.focusedId; i++) {
-    const z = story.focusedId;
-    await story.api.show(z, story.api.current(z).index + 1, { reduced: true });
-  }
-  // Döngü düğmesi: turda sıradaki durağa (sondan başa); tur sürmüyorsa sıradaki yuvaya
-  nextBtn.addEventListener('click', () => {
-    const ids = duraklar;
-    if (story.driven) tur.ileri();
-    else story.focus(ids[(ids.indexOf(story.focusedId) + 1) % ids.length]);
-    if (!reduce) nextBtn.querySelector('svg').animate([{ transform: 'rotate(0deg)' }, { transform: 'rotate(360deg)' }], { duration: 520, easing: 'cubic-bezier(0.23, 1, 0.32, 1)' });
-  });
+  if (odak) portfolyoYukle();
 </script>
 </body>
 </html>

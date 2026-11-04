@@ -7,6 +7,8 @@
 import * as THREE from 'three';
 import { karakterOlustur, AYAR } from '../core/oda-karakter.js';
 import { OLCU } from '../core/oda-olcu.js';
+import { ENGEL, PORT } from '../core/oda-portfolyo.js';
+import { BIGGIE_DURAK } from '../core/oda-yerler.js';
 
 const KARE = 1 / 60;
 const sonuc = [];
@@ -347,6 +349,26 @@ async function sozlesme7() {
   }
 }
 
+// v8 (2026-11-04): armut sol duvarın önüne taşındı, kara tahta kalktı. Odanın ortasından (sunumda Biggie'nin beklediği
+// yer) her durağın duruş yerine engellere (PORT ENGEL dahil) değmeyen yol var; armudun oturuş kökü (eksenin 515 mm önü)
+// armut engelinin dışında
+async function yolV8() {
+  grup = 'Yol ve engeller (v8)';
+  const { k, D } = kur({ zorla: 'merdiven' });
+  k.sunumAyar({ engel: ENGEL });
+  const E = D.engeller(), bas = { x: 520, y: 760 };
+  const A = PORT.armut, on = [Math.sin(A.rz), -Math.cos(A.rz)], kok = { x: A.x + on[0] * 515, y: A.y + on[1] * 515 };
+  const hedefler = { armut: kok, ...Object.fromEntries(BIGGIE_DURAK.filter((d) => !d.capa && d.id !== 'masa').map((d) => [d.id, { x: d.yer[0], y: d.yer[1] }])) };
+  const yok = [];
+  for (const [id, h] of Object.entries(hedefler)) {
+    const yol = D.yolBul(bas, h, E);
+    if (!yol || !yol.length) yok.push(id);
+  }
+  kontrol('ortadan her durağa yol var (armut kökü, kitaplık, kutu oyunları, buzdolabı, çöp)', !yok.length, yok);
+  kontrol('armudun oturuş kökü armudun engelinin (420 mm) dışında', Math.hypot(kok.x - A.x, kok.y - A.y) > 420, kok);
+  kontrol('kara tahta engeli ve durağı yok', !ENGEL.some((e) => e.ad === 'tahta') && !BIGGIE_DURAK.some((d) => d.id === 'hakkimda'));
+}
+
 async function azalt() {
   grup = 'Hareket azaltma';
   const s = kur({ reduce: true }), { k, D, hikaye } = s;
@@ -388,7 +410,7 @@ async function calistir() {
   const geri = tohumla(20261020), t0 = performance.now();
   try {
     bilgi = await glbBilgi();
-    const senaryo = [() => inisMasa('merdiven'), () => inisMasa('ip'), kenarDonme, iptal, () => kalkOtur('otur'), () => kalkOtur('otur2'), azalt, sozlesme7];
+    const senaryo = [() => inisMasa('merdiven'), () => inisMasa('ip'), kenarDonme, iptal, () => kalkOtur('otur'), () => kalkOtur('otur2'), azalt, sozlesme7, yolV8];
     for (const f of senaryo) {
       try { await f(); } catch (e) { kontrol('beklenmeyen hata', false, e?.stack ?? String(e)); }
     }

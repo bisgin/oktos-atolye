@@ -216,36 +216,32 @@ export const STORIES = {
 
 export const STORY_ORDER = ['bin', 'vase', 'clicker', 'text', 'flip', 'qr', 'painter', 'puzzle'];
 
-// Orta katın oda sahnesi (lab/oda.html, docs/oda-sahnesi.md): 2026-11-01'den beri yalnız satılan ürünlerin yuvaları
-// (core/oda-yerler.js ZONES). Yuvanın adı şeritte (core/urun-veri.js YUVALAR.ad ile aynı); pin: işaretçide ve kartın büyük
-// başlığında kısa ad; desc: başlığın altındaki kısa cümle. "taslak" yorumlu cümleler kullanıcı onayı bekliyor.
-// sticker ve raf yuvaları bugün gizli (ürünü yok); metinleri açıldıklarında hazır dursun.
+// Orta katın oda sahnesi (/oda/, docs/oda-sahnesi.md): v8'den (2026-11-04) beri portfolyo odası (ürünler /urunler/'de).
+// pin: işaretçide ve kartın büyük başlığında kısa ad; desc: başlığın altındaki kısa cümle.
 const zone = (tr, en, dtr, den, pin = null) => ({ tr, en, desc: { tr: dtr, en: den }, ...(pin ? { pin: { tr: pin[0], en: pin[1] } } : {}) });
 export const ODA_STORY = {
   live: true,
   href: 'index.html',
   name: { tr: 'Atölye odası', en: 'Workshop room' },
-  title: { tr: 'Atölyeden çıkanlar, kendi yerlerinde.', en: 'Made in the workshop, each in its place.' }, // taslak (görünmez başlık)
+  title: { tr: 'Atölyem, bir mühendisin kendine kurduğu kale.', en: 'My workshop, the castle an engineer built for himself.' }, // görünmez başlık
   lede: {
-    tr: 'Sattığımız ürünler bu odada. Birine tıkla, yakından bak.',
-    en: 'What we sell is in this room. Click one for a closer look.',
+    tr: 'Biggie gezdiriyor. Bir yere tıkla, oraya gitsin.',
+    en: 'Biggie shows you around. Click a spot and he heads there.',
   },
+  // v8 (2026-11-04, kullanıcı kararı): oda yalnız portfolyo; altı durak. Ürünler Ürünler sekmesinde (işaretçi, kart, tur
+  // yok). Metin core/cati-veri.js'teki portfolyo sesiyle (birinci tekil)
   hotspots: {
-    sticker: zone("Sticker'lar", 'Stickers', 'Laptopuna, defterine, şişene.', 'For your laptop, notebook and bottle.', ['Sticker', 'Sticker']), // taslak
-    anahtarlik: zone('Kart anahtarlıklar', 'Card keychains', 'Sevdiğin kart anahtarının yanında.', 'Your favourite card next to your keys.', ['Kart anahtarlık', 'Card keychain']),
-    figur: zone('Minifigürler', 'Minifigures', 'Masanın köşesinde küçük bir ordu, kartların için bir kutu.', 'A small army on the corner of your desk, and a box for your cards.', ['Minifigür', 'Minifigure']), // taslak
-    raf: zone('Diorama plakaları', 'Diorama plates', 'Sevdiğin sahne rafında küçük bir dünya.', 'A favourite scene as a small world on your shelf.', ['Diorama', 'Diorama']), // taslak
-    kilic: zone('Katana', 'Katana', 'Duvarda durur, katlanınca yanında taşınır.', 'It hangs on the wall and folds up to travel with you.', ['Katana', 'Katana']), // taslak
-    maske: zone('Maske', 'Mask', 'Duvarda bekleyen kemikten bir yüz.', 'A skull face waiting on the wall.', ['Maske', 'Mask']), // taslak
-    biblo: zone('Balbal biblolar', 'Balbal figurines', 'Bozkırın taş bekçileri, pencerenin kenarında.', 'Stone guardians of the steppe, on your window sill.', ['Balbal', 'Balbal']), // taslak
-    // Portfolyo köşesi (2026-11-03: çatı katından odaya taşındı; metin core/cati-veri.js CATI_STORY'den, ses birinci tekil)
-    kitaplik: zone('Kitaplık', 'Bookcase', 'Şimdiye kadarki tasarım çalışmalarım: Modern Balbal serisinin büstleri, vazolar, oyun kutuları. Altta, sahnelerini tasarladığım on diorama ve bu sitede yazdığım sekiz araç.',
-      'My design work so far: busts from the Modern Balbal series, vases, game boxes. Below, ten dioramas whose scenes I designed, and the eight tools I built for this site.', ['Raflar', 'Shelves']),
-    oyunlar: zone('Kutu oyunları', 'Board games', 'Kutu oyunlarım bu rafta, kapakları kapalı.', 'My board games live on this shelf, lids closed.', ['Kutu oyunları', 'Board games']), // taslak
+    armut: zone('Hakkımda', 'About me', 'Biggie armuda gömülüp gözlerini kapattı. Ben de bu arada kendimi anlatayım.',
+      'Biggie has sunk into the bean bag and closed his eyes. Meanwhile, let me introduce myself.', ['Hakkımda', 'About me']),
+    kitaplik: zone('Kitaplık', 'Bookcase', 'Şimdiye kadarki tasarım çalışmalarım: Modern Balbal serisinin büstleri, vazolar, oyun kutuları. Raftaki bir büste tıkla, Biggie eline alıp göstersin.',
+      'My design work so far: busts from the Modern Balbal series, vases, game boxes. Click a bust on the shelf and Biggie will pick it up to show you.', ['Kitaplık', 'Bookcase']),
+    masa: zone('Masa', 'Desk', "Biggie bilgisayarın başında çalışıyor. Ekranda Blender'da döndürülen bir model.",
+      'Biggie is at work on the computer. On screen, a model turning in Blender.', ['Masa', 'Desk']),
+    buzdolabi: zone('Buzdolabı', 'Fridge', 'Biggie acıkınca buraya gelir. Elma bitene dek.', 'Biggie comes here when he gets hungry. Until the apples run out.', ['Buzdolabı', 'Fridge']),
     ekran: zone('Süreç', 'Process', 'Dijital modelden döküme sekiz adım. Ekrana tıkla: sıradaki adım.', 'Eight steps from digital model to cast. Click the screen for the next step.', ['Süreç', 'Process']),
-    hakkimda: zone('Hakkımda', 'About me', 'Kimim, ne yapıyorum, nasıl çalışıyorum.', 'Who I am, what I make, how I work.', ['Hakkımda', 'About']),
+    oyunlar: zone('Kutu oyunları', 'Board games', 'Kutu oyunlarım bu rafta, kapakları kapalı. Bir kutuya tıkla, Biggie rafın üstüne koysun.', 'My board games live on this shelf, lids closed. Click a box and Biggie will set it on top.', ['Kutu oyunları', 'Board games']),
   },
 };
-// Portfolyo durakları (sıra: turdaki sırası; ürün yuvalarından sonra gelir). Kartta ürün seçici yok, içerik
-// core/cati-panel.js'ten (işler, dioramalar, araçlar, süreç adımları, hakkımda yazısı)
-export const PORTFOLYO_DURAK = ['kitaplik', 'oyunlar', 'ekran', 'hakkimda'];
+// Odanın durakları (v8: altı işaretçi; sıra işaretçilerin ve klavye şeridinin sırası). Kartta ürün seçici yok, içerik
+// core/cati-panel.js'ten (oda kipi: Hakkımda, raflardan işler, büst, süreç adımları)
+export const PORTFOLYO_DURAK = ['armut', 'kitaplik', 'masa', 'buzdolabi', 'ekran', 'oyunlar'];

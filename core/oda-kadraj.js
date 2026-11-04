@@ -5,7 +5,7 @@
 //     DUVAR_PAY içeride, mobilya hacminin içinde ya da üstünde değil (kameranın altındaki sütun da boş: masanın, rafın
 //     üstünde durulmaz).
 //  2. Kadrajda odanın dışı 0: görüş piramidinden atılan her ışın odanın kutusundan bir duvardan, zeminden ya da tavandan
-//     çıkar; ön kesitten (y = ROOM.y0, açık) çıkan ışın "oda dışı piksel"dir (disariOrani). Arka duvarın penceresi ve
+//     çıkar (v8: ön kesit yok; oda ON_DUVAR'daki duvarla kapalı, kameranın kendisi odanın içindeyse dışarısı görünmez). Arka duvarın penceresi ve
 //     balkon kapısı odanın parçası (oradan görünen balkon ve sokak sahnenin kendisi).
 //  3. Odak ortada ve görünür: hedef nesnenin merkezi; kamera ile nesne arasında (merkez + 8 köşe) mobilya, duvar,
 //     karakter gövdesi ya da planlanan gövde silindiri yok.
@@ -14,17 +14,19 @@
 // Ölçüm: olcum() verilen kadrajda oda dışı piksel oranı, göz yüksekliği, odak nesnesinin karakter (gerçek deri ağı)
 // ve mobilya tarafından örtülme oranı, nesnenin ekrandaki merkezi.
 // disari(): her karede son güvenlik (core/story.js applyCamera → built.kameraDuzelt): kamera bir mobilya hacminin içine
-// düşerse en kısa eksenden dışarı itilir; odanın içindeyken duvarların içinde tutulur. Genel plan (ön kesitin dışı)
-// dokunulmaz.
+// düşerse en kısa eksenden dışarı itilir; duvarların içinde tutulur (v8: genel plan ve giriş uçuşu da;
+// oda ON_DUVAR'a dek uzayıp önden kapandı, odanın dışında kamera yok).
 // Birim mm, Z yukarı.
 import * as THREE from 'three';
-import { OLCU } from './oda-olcu.js';
+import { OLCU, ON_DUVAR } from './oda-olcu.js';
 
 const { ROOM } = OLCU;
+// v8: oda önde ON_DUVAR.y'deki duvarla kapalı (core/oda-sahne.js odayiUzat); kameranın durabileceği hacmin önü orası
+export const ODA_ON = ON_DUVAR.y;
 export const GOZ = [1400, 1700];     // mm: göz yüksekliği aralığı (kullanıcı kuralı)
 const DUVAR_PAY = 160;               // mm: kamera duvarlardan bu kadar içeride (insanın başı duvara değmez)
 // Kameranın durabileceği hacim
-export const ODA_IC = { min: [ROOM.x0 + DUVAR_PAY, ROOM.y0 + DUVAR_PAY, GOZ[0]], max: [ROOM.x1 - DUVAR_PAY, ROOM.y1 - DUVAR_PAY, GOZ[1]] };
+export const ODA_IC = { min: [ROOM.x0 + DUVAR_PAY, ODA_ON + DUVAR_PAY, GOZ[0]], max: [ROOM.x1 - DUVAR_PAY, ROOM.y1 - DUVAR_PAY, GOZ[1]] };
 const HACIM_PAY = 45;                // mm: mobilya kutusunun çevresinde kameranın girmeyeceği pay
 const GOVDE_R = 115;                 // mm: karakter kemiği ışına bu kadar yakınsa ışın gövdeye çarpmış sayılır
 const GOVDE_ANA = /kafa|head|boyun|neck|topuz|kulak|ear|g[oö]ğ[uü]s|chest|spine|omurga|kal[cç]a|hips|omuz|all[iı]k|ağız|burun|b[iı]y[iı]k|^dil$|g[oö]z|ka[sş]_|yanak|[cç]ene/i;
@@ -48,11 +50,13 @@ function cikisYuzu(p, d) {
   let t = Infinity, yuz = null;
   const dene = (tt, ad) => { if (tt > 1e-6 && tt < t) { t = tt; yuz = ad; } };
   if (d.x > 1e-9) dene((ROOM.x1 - p.x) / d.x, 'sag'); else if (d.x < -1e-9) dene((ROOM.x0 - p.x) / d.x, 'sol');
-  if (d.y > 1e-9) dene((ROOM.y1 - p.y) / d.y, 'arka'); else if (d.y < -1e-9) dene((ROOM.y0 - p.y) / d.y, 'on');
+  if (d.y > 1e-9) dene((ROOM.y1 - p.y) / d.y, 'arka'); else if (d.y < -1e-9) dene((ODA_ON - p.y) / d.y, 'on');
   if (d.z > 1e-9) dene((ROOM.h - p.z) / d.z, 'tavan'); else if (d.z < -1e-9) dene((0 - p.z) / d.z, 'zemin');
   return yuz;
 }
-const odaKutusunda = (p) => p.x > ROOM.x0 && p.x < ROOM.x1 && p.y > ROOM.y0 && p.y < ROOM.y1 && p.z > 0 && p.z < ROOM.h;
+// v8: ön duvar (ON_DUVAR) kapalı: içerideki kameranın her ışını duvardan, zeminden ya da tavandan çıkar; oda dışı yalnız
+// kamera bu kutunun dışındaysa (ön duvarın arkası, duvarların içi) görünür
+const odaKutusunda = (p) => p.x > ROOM.x0 + 20 && p.x < ROOM.x1 - 20 && p.y > ODA_ON + 20 && p.y < ROOM.y1 - 20 && p.z > 20 && p.z < ROOM.h - 20;
 const kc = new THREE.PerspectiveCamera(40, 1.6, 10, 1e5), ndcV = V(), dirV = V();
 function kameraKur(cam, pos, target, fov, aspect) {
   cam.fov = fov; cam.aspect = aspect; cam.updateProjectionMatrix();
@@ -69,7 +73,7 @@ export function disariOrani(pos, target, fov, aspect, nx = 32, ny = 18) {
   for (let j = 0; j < ny; j++) for (let i = 0; i < nx; i++) {
     ndcV.set(((i + 0.5) / nx) * 2 - 1, ((j + 0.5) / ny) * 2 - 1, 0.5).unproject(kc);
     dirV.copy(ndcV).sub(p).normalize();
-    if (cikisYuzu(p, dirV) === 'on') n++;
+    if (cikisYuzu(p, dirV) === null) n++; // v8: kapalı odada her ışın bir yüzeyden çıkar (güvenlik)
   }
   return n / (nx * ny);
 }
@@ -116,8 +120,8 @@ export function kadrajAraci(scene, { kemikler: kemikFn = () => [] } = {}) {
   function disari(p) {
     hacimler();
     let degisti = false;
-    if (p.y > ROOM.y0) {
-      const x = THREE.MathUtils.clamp(p.x, ROOM.x0 + 60, ROOM.x1 - 60), y = Math.min(p.y, ROOM.y1 - 60), z = THREE.MathUtils.clamp(p.z, 60, ROOM.h - 60);
+    { // v8: genel plan da odanın içinde (ön duvar ODA_ON): kamera her zaman duvarların 60 mm içinde
+      const x = THREE.MathUtils.clamp(p.x, ROOM.x0 + 60, ROOM.x1 - 60), y = THREE.MathUtils.clamp(p.y, ODA_ON + 60, ROOM.y1 - 60), z = THREE.MathUtils.clamp(p.z, 60, ROOM.h - 60);
       if (x !== p.x || y !== p.y || z !== p.z) { p.set(x, y, z); degisti = true; }
     }
     for (let n = 0; n < 3; n++) {
@@ -292,8 +296,8 @@ export function kadrajAraci(scene, { kemikler: kemikFn = () => [] } = {}) {
       z: Math.round(p.z), goz: p.z >= GOZ[0] - 1 && p.z <= GOZ[1] + 1,
       // oda: kameranın kendisi odanın içinde (duvarlardan en az 60 mm: motorun son güvenliği disari() ile aynı; yakın plan
       // salınımı kamerayı hesaplanan yerden biraz kaydırabilir); odaPay: hesap payı (DUVAR_PAY) içinde
-      oda: p.x >= ROOM.x0 + 59 && p.x <= ROOM.x1 - 59 && p.y >= ROOM.y0 + 59 && p.y <= ROOM.y1 - 59,
-      odaPay: p.x >= ROOM.x0 + DUVAR_PAY - 1 && p.x <= ROOM.x1 - DUVAR_PAY + 1 && p.y >= ROOM.y0 + DUVAR_PAY - 1 && p.y <= ROOM.y1 - DUVAR_PAY + 1,
+      oda: p.x >= ROOM.x0 + 59 && p.x <= ROOM.x1 - 59 && p.y >= ODA_ON + 59 && p.y <= ROOM.y1 - 59,
+      odaPay: p.x >= ROOM.x0 + DUVAR_PAY - 1 && p.x <= ROOM.x1 - DUVAR_PAY + 1 && p.y >= ODA_ON + DUVAR_PAY - 1 && p.y <= ROOM.y1 - DUVAR_PAY + 1,
       durulur: durulur(p),
       disari: +disariOrani(p, t, fov, aspect, 48, 27).toFixed(4),
     };

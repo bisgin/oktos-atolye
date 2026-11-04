@@ -160,9 +160,9 @@ function cekilmisKoltuk({ kayma, tut }) {
 const DUGUM = [
   [1780, 3150], [1775, 2260], [1500, 2165], [1150, 2160], [800, 2160], [800, 1560], [450, 1260], [120, 1040], [80, 1380],
   [120, 620], [-200, 380], [-650, 420], [-1150, 560], [600, 520], [1000, 300],
-  // v7: armut odanın içine (−300, −200) alındı; çekilmiş sandalyenin sağındaki düğüm armudun engeline düştü: sandalyenin
-  // solundan (kitaplıkla arasından) geçiş
-  [-1460, -150], [-1460, 650],
+  // v7: çekilmiş sandalyenin solundan (kitaplıkla arasından) geçiş. v8: armut sol duvarın önüne (−1560, −560) taşındı;
+  // ilk düğüm armudun engelinden (420 + pay 160) dışarı alındı, armudun önüne bir düğüm (TV / Hakkımda oturuşu)
+  [-1150, -40], [-1460, 650], [-850, -700],
 ];
 // Geri çekilmiş koltuğun sağından önüne (arkasından oturma yerine); koltuk dairesine (300 + pay) ~3 cm payla
 const koltukDugumleri = (k) => [[k.x + 550, k.y - 330], [k.x + 450, k.y + 270]];
@@ -1003,7 +1003,7 @@ export function karakterOlustur(g, { reduce = false, zorla = null, sunum: sunumA
     // bolum: [kare, kare] o anki klibin bu bölümü döngüde (ör. tv_armut dongu; v7 klipleri gelmeden armutta bekleme)
     if (Array.isArray(T.bolum) && simdiki) {
       const a = simdiki, t0 = kare2sn(T.bolum[0]), t1 = kare2sn(T.bolum[1]);
-      kare(() => { if (tutan !== S || simdiki !== a) return 'tamam'; if (a.act.time >= t1) a.act.time = t0 + (a.act.time - t1); return null; });
+      kare(() => { if (tutan !== S || simdiki !== a || S.serbest) return 'tamam'; if (a.act.time >= t1) a.act.time = t0 + ((a.act.time - t0) % Math.max(1e-3, t1 - t0)); return null; }); // v8: kalanla (bölüm kısa olunca taşma birikmesin)
     }
     olay('tutuyor', { klip: S.klip, var: !!(S.klip && var_(S.klip)) });
     let sonuc = 'iptal';
@@ -1012,6 +1012,7 @@ export function karakterOlustur(g, { reduce = false, zorla = null, sunum: sunumA
         const r = await kare(() => (!d() ? 'iptal' : S.kuyruk.length ? 'is' : null));
         if (r !== 'is') break;
         const is = S.kuyruk.shift();
+        S.serbest = true; // v8: bolum döngüsü bırakır (devam eden klip kaldığı yerden sürer: büstü rafa koyma)
         const ok = await diziOyna(is.dizi, d);
         is.coz(!!ok && d());
         if (!ok || !d()) break;
@@ -1049,8 +1050,11 @@ export function karakterOlustur(g, { reduce = false, zorla = null, sunum: sunumA
   async function diziOyna(dizi, d) {
     for (const A of dizi) {
       const k = klipAd(A.klip), m = M.klip[k] ?? {}, sure = klipSure(A.klip, A.sure ?? AYAR.durakSure);
-      let t = 0;
-      const anlar = (A.anlar ?? []).map(([an, f]) => { const v = k === A.klip && an.meta ? metaYol(m, an.meta) : null; return [typeof v === 'number' ? kare2sn(v) : (an.kesir ?? 0) * sure, f]; }).sort((a, b) => a[0] - b[0]);
+      // devam (v8): klip zaten çalıyorsa (bolum'da duran poz) yeniden başlamaz, kaldığı yerden sonuna dek sürer; anlar klibin
+      // kendi zamanında (geçmiş anlar atlanır)
+      const surer = A.devam && simdiki && simdiki.clip.name === k ? simdiki : null;
+      let t = surer ? surer.act.time : 0;
+      const anlar = (A.anlar ?? []).map(([an, f]) => { const v = k === A.klip && an.meta ? metaYol(m, an.meta) : null; return [typeof v === 'number' ? kare2sn(v) : (an.kesir ?? 0) * sure, f]; }).filter((x) => x[0] >= t).sort((a, b) => a[0] - b[0]);
       if (anlar.length) kare((dt) => {
         if (!d()) return 'iptal';
         t += dt;
@@ -1058,7 +1062,8 @@ export function karakterOlustur(g, { reduce = false, zorla = null, sunum: sunumA
         return anlar.length ? null : 'tamam';
       });
       // kadar (v7): döngüsüz klip yalnız bu kareye dek (sonra oynamayı sürdürür; tut.bolum döngüsü devralır)
-      const oyna = A.kadar && k === A.klip ? oynat(k, { solma: 0.35, tekrar: false, sure: kare2sn(A.kadar) }, d) : eylem(A.klip, d, { sure });
+      const oyna = surer ? kare(() => (!d() ? 'iptal' : simdiki !== surer || surer.act.time >= surer.clip.duration - 1e-3 ? 'tamam' : null)).then((r) => r === 'tamam')
+        : A.kadar && k === A.klip ? oynat(k, { solma: 0.35, tekrar: false, sure: kare2sn(A.kadar) }, d) : eylem(A.klip, d, { sure });
       if (!(await oyna)) return false;
       while (anlar.length && d()) { try { anlar.shift()[1](); } catch (e) { console.error('dizi anı', e); } } // yer tutucu erken bittiyse
     }
@@ -1589,7 +1594,7 @@ export function karakterOlustur(g, { reduce = false, zorla = null, sunum: sunumA
 
   // ---- x-ray ve seyrelme: kamera güncellendikten sonra, çizimden hemen önce ----
   const bufBoy = new THREE.Vector2(), pUrun = new THREE.Vector3(), pE = new THREE.Vector3(), pB = new THREE.Vector3(), kutu = new THREE.Box3();
-  const xr = { guc: 0, sol: 1, kareNo: -1, urun: null, urunId: null, urunT: -9, t: 0 };
+  const xr = { guc: 0, sol: 1, kareNo: -1, urun: null, urunId: null, urunT: -9, t: 0, haric: new Set() };
   const fare = { x: 0, y: 0, zone: null, t: 0 }; // genel planda imleç (istemci koordinatı) ve altındaki ürün
   const fareDelikte = () => donAcisi(fare.zone) !== undefined;
   let kareNo = 0;
@@ -1608,7 +1613,8 @@ export function karakterOlustur(g, { reduce = false, zorla = null, sunum: sunumA
     xr.sol += (solHedef - xr.sol) * Math.min(1, dt * 14); // ~0,2 sn'de oturur (kare hızından bağımsız)
     XR.xrSol.value = xr.sol > 0.97 ? 1 : xr.sol;
     // Daire: yakın plandaki ürünün önünde karakterden ya da koltuktan bir parça varsa
-    const id = story.focusedId;
+    // v8: Biggie'nin kendisinin konu olduğu duraklarda (armutta uyur, masada çalışır...) daire açılmaz (xrayHaric)
+    const id = story.focusedId && !xr.haric.has(story.focusedId) ? story.focusedId : null;
     let ortu = false, rpx = 0;
     if (id) {
       if (xr.urunId !== id || saat - xr.urunT > 0.4) { xr.urun = story.api?.center(id) ?? null; xr.urunId = id; xr.urunT = saat; }
@@ -1794,6 +1800,13 @@ export function karakterOlustur(g, { reduce = false, zorla = null, sunum: sunumA
       return new Promise((coz) => tutan.kuyruk.push({ dizi, son, coz }));
     },
     get tutuyor() { return !!tutan; },
+    // v8: durakta pozunda beklerken (tutan) yerinde psi yönüne döner (sure sn, yumuşak); büstü odaya göstermek için
+    don(psi, sure = 0.8) {
+      if (!tutan) return Promise.resolve(false);
+      const S = tutan, b = ben.psi, de = fark(b, psi);
+      let t = 0;
+      return kare((dt) => { if (tutan !== S) return 'iptal'; t = Math.min(1, t + dt / Math.max(0.01, sure)); ben.psi = b + de * yumusak(t); return t >= 1 ? 'tamam' : null; }).then((r) => r === 'tamam');
+    },
     // Çalan klip ve zamanı (sn, kare): armudun ezilmesi klibe bağlanır (core/oda-sunum.js)
     klipZamani() { const a = simdiki; return a ? { ad: a.clip.name, t: a.act.time, sure: a.clip.duration, kare: a.act.time * fps + 1, agirlik: a.act.getEffectiveWeight() } : null; },
     // Deri ağları (kadraj ölçümünde örtülme: core/oda-kadraj.js olcum)
@@ -1809,6 +1822,8 @@ export function karakterOlustur(g, { reduce = false, zorla = null, sunum: sunumA
     // v6: gövdeyi taşıyan kemikler (kadraj hesabında ışın engeli; core/oda-kadraj.js) ve x-ray kilidi (elden yakın plan)
     get govdeKemikleri() { return kemikler; },
     xrayKilit(on) { xr.kilit = !!on; },
+    // v8: bu durak kimliklerinde yakın plan dairesi (gövdenin seyrelmesi) yok
+    xrayHaric(ids) { xr.haric = new Set(ids ?? []); },
     kemik: (ad) => model.getObjectByName(ad) ?? null,
     meta: (ad) => M.klip[ad] ?? null,
     klipVar: (ad) => var_(ad),

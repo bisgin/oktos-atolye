@@ -28,6 +28,13 @@ export const OLCU = {
   "SUN": { "azimuth": 25, "elevation": 42, "color": [1.0, 0.93, 0.84], "strength": 4.5 }
 };
 
+// v8 (2026-11-04, kullanıcı kuralı "hiçbir kamera odanın dışını göstermez"): oda kameraya doğru uzar. Pişmiş kabuk
+// (Blender, OLCU.ROOM) y0'da açık kesitle biter; tarayıcı zemini, tavanı, yan duvarları ve süpürgeliği bu y'ye dek
+// uzatır ve önü duvarla kapatır (core/oda-sahne.js odayiUzat). Genel plan kamerası bu kapalı hacmin içinde durur;
+// telefonun dikey genel planı altı işaretçiyi göz yüksekliğinden ancak ~8 m geriden sığdırdığı için uzantı uzun.
+// Blender betiği bu nesneyi okumaz (yalnız OLCU).
+export const ON_DUVAR = { y: -8600 };
+
 // Güneşe doğru birim vektör (ışık bunun tersi yönde ilerler)
 export function toSun({ azimuth, elevation } = OLCU.SUN) {
   const a = (azimuth * Math.PI) / 180, e = (elevation * Math.PI) / 180;

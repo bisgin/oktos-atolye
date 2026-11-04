@@ -11,8 +11,7 @@ import { gsap } from 'gsap';
 import { initCSG } from './csg.js';
 import { ZONES, GORUNEN, A, RAF_KAY, SHOTS, LOOK, FOCUS, LIGHTS, fitShot, BIGGIE_DURAK, FOV } from './oda-yerler.js';
 import { DEKOR, dekorModeli, urunleri, urunModeli, binModel, vaseModel, OZEL_TUSLAR } from './oda-urunler.js';
-import { OLCU, toSun } from './oda-olcu.js';
-import { guvenliAdres } from './guvenli-adres.js';
+import { OLCU, toSun, ON_DUVAR } from './oda-olcu.js';
 import { portfolyoIskelet } from './oda-portfolyo.js';
 import { kadrajAraci } from './oda-kadraj.js';
 import { PORTFOLYO_DURAK } from './story-data.js';
@@ -48,6 +47,95 @@ async function pilotYukle() {
 }
 let P_ = null; // props.js (buildScene'e gelir; pilot malzemesi için)
 
+// v8 (2026-11-04, kullanıcı: "odayı bize doğru uzat", genel plan odanın içinden, oda dört yanıyla görünsün): pişmiş kabuk
+// Blender'da y = ROOM.y0'da açık kesitle biter. Zemin, tavan, yan duvarlar ve süpürgelik ön kenarlarından ON_DUVAR.y'ye
+// dek uzatılır: uzantının köşeleri ön kenardaki köşenin dokusunu (UV) taşır, pişmiş ışık kenardan olduğu gibi sürer
+// (aynı malzeme, dikiş yok). Önü duvarla kapanır: duvarın dokusu sol duvarın ön kenar sütunu (yükseklikle değişen ışık),
+// önünde süpürgelik. Ağların yalnız ön kenarı okunur; Blender'daki topolojiye bağlı değil (kenarı y = en küçük y olan
+// her üçgen kenarı uzar; bütünüyle o düzlemde duran kesit yüzleri uzamaz).
+function odayiUzat(kok, scene) {
+  kok.updateMatrixWorld(true);
+  const Y = ON_DUVAR.y, v = new THREE.Vector3();
+  const kenar = {}; // ağ adı → ön kenar köşeleri [{ p, uv }]
+  for (const ad of ['zemin', 'tavan', 'duvar_sol', 'duvar_sag', 'supurgelik']) {
+    const m = kok.getObjectByName(ad);
+    if (!m?.isMesh || !m.geometry.attributes.uv) continue;
+    const g = m.geometry, pos = g.attributes.position, uv = g.attributes.uv, n = pos.count;
+    const w = Array.from({ length: n }, (_, i) => v.fromBufferAttribute(pos, i).applyMatrix4(m.matrixWorld).clone());
+    // Ön kenar: ağın en küçük y'si ya da odanın kesiti (ROOM.y0): tavan kutusu duvarın dışına (−1920) taşar, alt yüzü −1800'de
+    const yMin = Math.min(...w.map((p) => p.y)), duzlem = (i) => (Math.abs(w[i].y - yMin) < 1 ? yMin : Math.abs(w[i].y - ROOM.y0) < 1 ? ROOM.y0 : null);
+    const on = (i) => duzlem(i) !== null;
+    // Uzantının dokusu ön kenarın ~0,35 m içinden okunur (pişirmede açık kesitin hemen kenarı koyu ve çizgili): aynı x/z'deki
+    // içerideki köşeye doğru UV doğrusal kaydırılır (zemin, duvar ve tavan tek dörtgen; süpürgelikte aynı kenar)
+    const tri = g.index ? g.index.array : Array.from({ length: n }, (_, i) => i);
+    const komsu = Array.from({ length: n }, () => new Set()); // aynı yüzün köşeleri (üçgen komşuluğu: UV aynı yüzden)
+    for (let t = 0; t < tri.length; t += 3) for (const a of [tri[t], tri[t + 1], tri[t + 2]]) for (const b of [tri[t], tri[t + 1], tri[t + 2]]) komsu[a].add(b);
+    const icUV = (i) => {
+      let q = -1;
+      const y0 = w[i].y;
+      for (const k of komsu[i]) if (Math.abs(w[k].x - w[i].x) < 1 && Math.abs(w[k].z - w[i].z) < 1 && w[k].y > y0 + 100 && (q < 0 || w[k].y < w[q].y)) q = k;
+      if (q < 0) return [uv.getX(i), uv.getY(i)];
+      const f = Math.min(1, 350 / (w[q].y - y0));
+      return [uv.getX(i) + (uv.getX(q) - uv.getX(i)) * f, uv.getY(i) + (uv.getY(q) - uv.getY(i)) * f];
+    };
+    const ic = new Map(), icOf = (i) => { if (!ic.has(i)) ic.set(i, icUV(i)); return ic.get(i); };
+    const P = [], U = [], gorulen = new Set();
+    kenar[ad] = [];
+    for (let t = 0; t < tri.length; t += 3) {
+      const [a, b, c] = [tri[t], tri[t + 1], tri[t + 2]];
+      if (on(a) && on(b) && on(c) && duzlem(a) === duzlem(b) && duzlem(b) === duzlem(c)) continue; // kesit yüzü
+      for (const [i, j] of [[a, b], [b, c], [c, a]]) {
+        if (!on(i) || duzlem(i) !== duzlem(j)) continue;
+        const k = `${Math.min(i, j)}-${Math.max(i, j)}`;
+        if (gorulen.has(k)) continue;
+        gorulen.add(k);
+        // Tavan: kutusu duvarın dışına (−1920) taşar; −1920…−1800 şeridinin dokusu atlasın kenarı (gri çizgi). Uzantı tavanın
+        // 1 mm altından ve odanın 2 mm içinden başlar: o şeridi aşağıdan örter (dikiş görünmez)
+        const pi = w[i], pj = w[j], y0 = ad === 'tavan' ? ROOM.y0 + 2 : duzlem(i), dz = ad === 'tavan' && pi.z < ROOM.h + 1 ? -1 : 0;
+        for (const [q, yy] of [[pi, y0], [pj, y0], [pj, Y], [pi, y0], [pj, Y], [pi, Y]]) P.push(q.x, yy, q.z + dz);
+        // Uzantı boyunca içerideki UV (kenarın dokusu atlasın kenarına denk gelebiliyor: tavanda gri şerit)
+        for (const q of [i, j, j, i, j, i]) U.push(...icOf(q));
+        kenar[ad].push({ p: pi, uv: icOf(i) }, { p: pj, uv: icOf(j) });
+      }
+    }
+    if (!P.length) continue;
+    const geo = new THREE.BufferGeometry();
+    geo.setAttribute('position', new THREE.Float32BufferAttribute(P, 3));
+    geo.setAttribute('uv', new THREE.Float32BufferAttribute(U, 2));
+    m.material.side = THREE.DoubleSide; // uzantının yüz yönü kenara göre değişebilir (ışıksız malzeme, maliyet yok)
+    const ek = new THREE.Mesh(geo, m.material);
+    ek.name = `${ad}_uzanti`;
+    ek.raycast = () => {};
+    scene.add(ek);
+  }
+  // Ön duvar: sol duvarın ön kenarındaki dokuyu yüksekliğe göre (z 0 → h) taşır; önünde süpürgelik
+  const sol = kenar.duvar_sol, dv = kok.getObjectByName('duvar_sol');
+  if (sol?.length && dv) {
+    const alt = sol.reduce((a, b) => (b.p.z < a.p.z ? b : a)), ust = sol.reduce((a, b) => (b.p.z > a.p.z ? b : a));
+    const x0 = ROOM.x0, x1 = ROOM.x1, h = ROOM.h;
+    const geo = new THREE.BufferGeometry();
+    geo.setAttribute('position', new THREE.Float32BufferAttribute([x0, Y, 0, x1, Y, 0, x1, Y, h, x0, Y, 0, x1, Y, h, x0, Y, h], 3));
+    geo.setAttribute('uv', new THREE.Float32BufferAttribute([...alt.uv, ...alt.uv, ...ust.uv, ...alt.uv, ...ust.uv, ...ust.uv], 2));
+    const on = new THREE.Mesh(geo, dv.material);
+    on.name = 'duvar_on';
+    on.raycast = () => {};
+    scene.add(on);
+  }
+  const sp = kenar.supurgelik, sm = kok.getObjectByName('supurgelik');
+  if (sp?.length && sm) {
+    const k = sp.reduce((a, b) => (b.p.z > a.p.z ? b : a)), S = OLCU.SKIRTING, x0 = ROOM.x0, x1 = ROOM.x1, yo = Y + S.t;
+    const P = [x0, yo, 0, x1, yo, 0, x1, yo, S.h, x0, yo, 0, x1, yo, S.h, x0, yo, S.h, // ön yüz
+      x0, Y, S.h, x1, Y, S.h, x1, yo, S.h, x0, Y, S.h, x1, yo, S.h, x0, yo, S.h]; // üst yüz
+    const geo = new THREE.BufferGeometry();
+    geo.setAttribute('position', new THREE.Float32BufferAttribute(P, 3));
+    geo.setAttribute('uv', new THREE.Float32BufferAttribute(Array.from({ length: 12 }, () => k.uv).flat(), 2));
+    const m = new THREE.Mesh(geo, sm.material);
+    m.name = 'supurgelik_on';
+    m.raycast = () => {};
+    scene.add(m);
+  }
+}
+
 export async function buildScene({ scene, P, lang = 'tr', hafif = false }) {
   P_ = P;
   await initCSG();
@@ -76,9 +164,13 @@ export async function buildScene({ scene, P, lang = 'tr', hafif = false }) {
   // ---- oda kabuğu: duvarlar gölge düşürmez (ışık balkona da ulaşsın; gerçek ışık Blender'da pişirilecek) ----
   const W = ROOM.wall, by = ROOM.y1 + W / 2;
   if (kabuk) {
-    box(ROOM.x1 - ROOM.x0, ROOM.y1 - ROOM.y0, 20, 0, 0, -20, M.floor, { r: 0, cast: false });
-    box(W, ROOM.y1 - ROOM.y0, ROOM.h, ROOM.x0 - W / 2, 0, 0, M.wall, { r: 0, cast: false });
-    box(W, ROOM.y1 - ROOM.y0, ROOM.h, ROOM.x1 + W / 2, 0, 0, M.wall, { r: 0, cast: false });
+    // v8: gri kutu da önde ON_DUVAR'a dek uzar ve önden kapanır (pişmiş kabukta odayiUzat)
+    const [L, yc] = span(ON_DUVAR.y, ROOM.y1);
+    box(ROOM.x1 - ROOM.x0, L, 20, 0, yc, -20, M.floor, { r: 0, cast: false });
+    box(W, L, ROOM.h, ROOM.x0 - W / 2, yc, 0, M.wall, { r: 0, cast: false });
+    box(W, L, ROOM.h, ROOM.x1 + W / 2, yc, 0, M.wall, { r: 0, cast: false });
+    box(ROOM.x1 - ROOM.x0 + 2 * W, W, ROOM.h, 0, ON_DUVAR.y - W / 2, 0, M.wall, { r: 0, cast: false });
+    box(ROOM.x1 - ROOM.x0, L, 20, 0, yc, ROOM.h, M.wall, { r: 0, cast: false });
     { const [w, x] = span(ROOM.x0 - W, GLASS.x0); box(w, W, ROOM.h, x, by, 0, M.wall, { r: 0, cast: false }); }
     { const [w, x] = span(GLASS.x1, ROOM.x1 + W); box(w, W, ROOM.h, x, by, 0, M.wall, { r: 0, cast: false }); }
     { const [w, x] = span(GLASS.x0, GLASS.x1); box(w, W, ROOM.h - GLASS.head, x, by, GLASS.head, M.wall, { r: 0, cast: false }); }
@@ -210,46 +302,6 @@ export async function buildScene({ scene, P, lang = 'tr', hafif = false }) {
     if (plant && agiz(s.model) != null) plant.position.z = agiz(s.model);
     return s;
   }
-  // Askı panosu yuvası (kart anahtarlıklar): her ürün kendi kancasında; seçici ürünü değiştirmez, seçili kartı öne çeker.
-  // İlk kart açılışta beklenir, ötekiler açılıştan sonra boşta yüklenir (açılış süresi değişmesin)
-  function panoKarti(zone, i) {
-    const s = slots[zone], k = s.kancalar[i];
-    if (!k.userData.yuk) {
-      k.userData.yuk = model(zone, i).then((m) => {
-        if (!m) return null;
-        m.traverse((o) => {
-          if (o.name.startsWith('kart_baglanti')) o.visible = false; // halka bağlantısı tepsideki halka içindi
-          if (o.name.startsWith('kart_yuz') && o.material.emissiveIntensity != null) o.material.emissiveIntensity = s.index === i ? 0.16 : 0.03;
-        });
-        k.userData.tut.add(m);
-        return m;
-      });
-    }
-    return k.userData.yuk;
-  }
-  // Seçili kart kancanın ucuna kayar, alt ucu öne eğilir ve yüzü biraz daha parlak; ötekiler panoya yaslı, sönük
-  function panoPoz(zone, { reduced = false } = {}) {
-    const s = slots[zone];
-    s.kancalar.forEach((k, j) => {
-      const t = k.userData.tut, on = j === s.index;
-      const y = -(on ? PANO.ileri : PANO.geri), rx = Math.PI / 2 - (on ? PANO.egim : 0);
-      const yuz = [];
-      t.traverse((o) => { if (o.name.startsWith('kart_yuz') && o.material.emissiveIntensity != null) yuz.push(o.material); });
-      const isik = on ? 0.16 : 0.03;
-      gsap.killTweensOf([t.position, t.rotation, ...yuz]);
-      if (reduced) { t.position.y = y; t.rotation.x = rx; yuz.forEach((m) => { m.emissiveIntensity = isik; }); return; }
-      gsap.to(t.position, { y, duration: 0.45, ease: 'power3.out' });
-      gsap.to(t.rotation, { x: rx, duration: 0.6, ease: on ? 'back.out(2)' : 'power3.out' });
-      gsap.to(yuz, { emissiveIntensity: isik, duration: 0.4, ease: 'power2.out' });
-    });
-  }
-  async function panoKur(zone) {
-    const s = (slots[zone] = { host: pano, plant: null, dekor: null, urunler: urunleri(zone), cache: new Map(), index: 0, model: null, busy: false, kancalar });
-    if (!s.urunler.length) return;
-    s.model = await panoKarti(zone, 0);
-    panoPoz(zone, { reduced: true });
-    gsap.delayedCall(1.5, () => kancalar.forEach((_, i) => panoKarti(zone, i)));
-  }
   // Sahne yeri: dekoru kurar; görünen bir yuvanın yeriyse yuvayı da
   async function yerlestir(yer, host, { plant = null } = {}) {
     const m = await dekorModeli(yer, { lang, saksi: pilot?.saksi, pasta: pilot?.cicek.pasta, klavye: klavyeBilgi });
@@ -335,23 +387,8 @@ export async function buildScene({ scene, P, lang = 'tr', hafif = false }) {
   const sign = place(new THREE.Group(), A.sign);
   await yerlestir('tabela', sign);
 
-  // ---- iki yatay çerçeve: sol duvarda ortada Painter rölyefi (kilic yuvasının çapası), sağ duvarda buzdolabının
-  // üstünde resimli yapboz (maske yuvasının çapası) ----
-  const frameOf = (at, F2, rz) => {
-    const f = place(new THREE.Group(), at);
-    box(F2.w, 30, F2.h, 0, 0, 0, M.dark, { parent: f, r: 4 });
-    box(F2.w - 40, 6, F2.h - 40, 0, -16, 20, tone(0xefe9df, 0.8), { parent: f, r: 2 });
-    f.rotation.z = rz; // ön yüzü odaya
-    return f;
-  };
-  const duvarYonu = (at) => (at[0] < 0 ? Math.PI / 2 : -Math.PI / 2); // sol duvarda önü +x, sağda −x
-  const frameA = frameOf(A.frameA, FRAME_K, duvarYonu(A.frameA)), frameB = frameOf(A.frameB, FRAME, duvarYonu(A.frameB));
-  duvarlar.cerceve = frameA;
-  duvarlar.yapboz = frameB;
-  const rolyef = place(new THREE.Group(), [0, -20, FRAME_K.h / 2], frameA);
-  rolyef.scale.setScalar(1.6); // Painter rölyefi (248 mm + kenar) çerçeveyle birlikte büyür: 472 × 360 mm arkalığa sığar
-  await yerlestir('cerceve', rolyef);
-  await yerlestir('yapboz', place(new THREE.Group(), [0, -20, FRAME.h / 2], frameB));
+  // ---- v8 (2026-11-04, kullanıcı kararı): sağ duvardaki çerçeveler (Painter rölyefi, resimli yapboz ve onun maske
+  // yuvası) kalktı; oda yalnız portfolyo. Kodu git geçmişinde (frameOf, A.frameA/frameB) ----
 
   // ---- saksılar: soldaki pervaz saksısı biblo yuvasının çapası (bitki yerinde kalır), yanında ikinci saksı ----
   const pots = new THREE.Group();
@@ -470,6 +507,7 @@ export async function buildScene({ scene, P, lang = 'tr', hafif = false }) {
   // ---- pilot: pişmiş kabuk, gökyüzü, yansıma, huzmeler, ürün gölgesinin pişmiş mermere düşmesi ----
   if (pilot) {
     scene.add(pilot.kabuk, pilot.gok, pilot.huzme);
+    odayiUzat(pilot.kabuk, scene); // v8: oda öne uzar, önden kapanır (kamera hiçbir yerde odanın dışını görmez)
     scene.environment = pilot.pano;
     scene.environmentRotation.set(Math.PI / 2, 0, 0); // Blender Z yukarı → three.js eşdikdörtgen Y yukarı
     scene.fog = null;
@@ -506,70 +544,8 @@ export async function buildScene({ scene, P, lang = 'tr', hafif = false }) {
   const KAY = { anahtar_ev: 10, anahtar_kapi: 50, anahtar_kilit_bas: -105, anahtar_kilit_agiz: -105 };
   for (const o of anahtarlar.children) if (KAY[o.name]) o.rotation.z = THREE.MathUtils.degToRad(KAY[o.name]);
 
-  // ---- kart anahtarlık askı panosu (2026-11-03, kullanıcı: "anahtarlık duvara, panoya asılmalı"): arka duvarda dolabın
-  // üstünde, kodla kurulu delikli pano (huş kontrplak, 25,4 mm delik aralığı, duvardan 18 mm ayaklı) ve iki sıra kanca (3 + 2); her
-  // kancada bir ürün, gerçek boyda (Blender'daki 40 × 58 mm kartın 1,45 katı: 63 × 84 mm kart + kulak). Seçili kart
-  // kancanın ucuna kayar ve hafif öne eğilir (panoPoz); seçici kartları değiştirmez, öne çeker ----
-  const pano = place(new THREE.Group(), A.pano);
-  const PANO = { aralik: 88, ayak: 18, kalin: 6, kanca: 50, geri: 14, ileri: 44, egim: 0.24 };
-  const kartSayisi = YUVA_YERI.anahtarlik ? urunleri(YUVA_YERI.anahtarlik).length : 0;
-  // Sırada en çok 3 kart (5 ürün: üstte 3, altta 2): pano 304 mm dar kalır, telefonun genel planına da sığar
-  const SIRA = 3, satir = Math.max(2, Math.ceil(kartSayisi / SIRA));
-  const PW = SIRA * PANO.aralik + 40, PH = 45 + (satir - 1) * 125 + 110 + 20;
-  {
-    const W = PW, H = PH;
-    pano.userData.boy = [W, H];
-    const cv = document.createElement('canvas'), px = 2; // 2 piksel / mm
-    cv.width = W * px; cv.height = H * px;
-    const c = cv.getContext('2d');
-    c.fillStyle = '#d2b48c'; c.fillRect(0, 0, cv.width, cv.height); // huş kontrplak
-    let r = 7; const rnd = () => ((r = (r * 16807) % 2147483647) / 2147483647); // sabit tohumlu: her açılışta aynı damar
-    for (let i = 0; i < 70; i++) { // yatay damar
-      const y = rnd() * cv.height;
-      c.strokeStyle = `rgba(${rnd() < 0.5 ? '120,84,50' : '255,240,215'},${0.05 + rnd() * 0.08})`;
-      c.lineWidth = 1 + rnd() * 3;
-      c.beginPath(); c.moveTo(0, y);
-      for (let x = 0; x <= cv.width; x += 60) c.lineTo(x, y + Math.sin(x * 0.004 + i) * 6);
-      c.stroke();
-    }
-    for (let x = 12.7; x < W; x += 25.4) for (let y = 12.7; y < H; y += 25.4) {
-      c.fillStyle = '#2a2018'; c.beginPath(); c.arc(x * px, y * px, 3.2 * px, 0, Math.PI * 2); c.fill();
-      c.fillStyle = 'rgba(255,245,225,0.35)'; c.beginPath(); c.arc(x * px, y * px, 3.2 * px, 0.15 * Math.PI, 0.85 * Math.PI); c.lineWidth = 1; c.strokeStyle = c.fillStyle; c.stroke();
-    }
-    const tex = new THREE.CanvasTexture(cv);
-    tex.colorSpace = THREE.SRGBColorSpace;
-    tex.anisotropy = 8;
-    const yuz = new THREE.MeshStandardMaterial({ map: tex, roughness: 0.7, metalness: 0, envMapIntensity: 0.5 });
-    const kenar = P.clay(0xc2a37a, { rough: 0.75, env: 0.5 });
-    box(W, PANO.kalin, H, 0, -PANO.ayak - PANO.kalin / 2, 0, kenar, { parent: pano, r: 1.5 });
-    const on = new THREE.Mesh(new THREE.PlaneGeometry(W - 3, H - 3).rotateX(Math.PI / 2), yuz); // ön yüz −y, dokunun üstü +z
-    on.position.set(0, -PANO.ayak - PANO.kalin - 0.6, H / 2);
-    on.receiveShadow = true;
-    pano.add(on);
-    for (const sx of [-1, 1]) for (const z of [30, H - 30]) box(14, PANO.ayak, 14, sx * (W / 2 - 30), -PANO.ayak / 2, z - 7, M.metal, { parent: pano, r: 7 });
-  }
-  const celik = new THREE.MeshStandardMaterial({ color: 0xc4c7cc, metalness: 0.9, roughness: 0.32 });
-  const kancaY0 = -PANO.ayak - PANO.kalin;
-  const kancalar = Array.from({ length: kartSayisi }, (_, i) => {
-    const r = Math.floor(i / SIRA), n = Math.min(SIRA, kartSayisi - r * SIRA), col = i - r * SIRA;
-    const k = place(new THREE.Group(), [(col - (n - 1) / 2) * PANO.aralik, kancaY0, PH - 45 - r * 125, 0], pano);
-    const tel = new THREE.Mesh(new THREE.CylinderGeometry(2, 2, PANO.kanca, 10), celik); // Y ekseninde: panodan −y'ye
-    tel.position.y = -PANO.kanca / 2;
-    tel.castShadow = true;
-    const uc = new THREE.Mesh(new THREE.CylinderGeometry(2, 2, 12, 10), celik); // uç yukarı kalkık (kart düşmesin)
-    uc.position.set(0, -PANO.kanca - 2, 5.6);
-    uc.rotation.x = Math.PI / 2 + 0.35;
-    k.add(tel, uc);
-    // Kartın tutulduğu yer (kulağının deliği kancada); içindeki kart −y'ye sarkacak biçimde Blender düzenindedir: X'te
-    // +90° çevrilince aşağı sarkar, yüzü odaya bakar
-    const tut = place(new THREE.Group(), [0, -PANO.geri, 1], k);
-    tut.scale.setScalar(1.45);
-    tut.rotation.x = Math.PI / 2;
-    k.userData.tut = tut;
-    return k;
-  });
-  if (YUVA_YERI.anahtarlik) await panoKur(YUVA_YERI.anahtarlik);
-  await ilerle();
+  // ---- v8 (2026-11-04, kullanıcı kararı): arka duvardaki kart anahtarlık askı panosu (anahtarlik yuvası) kalktı; kart
+  // anahtarlıklar Ürünler sekmesinde. Dolabın üstündeki anahtar tepsisi dekor olarak kaldı. Kodu git geçmişinde ----
 
   // ---- portfolyo köşesi (2026-11-03, çatı katından taşındı; core/oda-portfolyo.js): sol duvarda kitaplık ve kara tahta
   // (hakkımda); sağ duvarda 55" ekran (süreç), altında kutu oyunu rafı, önünde kilim; buzdolabının önünde çöp. Burada
@@ -633,7 +609,9 @@ export async function buildScene({ scene, P, lang = 'tr', hafif = false }) {
   const Zv = new THREE.Vector3(0, 0, 1);
   function odakKadraji(id) {
     const st = FOCUS[id];
+    if (st?.sabit) return kam?.camera && kam.camera.aspect < 0.9 && st.dikey ? st.dikey : st; // v8: sabit kadraj (masa) hesaplanmaz
     if (!kam?.camera || !st) return st;
+    if (st.dikey && kam.camera.aspect < 0.9) return st.dikey; // v8b: telefona özel sabit kadraj (buzdolabı)
     const cam = kam.camera, panel = kam.root?.dataset.panel || (cam.aspect < 0.9 ? 'bottom' : 'side');
     const anahtar = `${id}|${cam.aspect.toFixed(2)}|${cam.fov}|${panel}|${port.dolu ? 1 : 0}`;
     if (odakOnbellek.has(anahtar)) return odakOnbellek.get(anahtar) ?? st;
@@ -689,8 +667,8 @@ export async function buildScene({ scene, P, lang = 'tr', hafif = false }) {
     kameraBagla(camera, root) { kam = { camera, root }; odakOnbellek.clear(); },
     odakKadraji,
     // Ürünün (ya da portfolyo durağının) dünya sınır kutusu (v6 kadraj ölçümü)
-    kutu: (zone) => { const o = slots[zone]?.model ?? port.nesne[zone]; return o ? new THREE.Box3().setFromObject(o) : null; },
-    model: (zone) => slots[zone]?.model ?? port.nesne[zone] ?? null,
+    kutu: (zone) => { const o = slots[zone]?.model ?? istasyonNesne(zone); return o ? new THREE.Box3().setFromObject(o) : null; },
+    model: (zone) => slots[zone]?.model ?? istasyonNesne(zone),
     urunler: (zone) => slots[zone]?.urunler ?? [],
     current: (zone) => (slots[zone] ? info(zone) : null),
     show,
@@ -701,27 +679,19 @@ export async function buildScene({ scene, P, lang = 'tr', hafif = false }) {
     dondur,
     // Ürünün (ya da çapasının) dünyadaki ortası: sayfa ve karakter ekrana izdüşürür. Portfolyo durağında nesnenin ortası
     center: (zone) => {
-      const o = slots[zone]?.model ?? port.nesne[zone];
+      const o = slots[zone]?.model ?? istasyonNesne(zone);
       return o ? new THREE.Box3().setFromObject(o).getCenter(new THREE.Vector3()) : null;
     },
     // Portfolyo köşesi: TV denetçisi (core/cati-ekran.js; kart adım listesini buradan sürer) ve Biggie'nin işaretçisiz
     // durakları için nesneler (sunum tıklamayı bunlarla yakalar): buzdolabi, cop (userData.agiz: elmanın düşeceği yer), masa
     portfolyo: { get ekran() { return port.ekran; }, yukle: (derle) => port.doldur(derle).then((r) => { kadraj.yenile(); return r; }), get dolu() { return !!port.dolu; }, parcalar: () => port.parcalar?.() ?? null, get armut() { return port.armut ?? null; } },
-    nesne: (id) => ({ buzdolabi: fridge, cop: port.nesne.cop, masa: kbZone })[id] ?? port.nesne[id] ?? slots[id]?.host ?? null,
+    nesne: (id) => (id === 'cop' ? port.nesne.cop : istasyonNesne(id)) ?? slots[id]?.host ?? null,
   };
   async function show(zone, index, { reduced = false } = {}) {
     const s = slots[zone], n = s?.urunler.length;
     if (!s || s.busy || !n) return s ? info(zone) : null;
     const i = ((index % n) + n) % n;
     if (i === s.index) return info(zone);
-    if (s.kancalar) { // askı panosu: model değişmez, seçili kart öne gelir
-      s.index = i;
-      s.model = (await panoKarti(zone, i)) ?? s.model;
-      if (s.index !== i) return info(zone); // beklerken başka ürün seçildi
-      panoPoz(zone, { reduced });
-      api.onChange?.(zone, info(zone));
-      return info(zone);
-    }
     s.busy = true;
     try {
       const host = s.host, old = s.model, next = (await model(zone, i)) ?? old;
@@ -771,27 +741,25 @@ export async function buildScene({ scene, P, lang = 'tr', hafif = false }) {
     box3.setFromObject(a.object).getCenter(mid);
     a.v.set(mid.x, mid.y, box3.max.z + 18);
   }
-  // Ürün yuvası işaretçisi. preset 'magaza' + disari: motor karttaki düğmede adresi yeni sekmede açar (core/story.js
-  // pick); adres ve düğme yazısı seçili ürünün durumuna göre panelden gelir (core/oda-panel.js: mağaza ya da WhatsApp).
-  // tool 'urun': işaretçinin rengi (core/oda.css)
-  const hs = (id, object, opts = {}) => {
-    if (!opts.anchor) {
-      anchors[id] = { v: new THREE.Vector3(), object: slots[id]?.host ?? object };
-      measure(id);
-      opts = { ...opts, anchor: anchors[id].v };
-    }
-    return { id, tool: 'urun', preset: 'magaza', disari: guvenliAdres(slots[id]?.urunler[0]?.magaza), object, ...opts };
+  // v8 (2026-11-04, kullanıcı kararı: oda yalnız portfolyo, genel planda tam altı işaretçi): ürün yuvalarının
+  // işaretçisi, kartı ve tur durağı yok (ürünler masada, pervazda dekor olarak durur, tıklanmaz; Ürünler sekmesinde).
+  // İşaretçiler: armut (Hakkımda), kitaplık, masa, buzdolabı, ekran (Süreç), kutu oyunları (PORTFOLYO_DURAK sırası).
+  // Masa ve buzdolabının tıklama hacmi görünmez kutu (masa: tabla + monitör; buzdolabı: gövde)
+  const vekilM = new THREE.MeshBasicMaterial({ visible: false });
+  const hacim = (x0, x1, y0, y1, z0, z1) => {
+    const g = new THREE.Group(), m = new THREE.Mesh(new THREE.BoxGeometry(x1 - x0, y1 - y0, z1 - z0), vekilM);
+    m.position.set((x0 + x1) / 2, (y0 + y1) / 2, (z0 + z1) / 2);
+    g.add(m);
+    scene.add(g);
+    return g;
   };
-  // Sahne yeri → işaretçinin nesnesi ve ayarı (yalnız yuva olabilen yerler; görünen yuvalar bunlardan seçilir)
-  const YER_HS = {
-    cekmece: () => [drawer, { extra: [pedestal], noLift: true, anchor: [px, DRAWER_Y - PED.d / 2 + 60, PED.h + 50] }], // kapalı çekmecenin üstünde
-    anahtarlik: () => [pano, { noLift: true }], // askı panosu (2026-11-03; önce tepsi)
-    kalemlik: () => [penZone],
-    modem: () => [rafYuva ?? modemZone, { noLift: true }], // raf: yalnız plakalar (modem tıklanmaz)
-    cerceve: () => [frameA, { noLift: true }],
-    yapboz: () => [frameB, { noLift: true }],
-    saksilar: () => [pots, { noLift: true }],
+  const masaHacmi = hacim(DESK.x0, DESK.x1, DESK.y0, DESK.y1, 0, DESK.top + OLCU.MONITOR.lift + OLCU.MONITOR.h + 60);
+  const ISTASYON = {
+    masa: { nesne: masaHacmi, anchor: [-800, 1450, DESK.top + OLCU.MONITOR.lift + OLCU.MONITOR.h + 130] },
+    buzdolabi: { nesne: fridge, anchor: [FRIDGE.x - 120, FRIDGE.y, FRIDGE.h + 200] },
   };
+  const istasyonNesne = (id) => ISTASYON[id]?.nesne ?? port.nesne[id] ?? null;
+  const isaretler = () => PORTFOLYO_DURAK.map((id) => ({ id, object: istasyonNesne(id), anchor: ISTASYON[id]?.anchor ?? port.yerler[id] })).filter((x) => x.object && x.anchor);
   // Telefon katmanı (hafif; core/story.js): geçirgen cam yerine saydam cam (core/oda-ortam.js camSadelestir; geçirgenlik
   // geçişi her karede sahneyi iki kez çizdiriyordu). Masaüstü aynı kalır
   if (hafif && pilot) (await import('./oda-ortam.js')).camSadelestir(scene);
@@ -825,13 +793,17 @@ export async function buildScene({ scene, P, lang = 'tr', hafif = false }) {
     // kadrajını verir (içeriden, geniş açıyla: masa, raflar ve sol pencere)
     portraitShot: SHOTS.portrait,
     portraitFov: FOV.dikey,
-    fitShot, // genel plan ekran oranına göre: beş işaretçi de kadrajda (oda-yerler)
+    // v8: genel plan ekran oranına göre odanın içinden; altı işaretçi de kadrajda (oda-yerler fitShot)
+    // Ek noktalar: armudun ve kutu rafının alt kısmı da kadrajda (yalnız işaretçi değil, eşyanın kendisi görünsün)
+    fitShot: (aspect, fov) => fitShot(aspect, fov, [...isaretler().map((x) => x.anchor), [-1560, -560, 250], [1800, -700, 150], [1800, 200, 150],
+      ...[-1, 1].flatMap((sx) => [[sx * 2050, ROOM.y1, 2600], [sx * 2050, ROOM.y1, 60]])]), // arka duvarın dört köşesi: oda dört yanıyla
+    // v8: kamera hiçbir zaman odanın dışında değil (motorun setView ve yakın plan geri çekilmesi bu kutuda durur)
+    cameraBounds: { min: [ROOM.x0 + 160, ON_DUVAR.y + 160, 300], max: [ROOM.x1 - 160, ROOM.y1 - 160, ROOM.h - 150] },
     outlineFocus: !pilot, // gerçekçi sahnede yakın plandaki ürünün çevresine çizgi çekilmez (yaprakları tek tek çiziyordu)
     // Yalnız görünen yuvalar (ürünü olan), ZONES sırasıyla (şerit ve tur). Kadrajlar FOCUS'ta (oda-yerler)
     // Ardından portfolyo durakları (PORTFOLYO_DURAK sırası; ürün seçicisi ve düğmesi yok: preset yok)
     hotspots: [
-      ...GORUNEN.filter((z) => YER_HS[z.yer] && slots[z.id]).map((z) => hs(z.id, ...YER_HS[z.yer]())),
-      ...PORTFOLYO_DURAK.filter((id) => port.nesne[id]).map((id) => ({ id, tool: 'urun', object: port.nesne[id], noLift: true, anchor: port.yerler[id] })),
+      ...isaretler().map(({ id, object, anchor }) => ({ id, tool: 'urun', object, noLift: true, anchor })),
     ],
     // Sayfanın ürün seçicisi buradan konuşur (story denetleyicisinde api)
     api,

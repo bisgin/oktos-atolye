@@ -1,7 +1,7 @@
 """Oda sayfasının (oda/index.html) telefon taklidinde kare sürelerini ve kare maliyetinin kalemlerini ölçer.
 
 Amaç:  telefon kalite katmanının önce→sonra karşılaştırması. Üç durum ölçülür: açılış (sunumun isim + cümle yazıları
-       boyunca), genel plan (açılış bitince, tur genel planda, N sn) ve bir durağın yakın planı. --kalem ile genel planda
+       boyunca), genel plan (açılış bitince, kamera genel planda, N sn) ve bir durağın yakın planı. --kalem ile genel planda
        maliyet kalemleri tek tek kapatılıp açılır (gölge haritası, piksel oranı, Biggie'nin çizimi, huzme/toz, ekranın
        video dokusu, kilim, portfolyo eşyaları) ve her birinin kare süresine etkisi yazılır.
 Girdi: python scripts/oda-kare-olc.py [--adres http://127.0.0.1:8082] [--tekrar 3] [--sorgu "karakter=0"] [--genel 10]
@@ -153,7 +153,7 @@ def kosu(b, adres, sorgu, a, n, konsol):
             sonuc['acilis'] = ozet(sonuc['acilis'])
     else:
         bekle(pg, 'window.story?.ready', 90)
-    # Portfolyo eşyaları ve kilim kurulsun, tur genel plana otursun
+    # Portfolyo eşyaları ve kilim kurulsun, kamera genel plana otursun
     bekle(pg, '!window.story?.api?.portfolyo || window.story.api.portfolyo.dolu !== false', 30)
     time.sleep(3)
     sonuc['acilis_sn'] = round(time.time() - t_bas, 1)
@@ -202,7 +202,7 @@ def main():
     ap.add_argument('--tekrar', type=int, default=3)
     ap.add_argument('--sorgu', default='')
     ap.add_argument('--genel', type=int, default=10, help='genel plan ölçüm süresi (sn)')
-    ap.add_argument('--durak', default='figur', help='yakın plan durağı (story.focus kimliği)')
+    ap.add_argument('--durak', default='kitaplik', help='yakın plan durağı (story.focus kimliği; v8: altı duraktan biri)')
     ap.add_argument('--kalem', action='store_true')
     ap.add_argument('--etiket', default='olcum')
     ap.add_argument('--kare')

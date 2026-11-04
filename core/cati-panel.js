@@ -10,7 +10,10 @@ import { RAF_ISLERI, ARACLAR, DIORAMALAR, SUREC, HAKKIMDA, SAYFA, CATI_STORY, fi
 const esc = (s) => String(s ?? '').replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
 
 // ekran: () => TV denetçisi (core/cati-ekran.js: git, aktif, onDegis); sahne kurulunca gelir
-export function catiPanel(root, { lang = 'tr', reduce = false, ekran = () => null } = {}) {
+// oda (v8, 2026-11-04; /oda/): oda yalnız portfolyo. Kitaplıkta yalnız raflardan işler (fotoğraf kartın içinde; ışık
+// kutusu yok), dioramalar, araçlar ("Hizmetler") ve "Fikrini anlat" yok; armut durağında hakkımda yazısı; Biggie elindeki
+// büstü gösterirken (pencere olayı 'oda-bust' { eser }) kitaplığın eki büstün bilgisine döner
+export function catiPanel(root, { lang = 'tr', reduce = false, ekran = () => null, oda = false } = {}) {
   const L = (o) => (o ? o[lang] ?? o.tr ?? '' : '');
   let ek = null, sonId = null;
   const ust = () => document.querySelector('.topbar');
@@ -67,7 +70,15 @@ export function catiPanel(root, { lang = 'tr', reduce = false, ekran = () => nul
       <img src="${esc(onizleme)}" alt="" loading="lazy" decoding="async"><span>${esc(alt)}</span></button>`;
   const baglanti = (a) => `<a class="cati-k cati-arac" href="${esc(a.href)}">
       <img src="${esc(a.gorsel)}" alt="" loading="lazy" decoding="async"><span>${esc(L(a.ad))}</span></a>`;
+  // Oda kipi: fotoğraf kartın içinde (düğme değil, büyütülmez)
+  const foto = (src, baslik, yazi) => `<figure class="cati-k cati-foto"><img src="${esc(src)}" alt="${esc(baslik)}" loading="lazy" decoding="async"><figcaption><b>${esc(baslik)}</b>${yazi ? ` <span>${esc(yazi)}</span>` : ''}</figcaption></figure>`;
+  function bustIcerik(e) {
+    return `<div class="cati-bust">${e.gorsel ? `<img src="${esc(e.gorsel)}" alt="${esc(L(e.ad))}" decoding="async">` : ''}
+      <h3>${esc(L(e.ad))}</h3><p>${esc(L(e.desc))}</p>${e.olcu ? `<p class="cati-olcu">${esc(L(e.olcu))}</p>` : ''}</div>`;
+  }
   function icerik(id) {
+    if (oda && id === 'kitaplik') return `<p class="cati-ara">${esc(L(SAYFA.isler))}</p><div class="cati-izgara cati-izgara-foto">${RAF_ISLERI.map((g) => foto(g.gorsel, L(g.baslik), L(g.desc))).join('')}</div>`;
+    if (oda && id === 'armut') return `<div class="cati-yazi">${HAKKIMDA[lang === 'en' ? 'en' : 'tr'].map((p) => `<p>${esc(p)}</p>`).join('')}</div>`;
     if (id === 'kitaplik') {
       const link = fikirLinki(lang);
       return `<p class="cati-ara">${esc(L(SAYFA.isler))}</p><div class="cati-izgara">${RAF_ISLERI.map((g) => kucuk(g.gorsel, L(g.baslik), L(g.baslik), L(g.desc))).join('')}</div>`
@@ -117,6 +128,13 @@ export function catiPanel(root, { lang = 'tr', reduce = false, ekran = () => nul
       if (adim) ekran()?.git(Number(adim.dataset.adim));
     });
   }
+  // v8 oda: Biggie büstü eline alınca kitaplığın eki büstün bilgisi olur; bırakınca raflardan işlere döner
+  if (oda) addEventListener('oda-bust', (e) => {
+    if (!ek || sonId !== 'kitaplik') return;
+    const eser = e.detail?.eser;
+    ek.innerHTML = eser ? bustIcerik(eser) : icerik('kitaplik');
+    ek.classList.toggle('cati-ek-bust', !!eser);
+  });
   // TV adımı değişince (tıklama, kart) listedeki etkin adım güncellenir
   let bagli = false;
   function ekranaBagla() {

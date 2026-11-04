@@ -2,7 +2,8 @@
 // /portfolyo/ odaya yönlenir; senaryo C:\Oktos\calisma\oktos-dijital-site\senaryo\biggie-sunum.md).
 // Parçalar çatı katından (core/cati-sahne.js) taşındı ve odanın ölçüsüne indirildi:
 // - Sol duvar (önü +x): kitaplık (1100 × 380 × 2350; altta iki çekmece, dört göz: kitaplar, markasız oyun kutuları,
-//   Modern Balbal büstleri, vazolarımız), önünde duvarda kara tahta (hakkımda; çatıdaki şövalenin tahtası: odada ayaklı
+//   Modern Balbal büstleri, vazolarımız). v8 (2026-11-04): önündeki kara tahta (hakkımda) kalktı; yerinde armut koltuk,
+//   Hakkımda onun durağı. (Eski not: kara tahta çatıdaki şövalenin tahtasıydı: odada ayaklı
 //   şövaleye yer yok, önüne konan her şey genel planda kitaplığı ya da ekranı örtüyordu).
 // - Sağ duvar (önü −x): 55" ekran (çatıdaki 75" OLED'in süreç sunumu, core/cati-ekran.js; 55/75 ölçekli), altında üç
 //   gözlü alçak küp raf (TV sehpası; 1125 × 390 × 420, gözü 339 × 344: standart kare oyun kutusu sığar) ve içinde 8
@@ -27,11 +28,10 @@ const modul = (yol) => import(yol).catch((e) => { console.warn('portfolyo modül
 const yieldMain = () => globalThis.scheduler?.yield?.() ?? new Promise((r) => setTimeout(r, 0));
 
 // ---- yerler (mm) ----
-// Sol duvar: kitaplık dolabın (y 1100…1780) önünde, kara tahta onun önünde; sağ duvar: çöp buzdolabının (y 575…1125)
+// Sol duvar: kitaplık dolabın (y 1100…1780) önünde, armut onun önünde (v8; önce kara tahta); sağ duvar: çöp buzdolabının (y 575…1125)
 // önünde, ekran ve küp raf onun önünde (ekranın arka kenarı maske çerçevesinin (y 510…1190) önünde kalır)
 export const PORT = {
   kitaplik: { y: 520, en: 1100, derin: 380, boy: 2350 },
-  tahta: { y: -360, z: 1000, en: 600, boy: 800 },          // kara tahta: alt kenarı z, duvarda
   ekran: { y: -250, z: 900, olcek: 55 / 75 },               // ekranın alt kenarı z (55": 1225 × 706)
   oyunRafi: { y: -250, en: 1125, derin: 390, boy: 420 },   // ekranın altında, sağ duvarda
   kilim: { x: 1180, y: -400, en: 1900, boy: 1000 },        // uzun kenar y boyunca (en), kısa x
@@ -46,7 +46,10 @@ export const PORT = {
   // ve odanın dışını (ön kesit) göstermeyen kamera yeri yoktu. Yer taramayla seçildi (.impeccable yok; klip-meta-v5.md
   // "v7 — Oda tarafı"): kara tahtayı ve kitaplığın alt çekmecelerini genel planda (masaüstü + telefon) örtmüyor, ürün
   // yuvalarını en az örten, Biggie'nin duraklarına ≥ 700 mm, önü TV'ye (rz ≈ 89°)
-  armut: { x: -300, y: -200, rz: 1.55, r: 450, oturZ: 330 },
+  // v8 (2026-11-04, kullanıcı kararı): sol duvarın önüne, kitaplığın öne (−y) bakan yanına, kara tahtanın (kalktı) yerine;
+  // önü TV'ye (+x'ten ~5° +y'ye). Oda önde uzayıp kapandığı için (ON_DUVAR) köşede de kamera kuralına uyan kadraj var.
+  // Kitaplığın ucuna (y −30) ~470 mm, arka duvara (sırtın ezik tepesi dahil) ~90 mm pay
+  armut: { x: -1560, y: -560, rz: Math.PI / 2 + 0.08, r: 450, oturZ: 330 },
 };
 const DUVAR_SOL = ROOM.x0 + 15, DUVAR_SAG = ROOM.x1 - 15; // süpürgeliğin önü
 
@@ -218,25 +221,32 @@ function kitaplik(M) {
   const yerler = k.yerler.map(([x, y, z]) => [cx - y, K.y + x, z]);
   return { grup, yerler };
 }
-// Tasarım çalışmaları rafta: Modern Balbal büstleri (180 mm, taş tozu tonu) ve vazolarımız
+// Tasarım çalışmaları rafta: Modern Balbal büstleri (v8b: boy 280 mm, taş tozu tonu) ve vazolarımız
+export const BUST_BOY = 280; // v8b (kullanıcı: göründüklerinin iki katı); göz yüksekliği 355 mm
 async function rafEserleri(grup, yerler, M) {
   const isler = [], bustler = ESERLER.filter((e) => e.model), eserListe = (grup.userData.eserler ??= []);
+  const bustYeri = new Set(yerler.map((y, i) => [y[2], i]).filter(([z]) => z <= 1500).sort((a, c) => a[0] - c[0]).map(([, i]) => i));
   const vazolar = [['tulip', 0xece9e2], ['ribbed', 0x8fa58a], ['silk', 0xd49a9a], ['star', 0x2c3e66], ['amphora', 0xc49a3c]];
   yerler.forEach(([x, y, z], i) => {
-    if (i % 2 === 0 && bustler.length) {
+    // v8: büstler Biggie'nin eli yetişen gözlere (z ≤ 1500; kitap_al_ust ~1395'e uzanır), alçaktan başlayarak; kalan
+    // yerlere vazo (dekor)
+    if (bustYeri.has(i) && bustler.length) {
       const e = bustler.shift();
       isler.push(gltf(new URL(e.model, new URL('../lab/', import.meta.url)).href).then((k) => {
+        // v8 (2026-11-04, kullanıcı: büstler küçük): her büstün boyu (z) BUST_BOY (önce en büyük kenar 180: uzun-dar büstler
+        // küçük kalıyordu); tabanı 200 mm'yi aşan olursa göze sığsın diye o kadar küçülür. Kabın orijini büstün ortası:
+        // Biggie elinde çevirince kendi ekseninde döner (core/oda-sunum.js bustAl). v8b: boy 280, taban en çok 300
         const s = k.scene, b = new THREE.Box3().setFromObject(s), boy = b.getSize(new THREE.Vector3());
-        s.scale.setScalar(180 / Math.max(boy.z, boy.y, 1));
-        const b2 = new THREE.Box3().setFromObject(s), c = b2.getCenter(new THREE.Vector3());
-        s.position.set(-c.x, -c.y, -b2.min.z);
+        s.scale.setScalar(Math.min(BUST_BOY / Math.max(boy.z, 1), 300 / Math.max(boy.x, boy.y, 1)));
+        const b2 = new THREE.Box3().setFromObject(s), c = b2.getCenter(new THREE.Vector3()), yari = (b2.max.z - b2.min.z) / 2;
+        s.position.set(-c.x, -c.y, -b2.min.z - yari);
         const tas = new THREE.MeshStandardMaterial({ color: e.ton ?? 0xd9d5cd, roughness: 0.82, map: M.tasDoku, envMapIntensity: 0.6 });
         s.traverse((o) => { if (o.isMesh) { o.material = tas; o.castShadow = o.receiveShadow = true; } });
         const kap = new THREE.Group();
         kap.add(s);
-        kap.position.set(x, y, z);
+        kap.position.set(x, y, z + yari);
         kap.rotation.z = Math.PI / 2 + (i % 4 - 1.5) * 0.18; // yüzü odaya (+x; çatıdaki batı duvarıyla aynı yön)
-        kap.userData.parca = { tur: 'eser', ad: e.id };
+        kap.userData.parca = { tur: 'eser', ad: e.id, bust: true, eser: e }; // v8: yalnız büstler tıklanır
         grup.add(kap);
         eserListe.push(kap);
       }).catch((err) => console.warn('büst', e.id, err)));
@@ -247,7 +257,7 @@ async function rafEserleri(grup, yerler, M) {
       const boy = new THREE.Box3().setFromObject(v).getSize(new THREE.Vector3());
       if (boy.z > 300) v.scale.setScalar(300 / boy.z);
       v.position.set(x, y, z);
-      v.userData.parca = { tur: 'eser', ad: id };
+      v.userData.parca = { tur: 'vazo', ad: id }; // v8: dekor (tıklanmaz)
       grup.add(v);
       eserListe.push(v);
     }
@@ -363,41 +373,10 @@ function oyunRafi(M) {
   return grup;
 }
 
-// ---- hakkımda: duvarda kara tahta (çatıdaki şövalenin tahtası; logo ve 'Oktos Workshop · Ankara' tebeşirle) ----
 const yaziTipleri = () => Promise.race([
   Promise.all(['700 74px "Big Shoulders Display"', '500 44px "Schibsted Grotesk"', '500 26px "IBM Plex Mono"'].map((f) => document.fonts?.load(f))),
   new Promise((r) => setTimeout(r, 1500)),
 ]).catch(() => {});
-const resim = (url) => new Promise((ok, hata) => { const im = new Image(); im.onload = () => ok(im); im.onerror = hata; im.src = url; });
-async function karaTahta(lang, cerM) {
-  await yaziTipleri();
-  const [c, g] = kanvas(768, 1024), r = rnd(9);
-  g.fillStyle = '#20282a'; g.fillRect(0, 0, 768, 1024);
-  for (let i = 0; i < 2500; i++) { g.fillStyle = `rgba(255,255,255,${r() * 0.05})`; g.fillRect(r() * 768, r() * 1024, 1 + r() * 30, 1 + r() * 3); }
-  try {
-    const logo = await resim(new URL('./logo-beyaz.svg', import.meta.url).href);
-    const k = 360 / Math.max(logo.width || 360, 1);
-    g.globalAlpha = 0.92; g.drawImage(logo, (768 - 360) / 2, 150, 360, (logo.height || 280) * k); g.globalAlpha = 1;
-  } catch { /* logo yoksa yalnız yazı */ }
-  g.fillStyle = 'rgba(245,242,232,0.94)'; g.textAlign = 'center';
-  g.font = '700 74px "Big Shoulders Display", "Schibsted Grotesk", Arial, sans-serif';
-  g.fillText('OKTOS WORKSHOP', 384, 600);
-  g.font = '500 44px "Schibsted Grotesk", Arial, sans-serif';
-  g.fillText(lang === 'en' ? 'Design · Print · Mould · Cast' : 'Tasarım · Baskı · Kalıp · Döküm', 384, 690);
-  g.fillText('Ankara', 384, 780);
-  g.strokeStyle = 'rgba(245,242,232,0.5)'; g.lineWidth = 4; g.beginPath(); g.moveTo(170, 640); g.lineTo(598, 640); g.stroke();
-  const T = PORT.tahta, grup = new THREE.Group();
-  const cer = new THREE.Mesh(new THREE.BoxGeometry(T.en + 50, 26, T.boy + 50), cerM);
-  cer.castShadow = cer.receiveShadow = true;
-  const yuz = new THREE.Mesh(new THREE.PlaneGeometry(T.en, T.boy).rotateX(Math.PI / 2), new THREE.MeshStandardMaterial({ map: doku(c), roughness: 0.95, envMapIntensity: 0.5 }));
-  yuz.position.y = -14;
-  const tebesir = new THREE.Mesh(new THREE.BoxGeometry(T.en * 0.7, 60, 18), cerM); // altında tebeşirlik
-  tebesir.position.set(0, -30, -T.boy / 2 - 30);
-  grup.add(cer, yuz, tebesir);
-  grup.position.set(DUVAR_SOL + 14, T.y, T.z + T.boy / 2);
-  grup.rotation.z = Math.PI / 2; // önü yerel −y → dünya +x
-  return grup;
-}
 
 // ---- çöp kovası: pedallı, mat çelik (Biggie'nin elma atışı) ----
 function copKovasi() {
@@ -420,20 +399,21 @@ function copKovasi() {
 // grubu, tıklama ve kadraj için görünmez hacim vekili (gerçek ölçüde) ve işaretçi yerleri; doldur() sahne hazır olduktan
 // sonra (sayfa onReady'de api.portfolyo.yukle()) asıl eşyaları parça parça, aralarda ana iş parçacığını bırakarak kurar.
 // Tek kurulumda telefonun "hazır" süresi %39 uzuyordu (doku üretimi, birleştirme, 13 yeni gölgelendirici).
-// Döner: { nesne: { kitaplik, oyunlar, ekran, hakkimda, cop }, yerler, ekran (TV denetçisi; doldurulunca), doldur(), update(t) }
+// Döner: { nesne: { kitaplik, oyunlar, ekran, armut, cop }, yerler, ekran (TV denetçisi; doldurulunca), doldur(), update(t) }
 const vekilM = new THREE.MeshBasicMaterial({ visible: false });
 const vekil = (x0, x1, y0, y1, z0, z1) => new THREE.Mesh(aralik(x0, x1, y0, y1, z0, z1), vekilM);
 // hafif (telefon katmanı, core/story.js): kilim dokusu küçük; her yerde: ekranın süreç videosu yalnız ekran kadrajdayken
 // dokuya çizilir (telefonun genel planında ekran görünmez; her video karesinde kanvas çizimi + doku yüklemesi)
 export function portfolyoIskelet(scene, { lang = 'tr', reduce = false, hafif = false } = {}) {
-  const KT = PORT.kitaplik, OR = PORT.oyunRafi, TA = PORT.tahta, E = PORT.ekran, C = PORT.cop;
+  const KT = PORT.kitaplik, OR = PORT.oyunRafi, E = PORT.ekran, C = PORT.cop, AR = PORT.armut;
   const ekranH = 963 * E.olcek, ekranW = 1671 * E.olcek;
   const grup = (...v) => { const g = new THREE.Group(); if (v.length) g.add(...v); scene.add(g); return g; };
   const nesne = {
     kitaplik: grup(vekil(DUVAR_SOL, DUVAR_SOL + KT.derin + 10, KT.y - KT.en / 2, KT.y + KT.en / 2, 0, KT.boy)),
     oyunlar: grup(vekil(DUVAR_SAG - OR.derin - 10, DUVAR_SAG, OR.y - OR.en / 2, OR.y + OR.en / 2, 0, OR.boy)),
     ekran: grup(vekil(ROOM.x1 - 50, ROOM.x1, E.y - ekranW / 2, E.y + ekranW / 2, E.z, E.z + ekranH)),
-    hakkimda: grup(vekil(DUVAR_SOL, DUVAR_SOL + 75, TA.y - TA.en / 2 - 25, TA.y + TA.en / 2 + 25, TA.z - 40, TA.z + TA.boy + 25)),
+    // v8: armut koltuk durağı (Hakkımda): armudun hacmi (tıklama ve kadraj); armudun kendisi doldur()'da
+    armut: grup(vekil(AR.x - 450, AR.x + 450, AR.y - 450, AR.y + 450, 0, 1050)),
     cop: grup(),
   };
   nesne.cop.userData.agiz = [C.x, C.y, C.boy]; // elmanın düşeceği yer (dünya, mm)
@@ -441,7 +421,7 @@ export function portfolyoIskelet(scene, { lang = 'tr', reduce = false, hafif = f
     kitaplik: [DUVAR_SOL + KT.derin + 30, KT.y, 1980],
     oyunlar: [DUVAR_SAG - OR.derin - 30, OR.y + OR.en / 2 - 170, OR.boy + 60],
     ekran: [ROOM.x1 - 120, E.y, E.z + ekranH + 50],
-    hakkimda: [DUVAR_SOL + 80, TA.y, TA.z + TA.boy + 70],
+    armut: [AR.x + 60, AR.y, 1180],
   };
   let ekranGoruldu = -1e9; // ekranın ağlarından biri son çizildiğinde (onBeforeRender yalnız kadrajdaki ağda çağrılır)
   // parcalar(): tıklanabilir küçük eşyalar (2026-11-03 v5; core/oda-sunum.js): rafın kutuları, kitaplığın eserleri ve kitapları
@@ -484,8 +464,6 @@ export function portfolyoIskelet(scene, { lang = 'tr', reduce = false, hafif = f
     const kit = kitaplik(M);
     nesne.kitaplik.add(await hazir(kit.grup));
     const eserler = rafEserleri(kit.grup, kit.yerler, M);
-    await yieldMain();
-    nesne.hakkimda.add(await hazir(await karaTahta(lang, M.koyuAhsap)));
     await yieldMain();
     // Armut koltuk: çatıdaki model yeniden kullanılır (yeni üretim yok); tıklanmaz (TV durağının oturağı)
     const esyaM = await modul('./cati-esya.js');
