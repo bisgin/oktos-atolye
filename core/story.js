@@ -81,7 +81,9 @@ function splitWords(el, text) {
 // yakın plan kartı dolunca ve kapanınca (sayfa kart başlığını canlandırabilir).
 // onActivate(h): sayfa kamerayı kendisi sürerken (drive) tıklanan bölge ya da geri isteği (h = null) önce sayfaya
 // sorulur; true dönerse motor yakınlaşmaz (oda: kaydırmalı tur o durağa kayar).
-export async function mountStory(root, { toolId, lang = 'tr', mode = pickMode(toolId), onPick, onSkip, onReady, onCard, onActivate, sceneModule, story: storyOverride, homeHref = 'index.html' } = {}) {
+// isinma ('1' | '2'; lab/oda.html varsayılan '1', ?isinma=0 kapatır): aşağıda "gölgelendirici ısınması"; verilmezse
+// (araç sayfaları) hiçbir şey değişmez.
+export async function mountStory(root, { toolId, lang = 'tr', mode = pickMode(toolId), onPick, onSkip, onReady, onCard, onActivate, sceneModule, story: storyOverride, homeHref = 'index.html', isinma = null } = {}) {
   const story = storyOverride || STORIES[toolId];
   let ui = STORY_UI[lang] || STORY_UI.tr;
   const $ = (s) => root.querySelector(s);
@@ -97,6 +99,10 @@ export async function mountStory(root, { toolId, lang = 'tr', mode = pickMode(to
   const live = $('.story-live');
   const coarse = matchMedia('(pointer: coarse)').matches;
   const quality = detectQuality();
+  // Telefon katmanı (2026-11-03, scripts/oda-kare-olc.py): düşük kalitede sahne kendini hafifletir (oda: geçirgen cam yerine
+  // saydam cam, gölge vekili, küçük kilim dokusu); ?telefon=0 eski düşük kaliteyi verir (önce→sonra ölçümü).
+  // Masaüstü (yüksek kalite) hiç değişmez
+  const hafif = quality === 'low' && new URLSearchParams(location.search).get('telefon') !== '0';
 
   // ---- metin ----
   const words = splitWords(titleEl, story.title[lang]);
@@ -180,12 +186,15 @@ export async function mountStory(root, { toolId, lang = 'tr', mode = pickMode(to
   // ---- sahne içeriği ----
   if (!sceneModule) throw new Error(`sahne modülü yok: ${toolId}`); // araç sahneleri kalktı
   const mod = sceneModule;
-  const built = await mod.buildScene({ THREE, scene, P, quality, lang, story });
+  const built = await mod.buildScene({ THREE, scene, P, quality, hafif, lang, story });
   const shots = built.shots;
   const lights = built.lights || {};
   // Telefonda ve zayıf cihazda (düşük kalite) sahne vurgu çizgisini kullanmıyorsa (outlineFocus: false; dokunmatikte
   // üzerine gelme de yok) ara görüntü geçişleri atlanır: tuval doğrudan çizilir, kenar yumuşatma tuvalin kendisinden
   if (composer && quality === 'low' && built.outlineFocus === false) { composer.dispose?.(); composer = null; outline = null; }
+  // Gölge vekili (sahne isterse, built.golgeVekili; oda telefon katmanında): gölge haritası çizimi telefonda karenin ~%25'iydi
+  // (395 gölge düşüren ağ); duran eşyalar haritaya birkaç birleşik çizimle girer (core/golge-vekili.js)
+  const vekil = renderer && built.golgeVekili ? (await import('./golge-vekili.js')).golgeVekili(THREE, scene, renderer) : null;
   const center = new THREE.Vector3(...(lights.center || shots.main.target));
   key.position.set(...(lights.key || [center.x - 1400, center.y - 900, center.z + 2200]));
   key.target.position.copy(center);
@@ -247,7 +256,12 @@ export async function mountStory(root, { toolId, lang = 'tr', mode = pickMode(to
   {
     const w = canvasHost.clientWidth || innerWidth, h = canvasHost.clientHeight || innerHeight;
     const aspect = w / h;
-    if (aspect < 0.9 && built.portraitShot) shots.main = { pos: [...built.portraitShot.pos], target: [...built.portraitShot.target] };
+    // Sahne genel planı ekran oranına göre kendisi verebilir (built.fitShot(aspect, fov) → { main, intro? }; null: varsayılan)
+    const fit = built.fitShot?.(aspect, aspect < 0.8 ? (built.portraitFov || 46) : aspect < 1.2 ? (built.squareFov || 38) : (built.fov || 30));
+    if (fit?.main) {
+      shots.main = { pos: [...fit.main.pos], target: [...fit.main.target] };
+      if (fit.intro) shots.intro = { pos: [...fit.intro.pos], target: [...fit.intro.target] };
+    } else if (aspect < 0.9 && built.portraitShot) shots.main = { pos: [...built.portraitShot.pos], target: [...built.portraitShot.target] };
     else if (aspect < 0.9 && hotspots.length) {
       const k = aspect < 0.65 ? 1 : 0.6;
       const c = new THREE.Vector3();
@@ -286,8 +300,9 @@ export async function mountStory(root, { toolId, lang = 'tr', mode = pickMode(to
     orbit.k += ((focused ? 1 : 0) - orbit.k) * 0.06;
     // Hareket azaltma tercihinde fareye bağlı kayma yok; yakın planda etrafa bakmak yine mümkün.
     const pYaw = par.on ? TUNE.parallaxYaw : 0, pPitch = par.on ? TUNE.parallaxPitch : 0;
-    const yawAmp = pYaw + (TUNE.focusYaw - pYaw) * orbit.k;
-    const pitchAmp = pPitch + (TUNE.focusPitch - pPitch) * orbit.k;
+    // built.focusYaw / focusPitch: sahne yakın plandaki fareyle dönüşü kısabilir (oda v7: kamera odanın dışını göstermesin)
+    const yawAmp = pYaw + ((built.focusYaw ?? TUNE.focusYaw) - pYaw) * orbit.k;
+    const pitchAmp = pPitch + ((built.focusPitch ?? TUNE.focusPitch) - pPitch) * orbit.k;
     const breathe = par.on ? Math.sin(t * 0.21) * TUNE.breathe : 0;
     tmpOff.copy(rig.pos).sub(rig.target);
     q.setFromAxisAngle(Z, -par.x * yawAmp + breathe);
@@ -296,6 +311,7 @@ export async function mountStory(root, { toolId, lang = 'tr', mode = pickMode(to
     q.setFromAxisAngle(tmpRight, par.y * pitchAmp);
     tmpOff.applyQuaternion(q);
     camera.position.copy(rig.target).add(tmpOff);
+    built.kameraDuzelt?.(camera.position); // sahne isterse (oda): kamera mobilya hacimlerinin dışında kalır
     camera.lookAt(rig.target);
     const yaw = look ? look.yaw * (1 - orbit.k) : 0;
     if (yaw) camera.lookAt(tmpOff.copy(rig.target).sub(camera.position).applyAxisAngle(Z, yaw).add(camera.position));
@@ -355,7 +371,9 @@ export async function mountStory(root, { toolId, lang = 'tr', mode = pickMode(to
       // nesne kartın üstünde kalır.
       const up = new THREE.Vector3(0, 0, 1).addScaledVector(dir, -dir.z).normalize();
       center.addScaledVector(up, -0.4 * halfH);
-      pos.addScaledVector(up, -0.4 * halfH);
+      // built.altKaydirma === 'hedef' (oda, 2026-11-04 v7 kamera kuralı): kamera yerinde kalır (göz yüksekliği), yalnız
+      // bakış aşağı döner; yoksa kamera ve hedef birlikte aşağı kayar
+      if (built.altKaydirma !== 'hedef') pos.addScaledVector(up, -0.4 * halfH);
     } else if (built.focusShift) {
       // Kamera ve hedef birlikte sola: nesne ekranda sağa kayar
       const right = new THREE.Vector3().crossVectors(dir.clone().negate(), Z).normalize();
@@ -661,6 +679,58 @@ export async function mountStory(root, { toolId, lang = 'tr', mode = pickMode(to
   ro.observe(canvasHost);
   resize();
 
+  // ---- gölgelendirici ısınması (yalnız isinma verilince; 2026-11-01 ölçümü scripts/donma-olc.py) ----
+  // İlk karede ~30–40 program eşzamanlı derleniyordu (ANGLE/D3D11'de fiziksel malzeme başına ~0,2 sn: telefonda ~5,7 sn,
+  // masaüstünde ~3,9 sn donma). Burada perde kalkmadan GPU sürecinde paralel derlenir (KHR_parallel_shader_compile) ve ana
+  // iş parçacığı kilitlenmeden beklenir. Program anahtarı çizim hedefine bağlıdır: ara görüntüye çizilen geçişler (son işlem;
+  // cam/geçirgenlik geçişi opak nesneleri bir kez daha çizer) ton eşlemesiz doğrusal çıkışlı program ister, tuvale doğrudan
+  // çizim ton eşlemeli sRGB. Gereken her hedef için derlenir. Geçirgenlik geçişi çift yüzlü cam nesneyi önce arka yüzüyle
+  // (BackSide) ara görüntüye çizer: o program da ayrıca derlenir. isinma=2: derleme bitince dokular da görev görev yüklenir.
+  function derleHedefli(nesne, hedefSahne = null) {
+    const ara = new THREE.WebGLRenderTarget(1, 1, { type: THREE.HalfFloatType });
+    let gecirgen = false;
+    scene.traverseVisible((o) => { for (const m of [o.material].flat()) if (m && m.transmission > 0) gecirgen = true; });
+    const camlar = [];
+    nesne.traverse((o) => {
+      for (const m of [o.material].flat()) if (m && m.transmission > 0 && m.side === THREE.DoubleSide && !m.forceSinglePass && !m.transparent) camlar.push([o, m]);
+    });
+    const onceki = renderer.getRenderTarget(), bekle = [];
+    for (const h of composer ? [ara] : gecirgen ? [null, ara] : [null]) {
+      renderer.setRenderTarget(h);
+      bekle.push(renderer.compileAsync(nesne, camera, hedefSahne));
+    }
+    renderer.setRenderTarget(ara);
+    for (const [o, m] of camlar) {
+      m.side = THREE.BackSide; m.needsUpdate = true;
+      bekle.push(renderer.compileAsync(o, camera, hedefSahne ?? scene));
+      m.side = THREE.DoubleSide; m.needsUpdate = true;
+    }
+    renderer.setRenderTarget(onceki);
+    return Promise.all(bekle).finally(() => ara.dispose());
+  }
+  async function dokulariYukle() {
+    const dokular = new Set();
+    scene.traverse((o) => {
+      for (const m of [o.material].flat()) {
+        if (!m) continue;
+        for (const v of Object.values(m)) if (v?.isTexture) dokular.add(v);
+        for (const u of Object.values(m.uniforms || {})) if (u?.value?.isTexture) dokular.add(u.value);
+      }
+    });
+    for (const t of dokular) {
+      if (t.isRenderTargetTexture || !t.image) continue;
+      renderer.initTexture(t);
+      await new Promise((r) => setTimeout(r, 0)); // her doku ayrı görevde: uzun görev olmasın
+    }
+  }
+  if (renderer && isinma) {
+    performance.mark('isinma-bas');
+    await derleHedefli(scene);
+    // Derleme sürerken yüklenen doku GPU sürecinin derleme kuyruğunu bekliyordu (tek yükleme 0,5–1,2 sn kilit): sonra yükle
+    if (String(isinma) === '2') await dokulariYukle();
+    performance.mark('isinma-son');
+  }
+
   // ---- döngü ----
   const clock = new THREE.Clock();
   const v = new THREE.Vector3();
@@ -687,6 +757,7 @@ export async function mountStory(root, { toolId, lang = 'tr', mode = pickMode(to
     }
     applyCamera(t);
     if (renderer) {
+      vekil?.kare(t);
       if (composer) composer.render(dt); else renderer.render(scene, camera);
       const w = viewW, hh = viewH;
       const order = [];
@@ -832,6 +903,8 @@ export async function mountStory(root, { toolId, lang = 'tr', mode = pickMode(to
     blur() { if (focused && !busy) unfocus(false, false); },
     get ready() { return intro.progress() >= 1; },
     get busy() { return busy; }, // atölyeye geçiş sürüyor (sayfa girdileri beklesin)
+    // Yalnız isinma açıkken: sonradan eklenen nesnenin (karakter) programlarını çizim hedefine uygun derler (Promise)
+    derle: renderer && isinma ? derleHedefli : null,
     // Sahnenin kendi denetimi (oda: yakın planda şablon değiştirme, built.api)
     api: built.api || null,
     // Yakın plandaki şablon değişince "Bu şablonla tasarla" yeni şablonu açar; şablonu olmayan bölgede atölye yakında.
@@ -850,7 +923,7 @@ export async function mountStory(root, { toolId, lang = 'tr', mode = pickMode(to
     },
     // Konsoldan kadraj ayarı ve kare kare doğrulama: debug.seek(0.4) girişi %40'a sarar ve bir kare çizer.
     debug: {
-      rig, shots, flyTo, TUNE, intro, look,
+      rig, shots, flyTo, TUNE, intro, look, vekil,
       seek(p) { intro.pause(); intro.progress(p); for (const h of hotspots) h.lift = h.liftTarget; draw(0, intro.time()); },
     },
     destroy() {

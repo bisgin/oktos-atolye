@@ -1,10 +1,10 @@
 """Yerel sunucudaki bir sayfanın ekran görüntüsünü görünmez Edge ile alır (3B sahneli sayfalar dahil).
 
-Amaç: sahne ve yerleşim denemelerini (lab/oda.html gibi) tarayıcı paneline bağlı kalmadan, tam çözünürlükte
+Amaç: sahne ve yerleşim denemelerini (oda/index.html gibi) tarayıcı paneline bağlı kalmadan, tam çözünürlükte
 karşılaştırmak. Panelin kendi ekran görüntüsü küçültülür; bu betik sayfayı gerçek boyutunda çizer.
 Girdi:
   python scripts/sayfa-cek.py YOL AD [--boyut 1280x800] [--bekle 12000]
-    YOL: sunucuya göre adres, ör. "lab/oda.html?mod=still&odak=cekmece"; AD: çıktı adı
+    YOL: sunucuya göre adres, ör. "oda/index.html?mod=still&odak=anahtarlik"; AD: çıktı adı
   python scripts/sayfa-cek.py --toplu cekimler.json [--sayfa karsilastirma]
     cekimler.json: [{"yol": "...", "ad": "...", "boyut": "1280x800", "bekle": 12000}, ...]
 Çıktı: .impeccable/review/AD.png (yerel klasör, depoya girmez); --sayfa ile çekimler etiketli tek PNG'de.
@@ -23,7 +23,7 @@ import shutil
 import tempfile
 import time
 
-EDGE = r'C:\Program Files (x86)\Microsoft\Edge\Application\msedge.exe'
+EDGE = os.path.join(os.environ.get("ProgramFiles(x86)") or os.path.join(os.environ.get("SystemDrive", "C:") + os.sep, "Program Files (x86)"), "Microsoft", "Edge", "Application", "msedge.exe")  # sabit sürücü yolu yok (depo herkese açık)
 PROFILE_AD = f'oktos-sayfa-edge-{os.getpid()}'
 PROFILE = os.path.join(tempfile.gettempdir(), PROFILE_AD)
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
@@ -95,7 +95,7 @@ def sheet(paths, labels, name):
     rows = (len(pairs) + cols - 1) // cols
     out = Image.new('RGB', (cols * tw, rows * (th + 34)), (24, 26, 28))
     g = ImageDraw.Draw(out)
-    font = ImageFont.truetype(r'C:\Windows\Fonts\segoeuib.ttf', 20)
+    font = ImageFont.truetype(os.path.join((os.environ.get("WINDIR") or os.path.join(os.environ.get("SystemDrive", "C:") + os.sep, "Windows")), "Fonts", "segoeuib.ttf"), 20)
     for i, (im, label) in enumerate(pairs):
         x, y = (i % cols) * tw, (i // cols) * (th + 34)
         out.paste(im.resize((tw, th)), (x, y + 34))

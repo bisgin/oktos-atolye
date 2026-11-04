@@ -1,5 +1,6 @@
 # Karakterin dışa aktarım kaynağını kurar: Drive'daki bizzikoloşko.blend (orijinal, değiştirilmez) açılır, sitenin
-# koltuğuna göre kurulan klipler (scripts/karakter-klipler.py: Sırt Açma, Koltukla Kayma) eklenir, oturma kliplerinde
+# koltuğuna göre kurulan klipler (scripts/karakter-klipler.py: Sırt Açma, Koltukla Kayma), sunumun eylem klipleri
+# (scripts/karakter-klip-eylem.py) ve oturma geçişlerinin meta düzeltmesi (scripts/karakter-klip-otur.py) eklenir, oturma kliplerinde
 # kalça ölçülür (yazdırılır) ve çalışma kopyası kaynak/karakter/ altına kaydedilir (depoya girmez).
 # Kullanım (depo kökünden):
 #   blender -b "<Drive>/bizzikoloşko.blend" --python scripts/karakter-kaynak-kur.py -- kaynak/karakter/bizzikolosko_site.blend
@@ -14,6 +15,11 @@ exec(open(os.path.join(KOK, 'scripts', 'karakter-klipler.py'), encoding='utf-8')
 koltuk_al(os.path.join(KOK, 'assets', 'oda', 'oda-esya.glb'))
 sirt_ac()
 kaydir()
+# Biggie'li sunumun eylem klipleri (buzdolabı, elma, yaslanma, eğilme, kumanda, kutu) ve oturma geçişlerinin meta düzeltmesi
+for ek in ('karakter-armut-geo.py', 'karakter-klip-eylem.py', 'karakter-klip-otur.py'):
+    exec(open(os.path.join(KOK, 'scripts', ek), encoding='utf-8').read())
+eylemleri_kur()
+otur_duzelt()
 
 # Ölçüm: kalçanın armatür uzayında y (arka +) ve z'si (Blender birimi; sitede × 1,5 × 1000 mm)
 def kalca(ad, f):

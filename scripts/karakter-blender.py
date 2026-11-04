@@ -30,6 +30,11 @@ KLIP = {'merdiven': 'Merdivenden İnme', 'ip': 'İpten İnme', 'yuru': 'Yürüme
         'sevin': 'Bilgisayar Başında Sevinme', 'inanamama': 'Ekrana İnanamama', 'bekle': 'Masada Bekleme'}
 # Sonradan eklenecek klipler: dosyada varsa alınır (sırt açma yoksa core/oda-karakter.js koltuğu çekilmiş yerine koyar)
 EK = {'sirt_ac': 'Sırt Açma', 'kaydir': 'Koltukla Kayma'}
+# Biggie'li sunumun eylem klipleri (scripts/karakter-klip-eylem.py; aksiyon adı = klip adı)
+for k in ('buzdolabi_ac', 'buzdolabi_bos', 'elma_ye', 'elma_firlat', 'yaslan', 'egil_bak', 'kumanda', 'kutu_al',
+          'armut_yat', 'armut_uyukla', 'armut_kalk', 'diz_cok', 'kutu_al_diz', 'diz_kalk', 'diz_bekle', 'kutu_cevir_sag',
+          'kutu_cevir_sol', 'kutu_rafa_birak', 'kitap_al_alt', 'kitap_al_orta', 'kitap_al_ust'):   # v7: tv_armut → armut_* (takma_ad)
+    EK[k] = k
 for k, a in EK.items():
     if bpy.data.actions.get('Hareket - ' + a):
         KLIP[k] = a
@@ -114,6 +119,16 @@ for k, a in KLIP.items():
     act = bpy.data.actions['Hareket - ' + a]
     if act.get('site_meta'):
         meta['klip'][k] = {**meta['klip'].get(k, {}), **json.loads(act['site_meta'])}
+# v7 (04.11): tv_armut üç klibe bölündü (meta takma_ad); diz ve armut zincirinin uç uyumu (karakter-klip-eylem.py zincir_olc)
+meta['takma_ad'] = {'tv_armut': ['armut_yat', 'armut_uyukla', 'armut_kalk']}
+try:
+    _o7 = json.loads(sc['olcum_v7'])
+    meta['zincir'] = {'ciftler': _o7.get('zincir', {}), 'diz_bekle': 'diz_bekle', 'armut_bekle': 'armut_uyukla',
+                      'not': 'A>B: A klibinin son karesi ile B klibinin ilk karesi aynı poz (derece/mm: kemiklerin en büyük farkı). '
+                             'Diz akışı: diz_cok → kutu_al_diz → diz_bekle ↻ → kutu_cevir_sag|_sol → diz_bekle … → kutu_rafa_birak → '
+                             'kutu_al_diz (yeni kutu) … → diz_kalk. Armut: armut_yat → armut_uyukla ↻ → armut_kalk.'}
+except (KeyError, ValueError):
+    pass
 
 # ---- nesneler ----
 karakter = [o for o in rig.children if o.type == 'MESH' and o.name not in HARIC]
@@ -161,6 +176,24 @@ for o in karakter:
             nt.nodes.remove(grup)
         for n in [n for n in nt.nodes if n.type == 'ATTRIBUTE']: nt.nodes.remove(n)
 
+# ---- v5: elma kemikleri (elma_g0..g3, elma_kocan) yalnız kendi anahtarı olan kliplerde görünür: diğer bütün kliplere
+# ölçek 0 sabiti yazılır (three.js'te anahtarsız kanal son değerde kalır, dinlenme ölçeği 1 = görünür olurdu)
+ELMA_K = [b.name for b in rig.data.bones if b.name.startswith('elma_')]
+if ELMA_K:
+    for k, a in KLIP.items():
+        act = bpy.data.actions['Hareket - ' + a]
+        rig.animation_data.action = act
+        if act.slots: rig.animation_data.action_slot = act.slots[0]
+        f0, f1 = act.frame_range
+        for b in ELMA_K:
+            yol = f'pose.bones["{b}"].scale'
+            if any(fc.data_path == yol for l in act.layers for st in l.strips for cb in st.channelbags for fc in cb.fcurves): continue
+            for i in range(3):
+                fc = act.fcurve_ensure_for_datablock(rig, yol, index=i)
+                fc.keyframe_points.add(2); fc.keyframe_points.foreach_set('co', [f0, 0.0, f1, 0.0]); fc.update()
+    rig.animation_data.action = None
+    meta['elma_kemik'] = ELMA_K
+
 # ---- rig: ölçek ve klipler (NLA izleri) ----
 rig.scale = (OLCEK, OLCEK, OLCEK)
 ad = rig.animation_data or rig.animation_data_create()
@@ -180,7 +213,7 @@ sc['karakter_meta'] = json.dumps(meta, ensure_ascii=False)
 # Hiçbir klipte dinlenme pozundan ayrılmayan kemik kanalları atılır, kullanılmayan veri sıkıştırılır. (Dışa aktarıcının
 # "keep_anim_armature=False" seçeneği klip başına sabit kanalları atar: dinlenmede olmayan sabitler (kulaklık kemiği)
 # ve geçişte önceki klipten kalan pozlar bozulur; bu yüzden kullanılmaz.)
-import struct
+import struct, re
 def budama(yol):
     b = open(yol, 'rb').read()
     jl = struct.unpack_from('<I', b, 12)[0]
@@ -194,6 +227,22 @@ def budama(yol):
         a = acc[ai]; v = bv[a['bufferView']]; n = BOY[a['type']]
         bas = v.get('byteOffset', 0) + a.get('byteOffset', 0); adim = v.get('byteStride', 4 * n)
         return [struct.unpack_from('<%df' % n, ikili, bas + i * adim) for i in range(a['count'])]
+    # IK hedefleri ve dirsek/diz hedefleri hiçbir şeyi deforme etmez (IK Blender'da pişer, kemiklerin yerel dönüşü
+    # yazılır): kanalları atılır. Üst gövde katmanı kliplerinde ('katman': 'ust', ör. elma_ye) yalnız 'ust_kok'
+    # kemiğinin (omurga) altındaki düğümler kalır: yürürken alttaki klibin bacaklarına dokunmaz
+    ad_ = [n.get('name', '') for n in dug]
+    ebeveyn = {c: i for i, n in enumerate(dug) for c in n.get('children', [])}
+    def altinda(i, kok):
+        while i is not None:
+            if ad_[i] == kok: return True
+            i = ebeveyn.get(i)
+        return False
+    for a in j.get('animations', []):
+        km = meta['klip'].get(a.get('name'), {})
+        n0 = len(a['channels'])
+        a['channels'] = [c for c in a['channels'] if not re.search(r'_IK\.|hedef\.', ad_[c['target']['node']])
+                         and (km.get('katman') != 'ust' or altinda(c['target']['node'], km.get('ust_kok', 'omurga')))]
+        if len(a['channels']) != n0: print('BUDAMA', a.get('name'), 'katman/IK kanal', n0 - len(a['channels']))
     VARS = {'translation': (0, 0, 0), 'rotation': (0, 0, 0, 1), 'scale': (1, 1, 1)}
     sabit = {}
     for a in j.get('animations', []):

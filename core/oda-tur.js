@@ -1,7 +1,7 @@
-// Kaydırmalı tur (docs/oda-sahnesi.md): sayfa kaydırıldıkça kamera duraktan durağa gider; tıklamak gerekmez.
-// Genel planda altta "Odana dair her şey", üstünde "Çekmece organizeriyle başla" düğmesi: üzerine gelince kamera
-// organizere biraz yaklaşır, tıklayınca ilk durağa kayar. Durakta bölgenin kartı açılır (uçuşsuz: kamerayı kaydırma
-// sürer) ve şablonlar kendiliğinden birkaç kez değişir; dokunulunca ya da tuşa basılınca döngü durur. Tıklanan bölge
+// Kaydırmalı tur (docs/oda-sahnesi.md): sayfa kaydırıldıkça kamera duraktan durağa (görünen ürün yuvaları) gider;
+// tıklamak gerekmez. Genel planda altta tur başlığı, üstünde "başla" düğmesi (metin sayfadan, i18n oda.tur.*): üzerine
+// gelince kamera ilk durağa biraz yaklaşır, tıklayınca ilk durağa kayar. Durakta yuvanın kartı açılır (uçuşsuz: kamerayı
+// kaydırma sürer) ve ürünler kendiliğinden birkaç kez değişir; dokunulunca ya da tuşa basılınca döngü durur. Tıklanan bölge
 // turdaysa sayfa o durağa anında atlar, kamera aradaki durakların üzerinden geçmeden doğrudan gider ve varışta yavaşça
 // yaklaşır (gecis: 'a' doğrudan, 'b' kararma, 'c' genel plandan, 'd' kavisli; 'eski': sayfa kayar, kamera yolu izler).
 // Turda olmayan bölgede motor eskisi gibi yakınlaşır, ilk kaydırmada tura dönülür.
@@ -13,13 +13,13 @@ gsap.registerPlugin(ScrollTrigger);
 ScrollTrigger.config({ ignoreMobileResize: true }); // telefonda adres çubuğu açılıp kapanınca zıplamasın
 
 const AYAR = {
-  durakBoyu: 0.75,      // duraklar arası kaydırma, ekran yüksekliği kesri (11 durak: ~8 ekran)
+  durakBoyu: 0.75,      // duraklar arası kaydırma, ekran yüksekliği kesri (5 yuva: ~4 ekran)
   yumusak: 0.7,         // kameranın kaydırmaya yetişme süresi, sn
   gir: 0.08, cik: 0.2,  // durağa bu yakınlıkta girilir (kart açılır), bu uzaklıkta çıkılır (durak aralığı kesri)
   bakis: 0.14,          // "başla" düğmesinin üzerine gelince kameranın ilk durağa yaklaşma payı
   ilkBekle: 1.4,        // durakta ilk şablon değişimine kadar, sn
   aralik: 1.9,          // şablon değişimleri arası, sn
-  kac: 2,               // kaç kez değişir (2: ziyaretçi 3 şablon görür)
+  kac: 2,               // kaç kez değişir (2: ziyaretçi 3 ürün görür; tek ürünlü yuvada değişmez)
 };
 // Tıklamayla durağa geçiş: kamera kadrajın biraz gerisine gelir, sonra yavaşça yaklaşır
 const GECIS = {
@@ -36,8 +36,10 @@ const yumusat = gsap.parseEase('power2.inOut');
 const uzaklas = (v, k) => ({ pos: v.target.map((t, i) => t + (v.pos[i] - t) * k), target: [...v.target] });
 const ara = (a, b) => Math.hypot(...a.map((x, i) => x - b[i]));
 
-// duraklar: [null (genel plan), 'cekmece', ...]; metin: { baslik, basla }; bekle: kamerayı hemen sürme (?odak= çekimi)
-export function odaTuru(root, story, { duraklar, metin, reduce = false, bekle = false, gecis = 'a' }) {
+// duraklar: [null (genel plan), 'anahtarlik', ...]; metin: { baslik, basla }; bekle: kamerayı hemen sürme (?odak=)
+// onDurak(id): tur bir durağa varıp kartını açınca (kaydırma, "sıradaki" düğmesi ya da tıklama geçişi); sayfa Biggie'yi
+// o istasyona gönderir (v6, core/oda-sunum.js turDurak)
+export function odaTuru(root, story, { duraklar, metin, reduce = false, bekle = false, gecis = 'a', onDurak = null }) {
   const N = duraklar.length;
   document.documentElement.classList.add('oda-tur-on');
   root.dataset.tur = '';
@@ -78,7 +80,7 @@ export function odaTuru(root, story, { duraklar, metin, reduce = false, bekle = 
     story.setView(v.pos, v.target);
     const s = Math.round(il.p), d = Math.abs(il.p - s);
     if (s > 0 && d < AYAR.gir) {
-      if (story.focusedId !== duraklar[s]) { story.focusTo(duraklar[s]); donguBaslat(duraklar[s]); }
+      if (story.focusedId !== duraklar[s]) { story.focusTo(duraklar[s]); donguBaslat(duraklar[s]); onDurak?.(duraklar[s]); }
     } else if (story.focusedId && (s === 0 || d > AYAR.cik)) {
       donguDur();
       story.blur();
@@ -137,11 +139,16 @@ export function odaTuru(root, story, { duraklar, metin, reduce = false, bekle = 
     const sure = Math.min(GECIS.uzun, GECIS.kisa + d / 4000);
     if (story.focusedId) story.blur();
     giris.classList.toggle('gizli', s > 0);
-    const tl = gsap.timeline({ onComplete: () => { ucus = null; il.p = s; uygula(); } });
+    // v6: varışta açılan kart uçuş bitmeden kapatıldıysa (story.blur: Geri, sunumun genel plana dönüşü) uçuşun sonu kartı
+    // yeniden açıp kamerayı durağa geri çekmez
+    let acildi = false;
+    const tl = gsap.timeline({ onComplete: () => { ucus = null; il.p = s; if (acildi && id && story.focusedId !== id) return; uygula(); } });
     ucus = { tl, s, kaydir: kaydirma(s) };
     scrollTo({ top: ucus.kaydir, behavior: 'instant' });
     const var_ = () => { // varış: kart açılır, yavaş yaklaşma
-      if (id && story.focusedId !== id) { story.focusTo(id); donguBaslat(id); }
+      if (id && story.focusedId !== id) { story.focusTo(id); donguBaslat(id); onDurak?.(id); }
+      acildi = true;
+      if (ucus) ucus.acildi = true;
     };
     if (gecis === 'b') {
       tl.to(perde, { opacity: 1, duration: GECIS.kararma, ease: 'power1.in' })
@@ -160,6 +167,10 @@ export function odaTuru(root, story, { duraklar, metin, reduce = false, bekle = 
         .add(yol(uzak, son, GECIS.yaklas, 'sine.out'), '-=0.05');
     }
   }
+  // Tıklama uçuşu sürerken story.blur çağrılırsa (Geri, sunumun genel plana ya da yuvasız istasyona dönüşü) uçuş hemen biter:
+  // kamerayı çağıran sürer (yoksa uçuşun kalan kareleri kamerayı durağa geri çekip kartı yeniden açıyordu)
+  const blur0 = story.blur.bind(story);
+  story.blur = (...a) => { const r = blur0(...a); if (ucus) { il.p = ucus.s; iptal(); } return r; };
   function iptal() {
     if (!ucus) return;
     ucus.tl.kill();

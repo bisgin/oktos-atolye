@@ -2,7 +2,7 @@
 // Şablon kimlikleri odadaki (tabela, mıknatıs, pasta süsü) ve hikâye sahnesindeki ürünlerle aynı; oda ?sablon= ile açar.
 import { createTool, PRINTERS } from '../../core/tool-shell.js';
 import { scope } from '../../core/csg.js';
-import { getLang } from '../../core/i18n.js';
+import { getLang, t } from '../../core/i18n.js';
 import { hazirla, parcalar, olcu, enDarHarf } from './geometry.js';
 
 const mm = (n) => n.toLocaleString(getLang() === 'tr' ? 'tr-TR' : 'en-GB', { maximumFractionDigits: 1 });
@@ -82,8 +82,8 @@ const P = (mode, id, values) => ({ id, mode, label: 'pr.' + id, color: values.co
 const presets = [
   P('plaka', 'plate', { metin: YAZI.plate, stil: 'plaka', boy: 24, color: '#f3efe6', govde: '#2b3036' }),
   P('plaka', 'letters', { metin: YAZI.plate, stil: 'harf', boy: 40, color: '#2b3036' }),
-  P('plaka', 'round', { metin: YAZI.plate, stil: 'yuvarlak', boy: 24, color: '#2b3036', govde: '#ece5d8' }),
-  P('plaka', 'door', { metin: YAZI.door, stil: 'plaka', boy: 30, color: '#2b3036', govde: '#f2efe7' }),
+  P('plaka', 'round', { metin: YAZI.plate, stil: 'yuvarlak', boy: 24, color: '#2b3036', govde: '#ece9e2' }), // paletin Beyaz'ı: siparişte renk adıyla yazılsın
+  P('plaka', 'door', { metin: YAZI.door, stil: 'plaka', boy: 30, color: '#2b3036', govde: '#f3efe6' }), // paletin Krem'i
   P('masa', 'sign', { metin: YAZI.sign, boy: 34, color: '#d4621f', govde: '#dcc2a2' }),
   P('anahtarlik', 'key', { metin: YAZI.key, boy: 14, color: '#f3efe6', govde: '#3f6fb0' }),
   P('miknatis', 'harfler', { metin: YAZI.harfler, mstil: 'harf', boy: 56, renkli: true, mCap: 6, color: '#d4621f' }), // 6 × 2 mm mıknatıs
@@ -156,8 +156,11 @@ function build(s) {
 const ascii = (w) => w.normalize('NFKD').replace(/[^\w]/g, '').toLowerCase().slice(0, 24);
 const fileName = (s) => `oktos_yazi_${s.mode}_${ascii(s.metin) || 'yazi'}`;
 
+// Renkli mıknatısta renk seçicisi gizli: sipariş mesajı rengi buradan söyler (yoksa mesajda renk olmazdı).
+const orderLines = (s) => (s.mode === 'miknatis' && s.mstil !== 'not' && s.renkli ? [`${t('p.renkli')}: ${t('p.renkli.h')}`] : []);
+
 export const TOOL = {
-  id: 'text', strings, defaults, presets, schema, build, fileName, enforce, init: hazirla,
+  id: 'text', strings, defaults, presets, schema, build, fileName, enforce, orderLines, init: hazirla,
   modes: [['plaka', 'mode.plaka'], ['masa', 'mode.masa'], ['pasta', 'mode.pasta'], ['miknatis', 'mode.miknatis'], ['anahtarlik', 'mode.anahtarlik']],
 };
 

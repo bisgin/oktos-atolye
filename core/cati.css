@@ -22,6 +22,10 @@
   .cati-k[data-src] img { transition: transform 160ms cubic-bezier(0.23, 1, 0.32, 1), opacity 160ms ease; }
   .cati-k[data-src]:hover img { transform: scale(1.03); }
 }
+/* Araç bağlantısı: ışık kutusu değil, sayfaya gider; kare küçük resim (araç şablonu) */
+.cati-arac { cursor: pointer; text-decoration: none; }
+.cati-arac img { aspect-ratio: 1; object-fit: contain; background: #eaedeb; }
+.cati-izgara + .cati-ara { margin-top: 14px; }
 .cati-k:focus-visible { outline: 2px solid #e8c48c; outline-offset: 2px; border-radius: 6px; }
 .cati-yazi p { margin: 0 0 8px; font-size: 14px; line-height: 1.5; }
 /* Genel planda tur yazısı sol altta: cam cepheyi örtmesin (telefonda ortada) */
@@ -72,6 +76,8 @@
 .cati-liste h2 { font: 700 34px/1.1 'Big Shoulders Display', 'Schibsted Grotesk', sans-serif; margin: 0 0 18px; }
 .cati-liste h3 { font-size: 18px; margin: 28px 0 6px; }
 .cati-liste ul, .cati-liste ol { padding-left: 20px; }
+.cati-liste h4 { font-size: 15px; margin: 16px 0 4px; }
+.cati-liste a { color: #e8c48c; }
 .cati-liste small { opacity: 0.7; }
 .cati-liste .cati-kapat { position: fixed; }
 

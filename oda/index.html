@@ -1,0 +1,229 @@
+<!doctype html>
+<html lang="tr" class="story-on">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Atölye odası · Oktos Workshop</title>
+<meta name="description" content="Oktos atölyesinde tasarlanıp basılan ürünler ve İbrahim Arda Bişgin'in portfolyosu bir odanın içinde, kendi yerlerinde: kart anahtarlıklar, minifigürler, diorama plakaları, maske, balbal biblolar; kitaplıkta tasarım çalışmaları, rafta kutu oyunları, ekranda dijital modelden döküme süreç. Birine tıkla, yakından bak.">
+<link rel="canonical" href="https://oktos.org/oda/">
+<meta name="theme-color" content="#111214">
+<link rel="icon" href="../core/icon.svg" type="image/svg+xml">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Big+Shoulders+Display:wght@700&family=Schibsted+Grotesk:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<link rel="stylesheet" href="../core/style.css">
+<link rel="stylesheet" href="../core/story.css">
+<link rel="stylesheet" href="../core/oda.css">
+<!-- Portfolyo durakları (kitaplık, ekran, hakkımda) kartın ek içeriğini çatı katının paneliyle verir (core/cati-panel.js) -->
+<link rel="stylesheet" href="../core/cati.css">
+<style>
+  .oda .story-card:has(.cati-ek) { max-height: min(78svh, 680px); overflow-y: auto; overscroll-behavior: contain; scrollbar-width: thin; scrollbar-color: rgba(241, 237, 230, 0.35) transparent; }
+  .oda .cati-ek { color: var(--sc-ink, #f1ede6); }
+  .oda[data-panel="side"] .story-card:has(.cati-ek) { max-height: calc(100% - max(72px, 50% - 210px) - 96px); }
+  .oda[data-panel="bottom"] .story-card:has(.cati-ek) { max-height: 52svh; overscroll-behavior: auto; }
+  .oda[data-panel="bottom"] .cati-izgara { grid-template-columns: repeat(auto-fill, minmax(72px, 1fr)); }
+  .oda .chip-act { display: none; } /* portfolyo çipinde "Yakında" yok (ürün düğmesi yok, içerik kartta) */
+</style>
+<script type="importmap">
+{ "imports": {
+  "three": "https://cdn.jsdelivr.net/npm/three@0.162.0/build/three.module.js",
+  "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.162.0/examples/jsm/",
+  "manifold-3d": "https://cdn.jsdelivr.net/npm/manifold-3d@2.5.1/manifold.js",
+  "gsap": "https://cdn.jsdelivr.net/npm/gsap@3.15.0/index.js",
+  "gsap/": "https://cdn.jsdelivr.net/npm/gsap@3.15.0/",
+  "opentype": "https://cdn.jsdelivr.net/npm/opentype.js@1.3.4/dist/opentype.module.js"
+} }
+</script>
+</head>
+<body>
+<header class="topbar">
+  <a class="brand" href="../index.html"><img src="../core/logo-beyaz.svg" alt="" width="36" height="28"><span>Oktos Workshop</span></a>
+  <span class="spacer"></span>
+  <div class="lang" role="group" aria-label="Dil / Language"><button type="button" data-lang="tr">TR</button><button type="button" data-lang="en">EN</button></div>
+</header>
+
+<section class="story oda" id="story" aria-labelledby="story-title">
+  <div class="story-canvas"></div>
+  <div class="oda-scrim" aria-hidden="true"></div>
+  <div class="oda-cue l" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M15 5 8 12l7 7"/></svg></div>
+  <div class="oda-cue r" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="m9 5 7 7-7 7"/></svg></div>
+  <div class="story-pins"></div>
+  <div class="story-copy">
+    <h1 class="story-title" id="story-title"></h1>
+    <p class="story-lede"></p>
+    <div class="story-actions">
+      <button type="button" class="story-cta"></button>
+      <span class="story-hint"></span>
+    </div>
+  </div>
+  <nav class="story-strip"></nav>
+  <button type="button" class="oda-next"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20 12a8 8 0 1 1-2.35-5.65"/><path d="M20 4.5V9h-4.5"/></svg></button>
+  <div class="story-veil"><div class="oda-yukle" role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0"><i></i></div></div>
+  <!-- Biggie'li sunum (core/oda-sunum.js): açılış yazıları, "kobe" balonu, "Çalışmaya dön" -->
+  <div class="oda-acilis" hidden><p class="oa-ad"><span class="oa-isim"></span><span class="oa-unvan"></span></p><p class="oa-cumle"></p></div>
+  <div class="oda-balon" aria-hidden="true" hidden></div>
+  <button type="button" class="oda-calisma" hidden></button>
+  <p class="story-live" aria-live="polite"></p>
+</section>
+
+<script type="module">
+  // Orta kat: oda sahnesi (2026-11-02'de lab/oda.html'den /oda/'ya taşındı; eski adres buraya yönlendirir, sorgu ve #
+  // korunur). Deneme parametreleri aynen: ?mod=still, ?odak=<yuva>, ?adim=, ?bak=, ?cek=1, ?isinma=, ?karakter=, ?kat=1,
+  // ?kamera=, ?demo=1. Göreli yollar lab/ ile aynı derinlikte (../core/, ../urunler/).
+  import { mountStory } from '../core/story.js';
+  import { ODA_STORY, PORTFOLYO_DURAK } from '../core/story-data.js';
+  import { GORUNEN, yuvaBul } from '../core/oda-yerler.js';
+  import { catiPanel } from '../core/cati-panel.js';
+  import * as odaScene from '../core/oda-sahne.js';
+  import { odaPanel } from '../core/oda-panel.js';
+  import { odaTuru } from '../core/oda-tur.js';
+  import { t, getLang, setLang } from '../core/i18n.js';
+  import { odaKarakteri } from '../core/oda-karakter.js';
+  import { odaSunumu } from '../core/oda-sunum.js';
+  import * as THREE from 'three';
+
+  const params = new URLSearchParams(location.search);
+  // ?cek=1 (scripts/sayfa-cek.py çekimleri): görünmez tarayıcıda kareler seyrek çizilir, GSAP her geç kareyi 33 ms sayar
+  // ve CSS geçişleri de bitmeden çekim alınır. Çekimde geçişler kapalı, GSAP gerçek zamanla ilerler: son hâl görünür.
+  if (params.has('cek')) {
+    document.head.insertAdjacentHTML('beforeend', '<style>*, *::before, *::after { transition: none !important; }</style>');
+    (await import('gsap')).gsap.ticker.lagSmoothing(0);
+  }
+  const lang = getLang();
+  document.title = `${ODA_STORY.name[lang] || ODA_STORY.name.tr} · ${t('app.name')}`;
+  document.querySelectorAll('.lang button').forEach((b) => {
+    b.classList.toggle('on', b.dataset.lang === lang);
+    b.addEventListener('click', () => { setLang(b.dataset.lang); location.reload(); });
+  });
+  const root = document.getElementById('story');
+  // Açılış: koyu perdede yazı ve ilerleme çubuğu. Çubuğun %60'ı dosya yükleme (three.js yükleme yöneticisi: GLB, doku),
+  // %40'ı sahnenin ürünleri kurması (oda-sahne her yuvada 'oda-kurulum' yayar); uydurma animasyon değil
+  {
+    const veil = root.querySelector('.story-veil'), cubuk = veil.querySelector('.oda-yukle'), il = { y: 0, k: 0 };
+    veil.dataset.loading = t('oda.yukleniyor');
+    cubuk.setAttribute('aria-label', t('oda.yukleniyor'));
+    const ciz = () => {
+      const p = Math.max(0.06, 0.6 * il.y + 0.4 * il.k);
+      cubuk.style.setProperty('--ilerleme', p.toFixed(3));
+      cubuk.setAttribute('aria-valuenow', String(Math.round(p * 100)));
+    };
+    THREE.DefaultLoadingManager.onProgress = (_, yuklenen, toplam) => { il.y = toplam ? yuklenen / toplam : 0; ciz(); };
+    addEventListener('oda-kurulum', (e) => { il.k = e.detail; ciz(); });
+    ciz();
+  }
+  const nextBtn = document.querySelector('.oda-next');
+  nextBtn.setAttribute('aria-label', t('oda.next'));
+  nextBtn.title = t('oda.next');
+  const reduce = matchMedia('(prefers-reduced-motion: reduce)').matches || params.get('mod') === 'still';
+  // Biggie'li rehberli sunum (core/oda-sunum.js, 2026-11-03): ?giris=dans (varsayılan: açılış yazıları Biggie'nin dansı
+  // üstünde) | yukleme (yazılar oda yüklenirken başlar); ?sunum=0 kapalı (eski davranış: Biggie masaya oturur)
+  const sunumAcik = params.get('sunum') !== '0' && params.get('karakter') !== 'masa' && !params.has('cek');
+  const sunum = sunumAcik ? (window.sunum = odaSunumu(document.getElementById('story'), {
+    t, reduce, lang: getLang(), giris: params.get('giris') === 'yukleme' ? 'yukleme' : 'dans',
+  })) : null;
+
+  // Tek sahne: fotogerçekçi oda (pişmiş kabuk, gerçek eşyalar). Eski adreslerdeki ?pilot=1 zararsızca yok sayılır.
+  odaScene.options.pilot = true;
+  // Portfolyo köşesi (core/oda-portfolyo.js): sahnede iskeleti açılışta, eşyaları sahne hazır olunca kurulur (aşağıda
+  // onReady). ?portfolyo=0 kapalı (ölçüm: scripts/donma-olc.py --varyant)
+  const portfolyoAcik = params.get('portfolyo') !== '0';
+  odaScene.options.portfolyo = portfolyoAcik;
+  // Yakın plan paneli: başlık, cümle, ürün seçici, fiyat ve durum, Satın al / Sipariş ver, Tüm ürünler (core/oda-panel.js)
+  const panel = odaPanel(root, { lang, reduce });
+  // Portfolyo durakları (2026-11-03, çatı katından taşındı): kitaplıkta işler, dioramalar ve araçlar (ışık kutusu), ekranda
+  // süreç adımları (seçilen adım TV'de oynar), hakkımda yazısı. Ürün kartının yanında ek içerik olarak (core/cati-panel.js)
+  const portPanel = catiPanel(root, { lang, reduce, ekran: () => story?.api?.portfolyo?.ekran ?? null });
+  const kartAc = (h, c) => { panel.onCard(h, c); portPanel.onCard(h, c); };
+  // Denetleyici kendi değişkeninde: kurulmadan önce window.story, id="story" bölümünün kendisidir
+  // Kaydırmalı tur (core/oda-tur.js): genel plan, sonra görünen ürün yuvaları ZONES sırasıyla (GORUNEN)
+  let story = null, tur = null, hazir = false;
+  // Ürün yuvalarından sonra portfolyo durakları (kitaplık, kutu oyunları, ekran, hakkımda)
+  const duraklar = [...GORUNEN.map((z) => z.id), ...(portfolyoAcik ? PORTFOLYO_DURAK : [])];
+  // ?odak=<yuva> (/urunler/'deki "Odada gör"; /portfolyo/ → ?odak=kitaplik): açılışta o durağa yakınlaşır; eski durak
+  // kimliği de olur (?odak=kalemlik → figur). Gizli ya da bilinmeyen durakta yok sayılır, tur her zamanki gibi başlar
+  const odak = (() => {
+    const p = params.get('odak');
+    if (portfolyoAcik && PORTFOLYO_DURAK.includes(p)) return p;
+    const y = yuvaBul(p);
+    return y && duraklar.includes(y.id) ? y.id : null;
+  })();
+  // Karakter (bizzikoloşko, core/oda-karakter.js): odayla birlikte yüklenmeye başlar ama odayı bekletmez; sayfa açılırken
+  // üst kattan iner, kapıda dans eder, masaya oturur (hareket azaltmada doğrudan masada). Dosyası yoksa oda onsuz açılır.
+  // Deneme parametresi: ?karakter=0 kapalı, =masa masada başlar, =ip | merdiven iniş aracını seçer
+  const karParam = params.get('karakter');
+  const kar = karParam === '0' ? null : odaKarakteri(odaScene, {
+    reduce, masada: karParam === 'masa', sunum: !!sunum, zorla: ['ip', 'merdiven'].includes(karParam) ? karParam : null,
+  });
+  // Portfolyo eşyaları sahne hazır olunca (açılış yazıları ve Biggie'nin girişi sürerken) kurulur; ?odak= ile doğrudan
+  // bir portfolyo durağına gelinirse beklemeden
+  // (story.derle: parçaların gölgelendiricileri sahneye girmeden paralel derlenir, ilk göründüğü karede donmasın)
+  const portfolyoYukle = () => { if (!portfolyoAcik) return; const s = story ?? window.story; s?.api?.portfolyo?.yukle(s.derle); };
+  story = window.story = await mountStory(root, {
+    toolId: 'oda', lang, story: ODA_STORY, sceneModule: kar?.sahne ?? odaScene,
+    // İlk kareden önce gölgelendiricileri paralel derle (core/story.js, scripts/donma-olc.py). Varsayılan 1 (2026-11-01:
+    // telefonda kilit 5,8 sn → 0,5 sn); ?isinma=0 eski yol, ?isinma=2 dokular da önceden.
+    isinma: params.get('isinma') === '0' ? null : (params.get('isinma') || '1'),
+    ...(params.get('mod') ? { mode: params.get('mod') } : {}),
+    // Karttaki ürün düğmesi (Satın al / Sipariş ver) adresi motor yeni sekmede açar (preset 'magaza' + disari; adres
+    // core/oda-panel.js'ten). Buraya yalnız adressiz bir ürün düşer: 2B ürün listesi açılır
+    onPick: () => { location.href = '../urunler/index.html'; },
+    onSkip: () => { location.href = '../index.html'; },
+    // Giriş bitince kamerayı tur sürer; turdayken tıklama önce tura sorulur
+    onReady: () => { hazir = true; portfolyoYukle(); if (tur) turuBaslat(); },
+    onActivate: (h) => { sunum?.tikla(h?.id); return tur?.sec(h) ?? false; },
+    onCard: kartAc,
+  });
+  panel.attach(story);
+  // Giriş başlarken (perde kalkarken) bağlanır ve gelir; geç yüklendiyse geldiği an
+  sunum?.bagla(story, null);
+  if (!kar) sunum?.karakter(null);
+  kar?.bagla(story).then((k) => { sunum?.karakter(k); if (k) { window.karakter = k; if (params.has('kat')) katDenemesi(k); } });
+  // Deneme parametresi (?kat=1): üst kat henüz yok; sayfanın en üstündeyken yukarı kaydırmak üst kata çıkmak sayılır,
+  // karakter yukarı tırmanır, yeniden aşağı kaydırınca iner. Asıl sayfada bunu üstteki sahneden geçiş verecek.
+  function katDenemesi(karakter) {
+    let ustte = false;
+    const kat = (yukari) => {
+      if (yukari === ustte || scrollY > 4) return;
+      ustte = yukari;
+      if (yukari) karakter.yukari(); else karakter.asagi();
+    };
+    addEventListener('wheel', (e) => { if (Math.abs(e.deltaY) > 8) kat(e.deltaY < 0); }, { passive: true });
+    let dokunY = null;
+    addEventListener('touchstart', (e) => { dokunY = e.touches[0]?.clientY ?? null; }, { passive: true });
+    addEventListener('touchmove', (e) => {
+      if (dokunY === null || !e.touches[0]) return;
+      const dy = e.touches[0].clientY - dokunY;
+      if (Math.abs(dy) > 40) { kat(dy > 0); dokunY = null; }
+    }, { passive: true });
+  }
+  // ?kamera=a|b|c|d|eski: tıklamayla durağa geçiş biçimi (varsayılan A, doğrudan uçuş); ?demo=1 tıklamaları kendisi yapar
+  const kamera = ['a', 'b', 'c', 'd', 'eski'].includes(params.get('kamera')) ? params.get('kamera') : 'a';
+  function demoBaslat() { if (params.has('demo')) tur.demo([...duraklar, null]); }
+  // Tur, sunum varsa açılış bitince başlar (yazılar ve telefonda Biggie'yi izleyen kamera bitene dek kamerayı sunum sürer)
+  function turuBaslat() { const bas = () => { tur.hazir(); demoBaslat(); }; if (sunum) sunum.hazir(bas); else bas(); }
+  tur = odaTuru(root, story, {
+    duraklar: [null, ...duraklar],
+    metin: { baslik: t('oda.tur.baslik'), basla: t('oda.tur.basla') },
+    reduce, bekle: !!odak, gecis: kamera,
+    onDurak: (id) => sunum?.turDurak(id), // v6: sıradaki başlığa geçilince Biggie o istasyona yürüyüp eylemini başlatır
+  });
+  if (hazir) turuBaslat();
+  // Deneme parametresi (çekim için): ?bak=0.4 kenar bakışını o açıya çevirir (radyan, artı sola)
+  if (params.get('bak') && story.debug.look) story.debug.look.yaw = Number(params.get('bak'));
+  if (odak && PORTFOLYO_DURAK.includes(odak)) portfolyoYukle();
+  if (odak) story.focus(odak);
+  // ?adim=2: yakın plandaki yuvada o kadar ürün ilerler (çekim için)
+  for (let i = 0; i < Number(params.get('adim') || 0) && story.focusedId; i++) {
+    const z = story.focusedId;
+    await story.api.show(z, story.api.current(z).index + 1, { reduced: true });
+  }
+  // Döngü düğmesi: turda sıradaki durağa (sondan başa); tur sürmüyorsa sıradaki yuvaya
+  nextBtn.addEventListener('click', () => {
+    const ids = duraklar;
+    if (story.driven) tur.ileri();
+    else story.focus(ids[(ids.indexOf(story.focusedId) + 1) % ids.length]);
+    if (!reduce) nextBtn.querySelector('svg').animate([{ transform: 'rotate(0deg)' }, { transform: 'rotate(360deg)' }], { duration: 520, easing: 'cubic-bezier(0.23, 1, 0.32, 1)' });
+  });
+</script>
+</body>
+</html>

@@ -1,6 +1,7 @@
 """Amaç: Araç sayfalarını (tools/<id>/index.html) templates/tool.html şablonundan üretir; iskelet tekrarını önler.
-Araç sayfası doğrudan atölyeyle (şablon ve düzenleme ekranı) açılır; araçlara giriş oda sahneleridir
-(2026-10-20 kullanıcı kararı: araç hikâye sahneleri kalktı).
+Araç sayfası doğrudan atölyeyle (şablon ve düzenleme ekranı) açılır (2026-10-20: araç hikâye sahneleri kalktı).
+Araçlara giriş sahnesiz 2B "Oluştur" sayfası (araclar/) ve reklam bağlantılarıdır (tools/<id>/index.html?sablon=<id>;
+adres değişmez). Üst çubuk (Oluştur · Ürünler · Oda) şablonda; metni core/site-metin.js.
 Girdi: şablon + aşağıdaki liste. Metinler TR; çalışma anında core/i18n.js çevirir.
 Çıktı: tools/<id>/index.html. Var olan dosyanın üzerine yazar; --dry-run ile yalnız ne değişeceğini gösterir.
 Tekrar çalıştırmak güvenlidir (aynı girdi → aynı çıktı)."""

@@ -4,9 +4,16 @@ Kullanıcı kararı (2026-10-21): site üç katlı bir bina olarak kurulur.
 
 | Kat | Ne | Durum |
 |---|---|---|
-| Çatı katı (teras odası) | Portfolyo: raflarda tasarım çalışmaları ve kutu oyunları, OLED'de süreç, hakkımda, Biggie. Gökyüzü anlatısı ayrı giriş videosuna taşınıyor (başka iş) | `lab/cati.html` (2026-10-22: gerçek çatı, şehir, batı duvarı) |
-| Orta kat | Mevcut oda (`lab/oda.html`): yalnız şu an satılan ürünlerin (anahtarlık vb.) odası olacak | Bugünkü hâliyle; araçlar ileride bodruma taşınır |
-| Bodrum | Depo gibi bir 3B atölye: çalışan SLA ve FDM yazıcılar, seri üretim makineleri, **araçlar** (hizmet) burada | Sırada (gri kutu, odayla yan yana) |
+| Çatı katı (teras odası) | Portfolyo: raflarda tasarım çalışmaları ve kutu oyunları, OLED'de süreç, hakkımda, Biggie. Gökyüzü anlatısı ayrı giriş videosuna taşınıyor (başka iş) | `portfolyo/index.html` (adres `/portfolyo/`; 2026-11-09'da `lab/cati.html`'den taşındı, eski adres sorgu ve #'le yönlendirir; üst çubukta "Portfolyo") |
+| Orta kat | Oda (`oda/index.html`, adres `/oda/`; 2026-11-02'de `lab/oda.html`'den taşındı, eski adres sorgu ve #'le yönlendirir): yalnız şu an satılan ürünlerin (anahtarlık vb.) odası | C5'te araç durakları ürün yuvalarına döndü (`docs/sayfa-haritasi.md`); yakın plan kartında "Ürün sayfası" → `urunler/urun.html?id=<ürün>` |
+| Bodrum | Depo gibi bir 3B atölye: çalışan SLA ve FDM yazıcılar, seri üretim makineleri | Askıda (2026-10-29/30): araçlar bodruma değil, sahnesiz 2B alana (`araclar/`) çıktı |
+
+**Sahnesiz 2B sayfalar (2026-11-01, C5 P4):** binanın dışında, sıradan ziyaretçinin ve reklam trafiğinin girişi.
+`/` (`index.html`) iki yol: "Oluştur" (`araclar/`, 8 araç; liste `core/story-data.js` `STORIES`) ve "Hazır ürünler"
+(`urunler/`, `core/urun-veri.js`; satışta → mağaza, stok yok → WhatsApp, "Odada gör" → `oda/?odak=<yuva>`);
+altında "Odayı gez" (`oda/`). Araç adresleri değişmedi (`tools/<id>/index.html?sablon=<id>`). Üst çubuk bütün 2B
+sayfalarda aynı: Oluştur · Ürünler · Oda · Portfolyo, TR/EN (araç sayfalarına `templates/tool.html` → `scripts/sayfalar.py`); metni
+`core/site-metin.js`. 3B vitrin yok.
 
 **Temel ilke:** Biggie her zaman kullanıcının bulunduğu kata gelir. Aşağı kaydırınca iner, yukarı kaydırınca çıkar:
 merdivenle, iple ya da yeni hareketlerle (robot süpürgenin üstünde, havada sendeleyerek). Hızla birkaç kat atlanırsa
@@ -21,7 +28,7 @@ döşeme z = 0.
   `core/story.js`), dışarısı `core/cati-sehir.js` (gökyüzü, bulutlar, şehir, sokak, silüet), kilim `core/cati-kilim.js`,
   teleskop / armut koltuk / cam sehpa `core/cati-esya.js`, 75" OLED ve süreç sunumu `core/cati-ekran.js` (döngüler
   `assets/cati/ekran/`, `scripts/ekran-dongu.py`), metin `core/cati-veri.js`, kart ve liste `core/cati-panel.js`,
-  görünüm `core/cati.css`, sayfa `lab/cati.html`. Sahne modülü biri yüklenemezse onsuz (gri kutuyla) açılır.
+  görünüm `core/cati.css`, sayfa `portfolyo/index.html`. Sahne modülü biri yüklenemezse onsuz (gri kutuyla) açılır.
 - **Bina ve şehir:** çatı katı orta kattaki odanın 3 kat üstünde: çatı (x, y, z) = oda (x, y + 680, z − 9000). Sokak
   z −15000; karşı bina (orta katta balkondan görünen bina) tam karşıda, ön yüzü y 15680, çatısı −3000 (bizden aşağıda:
   çatısı görünür). Bizim bina x −6200…3600, kuzey cephesi y 2600; doğu komşu bitişik ve bir kat alçak.

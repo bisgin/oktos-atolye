@@ -102,7 +102,7 @@
     try { localStorage.removeItem('oktos.story.cati'); } catch { /* gizli pencere */ }
     const f = document.createElement('iframe');
     f.title = 'Oktos çatı katı';
-    f.src = `cati.html?ab=${Date.now()}`;
+    f.src = `../portfolyo/?ab=${Date.now()}`;
     sahne.prepend(f);
     const t0 = performance.now();
     return new Promise((coz) => {

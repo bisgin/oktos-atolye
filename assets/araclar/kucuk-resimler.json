@@ -1,0 +1,210 @@
+{
+ "bin": [
+  {
+   "id": "desk",
+   "ad": {
+    "tr": "Masa düzenleyici",
+    "en": "Desk organizer"
+   },
+   "resim": "bin-desk.webp"
+  },
+  {
+   "id": "screws",
+   "ad": {
+    "tr": "Vida ayırıcı",
+    "en": "Screw sorter"
+   },
+   "resim": "bin-screws.webp"
+  },
+  {
+   "id": "pencup3",
+   "ad": {
+    "tr": "Bölmeli kalemlik",
+    "en": "Split pen cup"
+   },
+   "resim": "bin-pencup3.webp"
+  }
+ ],
+ "vase": [
+  {
+   "id": "twist",
+   "ad": {
+    "tr": "Burgulu kule",
+    "en": "Twisted tower"
+   },
+   "resim": "vase-twist.webp"
+  },
+  {
+   "id": "star",
+   "ad": {
+    "tr": "Yıldız vazo",
+    "en": "Star vase"
+   },
+   "resim": "vase-star.webp"
+  },
+  {
+   "id": "amphora",
+   "ad": {
+    "tr": "Amfora",
+    "en": "Amphora"
+   },
+   "resim": "vase-amphora.webp"
+  }
+ ],
+ "clicker": [
+  {
+   "id": "cat",
+   "ad": {
+    "tr": "Kedi clicker",
+    "en": "Cat clicker"
+   },
+   "resim": "clicker-cat.webp"
+  },
+  {
+   "id": "heart",
+   "ad": {
+    "tr": "Kalp clicker",
+    "en": "Heart clicker"
+   },
+   "resim": "clicker-heart.webp"
+  },
+  {
+   "id": "kedi",
+   "ad": {
+    "tr": "Kedi tuşu",
+    "en": "Cat keycap"
+   },
+   "resim": "clicker-kedi.webp"
+  }
+ ],
+ "text": [
+  {
+   "id": "door",
+   "ad": {
+    "tr": "Kapı isimliği",
+    "en": "Door plate"
+   },
+   "resim": "text-door.webp"
+  },
+  {
+   "id": "sign",
+   "ad": {
+    "tr": "Masa tabelası",
+    "en": "Desk sign"
+   },
+   "resim": "text-sign.webp"
+  },
+  {
+   "id": "iyi",
+   "ad": {
+    "tr": "İyi ki doğdun",
+    "en": "Happy birthday"
+   },
+   "resim": "text-iyi.webp"
+  }
+ ],
+ "flip": [
+  {
+   "id": "family",
+   "ad": {
+    "tr": "ANNE / BABA",
+    "en": "MOM / DAD"
+   },
+   "resim": "flip-family.webp"
+  },
+  {
+   "id": "ask",
+   "ad": {
+    "tr": "AŞK / BİZ",
+    "en": "LOVE / HOME"
+   },
+   "resim": "flip-ask.webp"
+  },
+  {
+   "id": "us",
+   "ad": {
+    "tr": "SEN / BEN",
+    "en": "YOU / ME"
+   },
+   "resim": "flip-us.webp"
+  }
+ ],
+ "qr": [
+  {
+   "id": "wifi",
+   "ad": {
+    "tr": "Wi-Fi standı",
+    "en": "Wi-Fi stand"
+   },
+   "resim": "qr-wifi.webp"
+  },
+  {
+   "id": "card_turuncu",
+   "ad": {
+    "tr": "Turuncu kartvizit",
+    "en": "Orange business card"
+   },
+   "resim": "qr-card_turuncu.webp"
+  },
+  {
+   "id": "coaster",
+   "ad": {
+    "tr": "Bardak altlığı",
+    "en": "Coaster"
+   },
+   "resim": "qr-coaster.webp"
+  }
+ ],
+ "painter": [
+  {
+   "id": "mountain",
+   "ad": {
+    "tr": "Gün batımı",
+    "en": "Sunset"
+   },
+   "resim": "painter-mountain.webp"
+  },
+  {
+   "id": "window",
+   "ad": {
+    "tr": "Pencere ışıklığı",
+    "en": "Window panel"
+   },
+   "resim": "painter-window.webp"
+  },
+  {
+   "id": "card",
+   "ad": {
+    "tr": "Kartpostal",
+    "en": "Postcard"
+   },
+   "resim": "painter-card.webp"
+  }
+ ],
+ "puzzle": [
+  {
+   "id": "picture",
+   "ad": {
+    "tr": "Cüce savaşçı",
+    "en": "Dwarf warrior"
+   },
+   "resim": "puzzle-picture.webp"
+  },
+  {
+   "id": "sphere",
+   "ad": {
+    "tr": "Küre",
+    "en": "Sphere"
+   },
+   "resim": "puzzle-sphere.webp"
+  },
+  {
+   "id": "heart",
+   "ad": {
+    "tr": "Kalp",
+    "en": "Heart"
+   },
+   "resim": "puzzle-heart.webp"
+  }
+ ]
+}

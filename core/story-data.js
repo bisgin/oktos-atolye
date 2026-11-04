@@ -216,35 +216,36 @@ export const STORIES = {
 
 export const STORY_ORDER = ['bin', 'vase', 'clicker', 'text', 'flip', 'qr', 'painter', 'puzzle'];
 
-// Ana sayfanın oda sahnesi (gri kutu aşaması, docs/oda-sahnesi.md). Bölge adı şeritte ve işaretçide; kartın büyük
-// başlığı aracın adı (sayfa koyar); desc kartta başlığın altındaki kısa hikâye cümlesi. "taslak" yorumlu cümleler
-// kullanıcı onayı bekliyor.
-// pin: işaretçide görünen kısa ad (ürün); tr/en: şerit ve kart üstündeki bölge adı
+// Orta katın oda sahnesi (lab/oda.html, docs/oda-sahnesi.md): 2026-11-01'den beri yalnız satılan ürünlerin yuvaları
+// (core/oda-yerler.js ZONES). Yuvanın adı şeritte (core/urun-veri.js YUVALAR.ad ile aynı); pin: işaretçide ve kartın büyük
+// başlığında kısa ad; desc: başlığın altındaki kısa cümle. "taslak" yorumlu cümleler kullanıcı onayı bekliyor.
+// sticker ve raf yuvaları bugün gizli (ürünü yok); metinleri açıldıklarında hazır dursun.
 const zone = (tr, en, dtr, den, pin = null) => ({ tr, en, desc: { tr: dtr, en: den }, ...(pin ? { pin: { tr: pin[0], en: pin[1] } } : {}) });
 export const ODA_STORY = {
   live: true,
   href: 'index.html',
   name: { tr: 'Atölye odası', en: 'Workshop room' },
-  title: { tr: 'Ölçünü gir, atölye bassın.', en: 'Enter your size. The workshop prints it.' },
+  title: { tr: 'Atölyeden çıkanlar, kendi yerlerinde.', en: 'Made in the workshop, each in its place.' }, // taslak (görünmez başlık)
   lede: {
-    tr: 'Ürettiğimiz her şey bu odada. Birine tıkla, yakından bak.',
-    en: 'Everything we make is in this room. Click one for a closer look.',
+    tr: 'Sattığımız ürünler bu odada. Birine tıkla, yakından bak.',
+    en: 'What we sell is in this room. Click one for a closer look.',
   },
   hotspots: {
-    cekmece: zone('Çekmece', 'Drawer', 'Atölye için organizerler.', 'Organizers for the workshop.', ['Organizer', 'Organizer']),
-    anahtarlik: zone('Anahtarlık', 'Keychains', 'Sevdiğin kart anahtarının yanında: kart anahtarlıklarımız mağazada.', 'Your favourite card next to your keys: our card keychains are in the shop.', ['Kart anahtarlık', 'Card keychain']),
-    kartvizit: zone('Kartvizit', 'Business card', 'Masanda kartvizitin: QR kodu telefon okur, bilgin hep yanında.', 'Your business card on the desk: a phone reads the QR, your details always at hand.', ['Kartvizit', 'Business card']),
-    kalemlik: zone('Kalemlik', 'Pen cup', 'Kalemler yerini bilsin.', 'Every pen knows its place.', ['Kalemlik', 'Pen cup']), // taslak (kullanıcının cümlesi yarım kaldı)
-    klavye: zone('Keycap/Fidget', 'Keycap/Fidget', 'Klavyene kendi tuşunu tak, aynısı anahtarlıkta tıklasın.', 'Fit your own keycaps; the same design clicks on your keyring.', ['Tuş başlığı', 'Keycaps']),
-    modem: zone('Modem Kaydedici', 'Router QR', STORIES.qr.title.tr, STORIES.qr.title.en, ['QR kod', 'QR code']),
-    puzzle3d: zone('3B yapboz', '3D puzzle', STORIES.puzzle.title.tr, STORIES.puzzle.title.en, ['3B yapboz', '3D puzzle']),
-    tabela: zone('Duvar Plakası', 'Wall plate', STORIES.text.title.tr, STORIES.text.title.en, ['3D yazı', '3D text']),
-    saksilar: zone('Bitki Kıyafetleri', 'Plant outfits', 'Her bitkinize şık bir kıyafet.', 'A stylish outfit for every plant.', ['Saksı', 'Planter']),
-    balkonMasa: zone('Çay Molası', 'Tea break', 'Menü bir okutma uzağında.', 'The menu is one scan away.', ['QR menü', 'QR menu']), // taslak
-    miknatis: zone('Mıknatıslı Çalışmalar', 'Magnet works', 'Kapakta senin yazın: not, harf, kalp.', 'Your words on the door: notes, letters, hearts.', ['Mıknatıs', 'Magnet']),
-    buzdolabi: zone('Gıda Süslemeleri', 'Food toppers', 'Pastaya, ekmeğe, kapağa: ne yazmak istersen.', 'On the cake, the bread, the lid: whatever you want to say.', ['Pasta süsü', 'Cake topper']), // taslak
-    flip: zone('Flip/Yazılar', 'Flip/Lettering', STORIES.flip.title.tr, STORIES.flip.title.en, ['Text Flip', 'Text Flip']),
-    cerceve: zone('4 Renk Çerçeve', '4-colour frame', STORIES.painter.title.tr, STORIES.painter.title.en, ['Rölyef', 'Relief']),
-    yapboz: zone('Yap-boz Anı Çerçevesi', 'Puzzle memory frame', 'Resmin parça parça yerine otursun.', 'Your picture, piece by piece.', ['Yapboz', 'Puzzle']), // taslak
+    sticker: zone("Sticker'lar", 'Stickers', 'Laptopuna, defterine, şişene.', 'For your laptop, notebook and bottle.', ['Sticker', 'Sticker']), // taslak
+    anahtarlik: zone('Kart anahtarlıklar', 'Card keychains', 'Sevdiğin kart anahtarının yanında.', 'Your favourite card next to your keys.', ['Kart anahtarlık', 'Card keychain']),
+    figur: zone('Minifigürler', 'Minifigures', 'Masanın köşesinde küçük bir ordu, kartların için bir kutu.', 'A small army on the corner of your desk, and a box for your cards.', ['Minifigür', 'Minifigure']), // taslak
+    raf: zone('Diorama plakaları', 'Diorama plates', 'Sevdiğin sahne rafında küçük bir dünya.', 'A favourite scene as a small world on your shelf.', ['Diorama', 'Diorama']), // taslak
+    kilic: zone('Katana', 'Katana', 'Duvarda durur, katlanınca yanında taşınır.', 'It hangs on the wall and folds up to travel with you.', ['Katana', 'Katana']), // taslak
+    maske: zone('Maske', 'Mask', 'Duvarda bekleyen kemikten bir yüz.', 'A skull face waiting on the wall.', ['Maske', 'Mask']), // taslak
+    biblo: zone('Balbal biblolar', 'Balbal figurines', 'Bozkırın taş bekçileri, pencerenin kenarında.', 'Stone guardians of the steppe, on your window sill.', ['Balbal', 'Balbal']), // taslak
+    // Portfolyo köşesi (2026-11-03: çatı katından odaya taşındı; metin core/cati-veri.js CATI_STORY'den, ses birinci tekil)
+    kitaplik: zone('Kitaplık', 'Bookcase', 'Şimdiye kadarki tasarım çalışmalarım: Modern Balbal serisinin büstleri, vazolar, oyun kutuları. Altta, sahnelerini tasarladığım on diorama ve bu sitede yazdığım sekiz araç.',
+      'My design work so far: busts from the Modern Balbal series, vases, game boxes. Below, ten dioramas whose scenes I designed, and the eight tools I built for this site.', ['Raflar', 'Shelves']),
+    oyunlar: zone('Kutu oyunları', 'Board games', 'Kutu oyunlarım bu rafta, kapakları kapalı.', 'My board games live on this shelf, lids closed.', ['Kutu oyunları', 'Board games']), // taslak
+    ekran: zone('Süreç', 'Process', 'Dijital modelden döküme sekiz adım. Ekrana tıkla: sıradaki adım.', 'Eight steps from digital model to cast. Click the screen for the next step.', ['Süreç', 'Process']),
+    hakkimda: zone('Hakkımda', 'About me', 'Kimim, ne yapıyorum, nasıl çalışıyorum.', 'Who I am, what I make, how I work.', ['Hakkımda', 'About']),
   },
 };
+// Portfolyo durakları (sıra: turdaki sırası; ürün yuvalarından sonra gelir). Kartta ürün seçici yok, içerik
+// core/cati-panel.js'ten (işler, dioramalar, araçlar, süreç adımları, hakkımda yazısı)
+export const PORTFOLYO_DURAK = ['kitaplik', 'oyunlar', 'ekran', 'hakkimda'];

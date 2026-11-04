@@ -3,7 +3,7 @@
 import { createTool, PRINTERS } from '../../core/tool-shell.js';
 import { scope } from '../../core/csg.js';
 import { clamp } from '../../core/ui.js';
-import { getLang } from '../../core/i18n.js';
+import { getLang, t } from '../../core/i18n.js';
 import { hazirla, parcalar, matris, hucre } from './geometry.js';
 
 const mm = (n) => n.toLocaleString(getLang() === 'tr' ? 'tr-TR' : 'en-GB', { maximumFractionDigits: 1 });
@@ -33,6 +33,7 @@ const strings = {
     'n.contrast': 'Kod ile zemin renkleri birbirine yakın; telefon okuyamayabilir.',
     'n.dark': 'Açık kod koyu zeminde: bazı telefonlar ters renkli kodu okumaz.',
     'n.empty': 'İçerik boş; örnek adres kullanıldı.',
+    'o.sifreAyri': 'Wi-Fi şifresi ayrıca iletilecek (bu mesajda ve bağlantıda yok).',
     'pr.wifi': 'Wi-Fi standı', 'pr.wifiTuruncu': 'Misafir Wi-Fi', 'pr.menu': 'Menü standı', 'pr.card': 'Kartvizit',
     'pr.cardKoyu': 'Koyu kartvizit', 'pr.cardTuruncu': 'Turuncu kartvizit', 'pr.cardAhsap': 'Ahşap kartvizit', 'pr.key': 'QR anahtarlık', 'pr.keyRound': 'Yuvarlak anahtarlık', 'pr.coaster': 'Bardak altlığı',
   },
@@ -60,6 +61,7 @@ const strings = {
     'n.contrast': 'Code and background colours are too close; phones may not read it.',
     'n.dark': 'Light code on a dark background: some phones cannot read inverted codes.',
     'n.empty': 'Content is empty; an example address is used.',
+    'o.sifreAyri': 'The Wi-Fi password will be sent separately (it is not in this message or the link).',
     'pr.wifi': 'Wi-Fi stand', 'pr.wifiTuruncu': 'Guest Wi-Fi', 'pr.menu': 'Menu stand', 'pr.card': 'Business card',
     'pr.cardKoyu': 'Dark business card', 'pr.cardTuruncu': 'Orange business card', 'pr.cardAhsap': 'Wood business card', 'pr.key': 'QR keychain', 'pr.keyRound': 'Round keychain', 'pr.coaster': 'Coaster',
   },
@@ -165,9 +167,11 @@ function build(s) {
 }
 
 const fileName = (s) => `oktos_qr_${s.mode}_${s.size}`;
+// Wi-Fi şifresi sipariş mesajına ve bağlantıya girmez (secret); atölye onu müşteriden ayrıca ister.
+const orderLines = (s) => (isWifi(s) && s.guvenlik !== 'nopass' ? [t('o.sifreAyri')] : []);
 
 export const TOOL = {
-  id: 'qr', strings, defaults, presets, schema, build, fileName, enforce, init: hazirla,
+  id: 'qr', strings, defaults, presets, schema, build, fileName, enforce, init: hazirla, orderLines, secret: ['sifre'],
   modes: [['stand', 'mode.stand'], ['card', 'mode.card'], ['key', 'mode.key'], ['coaster', 'mode.coaster']],
 };
 

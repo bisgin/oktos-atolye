@@ -423,3 +423,36 @@ export function pastaTabagi(r) {
   t.castShadow = t.receiveShadow = true;
   return t;
 }
+
+// ---- telefon katmanı (düşük kalite; core/story.js detectQuality, 2026-11-03 ölçümü scripts/oda-kare-olc.py) ----
+// Geçirgen (transmission) cam her karede bütün opak sahneyi bir kez daha ara görüntüye çizdiriyor, iki çizim hedefi
+// arasında (ton eşlemeli tuval / ton eşlemesiz ara görüntü) her malzemenin program anahtarını yeniden hesaplatıyordu:
+// telefon taklidinde (4× CPU) kare süresinin yarısı, çizim çağrısı 521 → 265. Telefonda cam, yansıması sönmeyen saydam
+// malzemeyle değişir (core/cati-esya.js camMalzeme yöntemi: renk opaklıkla çarpılmaz, kenara doğru (Fresnel) koyulaşır).
+// Masaüstü (yüksek kalite) aynı kalır.
+function camSade(m) {
+  const su = m.attenuationDistance < 1e4; // içi dolu (su şişesi): biraz daha görünür
+  const c = new THREE.MeshStandardMaterial({
+    color: 0x000000, roughness: m.roughness, metalness: 0, transparent: true, opacity: su ? 0.1 : 0.05, depthWrite: false,
+    envMapIntensity: m.envMapIntensity, premultipliedAlpha: true, side: m.side, name: `${m.name || 'cam'}_sade`,
+  });
+  const kenar = su ? 0.5 : 0.6;
+  c.onBeforeCompile = (sh) => {
+    sh.fragmentShader = sh.fragmentShader
+      .replace('#include <opaque_fragment>', `float camF = pow( 1.0 - clamp( dot( normalize( vViewPosition ), normal ), 0.0, 1.0 ), 4.0 );
+gl_FragColor = vec4( outgoingLight, clamp( diffuseColor.a + camF * ${kenar.toFixed(2)}, 0.0, 1.0 ) );`)
+      .replace('#include <premultiplied_alpha_fragment>', '');
+  };
+  c.customProgramCacheKey = () => `oda-cam-sade-${kenar}`;
+  return c;
+}
+export function camSadelestir(kok) {
+  const kopya = new Map();
+  const cevir = (m) => {
+    if (!m || !(m.transmission > 0)) return m;
+    if (!kopya.has(m)) kopya.set(m, camSade(m));
+    return kopya.get(m);
+  };
+  kok.traverse((o) => { if (o.isMesh) o.material = Array.isArray(o.material) ? o.material.map(cevir) : cevir(o.material); });
+  return kopya.size;
+}

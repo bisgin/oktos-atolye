@@ -1,0 +1,77 @@
+<!doctype html>
+<html lang="tr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Oluştur · Oktos Workshop</title>
+<meta name="description" content="Kutu ve organizer, vazo, fidget clicker, 3B yazı, text flip, 3B QR kod, filament painter ve yapboz: bir şablon seç, ölçünü gir, önizle; baskıyı Oktos yapar.">
+<meta name="theme-color" content="#eaedeb">
+<link rel="icon" href="../core/icon.svg" type="image/svg+xml">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Schibsted+Grotesk:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<link rel="stylesheet" href="../core/style.css">
+</head>
+<body>
+<header class="topbar">
+  <a class="brand" href="../index.html"><img src="../core/icon.svg" alt="" width="26" height="26"><span data-i18n="app.name">Oktos Workshop</span></a>
+  <span class="spacer"></span>
+  <nav class="sitenav" aria-label="Site">
+    <a href="./" aria-current="page" data-i18n="nav.olustur">Hizmetler</a>
+    <a href="../urunler/" data-i18n="nav.urunler">Ürünler</a>
+    <a href="../oda/" data-i18n="nav.portfolyo">Portfolyo</a>
+  </nav>
+  <div class="lang" role="group" aria-label="Dil / Language"><button type="button" data-lang="tr" aria-pressed="true">TR</button><button type="button" data-lang="en" aria-pressed="false">EN</button></div>
+</header>
+<main class="home">
+  <h1 data-i18n="araclar.h1">Ölçünü gir, atölye bassın.</h1>
+  <p class="intro" data-i18n="araclar.intro">Organizer, vazo, kalemlik, clicker. Bir şablon seç, ölçünü gir, önizle; baskıyı Oktos yapar. Kurulum yok, üyelik yok.</p>
+  <!-- Sipariş yolu (02.11): her araçta aynı üç adım; "Hazır" düğmesi fiyatı hazırlar, "Sipariş ver" WhatsApp'a gider (core/tool-shell.js) -->
+  <ol class="adimlar" id="adimlar" aria-label="Sipariş yolu">
+    <li><b data-i18n="araclar.adim1">Aracı aç, bir şablon seç</b><span data-i18n="araclar.adim1.d">Her araç hazır şablonlarla açılır.</span></li>
+    <li><b data-i18n="araclar.adim2">Ölçüne göre ayarla</b><span data-i18n="araclar.adim2.d">Değişiklik önizlemede hemen görünür.</span></li>
+    <li><b data-i18n="araclar.adim3">Hazır de, sipariş ver</b><span data-i18n="araclar.adim3.d">Fiyatı gör, WhatsApp'tan gönder; atölye basıp yollar.</span></li>
+  </ol>
+  <nav class="toolgrid" id="arac-listesi" aria-label="Araçlar"></nav>
+</main>
+<script type="module">
+  import { t, getLang } from '../core/i18n.js';
+  import { STORIES, STORY_ORDER } from '../core/story-data.js';
+  import { ARAC_SIMGE, svg, kacis, siteSayfasi } from '../core/site-metin.js';
+
+  // Tek kaynak core/story-data.js: araç adı, hikâye cümlesi, adres ve "hazır" (live) durumu oradan.
+  // Araç adresleri değişmez (tools/<id>/index.html; reklam bağlantıları ?sablon= ile çalışıyor).
+  // Şablon şeridi: her araçtan 3 şablon, küçük resim araç kabuğunun kendi çiziminden
+  // (python scripts/arac-kucuk-resim.py → assets/araclar/). İlk şablon reklam bağlantısındakidir.
+  // Liste gelmezse kartlar şeritsiz çizilir.
+  const liste = document.getElementById('arac-listesi');
+  let kucuk = {};
+  const sablonSeridi = (id, ad, lang) => {
+    const k = kucuk[id];
+    if (!k?.length) return '';
+    return `<ul class="sablonlar" aria-label="${kacis(t('araclar.sablonlar', { ad }))}">${k.map((s) => {
+      const sad = s.ad[lang] || s.ad.tr;
+      return `<li><a href="../tools/${id}/index.html?sablon=${encodeURIComponent(s.id)}" title="${kacis(sad)}" aria-label="${kacis(t('araclar.sablon', { sablon: sad }))}"><img src="../assets/araclar/${kacis(s.resim)}" alt="" width="64" height="64" loading="lazy" decoding="async"></a></li>`;
+    }).join('')}</ul>`;
+  };
+  const ciz = (lang) => {
+    document.title = `${t('araclar.title')} · ${t('app.name')}`;
+    liste.setAttribute('aria-label', t('araclar.aria'));
+    document.getElementById('adimlar').setAttribute('aria-label', t('araclar.adimlar'));
+    liste.innerHTML = STORY_ORDER.map((id) => {
+      const s = STORIES[id];
+      const ad = s.name[lang] || s.name.tr;
+      return `<div class="arac${s.live ? '' : ' soon'}"><a class="toolrow${s.live ? '' : ' soon'}" href="../${s.href}">
+        <span class="ic" aria-hidden="true">${svg(ARAC_SIMGE[id])}</span>
+        <span><h2>${kacis(ad)}</h2><p class="story-line">${s.title[lang] || s.title.tr}</p><p>${t('arac.' + id + '.d')}</p><span class="st ${s.live ? 'live' : ''}">${t(s.live ? 'status.live' : 'status.soon')}</span></span>
+      </a>${s.live ? sablonSeridi(id, ad, lang) : ''}</div>`;
+    }).join('');
+  };
+  siteSayfasi(ciz);
+  fetch('../assets/araclar/kucuk-resimler.json')
+    .then((r) => (r.ok ? r.json() : {}))
+    .then((j) => { kucuk = j; ciz(getLang()); })
+    .catch(() => {});
+</script>
+</body>
+</html>

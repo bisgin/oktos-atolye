@@ -6,7 +6,7 @@ saatiyle çalışır, sonucu bu betiğin kendi sunucusuna POST eder.
 Girdi:  python scripts/karakter-test.py [--json] [--bekle 120] [--dry-run]
 Çıktı:  her kontrol için bir satır (ya da --json ile makine-okunur sonuç); çıkış kodu 0 geçti, 1 kaldı, 2 sonuç gelmedi.
         Hiçbir dosya yazmaz. Kendi geçici Edge profilini kullanır; iş bitince yalnız o profille açık kalan Edge süreçlerini
-        kapatır (kullanıcının kendi Edge'ine dokunmaz). Ağ: three.js CDN'den (lab/oda.html ile aynı sürüm).
+        kapatır (kullanıcının kendi Edge'ine dokunmaz). Ağ: three.js CDN'den (oda/index.html ile aynı sürüm).
 Elle: python scripts/serve.py 8080 ile http://localhost:8080/lab/karakter-test.html açılır (sonuç sayfada).
 """
 import argparse
@@ -20,7 +20,7 @@ import tempfile
 import threading
 import time
 
-EDGE = r'C:\Program Files (x86)\Microsoft\Edge\Application\msedge.exe'
+EDGE = os.path.join(os.environ.get("ProgramFiles(x86)") or os.path.join(os.environ.get("SystemDrive", "C:") + os.sep, "Program Files (x86)"), "Microsoft", "Edge", "Application", "msedge.exe")  # sabit sürücü yolu yok (depo herkese açık)
 PROFIL = os.path.join(tempfile.gettempdir(), 'oktos-karakter-test-edge')
 KOK = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 

@@ -1,11 +1,11 @@
 // Çatı katı (portfolyo) kart içeriği ve ışık kutusu. Motorun yakın plan kartına (core/story.js onCard) bölgeye göre
 // ek içerik koyar: ekranda süreç adımlarının listesi (seçilen adım TV'de oynar; TV'ye tıklamak da sıradaki adıma geçer),
-// raflarda işlerin fotoğrafları (ışık kutusunda) ve "Fikrini anlat", hakkımda yazısı. Ayrıca bütün içeriği düz liste
+// raflarda işlerin fotoğrafları (ışık kutusunda), 10 dioramanın ürün sayfası ve yazdığım 8 aracın bağlantıları ve "Fikrini anlat", hakkımda yazısı. Ayrıca bütün içeriği düz liste
 // olarak veren erişilebilir bir katman (sahnesiz okunur).
 // Görseller ve kayıtlar yalnız kart açılınca iner (loading="lazy"; kayıt ışık kutusunda istenince). Işık kutusu ve
 // liste kipli: arkadaki sahne ve üst çubuk etkisiz (inert), sayfa kaydırması kilitli, kapanınca odak geri döner.
 // Hareket azaltmada süreç kayıtları yerine ilk kareleri gösterilir.
-import { RAF_ISLERI, SUREC, HAKKIMDA, SAYFA, CATI_STORY, fikirLinki } from './cati-veri.js';
+import { RAF_ISLERI, ARACLAR, DIORAMALAR, SUREC, HAKKIMDA, SAYFA, CATI_STORY, fikirLinki } from './cati-veri.js';
 
 const esc = (s) => String(s ?? '').replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
 
@@ -65,10 +65,15 @@ export function catiPanel(root, { lang = 'tr', reduce = false, ekran = () => nul
   // Küçük resim düğmesi: tıklanınca src ışık kutusunda açılır; önizleme ayrıysa (süreç kaydının ilk karesi) o görünür
   const kucuk = (src, baslik, alt, yazi, sinif = '', onizleme = src) => `<button type="button" class="cati-k ${sinif}" data-src="${esc(src)}" data-baslik="${esc(baslik)}" data-yazi="${esc(yazi)}">
       <img src="${esc(onizleme)}" alt="" loading="lazy" decoding="async"><span>${esc(alt)}</span></button>`;
+  const baglanti = (a) => `<a class="cati-k cati-arac" href="${esc(a.href)}">
+      <img src="${esc(a.gorsel)}" alt="" loading="lazy" decoding="async"><span>${esc(L(a.ad))}</span></a>`;
   function icerik(id) {
     if (id === 'kitaplik') {
       const link = fikirLinki(lang);
       return `<p class="cati-ara">${esc(L(SAYFA.isler))}</p><div class="cati-izgara">${RAF_ISLERI.map((g) => kucuk(g.gorsel, L(g.baslik), L(g.baslik), L(g.desc))).join('')}</div>`
+        // Dioramalar ve yazdığım araçlar: ışık kutusu değil, ürünün / aracın kendi sayfası (aynı sekmede)
+        + `<p class="cati-ara">${esc(L(SAYFA.dioramalar))}</p><div class="cati-izgara">${DIORAMALAR.map(baglanti).join('')}</div>`
+        + `<p class="cati-ara">${esc(L(SAYFA.araclar))}</p><div class="cati-izgara">${ARACLAR.map(baglanti).join('')}</div>`
         + (link ? `<a class="cati-in cati-fikir" href="${esc(link)}" target="_blank" rel="noopener">${esc(L(SAYFA.fikrini))}</a>` : '');
     }
     if (id === 'ekran') {
@@ -135,7 +140,9 @@ export function catiPanel(root, { lang = 'tr', reduce = false, ekran = () => nul
     <h2 id="cati-liste-baslik" tabindex="-1">${esc(L(SAYFA.listeBaslik))}</h2>
     ${bolum('hakkimda', `<div class="cati-yazi">${HAKKIMDA[lang === 'en' ? 'en' : 'tr'].map((p) => `<p>${esc(p)}</p>`).join('')}</div>`)}
     ${bolum('ekran', `<ol>${SUREC.map((s) => `<li><b>${esc(L(s.ad))}</b>: ${esc(L(s.desc))}</li>`).join('')}</ol>`)}
-    ${bolum('kitaplik', `<ul>${RAF_ISLERI.map((g) => `<li><b>${esc(L(g.baslik))}</b>: ${esc(L(g.desc))}</li>`).join('')}</ul>`)}
+    ${bolum('kitaplik', `<ul>${RAF_ISLERI.map((g) => `<li><b>${esc(L(g.baslik))}</b>: ${esc(L(g.desc))}</li>`).join('')}</ul>
+      <h4>${esc(L(SAYFA.dioramalar))}</h4><ul>${DIORAMALAR.map((a) => `<li><a href="${esc(a.href)}"><b>${esc(L(a.ad))}</b></a>: ${esc(L(a.desc))}</li>`).join('')}</ul>
+      <h4>${esc(L(SAYFA.araclar))}</h4><ul>${ARACLAR.map((a) => `<li><a href="${esc(a.href)}"><b>${esc(L(a.ad))}</b></a>: ${esc(L(a.desc))}</li>`).join('')}</ul>`)}
     ${bolum('biggie', '')}
     <button type="button" class="cati-kapat">${esc(L(SAYFA.listeKapat))}</button></div>`;
   document.body.appendChild(liste);

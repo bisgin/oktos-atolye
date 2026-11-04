@@ -4,6 +4,8 @@
 // kullanıcının kendi işleri). Ses: portfolyo birinci tekil ("ben"), ziyaretçiye "sen" (aşağıdaki oda "biz/atölye" sesinde). Biçim
 // motorun beklediği gibi (core/story-data.js zone).
 import { ORDER } from './order-config.js';
+import { STORIES } from './story-data.js';
+import { URUNLER } from './urun-veri.js';
 
 const zone = (tr, en, dtr, den, pin = null) => ({ tr, en, desc: { tr: dtr, en: den }, ...(pin ? { pin: { tr: pin[0], en: pin[1] } } : {}) });
 const PORT = '../assets/cati/portfolyo/';
@@ -41,6 +43,19 @@ export const GALERI = [
   { id: 'satranc', gorsel: PORT + 'is-satranc.webp', baslik: { tr: 'Satranç takımı', en: 'Chess set' },
     desc: { tr: '3B yazıcıda basılmış bir satranç takımı.', en: 'A 3D-printed chess set.' } },
 ];
+// Yazdığım araçlar (2026-11-09): sitenin 8 oluşturma aracı (kod ve şablonlar kullanıcının), kitaplık kartında bağlantı
+// olarak; adı ve cümlesi core/story-data.js STORIES'ten, küçük resim aracın ilk şablonu (assets/araclar/). Yapbozda
+// kalp şablonu: "resimli" şablonun figürünün tasarım kaynağı doğrulanmadı (portfolyoya girmeyenler kuralı).
+const ARAC_RESIM = { bin: 'bin-desk', vase: 'vase-twist', clicker: 'clicker-cat', text: 'text-door', flip: 'flip-family', qr: 'qr-wifi', painter: 'painter-mountain', puzzle: 'puzzle-heart' };
+export const ARACLAR = Object.entries(ARAC_RESIM).map(([id, r]) => ({
+  id, href: `../tools/${id}/index.html`, gorsel: `../assets/araclar/${r}.webp`, ad: STORIES[id].name, desc: STORIES[id].title,
+}));
+// Diorama serisi (2026-11-09): 10 sticker-diorama (sahne tasarımları kullanıcının), kitaplık kartında ürün sayfasına
+// bağlantı olarak; ad ve ölçü core/urun-veri.js'ten (gerçek ad, gerçek görsel), küçük resim ürünün kart görseli.
+export const DIORAMALAR = URUNLER.filter((u) => u.grup === 'diorama').map((u) => ({
+  id: u.id, href: `../urunler/urun.html?id=${encodeURIComponent(u.id)}`, gorsel: `../${u.gorsel}`, ad: u.ad,
+  desc: u.olcu ? { tr: `${u.parca} plaka · ${u.olcu.g} × ${u.olcu.d} × ${u.olcu.y} mm`, en: `${u.parca} plates · ${u.olcu.g} × ${u.olcu.d} × ${u.olcu.y} mm` } : { tr: '', en: '' },
+}));
 const eser = (e) => ({ gorsel: e.gorsel, baslik: e.ad, desc: { tr: [e.desc.tr, e.olcu?.tr].filter(Boolean).join(' · '), en: [e.desc.en, e.olcu?.en].filter(Boolean).join(' · ') } });
 // Kitaplıktaki tasarım çalışmaları (kartta fotoğraflar; raflarda büstler, vazolar ve oyun kutuları durur)
 export const RAF_ISLERI = [...ESERLER.filter((e) => e.gorsel).map(eser), ...GALERI];
@@ -56,8 +71,8 @@ export const CATI_STORY = {
   },
   hotspots: {
     ekran: zone('Süreç', 'Process', 'Dijital modelden döküme sekiz adım. Ekrana tıkla: sıradaki adım.', 'Eight steps from digital model to cast. Click the screen for the next step.', ['Süreç', 'Process']),
-    kitaplik: zone('Raflar', 'Shelves', 'Şimdiye kadarki tasarım çalışmalarım ve kutu oyunları: Modern Balbal serisinin büstleri, vazolar, oyun kutuları.',
-      'My design work so far, and board games: busts from the Modern Balbal series, vases, game boxes.', ['Raflar', 'Shelves']),
+    kitaplik: zone('Raflar', 'Shelves', 'Şimdiye kadarki tasarım çalışmalarım ve kutu oyunları: Modern Balbal serisinin büstleri, vazolar, oyun kutuları. Altta, sahnelerini tasarladığım on diorama ve bu sitede yazdığım sekiz araç.',
+      'My design work so far, and board games: busts from the Modern Balbal series, vases, game boxes. Below, ten dioramas whose scenes I designed, and the eight tools I built for this site.', ['Raflar', 'Shelves']),
     biggie: zone('Biggie', 'Biggie', "Atölyenin maskotu bizzikoloşko, kısaca Biggie. Blender'da yeniden kuruldu; kilden elle yapılmış gibi duruyor.",
       'The workshop mascot, bizzikoloşko, or Biggie for short. Rebuilt in Blender, it looks like a little clay figure made by hand.', ['Biggie', 'Biggie']),
     hakkimda: zone('Hakkımda', 'About me', 'Kimim, ne yapıyorum, nasıl çalışıyorum.', 'Who I am, what I make, how I work.', ['Hakkımda', 'About']),
@@ -77,6 +92,8 @@ export const SAYFA = {
   fikrini: { tr: 'Fikrini anlat', en: 'Tell me your idea' },
   basla: { tr: 'Kaydır, süreçten başla', en: 'Scroll to start with the process' },
   isler: { tr: 'Raflardan işler', en: 'Work from the shelves' },
+  dioramalar: { tr: 'Dioramalar: sahne tasarımı benim, ürün sayfasında incele', en: 'Dioramas: scenes I designed, see each on its product page' },
+  araclar: { tr: 'Yazdığım araçlar: şablon seç, ölçünü gir', en: 'Tools I built: pick a template, enter your size' },
   adimlar: { tr: 'Adımlar (ekranda oynar)', en: 'Steps (play on the screen)' },
 };
 

@@ -267,6 +267,86 @@ async function kalkOtur(otur) {
   kontrol('koltuk bırakıldı', !D.koltuk.bagli, D.koltuk.bagli);
 }
 
+// ---- v7 klip sözleşmesi (GLB'nin kendisinden): armut_* ve diz zinciri klipleri, meta alanları, zincir uçlarının aynı poz olması ----
+// Uç uyumu GLB'nin hayvan verisinden bağımsız ölçülür: A klibinin son örneği ile B'nin ilk örneği, kanal kanal (kanal klipte
+// yoksa düğümün dinlenme değeri). Dönüş: en büyük açı (derece); yer: en büyük fark (karakter birimi × 1500 = mm).
+async function glbKanallar() {
+  const b = await (await fetch('../assets/oda/karakter.glb')).arrayBuffer();
+  const dv = new DataView(b), n = dv.getUint32(12, true);
+  const j = JSON.parse(new TextDecoder().decode(new Uint8Array(b, 20, n)));
+  const binBas = 20 + n + 8;
+  const oku = (ai) => {
+    const a = j.accessors[ai], v = j.bufferViews[a.bufferView], k = { SCALAR: 1, VEC3: 3, VEC4: 4 }[a.type];
+    const bas = binBas + (v.byteOffset ?? 0) + (a.byteOffset ?? 0), adim = v.byteStride ?? k * 4, out = [];
+    for (let i = 0; i < a.count; i++) { const e = []; for (let c = 0; c < k; c++) e.push(dv.getFloat32(bas + i * adim + c * 4, true)); out.push(e); }
+    return out;
+  };
+  const klip = {};
+  for (const a of j.animations ?? []) {
+    const ch = {};
+    for (const c of a.channels) {
+      if (c.target.path === 'scale' || c.target.path === 'weights') continue;
+      const s = a.samplers[c.sampler], o = oku(s.output);
+      ch[`${c.target.node}/${c.target.path}`] = { ilk: o[0], son: o[o.length - 1] };
+    }
+    klip[a.name] = ch;
+  }
+  return { j, klip };
+}
+function ucFarki(G, a, b) {
+  const A = G.klip[a], B = G.klip[b];
+  let der = 0, mm = 0, nerede = '';
+  for (const k of new Set([...Object.keys(A), ...Object.keys(B)])) {
+    const [nd, yol] = k.split('/'), node = G.j.nodes[+nd];
+    const dn = yol === 'rotation' ? (node.rotation ?? [0, 0, 0, 1]) : (node.translation ?? [0, 0, 0]);
+    const x = A[k]?.son ?? dn, y = B[k]?.ilk ?? dn;
+    if (yol === 'rotation') {
+      const d = Math.min(1, Math.abs(x[0] * y[0] + x[1] * y[1] + x[2] * y[2] + x[3] * y[3])), aci = (2 * Math.acos(d) * 180) / Math.PI;
+      if (aci > der) { der = aci; nerede = node.name; }
+    } else {
+      const u = Math.hypot(x[0] - y[0], x[1] - y[1], x[2] - y[2]) * 1500;
+      if (u > mm) mm = u;
+    }
+  }
+  return { der, mm, nerede };
+}
+async function sozlesme7() {
+  grup = 'Klip sözleşmesi v7 (GLB)';
+  const M = JSON.parse(bilgi.meta), K = M.klip ?? {}, S = bilgi.sure;
+  const yeni = ['armut_yat', 'armut_uyukla', 'armut_kalk', 'diz_bekle', 'kutu_cevir_sag', 'kutu_cevir_sol', 'kutu_rafa_birak'];
+  kontrol('yeni klipler GLB\'de (animasyon + meta)', yeni.every((a) => S[a] > 0 && K[a]), yeni.filter((a) => !(S[a] > 0 && K[a])).join(', '));
+  kontrol('tv_armut kalktı, takma adı armut_* üçlüsü', !S.tv_armut && JSON.stringify(M.takma_ad?.tv_armut) === JSON.stringify(['armut_yat', 'armut_uyukla', 'armut_kalk']), M.takma_ad);
+  const g = K.armut_yat?.armut?.gomulu ?? {};
+  kontrol('armut.gomulu: oturak 220, sırt 650, sırt 35–45°', g.oturak_mm === 220 && g.sirt_mm === 650 && g.sirt_egim_derece >= 35 && g.sirt_egim_derece <= 45
+    && g.z_harita?.length === 3 && g.z_harita[1][0] > 400 && g.z_harita[2][0] > g.z_harita[1][0], g);
+  const egri = (a) => K[a]?.armut?.ezilme_egrisi ?? [];
+  const tekdu = (e, yon) => e.every((p, i) => i === 0 || (yon > 0 ? p[1] >= e[i - 1][1] - 1e-9 : p[1] <= e[i - 1][1] + 1e-9));
+  const icinde = (e, a) => e.every(([f, t]) => f >= 1 && (f - 1) / 30 <= S[a] + 2 / 30 + 1e-6 && t >= 0 && t <= 1);
+  const ey = egri('armut_yat'), eu = egri('armut_uyukla'), ek = egri('armut_kalk');
+  kontrol('ezilme_egrisi armut_yat: 0 → 1, azalmaz', ey.length > 10 && ey[0][1] === 0 && ey.at(-1)[1] === 1 && tekdu(ey, 1) && icinde(ey, 'armut_yat'), ey.length);
+  kontrol('ezilme_egrisi armut_uyukla: hep 1', eu.length >= 2 && eu.every((p) => p[1] === 1), eu);
+  kontrol('ezilme_egrisi armut_kalk: 1 → 0, artmaz', ek.length > 10 && ek[0][1] === 1 && ek.at(-1)[1] === 0 && tekdu(ek, -1) && icinde(ek, 'armut_kalk'), ek.length);
+  kontrol('döngüler: armut_uyukla, diz_bekle tekrar', K.armut_uyukla?.tekrar === true && K.diz_bekle?.tekrar === true);
+  for (const [a, yon] of [['kutu_cevir_sag', -1], ['kutu_cevir_sol', 1]]) {
+    const d = K[a]?.kutu?.don ?? [], el = K[a]?.kutu?.elde ?? {};
+    const sure = Object.values(el).flat().every(([x, y]) => x >= 1 && y > x && (y - 1) / 30 <= S[a] + 1e-6);
+    kontrol(`${a}: kutu 0 → ${90 * yon}°, tekdüze, eller elde aralığında`, d.length > 10 && d[0][1] === 0 && d.at(-1)[1] === 90 * yon && tekdu(d, yon) && sure
+      && Object.keys(el).length === 2 && S[a] >= 1 && S[a] <= 1.6, `${d.at(-1)?.[1]} ${JSON.stringify(el)} ${S[a]?.toFixed(2)} sn`);
+  }
+  const kb = K.kutu_rafa_birak?.kutu ?? {}, ka = K.kutu_al_diz?.kutu ?? {};
+  kontrol('kutu_rafa_birak: raftan alır, kutu_al_diz\'in gözüne koyar', K.kutu_rafa_birak?.al < K.kutu_rafa_birak?.birak
+    && JSON.stringify(kb.ust_merkez) === JSON.stringify(ka.ust_merkez) && JSON.stringify(kb.ic_merkez) === JSON.stringify(ka.ic_merkez), kb);
+  const G = await glbKanallar();
+  const ciftler = [['diz_cok', 'kutu_al_diz'], ['kutu_al_diz', 'diz_bekle'], ['diz_bekle', 'diz_bekle'], ['diz_bekle', 'kutu_cevir_sag'], ['kutu_cevir_sag', 'diz_bekle'],
+    ['diz_bekle', 'kutu_cevir_sol'], ['kutu_cevir_sol', 'diz_bekle'], ['diz_bekle', 'kutu_rafa_birak'], ['kutu_rafa_birak', 'kutu_al_diz'], ['kutu_rafa_birak', 'diz_kalk'],
+    ['diz_bekle', 'diz_kalk'], ['armut_yat', 'armut_uyukla'], ['armut_uyukla', 'armut_uyukla'], ['armut_uyukla', 'armut_kalk']];
+  for (const [a, b] of ciftler) {
+    if (!G.klip[a] || !G.klip[b]) { kontrol(`uç uyumu ${a} → ${b}`, false, 'klip yok'); continue; }
+    const f = ucFarki(G, a, b);
+    kontrol(`uç uyumu ${a} → ${b} (≤ 2°, ≤ 5 mm)`, f.der <= 2 && f.mm <= 5, `${f.der.toFixed(2)}° (${f.nerede}), ${f.mm.toFixed(1)} mm`);
+  }
+}
+
 async function azalt() {
   grup = 'Hareket azaltma';
   const s = kur({ reduce: true }), { k, D, hikaye } = s;
@@ -308,7 +388,7 @@ async function calistir() {
   const geri = tohumla(20261020), t0 = performance.now();
   try {
     bilgi = await glbBilgi();
-    const senaryo = [() => inisMasa('merdiven'), () => inisMasa('ip'), kenarDonme, iptal, () => kalkOtur('otur'), () => kalkOtur('otur2'), azalt];
+    const senaryo = [() => inisMasa('merdiven'), () => inisMasa('ip'), kenarDonme, iptal, () => kalkOtur('otur'), () => kalkOtur('otur2'), azalt, sozlesme7];
     for (const f of senaryo) {
       try { await f(); } catch (e) { kontrol('beklenmeyen hata', false, e?.stack ?? String(e)); }
     }

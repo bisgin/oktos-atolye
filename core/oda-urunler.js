@@ -1,14 +1,16 @@
-// Oda sahnesinin ürünleri: her bölgenin şablon listesi (TEMPLATES) ve bir şablonun 3B modelini üreten işlev
-// (buildTemplate). Modeller araçların kendi üreticilerinden (Kutu, Vazo: TOOL.build), hikâye sahnelerinin parça
-// üreticilerinden (Flip, Painter, Puzzle) ve QR, Clicker, 3D Yazı için eski vitrinin biçimlerinden gelir.
-// Model tabanı z = 0, ön yüzü −y; birim mm. preset yalnız atölyesi hazır araçlarda ("Bu şablonla tasarla").
+// Oda sahnesinin ürünleri ve dekoru (2026-11-01: orta kat yalnız satılan ürünleri gösterir).
+// Ürünler core/urun-veri.js'ten (scripts/urun-veri.py üretir): yuva başına liste (urunleri) ve sahnede modeli olan ürünün
+// 3B modeli (urunModeli; bugün yalnız kart anahtarlıklar). Dekor: sahne yerlerinde (eski araç durakları) duran,
+// tıklanmayan nesneler (dekorModeli); modeli olmayan ürünün yuvasında çapa olarak kalır. Dekor modelleri araçların kendi
+// üreticilerinden (Kutu, Vazo: TOOL.build; QR, 3D Yazı, Painter: aracModeli), Flip ve Puzzle parça üreticilerinden ve
+// Clicker için eski vitrinin biçimlerinden gelir. Model tabanı z = 0, ön yüzü −y; birim mm.
 import * as THREE from 'three';
 import { toCreasedNormals } from 'three/addons/utils/BufferGeometryUtils.js';
 import * as P from './props.js';
 import { initCSG } from './csg.js';
 import { toGeometry, positions3 } from './mesh3.js';
-import { solid, fonts, textSolid, standUp, plate, C } from './scene-kit.js';
-import { STORIES } from './story-data.js';
+import { solid, fonts, textSolid, C } from './scene-kit.js';
+import { URUNLER } from './urun-veri.js';
 import { TOOL as BIN } from '../tools/bin/app.js';
 import { TOOL as VASE } from '../tools/vase/app.js';
 
@@ -18,98 +20,88 @@ const pla = (c) => P.clay(c, { rough: 0.46, env: 0.85 });
 // Eğri yüzeyler yumuşak, kesik kenarlar keskin (solid() düz gölgeler)
 const smooth = (m, crease = 0.5) => { m.geometry = toCreasedNormals(m.geometry, crease); return m; };
 const yieldMain = () => globalThis.scheduler?.yield?.() ?? new Promise((r) => setTimeout(r, 0));
-// Parçanın dönme noktası kendi ortası olsun (sahnedeki yeri değişmez)
-function recenter(m) {
-  m.geometry.computeBoundingBox();
-  const c = m.geometry.boundingBox.getCenter(new THREE.Vector3());
-  m.geometry.translate(-c.x, -c.y, -c.z);
-  m.position.add(c);
+
+// ---- Ürünler ----
+// Yuvanın ürünleri, verinin sırasıyla: yakın plandaki seçici (‹ ad n/N ›) bunları dolaşır
+export const urunleri = (yuva) => URUNLER.filter((u) => u.yuva === yuva);
+// Ürünün sahnedeki modeli: kart anahtarlıkta Blender'daki kart, yüzü ürün görselinden (gorsel). Modeli olmayan üründe
+// null: yuvada sahne yerinin dekoru çapa olarak kalır (ürünlerin 3B modeli ve renderı sonraki porsiyonda).
+// Diorama plakası (raf): rafta bir seferde yalnız seçili plaka, rafın ortasında, gerçek ölçüsünde (2026-11-02 kullanıcı
+// kararı; önceki üçlü dizi kaldırıldı). Seçici (‹ ad n/N ›) plakaları tek tek dolaşır.
+export async function urunModeli(urun, { kart = null } = {}) {
+  if (urun.yuva === 'anahtarlik' && urun.gorsel) return kartAnahtarlik(urun.gorsel, kart);
+  if (urun.yuva === 'raf' && (urun.raf || urun.gorsel) && urun.olcu) return tekPlaka(urun);
+  return null;
+}
+
+// ---- Diorama plakası (2026-11-04, ikinci tur): ürünün kendi silueti. Marangoz'un tam karşı çekiminden arka planı
+// ayıklanmış saydam kesit (raf.webp, scripts/urun-diorama.py raf_maskeleri) rafta dik duran tek düzlemde, ürünün gerçek
+// genişliği × yüksekliğinde (olcu g × y, mm). Kesik saydamlık (alphaTest; karışımlı malzemede depthWrite sorunu olmasın),
+// altında yumuşak temas gölgesi (tek ortak doku). Düzlem ürünün oturma izinin ortasında (y = 0); kamera rafa önden
+// ≤ ~10° açıyla baktığından arka kalınlık gerekmedi. Geometri ölçü başına, malzeme ürün başına bir kez (hepsi aynı
+// gölgelendirici programı; plaka başına yalnız doku değişir).
+const plakaGeo = new Map(), plakaMat = new Map();
+function plakaGeometrisi({ g, y }) {
+  const k = `${g}x${y}`;
+  if (!plakaGeo.has(k)) {
+    const geo = new THREE.PlaneGeometry(g, y);
+    geo.rotateX(Math.PI / 2); // XY → XZ: ön yüz −y, görselin üstü +z
+    geo.translate(0, 0, y / 2);
+    plakaGeo.set(k, geo);
+  }
+  return plakaGeo.get(k);
+}
+function plakaMalzemesi(kesit) {
+  if (!plakaMat.has(kesit)) {
+    const tex = new THREE.TextureLoader().load(new URL(`../${kesit}`, import.meta.url).href);
+    tex.colorSpace = THREE.SRGBColorSpace;
+    tex.anisotropy = 8;
+    plakaMat.set(kesit, new THREE.MeshStandardMaterial({ map: tex, alphaTest: 0.5, roughness: 0.6, metalness: 0, envMapIntensity: 0.5 }));
+  }
+  return plakaMat.get(kesit);
+}
+let golgeMat = null, golgeGeo = null;
+function temasGolgesi(g, d) {
+  if (!golgeMat) {
+    const cv = document.createElement('canvas');
+    cv.width = cv.height = 64;
+    const c = cv.getContext('2d'), gr = c.createRadialGradient(32, 32, 4, 32, 32, 32);
+    gr.addColorStop(0, 'rgba(0,0,0,0.55)'); gr.addColorStop(0.6, 'rgba(0,0,0,0.25)'); gr.addColorStop(1, 'rgba(0,0,0,0)');
+    c.fillStyle = gr; c.fillRect(0, 0, 64, 64);
+    golgeMat = new THREE.MeshBasicMaterial({ map: new THREE.CanvasTexture(cv), transparent: true, depthWrite: false, color: 0x000000 });
+    golgeMat.map.colorSpace = THREE.SRGBColorSpace;
+    golgeGeo = new THREE.PlaneGeometry(1, 1);
+  }
+  const m = new THREE.Mesh(golgeGeo, golgeMat);
+  m.scale.set(g * 1.2, d * 1.1, 1);
+  m.position.z = 0.6; // raf yüzünün hemen üstü
+  m.renderOrder = -1;
   return m;
 }
-
-// ---- şablon listeleri ----
-const binName = (id) => ({ tr: BIN.strings.tr['pr.' + id], en: BIN.strings.en['pr.' + id] });
-const vaseName = (id) => ({ tr: VASE.strings.tr['pr.' + id], en: VASE.strings.en['pr.' + id] });
-const storyName = (tool, id) => ({ tr: STORIES[tool].hotspots[id].tr, en: STORIES[tool].hotspots[id].en });
-// over: aracın şablonu üstüne ölçü farkı (varsa "Bu şablonla tasarla" ölçüleri adrese yazar, bkz. sablonDegeri)
-const T = (id, name, preset = null, over = null, renk = null) => ({ id, name, preset, over, renk });
-const n2 = (tr, en) => ({ tr, en });
-const U = (t, urun) => ({ ...t, urun });
-// Çoklu yuva: bölgede birden çok ürün birlikte durur, şablon yalnız kendi ürününü değiştirir; seçili ürün öne kalkar.
-// yer: ürünün yuvadaki yeri [x, y, z] mm; kalk: seçilince yükselme (mm); egim: seçilince ön kenarı üstünde kameraya
-// doğru dikelme (rad); dur: seçili değilken eğim. Standlar seçilince biraz öne eğilir. (QR anahtarlık rafta değil,
-// dolabın üstündeki anahtar tepsisinde: anahtarlik bölgesi.)
-export const COKLU = {
-  modem: {
-    wifi: { yer: [-160, -15, 36], kalk: 12, egim: 0.16 },
-  },
-};
-export const TEMPLATES = {
-  // Çekmece şablonları çekmeceyi doldurur (iç ölçü ~380 × 630 mm). Her parça yazıcı tablasına (256 mm) sığar: şablon
-  // parçaların dizilişidir; araçta (over) temsilci parça açılır. Renkler Kutu aracının paletinden, her şablon ayrı.
-  cekmece: [
-    T('drawer', n2('Çekmece içi · 6 parça', 'Drawer insert · 6 pieces'), 'drawer', { w: 187, d: 208, h: 50, cols: 3, rows: 3, holes: false }, '#d4621f'),
-    T('kirtasiye', n2('Kırtasiye düzeni', 'Stationery layout'), 'drawer', { w: 252, d: 208, h: 55, cols: 3, rows: 2, holes: false }, '#3f6fb0'),
-    T('tepsiler', n2('Modüler tepsiler · 8 parça', 'Modular trays · 8 pieces'), 'tray', { w: 187, d: 155, h: 32 }, '#b8372f'),
-    T('gridfinity', n2('Gridfinity · taban ve kutular', 'Gridfinity · plates and bins'), 'p3', { px: 5, py: 5 }, '#8fa58a'),
-    T('uzun', n2('Uzun kanallar · 12 parça', 'Long channels · 12 pieces'), 'drawer', { w: 93, d: 208, h: 48, cols: 1, rows: 1, holes: false, scoop: true }, '#ece9e2'),
-    T('atolye', n2('Atölye kutuları · 12 parça', 'Workshop boxes · 12 pieces'), 'drawer', { w: 124, d: 155, h: 45, cols: 2, rows: 3, holes: false }, '#2b3036'),
-  ],
-  // Anahtar tepsisi: oktosworkshop.com'daki kart anahtarlıklar (preset 'magaza'). Halkadaki kart sırayla değişir;
-  // yüzü ürünün kendi fotoğrafından (assets/oda/anahtarlik-<id>.webp), "Satın al" seçili ürünün sayfasını açar (url).
-  anahtarlik: [
-    ['charizard', 'Charizard', 'charizard-anahtarlik-canta-takisi-pokemon'],
-    ['black-lotus', 'Black Lotus', 'black-lotus-anahtarlik-canta-takisi-magic-thr-gathering'],
-    ['venusaur', 'Venusaur', 'venasaur-anahtarlik-canta-takisi-pokemon'], // mağazadaki adres yazımı böyle
-    ['blastoise', 'Blastoise', 'blastoise-anahtarlik-canta-takisi-pokemon'],
-    ['dark-magician', 'Dark Magician', 'dark-magician-anahtarlik-canta-takisi-yu-gi-oh'],
-  ].map(([id, ad, yol]) => ({ ...T(id, n2(`${ad} anahtarlık`, `${ad} keychain`), 'magaza'), url: `https://oktosworkshop.com/${yol}` })),
-  kalemlik: [
-    T('pencup', binName('pencup'), 'pencup'),
-    T('pencup3', binName('pencup3'), 'pencup3'),
-    T('uzun', n2('İnce uzun kalemlik', 'Tall slim cup'), 'pencup', { w: 66, h: 125 }, '#2b3036'),
-    T('ikili', n2('İki bölmeli', 'Two-way cup'), 'pencup3', { cols: 2, w: 90, h: 100 }, '#d4621f'),
-    T('dortlu', n2('Dört bölmeli', 'Four-way cup'), 'pencup3', { cols: 4, w: 110, h: 100 }, '#3f6fb0'),
-    T('halka', n2('Halkalı kalemlik', 'Ring cup'), 'pencup3', { cols: 6, rows: 2, w: 112, h: 90 }, '#c9b596'),
-    T('kare', n2('Kare kalemlik', 'Square cup'), 'tray', { w: 90, d: 90, h: 105, cols: 2, rows: 2, r: 10 }, '#ece9e2'),
-    T('ikiz', n2('Yan yana kalemlik', 'Twin cup'), 'tray', { w: 130, d: 72, h: 100, cols: 2, rows: 1, r: 12 }, '#8fa58a'),
-  ],
-  // Klavye: tuş başlığı setleri (Esc, Enter, yukarı ok) ve yanında aynı tasarımın anahtarlık clicker'ı
-  klavye: [T('kedi', n2('Kedi seti', 'Cat set'), 'kedi'), T('kalp', n2('Kalp seti', 'Heart set'), 'kalp'), T('yildiz', n2('Yıldız seti', 'Star set'), 'yildiz'), T('harf', n2('Harf seti', 'Letter set'), 'harf')], // Fidget Clicker tuş şablonları
-  // QR: iki ayrı ürün rafta birlikte durur (yerleri COKLU.modem); şablonun `urun`u hangisinin değiştiğini söyler. Sıra
-  // ürünleri dolaşır, sonra ikinci şablonları
-  modem: [
-    U(T('wifi', storyName('qr', 'wifi'), 'wifi'), 'wifi'), // üçüncü değer: 3D QR aracının şablonu (tools/qr/app.js)
-    U(T('wifi_turuncu', n2('Misafir Wi-Fi standı', 'Guest Wi-Fi stand'), 'wifi_turuncu'), 'wifi'),
-  ],
-  // Kalemliğin önünde kartvizit: dört tasarım, hepsi 3D QR aracının kartvizitinde açılır
-  kartvizit: [
-    T('acik', n2('Açık kartvizit', 'Light card'), 'card'),
-    T('koyu', n2('Koyu kartvizit', 'Dark card'), 'card_koyu'),
-    T('turuncu', n2('Turuncu kartvizit', 'Orange card'), 'card_turuncu'),
-    T('ahsap', n2('Ahşap kartvizit', 'Wood card'), 'card_ahsap'),
-  ],
-  puzzle3d: [T('sphere', storyName('puzzle', 'sphere')), T('cube', storyName('puzzle', 'cube')), T('egg', { tr: 'Yumurta yapboz', en: 'Egg puzzle' }), T('heart', { tr: 'Kalp yapboz', en: 'Heart puzzle' })],
-  tabela: [T('plate', { tr: 'Plakalı', en: 'On a plate' }, 'plate'), T('letters', { tr: 'Harf harf', en: 'Letter by letter' }, 'letters'), T('round', { tr: 'Yuvarlak plaka', en: 'Rounded plate' }, 'round')], // 3D Yazı şablonları
-  saksilar: ['hex', 'square', 'flower', 'organic', 'twist', 'morph', 'amphora'].map((id) => T(id, vaseName(id), id)),
-  balkonMasa: [T('menu', storyName('qr', 'menu'), 'menu'), T('coaster', { tr: 'Bardak altlığı', en: 'Coaster' }, 'coaster')],
-  // Buzdolabının kapağı (kapak kapalı durak): 3D Yazı mıknatısları
-  miknatis: [T('harfler', n2('Harf mıknatısları', 'Letter magnets'), 'harfler'), T('not', n2('"Süt al!" notu', '"Buy milk" note'), 'not'), T('kalp', n2('Kalp ve yıldız', 'Hearts and stars'), 'kalp')],
-  buzdolabi: [T('iyi', { tr: '"İyi ki doğdun"', en: '"Happy birthday"' }, 'iyi'), T('mutlu', { tr: '"Mutlu yıllar"', en: '"Happy new year"' }, 'mutlu')],
-  flip: ['family', 'us', 'sea'].map((id) => T(id, storyName('flip', id), id)), // Text Flip aracının şablonları
-  cerceve: [T('mountain', { tr: 'Gün batımı', en: 'Sunset' }, 'mountain'), T('sea', { tr: 'Deniz', en: 'Sea' }, 'sea'), T('lake', { tr: 'Göl', en: 'Lake' }, 'lake')], // Filament Painter şablonları
-  yapboz: [T('picture', { tr: 'Cüce savaşçı yapboz', en: 'Dwarf warrior puzzle' }, 'picture')], // Puzzle aracının şablonu
-};
-
-// Ölçü farkı olan şablonun araçta birebir açılması için tam durum (mode + şablon değerleri + fark); yoksa null.
-// ?sablon= ölçüleri şablonunkine sıfırlar: bu şablonlarda sayfa bunun yerine bu değerleri adrese yazar.
-export function sablonDegeri(zone, id) {
-  const t = TEMPLATES[zone]?.find((x) => x.id === id);
-  if (!(t?.over || t?.renk) || !t.preset) return null;
-  const p = BIN.presets.find((x) => x.id === t.preset);
-  if (!p) return null;
-  return { ...(p.mode ? { mode: p.mode } : {}), ...p.values, ...(t.over || {}), ...(t.renk ? { color: t.renk } : {}) };
+export function plakaModeli(urun) {
+  const g = new THREE.Group();
+  g.add(temasGolgesi(urun.olcu.g, urun.olcu.d));
+  const m = new THREE.Mesh(plakaGeometrisi(urun.olcu), plakaMalzemesi(urun.raf || urun.gorsel));
+  m.castShadow = true;
+  m.name = 'plaka_' + urun.id;
+  g.add(m);
+  return g;
 }
+// Rafta tek plaka: yuvanın ortasında (x = 0)
+function tekPlaka(secili) {
+  const g = new THREE.Group();
+  g.add(plakaModeli(secili));
+  g.userData.plaka = secili.id;
+  return g;
+}
+
+// ---- Dekor ----
+// Her sahne yerinde eski durağın ilk şablonu durur (tıklanmaz). Yuvanın yerindeyse ürünün çapasıdır: kalemlik → figur,
+// saksılar → biblo, çerçeve → kilic, yapboz → maske; çekmece (sticker) ve modem (raf) gizli yuvaların yeri.
+export const DEKOR = {
+  cekmece: 'drawer', kalemlik: 'pencup', kartvizit: 'card', klavye: 'kedi', modem: 'wifi', tabela: 'plate', saksilar: 'hex',
+  balkonMasa: 'menu', miknatis: 'harfler', buzdolabi: 'iyi', flip: 'family', cerceve: 'mountain', yapboz: 'picture',
+};
 
 // ---- Kutu ve Vazo: araçların kendi üreticileri ----
 export function binModel(id, over = {}) {
@@ -361,19 +353,19 @@ function miknatisModel(id, fs, lang) {
   return g;
 }
 
-// ---- Kart anahtarlık (mağaza ürünü): Blender'daki kart (kart_anahtarlik) kopyalanır; yüzü ürünün fotoğrafından
-// düzleştirilmiş kart, çerçeve ve kulak mağazadaki gibi beyaz. Kart oranı 63 × 88 mm (Blender'daki yüz 34 × 52):
-// çerçeve ve yüz enine KART_EN kadar genişler.
+// ---- Kart anahtarlık (mağaza ürünü): Blender'daki kart (kart_anahtarlik) kopyalanır; yüzü ürünün görselinden
+// (urun-veri gorsel: düzleştirilmiş kart fotoğrafı), çerçeve ve kulak mağazadaki gibi beyaz. Kart oranı 63 × 88 mm
+// (Blender'daki yüz 34 × 52): çerçeve ve yüz enine KART_EN kadar genişler.
 const KART_EN = (63 / 88) / (34 / 52);
-async function kartYuzu(id) {
-  const tex = await new THREE.TextureLoader().loadAsync(new URL(`../assets/oda/anahtarlik-${id}.webp`, import.meta.url).href);
+async function kartYuzu(gorsel) { // gorsel: site köküne göre yol (assets/...)
+  const tex = await new THREE.TextureLoader().loadAsync(new URL(`../${gorsel}`, import.meta.url).href);
   tex.colorSpace = THREE.SRGBColorSpace;
   tex.flipY = false; // glTF UV'si (v aşağı): resmin üstü kartın kulak tarafında
   tex.anisotropy = 8;
   return tex;
 }
-async function kartAnahtarlik(id, kart) {
-  const yuz = await kartYuzu(id), beyaz = 0xf1efea;
+async function kartAnahtarlik(gorsel, kart) {
+  const yuz = await kartYuzu(gorsel), beyaz = 0xf1efea;
   if (!kart) { // pilotsuz: düz kart
     const g = new THREE.Group();
     g.add(P.mesh(P.rbox(40 * KART_EN, 58, 3, 4), P.clay(beyaz)).translateY(-36));
@@ -409,45 +401,7 @@ async function kartAnahtarlik(id, kart) {
 }
 
 
-// ---- Puzzle: 3B yapbozlar (dikey kesici prizmalarla parçalanmış katılar) ve resimli düz yapboz ----
-async function puzzle3d(id) {
-  const { jigsaw } = await import('../tools/puzzle/jigsaw.js');
-  const cut = (c) => C.extrude(C.offset2(C.polys2([c.poly]), -0.4), 400, -200);
-  const g = new THREE.Group();
-  if (id === 'sphere') {
-    const R = 66, colors = [K.accent, K.sand, K.sage, K.blue, K.accent, K.rose, K.sand, K.sage, K.ink];
-    for (const [k, c] of jigsaw(3, 3, 44, 11).entries()) {
-      const m = solid(() => C.inter(C.move(C.sphere(R, 72), 0, 0, R), cut(c)), pla(colors[k]), { flat: false });
-      m.position.z = 10;
-      g.add(recenter(m));
-      await yieldMain();
-    }
-    g.add(P.mesh(P.cyl(40, 46, 10, 40), P.clay(K.paper, { rough: 0.6 })));
-  } else if (id === 'cube') {
-    const S = 84, colors = [K.blue, K.yellow, K.red, K.sage];
-    for (const [k, c] of jigsaw(2, 2, 42, 5).entries()) g.add(solid(() => C.inter(C.box(S, S, S, -S / 2, -S / 2, 0), cut(c)), pla(colors[k])));
-  } else if (id === 'egg') {
-    const R = 46, KZ = 1.32, colors = [K.yellow, K.cream, K.rose, K.cream, K.yellow, K.sage, K.rose, K.cream, K.yellow];
-    for (const [k, c] of jigsaw(3, 3, 31, 17).entries()) {
-      const m = solid(() => C.inter(C.move(C.scale(C.sphere(R, 64), [1, 1, KZ]), 0, 0, R * KZ), cut(c)), pla(colors[k]), { flat: false });
-      if (!m.geometry.attributes.position.count) continue;
-      m.position.z = 12;
-      g.add(m);
-      await yieldMain();
-    }
-    g.add(P.mesh(P.cyl(24, 30, 14, 40), P.clay(K.blue, { rough: 0.55 })));
-  } else {
-    const S = 2.6, D = 22, lift = 17 * S - 2.5 * S + 6;
-    const shape = heartPts(S), colors = [K.red, K.rose, K.accent, K.rose, K.red, K.rose, K.accent, K.red, K.rose];
-    g.add(solid(() => plate(50, 28, 12, 5), pla(K.woodDark)));
-    for (const [k, c] of jigsaw(3, 3, 30, 13).entries()) {
-      const m = solid(() => C.move(standUp(C.inter(C.extrude(C.poly2(shape), D), C.extrude(C.offset2(C.polys2([c.poly]), -0.4), D + 2, -1)), D), 0, -D / 2, lift), pla(colors[k]));
-      if (m.geometry.attributes.position.count) g.add(m);
-      await yieldMain();
-    }
-  }
-  return g;
-}
+// ---- Puzzle: resimli düz yapboz (3B yapbozlar 2026-10-18'de kalktı; kodu git geçmişinde) ----
 // Resimli düz yapboz: XY'de yatar, w × h mm, kalınlık 6. resim: fotoğrafın adresi (4:3); verilmezse gün batımında dağlar
 export async function picturePuzzle({ cols = 4, rows = 3, cell = 130, resim = null } = {}) {
   const { jigsaw } = await import('../tools/puzzle/jigsaw.js');
@@ -489,17 +443,18 @@ const FLIP = {
   en: { family: ['MOM', 'DAD'], us: ['YOU', 'ME'], sea: ['SEA', 'SUN'] },
 };
 
-// Bir bölgenin bir şablonunu üretir. lang: yazılı ürünler (plaka, pasta süsü, Flip, QR başlığı) için.
+// Bir sahne yerinin dekorunu üretir (DEKOR[yer] şablonuyla). lang: yazılı dekor (plaka, pasta süsü, Flip) için.
 // saksi: fotogerçekçi odada saksılara toprak ve baskı malzemesi ({ toprak, malzeme }, vaseModel'e gider).
 // pasta: fotogerçekçi odada gerçek pasta modeli (kopyalanır); pasta süsümüz onun üstüne batar.
-export async function buildTemplate(zone, id, { lang = 'tr', saksi = {}, pasta = null, klavye = null, kart = null } = {}) {
+// klavye: klavyenin tuş yerleri (tuş başlıkları ona takılır).
+export async function dekorModeli(yer, { lang = 'tr', saksi = {}, pasta = null, klavye = null } = {}) {
   await initCSG();
-  const fs = await fonts(700);
-  switch (zone) {
+  const fs = await fonts(700), id = DEKOR[yer];
+  switch (yer) {
     case 'cekmece': {
-      // Çekmeceyi dolduran dizilişler: doldurulan alan W × D (yuva merkezine göre y −5), parçalar arası 1 mm. Aynı ölçüdeki
-      // parça bir kez üretilir, kopyalanır.
-      const t = TEMPLATES.cekmece.find((x) => x.id === id), R = t?.renk ? { color: t.renk } : {};
+      // Çekmeceyi dolduran organizer (6 parça, Kutu aracının turuncusu): doldurulan alan W × D (yuva merkezine göre y −5),
+      // parçalar arası 1 mm. Aynı ölçüdeki parça bir kez üretilir, kopyalanır. (Diğer dizilişler git geçmişinde.)
+      const R = { color: '#d4621f' };
       const W = 376, D = 626, Y0 = -5, AR = 1;
       const g = new THREE.Group(), onbellek = new Map();
       const parca = (preset, over, renk = R) => {
@@ -518,48 +473,17 @@ export async function buildTemplate(zone, id, { lang = 'tr', saksi = {}, pasta =
         });
       };
       const kutu = (w, d, h, cols, rows, ek = {}) => parca('drawer', { shape: 'rect', w: Math.floor(w), d: Math.floor(d), h, cols, rows, r: 3, wall: 1.6, floor: 1.6, holes: false, lip: false, shelf: false, scoop: false, ...ek });
-      if (id === 'drawer') { // 2 × 3, satır satır farklı bölmeler
-        const B = [[[4, 1], [4, 1]], [[3, 3], [2, 2]], [[2, 1], [1, 2]]];
-        izgara(2, 3, (i, j, w, d) => kutu(w, d, 50, ...B[j][i]));
-      } else if (id === 'kirtasiye') { // solda uzun kalem kanalı, sağda bölmeli kutular
-        izgara(2, 3, (i, j, w, d) => (i === 0 ? kutu(w, d, 55, 1, 1, { scoop: true }) : kutu(w, d, 55, 3, 2)), [123, 252]);
-      } else if (id === 'tepsiler') {
-        izgara(2, 4, (i, j, w, d) => kutu(w, d, 32, 3, 2));
-      } else if (id === 'uzun') {
-        izgara(4, 3, (i, j, w, d) => kutu(w, d, 48, 1, 1, { scoop: true }));
-      } else if (id === 'atolye') {
-        izgara(3, 4, (i, j, w, d) => kutu(w, d, 45, 2, 3));
-      } else { // Gridfinity: 9 × 15 hücre (42 mm); 6 ince taban plakası (4 ya da 5 × 5 hücre, koyu) ve üstünde 44 kutu
-        // (iç bölmesiz dört kutu türü: üretimi hafif)
-        const U = 42, G0 = { magnets: 'none', screws: 'none' };
-        for (const [x0, nx] of [[0, 4], [4, 5]]) for (const y0 of [0, 5, 10]) {
-          koy(parca('p1', { px: nx, py: 5, plateStyle: 'thin', pfloor: 1, pmag: 'none', pscrew: 'none' }, { color: '#2b3036' }), (x0 + nx / 2 - 4.5) * U, (y0 + 2.5 - 7.5) * U);
-        }
-        const blok = [['g6', 0, 0, 4, 2], ['g3', 4, 0, 2, 2], ['g3', 6, 0, 2, 2], ['g1', 8, 0], ['g1', 8, 1],
-          ['g3', 0, 2, 2, 2], ['g2', 2, 2, 2, 1], ['g2', 2, 3, 2, 1], ['g6', 4, 2, 4, 2], ['g1', 8, 2], ['g1', 8, 3],
-          ['g2', 0, 4, 2, 1], ['g2', 0, 5, 2, 1], ['g6', 2, 4, 4, 2], ['g3', 6, 4, 2, 2], ['g1', 8, 4], ['g1', 8, 5]];
-        const yer = [...blok, ...blok.map(([b, x, y, w, h]) => [b, x, y + 6, w, h]), ['g6', 0, 12, 4, 2], ['g3', 4, 12, 2, 2], ['g3', 6, 12, 2, 2], ['g1', 8, 12], ['g1', 8, 13],
-          ['g2', 0, 14, 2, 1], ['g2', 2, 14, 2, 1], ['g2', 4, 14, 2, 1], ['g2', 6, 14, 2, 1], ['g1', 8, 14]];
-        for (const [b, cx, cy, w = 1, h = 1] of yer) koy(parca(b, G0), (cx + w / 2 - 4.5) * U, (cy + h / 2 - 7.5) * U, 0.6);
-      }
+      const B = [[[4, 1], [4, 1]], [[3, 3], [2, 2]], [[2, 1], [1, 2]]]; // 2 × 3, satır satır farklı bölmeler
+      izgara(2, 3, (i, j, w, d) => kutu(w, d, 50, ...B[j][i]));
       return g;
     }
-    case 'kalemlik': {
-      const t = TEMPLATES.kalemlik.find((x) => x.id === id), p = BIN.presets.find((x) => x.id === t.preset);
-      const v = { ...p.values, ...(t.over || {}) };
-      const g = binModel(t.preset, { ...(t.over || {}), ...(t.renk ? { color: t.renk } : {}) });
-      kalemDiz(g, v, TEMPLATES.kalemlik.indexOf(t) + 3);
+    case 'kalemlik': { // Kutu aracının kalemliği, içinde kalemler
+      const g = binModel(id);
+      kalemDiz(g, BIN.presets.find((x) => x.id === id).values, 3);
       return g;
     }
     case 'klavye': return klavye ? tusSeti(id, klavye, fs) : keychain(TUS_SETI[id]?.anahtarlik || 'cat');
-    case 'modem': {
-      // Ürün kendi orijininde (yeri COKLU.modem); onKenar: ön kenarın y'si (seçilince bu kenarın üstünde dikelir)
-      const g = await aracModeli('qr', id); // 3D QR aracının standı ve kartviziti
-      g.userData.onKenar = new THREE.Box3().setFromObject(g).min.y;
-      return g;
-    }
-    case 'puzzle3d': return puzzle3d(id);
-    case 'anahtarlik': return kartAnahtarlik(id, kart);
+    case 'modem': return aracModeli('qr', id); // 3D QR aracının Wi-Fi standı
     case 'tabela': return aracModeli('text', id, { boy: 56 }, { dik: true }); // kapı üstünde: 3D Yazı plakası, büyük
     case 'miknatis': {
       if (id !== 'not') return miknatisModel(id, fs, lang);
@@ -571,7 +495,7 @@ export async function buildTemplate(zone, id, { lang = 'tr', saksi = {}, pasta =
     }
     case 'saksilar': return vaseModel(id, {}, saksi);
     case 'balkonMasa': return aracModeli('qr', id); // menü standı ve bardak altlığı
-    case 'kartvizit': return aracModeli('qr', TEMPLATES.kartvizit.find((x) => x.id === id).preset); // ayaklı kartvizit
+    case 'kartvizit': return aracModeli('qr', id); // ayaklı kartvizit
     case 'buzdolabi': {
       const g = new THREE.Group();
       let ust = 70; // pastanın üst yüzü (krema)
@@ -604,6 +528,6 @@ export async function buildTemplate(zone, id, { lang = 'tr', saksi = {}, pasta =
       g.rotation.x = Math.PI / 2; // resim yüzü −y'ye
       return g;
     }
-    default: throw new Error('bilinmeyen bölge: ' + zone);
+    default: throw new Error('bilinmeyen sahne yeri: ' + yer);
   }
 }

@@ -42,6 +42,11 @@
   <a class="brand" href="../../index.html"><img src="../../core/icon.svg" alt="" width="26" height="26"><span data-i18n="app.name">Oktos Workshop</span></a>
   <span class="crumb" aria-hidden="true">/ <b data-i18n="clicker.title">Fidget Clicker</b></span>
   <span class="spacer"></span>
+  <nav class="sitenav" aria-label="Site">
+    <a href="../../araclar/" aria-current="true" data-i18n="nav.olustur">Hizmetler</a>
+    <a href="../../urunler/" data-i18n="nav.urunler">Ürünler</a>
+    <a href="../../oda/" data-i18n="nav.portfolyo">Portfolyo</a>
+  </nav>
   <div class="lang" role="group" aria-label="Dil / Language"><button type="button" data-lang="tr" aria-pressed="true">TR</button><button type="button" data-lang="en" aria-pressed="false">EN</button></div>
 </header>
 
@@ -50,7 +55,7 @@
     <div class="hud" id="hud"></div>
     <div class="busy" id="busy" aria-hidden="true"></div>
     <div class="err" id="err" role="alert" hidden data-i18n="common.bootError">Atölye yüklenemedi. Bağlantını kontrol edip sayfayı yenile.</div>
-    <div class="viewbar" id="viewbar" role="group" aria-label="Görünüm">
+    <div class="viewbar" id="viewbar" role="group" aria-label="Görünüm" data-i18n-aria="common.viewGroup">
       <button type="button" data-view="iso" data-i18n="view.iso">İzometrik</button>
       <button type="button" data-view="top" data-i18n="view.top">Üst</button>
       <button type="button" data-view="front" data-i18n="view.front">Ön</button>
@@ -64,7 +69,7 @@
     <div class="side-scroll">
       <h1 class="tool-title" tabindex="-1" data-i18n="clicker.title">Fidget Clicker</h1>
       <p class="lede" data-i18n="clicker.lede">Sevdiğin figürün içinde bir klavye anahtarının çıtırtısı; klavyene de aynı tasarımın tuşu. Seç, ayarla, sipariş ver.</p>
-      <div class="modes" id="modes" role="group" aria-label="Mod"></div>
+      <div class="modes" id="modes" role="group" aria-label="Mod" data-i18n-aria="common.modeGroup"></div>
       <div id="presets"></div>
       <div id="panel"></div>
       <ul class="notes" id="notes" role="status"></ul>
@@ -74,7 +79,7 @@
       <button type="button" class="btn primary wide" id="order" data-i18n="common.order" disabled hidden>Sipariş ver</button>
       <p class="order-meta" id="order-meta" hidden></p>
       <button type="button" class="btn ghost" id="share" data-i18n="common.share" disabled>Bağlantıyı kopyala</button>
-      <div class="share-fallback wide" id="share-fallback" hidden><input type="text" readonly aria-label="Tasarım bağlantısı"></div>
+      <div class="share-fallback wide" id="share-fallback" hidden><input type="text" readonly aria-label="Tasarım bağlantısı" data-i18n-aria="common.shareField"></div>
       <div class="exports wide" id="exports" hidden>
         <span data-i18n="common.workshopExport">Atölye: dışa aktar</span>
         <button type="button" class="btn" id="dl-3mf" data-i18n="common.download3MF" disabled>3MF indir</button>
@@ -85,6 +90,7 @@
 <p class="sr-only" id="sr-status" role="status" aria-live="polite"></p>
 
 <script type="module">
+  import '../../core/site-metin.js'; // üst çubuk metinleri (Oluştur · Ürünler · Oda · Portfolyo)
   import { bootTool } from '../../core/page.js';
   import { TOOL } from './app.js';
   bootTool({ tool: TOOL }).catch((e) => { console.error(e); document.getElementById('err').hidden = false; document.getElementById('busy').classList.remove('on'); });

@@ -68,7 +68,20 @@ export function buildPanel(root, schema, state, onChange) {
       // Sürüklerken _drag işareti: araç taslak çözünürlükte hesaplar; bırakınca tam çözünürlük.
       rng.addEventListener('input', () => { state._drag = true; set(rng.value); });
       rng.addEventListener('change', () => { state._drag = false; set(rng.value); });
-      if (!item.fmt) num.addEventListener('change', () => { state._drag = false; set(num.value); });
+      // Sayı kutusu: yazarken dokunulmaz; onaylanınca (Enter / odak çıkışı) değer min–max'a çekilir ve kutuya
+      // geri yazılır (−5, 99999 kutuda kalmaz). Boş ya da sayı olmayan girdi önceki değere döner.
+      let editing = false;
+      const show = () => { num.value = round(state[item.key], item.step ?? 1); };
+      if (!item.fmt) {
+        num.addEventListener('input', () => { editing = true; });
+        num.addEventListener('change', () => {
+          editing = false;
+          state._drag = false;
+          if (num.value.trim() !== '' && Number.isFinite(Number(num.value))) set(num.value);
+          show();
+        });
+        num.addEventListener('blur', () => { if (editing) { editing = false; show(); } });
+      }
       rec.sync = () => {
         const s = state;
         const dis = item.disabled ? !!item.disabled(s) : false;
@@ -81,7 +94,7 @@ export function buildPanel(root, schema, state, onChange) {
         if (item.fmt) {
           num.textContent = item.fmt(s[item.key], s);
           rng.setAttribute('aria-valuetext', num.textContent);
-        } else if (document.activeElement !== num) num.value = round(s[item.key], item.step ?? 1);
+        } else if (!editing || document.activeElement !== num) show();
       };
     } else if (item.type === 'select') {
       row.innerHTML = `<label><span>${t(item.label)}</span><select></select></label>`;

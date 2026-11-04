@@ -1,0 +1,118 @@
+<!doctype html>
+<html lang="tr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Hazır ürünler · Oktos Workshop</title>
+<meta name="description" content="Oktos atölyesinde tasarlanıp basılan hazır ürünler: kart anahtarlıklar, minifigürler, katana, maske, balbal biblolar. Satıştakiler mağazada, ötekiler siparişle.">
+<meta name="theme-color" content="#eaedeb">
+<link rel="icon" href="../core/icon.svg" type="image/svg+xml">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Schibsted+Grotesk:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<link rel="stylesheet" href="../core/style.css">
+</head>
+<body>
+<header class="topbar">
+  <a class="brand" href="../index.html"><img src="../core/icon.svg" alt="" width="26" height="26"><span data-i18n="app.name">Oktos Workshop</span></a>
+  <span class="spacer"></span>
+  <nav class="sitenav" aria-label="Site">
+    <a href="../araclar/" data-i18n="nav.olustur">Hizmetler</a>
+    <a href="./" aria-current="page" data-i18n="nav.urunler">Ürünler</a>
+    <a href="../oda/" data-i18n="nav.portfolyo">Portfolyo</a>
+  </nav>
+  <div class="lang" role="group" aria-label="Dil / Language"><button type="button" data-lang="tr" aria-pressed="true">TR</button><button type="button" data-lang="en" aria-pressed="false">EN</button></div>
+</header>
+<main class="home urunler">
+  <h1 data-i18n="urunler.title">Hazır ürünler</h1>
+  <p class="intro" data-i18n="urunler.intro">Atölyede tasarlanıp basılan parçalar. Satıştakiler mağazada; stokta olmayanı WhatsApp'tan sipariş et, atölye hazırlasın.</p>
+  <div class="grup-cubugu">
+    <div class="gruplar" id="gruplar" role="group" aria-label="Ürün grupları"></div>
+    <p class="urun-sayac" id="urun-sayac" aria-live="polite"></p>
+  </div>
+  <div class="urungrid" id="urun-listesi"></div>
+  <p class="urun-not" id="urun-not"></p>
+</main>
+<script type="module">
+  import { t } from '../core/i18n.js';
+  import { URUNLER, YUVALAR, URUN_VERI_TARIHI } from '../core/urun-veri.js';
+  import { YUVA_SIMGE, svg, kacis, siteSayfasi, eylemDugmesi, odaAdresi } from '../core/site-metin.js';
+
+  const $ = (id) => document.getElementById(id);
+  const liste = $('urun-listesi');
+  // Sekmeler yalnız ürünü olan yuvalar için (urun: 0 olan yuva gizli; core/urun-veri.js). Sıra listeninkiyle aynı:
+  // yuvanın ilk ürününün listedeki yeri (fotoğraflı dioramalar önde; sırayı scripts/urun-veri.py verir)
+  const ilkSira = (id) => { const i = URUNLER.findIndex((u) => u.yuva === id); return i < 0 ? URUNLER.length : i; };
+  const gruplar = YUVALAR.filter((y) => y.urun > 0).sort((a, b) => ilkSira(a.id) - ilkSira(b.id));
+  let secili = new URLSearchParams(location.search).get('grup');
+  if (!gruplar.some((y) => y.id === secili)) secili = 'tum';
+
+  const sayiMetni = (n) => t(n === 1 ? 'urunler.sayi1' : 'urunler.sayi', { n });
+
+  const yerTutucu = (yuva) => `<span class="urun-yer">${svg(YUVA_SIMGE[yuva] || YUVA_SIMGE.raf)}</span>`;
+
+  // Kartın görseli ve başlığı ürün sayfasına gider (urun.html?id=); görsel bağlantısı sekme sırasına girmez (başlıkla aynı hedef).
+  // Ana eylem (Satın al / Sipariş ver) ve Odada gör core/site-metin.js'teki ortak yardımcılardan.
+  function kart(u, lang) {
+    const ad = u.ad[lang] || u.ad.tr;
+    const sayfa = `urun.html?id=${encodeURIComponent(u.id)}`;
+    // Küçük resmi olan üründe (diorama: kucuk[0] = kapağın 240 px'i) kart boyunda o iner, yoğun ekranda 600 px'lik görsel
+    const k1 = Array.isArray(u.kucuk) && typeof u.kucuk[0] === 'string' && u.kucuk[0] ? u.kucuk[0] : null;
+    const srcset = k1 ? ` srcset="../${kacis(k1)} 240w, ../${kacis(u.gorsel)} 600w" sizes="(max-width: 560px) 45vw, 240px"` : '';
+    const foto = u.gorsel ? `<img src="../${kacis(u.gorsel)}"${srcset} alt="${kacis(ad)}" loading="lazy" decoding="async">` : yerTutucu(u.yuva);
+    const oda = odaAdresi(u, YUVALAR);
+    return `<article class="urun" data-urun="${kacis(u.id)}" data-yuva="${kacis(u.yuva)}">
+      <a class="urun-foto" href="${sayfa}" tabindex="-1" aria-hidden="true">${foto}</a>
+      <div class="urun-govde">
+        <h2><a href="${sayfa}">${kacis(ad)}</a></h2>
+        <p class="urun-bilgi">${u.fiyat ? `<span class="fiyat">${kacis(u.fiyat)}</span>` : ''}<span class="durum durum-${kacis(u.durum)}">${kacis(t('durum.' + u.durum))}</span></p>
+        <div class="urun-eylem">${eylemDugmesi(u, ad)}${oda ? `<a class="urun-oda" data-eylem="oda" href="${kacis(oda)}" aria-label="${kacis(t('urun.odaAria', { ad }))}">${t('urun.oda')}</a>` : ''}</div>
+      </div>
+    </article>`;
+  }
+
+  function suz() {
+    let n = 0;
+    liste.querySelectorAll('[data-urun]').forEach((c) => {
+      const on = secili === 'tum' || c.dataset.yuva === secili;
+      c.hidden = !on;
+      if (on) n++;
+    });
+    $('gruplar').querySelectorAll('[data-grup]').forEach((b) => b.setAttribute('aria-pressed', String(b.dataset.grup === secili)));
+    $('urun-sayac').textContent = URUNLER.length ? sayiMetni(n) : t('urunler.bos');
+  }
+
+  $('gruplar').addEventListener('click', (e) => {
+    const b = e.target.closest('[data-grup]');
+    if (!b || b.dataset.grup === secili) return;
+    secili = b.dataset.grup;
+    const q = new URLSearchParams(location.search);
+    if (secili === 'tum') q.delete('grup'); else q.set('grup', secili);
+    history.replaceState(null, '', location.pathname + (q.toString() ? '?' + q : ''));
+    suz();
+  });
+
+  // Görsel yüklenemezse kırık resim yerine yuva simgesi (error olayı kabarcıklanmaz: yakalama evresinde dinlenir)
+  liste.addEventListener('error', (e) => {
+    const img = e.target;
+    if (img.tagName !== 'IMG') return;
+    const c = img.closest('[data-urun]');
+    img.replaceWith(Object.assign(document.createElement('span'), { innerHTML: yerTutucu(c?.dataset.yuva) }).firstChild);
+  }, true);
+
+  siteSayfasi((lang) => {
+    document.title = `${t('urunler.title')} · ${t('app.name')}`;
+    $('gruplar').setAttribute('aria-label', t('urunler.gruplar'));
+    const sekme = [{ id: 'tum', ad: t('urunler.tum'), n: URUNLER.length },
+      ...gruplar.map((y) => ({ id: y.id, ad: y.ad[lang] || y.ad.tr, n: URUNLER.filter((u) => u.yuva === y.id).length }))];
+    $('gruplar').innerHTML = sekme.map((g) =>
+      `<button type="button" data-grup="${kacis(g.id)}" aria-pressed="false">${kacis(g.ad)}<span class="n">${g.n}</span></button>`).join('');
+    liste.innerHTML = URUNLER.map((u) => kart(u, lang)).join('');
+    const tarih = new Intl.DateTimeFormat(lang === 'en' ? 'en-GB' : 'tr-TR', { day: 'numeric', month: 'long', year: 'numeric' })
+      .format(new Date(URUN_VERI_TARIHI + 'T12:00:00'));
+    $('urun-not').textContent = t('urunler.not', { tarih });
+    suz();
+  });
+</script>
+</body>
+</html>

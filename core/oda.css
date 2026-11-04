@@ -1,6 +1,6 @@
 /* Oda sahnesi (core/oda-sahne.js, docs/oda-sahnesi.md): story.css'in üstüne. Yakın plan paneli (core/oda-panel.js):
-   başlık eski vitrinin yazı stilinde, aracın renk tonunda ve harf hareketiyle (core/vitrin-titles.js playTitle),
-   şablon seçici, toz yazısı; kenara gelince bakış ipucu; telefonda kartlar arası döngü düğmesi. */
+   başlık eski vitrinin yazı stilinde, ürün tonunda; ürün seçici, fiyat ve durum satırı, Satın al / Sipariş ver, Tüm
+   ürünler; kenara gelince bakış ipucu; telefonda kartlar arası döngü düğmesi. */
 
 /* Genel planda sahne kahramandır: odada başlığa yer kalacak boş duvar yok (raflar, çerçeveler). Başlık görünmez
    ama sayfada kalır (ekran okuyucu, arama motoru); sol üstte yalnız kısa bir cümle hapı. İşaretçilerin yazısı
@@ -41,8 +41,8 @@
 
 /* ---- Yakın plan paneli ----
    Loş odanın içinde koyu: yatay ekranda sol kenarda, kart zemini yok; okunurluğu soldan gelen koyu bir gölge verir
-   (.oda-scrim), sahne arkada görünmeye devam eder. Başlık aracın filament renginde (bu tonlar koyu zemin için seçildi).
-   Panelin üstü sabittir, aşağı doğru büyür. Telefonda ve dikey ekranda kart alttan, koyu bir yaprak olarak açılır. */
+   (.oda-scrim), sahne arkada görünmeye devam eder. Başlık ürün tonunda (--c, core/oda-panel.js URUN_TONU; koyu zemin
+   için). Panelin üstü sabittir, aşağı doğru büyür. Telefonda ve dikey ekranda kart alttan, koyu bir yaprak olarak açılır. */
 .oda {
   --sc-ink: #f3eee5;                      /* koyu zeminde yazı */
   --sc-ink-2: rgb(243 238 229 / 0.74);
@@ -83,28 +83,57 @@
 .oda .sc-back { border-color: var(--sc-line); background: transparent; color: var(--sc-ink); }
 @media (hover: hover) and (pointer: fine) { .oda .sc-back:hover { background: rgb(243 238 229 / 0.1); } }
 .oda .sc-hint { color: var(--sc-ink-2); }
-.oda .sc-soon { display: none; } /* araç satırı söylüyor */
-.sc-arac { margin: 12px 0 0; font-size: 13px; color: var(--sc-ink-2); }
+.oda .sc-soon { display: none; } /* adressiz ürün düğmesiz kalır; "Tüm ürünler" yol verir */
+/* Ürün satırı: varsa ürün görseli (küçük), mağaza fiyatı ve durum */
+.sc-urun { display: flex; align-items: center; gap: 12px; margin: 0 0 16px; }
+.sc-urun[hidden] { display: none; }
+.sc-gorsel { flex: none; width: auto; height: 48px; max-width: 48px; object-fit: contain; border-radius: 4px; }
+.sc-gorsel[hidden] { display: none; }
+.sc-urun p { display: flex; flex-wrap: wrap; align-items: baseline; gap: 2px 10px; min-width: 0; margin: 0; }
+.sc-fiyat { font: 600 18px/1.2 var(--sans); color: var(--sc-ink); font-variant-numeric: tabular-nums; }
+.sc-fiyat[hidden] { display: none; }
+.sc-durum { font-size: 13px; line-height: 1.3; color: var(--sc-ink-2); }
+/* Tüm ürünler: 2B ürün listesine sade bağlantı. Ürün sayfası (2026-11-02): aynı dilde, ürün düğmesinin yanında ikincil */
+.sc-tum, .sc-sayfa {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 44px;
+  margin-top: 6px;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--sc-ink);
+  text-decoration: none;
+}
+.sc-sayfa { margin: 0 4px; }
+.sc-sayfa[hidden] { display: none; }
+.sc-tum svg, .sc-sayfa svg { width: 16px; height: 16px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; transition: transform 200ms cubic-bezier(0.23, 1, 0.32, 1); }
+@media (hover: hover) and (pointer: fine) {
+  .sc-tum:hover span, .sc-sayfa:hover span { text-decoration: underline 1px; text-underline-offset: 0.2em; }
+  .sc-tum:hover svg, .sc-sayfa:hover svg { transform: translateX(3px); }
+}
+.sc-tum:focus-visible, .sc-sayfa:focus-visible { outline: 2px solid var(--c); outline-offset: 2px; border-radius: 4px; }
 /* Yakın planda işaretçiler susar (panel zaten bölgeyi söyler, noktalar ürünün üstüne biner); yalnız üzerine gelinen
    başka bir bölgenin notu görünür */
 .oda.is-focused .pin:not(.on),
 .oda.is-focused .pin.is-cur { opacity: 0; pointer-events: none; }
 
-/* Şablon seçici: ‹ ad n/N › */
-.sc-tpl { display: flex; align-items: center; gap: 4px; margin: 0 0 18px; }
-.sc-tpl[hidden] { display: none; }
+/* Ürün seçici: ‹ ad n/N ›; tek ürünlü yuvada oklar yok, yalnız ad */
+.sc-tpl { display: flex; align-items: center; gap: 4px; margin: 0 0 12px; }
+.sc-tpl[hidden], .sc-step[hidden] { display: none; }
+.sc-tpl.tek .sc-tpl-name { padding: 0; }
+/* Ürün adları uzun olabilir ("Grimdark Evrenleri · Ultra Ön-Cepheciler"): kesilmez, dar kartta satıra kırılır */
 .sc-tpl-name {
   min-width: 0;
   margin: 0;
   padding: 0 10px;
-  overflow: hidden;
   font-size: 16px;
   font-weight: 600;
+  line-height: 1.25;
   color: var(--sc-ink);
-  white-space: nowrap;
-  text-overflow: ellipsis;
+  text-wrap: balance;
 }
-.sc-tpl-name small { margin-left: 4px; font: 500 13px var(--mono); color: var(--sc-ink-2); }
+.sc-tpl-name small { margin-left: 4px; font: 500 13px var(--mono); color: var(--sc-ink-2); white-space: nowrap; }
 .sc-step {
   display: grid;
   place-items: center;
@@ -122,75 +151,7 @@
 .sc-step svg { width: 20px; height: 20px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
 @media (hover: hover) and (pointer: fine) { .sc-step:hover { background: rgb(243 238 229 / 0.16); } }
 
-/* Toz yazısı: üç şablon değişiminden sonra ipucunun yerinde oluşur; kendisi bir düğmedir (aracı açar) */
-.oda-dust {
-  display: inline-flex;
-  align-items: center;
-  gap: 10px;
-  margin-top: 16px;
-  padding: 0;
-  border: 0;
-  background: none;
-  font-family: 'Big Shoulders Display', var(--sans);
-  font-weight: 700;
-  font-size: clamp(26px, 2.4vw, 34px);
-  line-height: 1.1;
-  color: var(--c);
-  text-align: left;
-  white-space: nowrap;
-  cursor: pointer;
-}
-.oda-dust[hidden] { display: none; }
-.oda-dust svg {
-  width: 0.72em;
-  height: 0.72em;
-  fill: none;
-  stroke: currentColor;
-  stroke-width: 2.4;
-  stroke-linecap: round;
-  stroke-linejoin: round;
-  transition: transform 200ms cubic-bezier(0.23, 1, 0.32, 1);
-}
-@media (hover: hover) and (pointer: fine) {
-  .oda-dust:hover svg { transform: translateX(4px); }
-  .oda-dust:hover .dust-text { text-decoration: underline 2px; text-underline-offset: 0.14em; }
-}
-.oda-dust-fx { position: absolute; inset: 0; z-index: 2; width: 100%; height: 100%; pointer-events: none; }
-
-/* Harf hareketleri (playTitle): kelime bölünmez, harf dönüşebilsin diye satır içi blok */
-.oda .sc-title .v-wd { display: inline-block; white-space: nowrap; }
-.oda .sc-title .v-ch { display: inline-block; }
-/* 3D Yazı: derinlik katmanları (--dx, --dy hareketten) */
-.oda .sc-title[data-tool="text"] {
-  --dx: 0; --dy: 0;
-  --e1: color-mix(in oklab, var(--c) 60%, #000);
-  --e2: color-mix(in oklab, var(--c) 38%, #000);
-  text-shadow:
-    calc(var(--dx) * 0.018em) calc(var(--dy) * 0.018em) 0 var(--e1),
-    calc(var(--dx) * 0.036em) calc(var(--dy) * 0.036em) 0 var(--e1),
-    calc(var(--dx) * 0.054em) calc(var(--dy) * 0.054em) 0 var(--e2),
-    calc(var(--dx) * 0.072em) calc(var(--dy) * 0.072em) 0 var(--e2);
-}
-/* 3D QR Kod: harfin üstünde aynı harf, kare modül maskesiyle */
-.oda .sc-title[data-tool="qr"] .v-ch { position: relative; --px: 0; --cell: 1.1em; }
-.oda .sc-title[data-tool="qr"] .v-ch::after {
-  content: attr(data-ch);
-  position: absolute;
-  inset: 0;
-  opacity: var(--px);
-  -webkit-mask: var(--qr) 0 0 / var(--cell) var(--cell) repeat;
-  mask: var(--qr) 0 0 / var(--cell) var(--cell) repeat;
-  pointer-events: none;
-}
-/* Filament Painter: harflerin içinden renk katmanları akar */
-.oda .sc-title[data-tool="painter"] { --b2: var(--c); --b3: var(--c); --b4: var(--c); --bp: 0em; }
-.oda .sc-title[data-tool="painter"].is-painting .v-ch {
-  background: linear-gradient(to top, color-mix(in oklab, var(--c) 52%, #1d2023) 0 25%, var(--b2) 25% 50%, var(--b3) 50% 75%, var(--b4) 75% 100%)
-    0 calc(var(--bp) + var(--char, 0) * 0.09em) / 100% 2.4em repeat;
-  -webkit-background-clip: text;
-  background-clip: text;
-  color: transparent;
-}
+/* (Toz yazısı ve aracın harf hareketleri araç duraklarıyla kalktı, 2026-11-01; git geçmişinde.) */
 
 /* Kenardan bakma ipucu: fare kenar şeridindeyken o yanda hafif gölge ve ok (dönülebildiği sürece) */
 .oda-cue {
@@ -237,8 +198,10 @@
 }
 .oda[data-panel="bottom"] .sc-title { margin-bottom: 8px; font-size: clamp(34px, 9vw, 46px); }
 .oda[data-panel="bottom"] .sc-desc { margin-bottom: 12px; font-size: 15px; }
-.oda[data-panel="bottom"] .sc-tpl { margin-bottom: 12px; }
-.oda[data-panel="bottom"] .oda-dust { margin-top: 10px; font-size: 27px; }
+.oda[data-panel="bottom"] .sc-tpl { margin-bottom: 8px; }
+.oda[data-panel="bottom"] .sc-urun { margin-bottom: 12px; }
+.oda[data-panel="bottom"] .sc-gorsel { height: 40px; max-width: 40px; }
+.oda[data-panel="bottom"] .sc-tum { margin-top: 2px; min-height: 40px; }
 
 /* Telefonda döngü: tek ürün görünür, alttaki düğme sıradakine götürür (sondan başa döner); şerit gizlenir. */
 .oda-next { display: none; }
@@ -272,17 +235,9 @@ html.oda-tur-on { scrollbar-width: none; }
 html.oda-tur-on::-webkit-scrollbar { display: none; }
 .oda-tur-on .topbar { position: fixed; top: 0; left: 0; right: 0; z-index: 30; }
 .oda-tur-alan { pointer-events: none; }
-/* Ürün işaretçileri: aracın renginde mat, düz disk, ince açık çerçeve; tek, soluk ve yavaş bir halka yayılır (ışıltı
-   yok). Renk core/oda-panel.js TOOL_TONE ile aynı (motor işaretçiye data-tool yazar). Hareket azaltmada halka yok. */
-.oda .pin { --c: #ef8a46; }
-.oda .pin[data-tool="vase"] { --c: #e3a093; }
-.oda .pin[data-tool="clicker"] { --c: #74a7f2; }
-.oda .pin[data-tool="text"] { --c: #ecc659; }
-.oda .pin[data-tool="flip"] { --c: #a7cf9f; }
-.oda .pin[data-tool="qr"] { --c: #c9d2dc; }
-.oda .pin[data-tool="painter"] { --c: #6fc3bb; }
-.oda .pin[data-tool="puzzle"] { --c: #ef6f62; }
-.oda .pin[data-tool="magaza"] { --c: #e8c48c; }
+/* Ürün işaretçileri: ürün tonunda mat, düz disk, ince açık çerçeve; tek, soluk ve yavaş bir halka yayılır (ışıltı
+   yok). Renk core/oda-panel.js URUN_TONU ile aynı (motor işaretçiye data-tool="urun" yazar). Hareket azaltmada halka yok. */
+.oda .pin { --c: #e8c48c; }
 .story.oda .pin-dot {
   left: -6px; top: -6px; width: 12px; height: 12px;
   background: color-mix(in srgb, var(--c) 72%, #3a3a3a);
@@ -304,7 +259,7 @@ html.oda-tur-on::-webkit-scrollbar { display: none; }
   .story.oda .pin-dot::before { animation: none; }
 }
 
-/* Açılış perdesi koyu (sahne kurulurken beyaz parlamasın); ortada yazı ve ilerleme çubuğu (lab/oda.html --ilerleme) */
+/* Açılış perdesi koyu (sahne kurulurken beyaz parlamasın); ortada yazı ve ilerleme çubuğu (oda/index.html --ilerleme) */
 body { background: #0b0c0e; }
 .oda .story-veil { background: #0b0c0e; }
 .oda[aria-busy="true"] .story-veil::after { top: calc(50% - 20px); color: rgb(243 238 229 / 0.72); letter-spacing: 0.02em; }
@@ -336,6 +291,12 @@ body { background: #0b0c0e; }
 }
 /* kaydırınca ve her yakın planda (turda olmayan ürüne dokunulunca da) söner: kartın üstünde kalmasın */
 .oda-tur-giris.gizli, .oda.is-focused .oda-tur-giris { opacity: 0; translate: -50% 12px; }
+/* K6 okunurluk: başlığın ardında yumuşak koyu hale (zeminin açık yerinde bile ≥ 4,5:1; yazı gölgesi hesaba katılmadan) */
+.oda-tur-giris { isolation: isolate; }
+.oda-tur-giris::before {
+  content: ''; position: absolute; inset: -56px -140px; z-index: -1; pointer-events: none;
+  background: radial-gradient(closest-side, rgb(11 12 14 / 0.42) 60%, rgb(11 12 14 / 0));
+}
 .oda-tur-giris.gizli .ot-basla, .oda.is-focused .ot-basla { pointer-events: none; }
 .ot-baslik {
   margin: 0;
@@ -385,10 +346,208 @@ html.oda-tur-on .lang button { min-width: 44px; }
   .oda .story-card { top: 12px; left: max(16px, env(safe-area-inset-left)); width: min(340px, 46vw); }
     .oda .sc-title { margin-bottom: 6px; font-size: clamp(28px, 8.5vh, 40px); }
   .oda .sc-desc { margin-bottom: 8px; font-size: 14px; }
-  .oda .sc-tpl { margin-bottom: 8px; }
-  .oda .sc-hint, .oda .oda-dust { display: none; }
+  .oda .sc-tpl, .oda .sc-urun { margin-bottom: 8px; }
+  .oda .sc-hint { display: none; }
   .oda-next { left: auto; right: max(16px, env(safe-area-inset-right)); translate: none; bottom: 12px; width: 48px; height: 48px; }
   .oda-tur-giris { bottom: 12px; gap: 8px; }
   .ot-baslik { font-size: clamp(26px, 8.5vh, 38px); }
   .ot-basla { font-size: 14px; }
 }
+
+/* ---- Biggie'li sunum (core/oda-sunum.js, 2026-11-03): açılış yazıları, "kobe" balonu, "Çalışmaya dön" ----
+   Yazılar perdenin de üstünde (?giris=yukleme: oda yüklenirken başlar). Hareket WAAPI ile yalnız opacity/transform;
+   başlangıç hâli görünmez (animasyon fill: both) */
+.oda-acilis {
+  position: absolute; z-index: 4; left: 50%; bottom: calc(84px + env(safe-area-inset-bottom)); translate: -50% 0;
+  width: min(920px, calc(100% - 32px)); text-align: center; pointer-events: none; isolation: isolate;
+}
+.oda-acilis[hidden] { display: none; }
+.oda-acilis::before {
+  content: ''; position: absolute; inset: -64px -120px; z-index: -1;
+  background: radial-gradient(closest-side, rgb(11 12 14 / 0.46) 55%, rgb(11 12 14 / 0));
+}
+.oa-ad { display: grid; justify-items: center; gap: 8px; margin: 0; }
+.oa-ad > span, .oa-cumle { opacity: 0; will-change: opacity, transform; }
+.oa-isim {
+  font-family: 'Big Shoulders Display', var(--sans); font-weight: 700;
+  font-size: clamp(44px, 7vw, 92px); line-height: 0.92; letter-spacing: 0.01em;
+  color: #f6f2ea; text-shadow: 0 2px 18px rgb(0 0 0 / 0.45);
+}
+.oa-unvan {
+  font: 500 clamp(14px, 1.6vw, 18px)/1.3 var(--sans); letter-spacing: 0.14em; text-transform: uppercase;
+  color: rgb(246 242 234 / 0.86); text-shadow: 0 1px 10px rgb(0 0 0 / 0.5);
+}
+.oa-cumle {
+  position: absolute; left: 0; right: 0; bottom: 0; margin: 0 auto; max-width: 30ch;
+  font: 500 clamp(19px, 2.3vw, 30px)/1.3 var(--sans); color: #f6f2ea; text-wrap: balance;
+  text-shadow: 0 2px 14px rgb(0 0 0 / 0.5);
+}
+.oda-balon {
+  position: absolute; z-index: 4; left: 0; top: 0; padding: 8px 14px; border-radius: 14px;
+  background: #faf8f4; color: var(--ink, #15171a); font: 700 17px/1 var(--sans); letter-spacing: 0.02em;
+  box-shadow: 0 6px 18px rgb(20 22 26 / 0.22); pointer-events: none; white-space: nowrap;
+  transform: translate(-50%, -100%);
+}
+.oda-balon::after {
+  content: ''; position: absolute; left: 50%; bottom: -7px; width: 14px; height: 14px; translate: -50% 0; rotate: 45deg;
+  background: inherit; border-radius: 2px;
+}
+.oda-balon[hidden] { display: none; }
+.oda-calisma {
+  position: absolute; z-index: 3; left: 50%; bottom: calc(28px + env(safe-area-inset-bottom)); transform: translateX(-50%);
+  min-height: 44px; padding: 0 20px; border: 0; border-radius: 999px;
+  background: #f2b48a; color: #1b1410; font: 600 15px/1 var(--sans); cursor: pointer;
+  box-shadow: 0 1px 2px rgb(0 0 0 / 0.1), 0 8px 22px rgb(30 20 10 / 0.24);
+  transition: background-color 160ms ease;
+}
+.oda-calisma[hidden] { display: none; }
+@media (hover: hover) and (pointer: fine) { .oda-calisma:hover { background: #f6c29e; } }
+.oda.is-focused .oda-calisma { bottom: auto; top: calc(64px + env(safe-area-inset-top)); }
+/* Açılış sürerken turun yazısı ve ürün işaretçileri bekler */
+.oda.sunum-acilis .oda-tur-giris, .oda.sunum-acilis .story-pins, .oda.sunum-acilis .oda-next { opacity: 0 !important; pointer-events: none !important; }
+.oda.sunum-durakta .oda-tur-giris { opacity: 0; pointer-events: none; }
+@media (pointer: coarse), (max-width: 720px) {
+  .oda-acilis { bottom: calc(96px + env(safe-area-inset-bottom)); }
+  .oa-isim { font-size: clamp(42px, 12vw, 56px); }
+  .oa-unvan { font-size: 13px; letter-spacing: 0.12em; }
+  .oa-cumle { font-size: 19px; max-width: 22ch; }
+}
+
+/* ---- Kutu oyunu paneli (2026-11-04 v7, core/oda-kutu-panel.js) ----
+   Yakın plan kartının dilinde: yatay ekranda sol kenarda, zeminsiz, okunurluğu soldaki koyu perde verir; telefonda ve
+   dikey ekranda alttan koyu yaprak. Panel açıkken rafın kartı gizlenir. Oklar kutunun iki yanında (yer her karede
+   oda-sunum.js'ten), ipucu imlecin yanında. */
+.story.oda.kutu-acik .story-card { visibility: hidden !important; pointer-events: none !important; }
+.oda.kutu-acik .oda-scrim { opacity: 1; }
+.oda-kutu {
+  position: absolute;
+  z-index: 12;
+  left: clamp(24px, 4.5vw, 72px);
+  top: max(72px, calc(50% - 210px));
+  width: min(420px, 34vw);
+  color: var(--sc-ink);
+}
+.oda-kutu[hidden] { display: none; }
+.ok-ust { display: flex; align-items: center; gap: 10px; margin: 0 0 10px; min-height: 22px; }
+.ok-taslak {
+  padding: 2px 8px;
+  border: 1px solid rgb(242 180 138 / 0.6);
+  border-radius: 999px;
+  font: 600 12px/1.4 var(--sans);
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: #f2b48a;
+}
+.ok-taslak[hidden] { display: none; }
+.ok-sayac { font: 500 13px var(--mono); color: var(--sc-ink-2); font-variant-numeric: tabular-nums; }
+.ok-ad {
+  margin: 0 0 6px;
+  font-family: 'Big Shoulders Display', var(--sans);
+  font-weight: 700;
+  font-size: clamp(40px, 4.6vw, 68px);
+  line-height: 0.92;
+  letter-spacing: 0.01em;
+  color: #e8c48c;
+  font-kerning: none;
+}
+.ok-baslik { margin: 0 0 8px; font: 600 16px/1.3 var(--sans); color: var(--sc-ink); }
+.ok-metin { max-width: 34ch; margin: 0 0 14px; font-size: 17px; line-height: 1.45; color: var(--sc-ink); }
+.ok-gorsel { margin: 0 0 14px; }
+.ok-gorsel[hidden] { display: none; }
+.ok-gorsel img { display: block; width: 100%; max-height: 180px; object-fit: cover; border-radius: 6px; }
+.ok-gorsel img[hidden] { display: none; }
+.ok-gorsel figcaption {
+  display: grid;
+  place-items: center;
+  height: 120px;
+  border: 1px dashed var(--sc-line);
+  border-radius: 6px;
+  font-size: 13px;
+  color: var(--sc-ink-2);
+}
+.ok-gorsel figcaption[hidden] { display: none; }
+.ok-alt { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 14px; }
+.ok-geri {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 44px;
+  padding: 0 16px 0 12px;
+  border: 1px solid var(--sc-line);
+  border-radius: 999px;
+  background: transparent;
+  font: 600 14px var(--sans);
+  color: var(--sc-ink);
+  transition: background-color 150ms ease, transform 120ms ease-out;
+}
+.ok-geri:active { transform: scale(0.97); }
+.ok-geri svg, .oda-kutu-ok svg { width: 18px; height: 18px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+.ok-ipucu { font-size: 13px; color: var(--sc-ink-2); }
+.oda-kutu-ok {
+  position: absolute;
+  left: 0;
+  top: 0;
+  z-index: 12;
+  display: grid;
+  place-items: center;
+  width: 48px;
+  height: 48px;
+  padding: 0;
+  border: 1px solid var(--sc-line);
+  border-radius: 999px;
+  background: rgb(17 18 21 / 0.72);
+  color: var(--sc-ink);
+  box-shadow: 0 6px 18px rgb(0 0 0 / 0.3);
+  transition: background-color 150ms ease, opacity 150ms ease;
+}
+.oda-kutu-ok[hidden] { display: none; }
+.oda-kutu-ok svg { width: 22px; height: 22px; }
+.oda-kutu-ok:disabled { opacity: 0.45; }
+.oda-kutu-ok:active:not(:disabled) { background: rgb(243 238 229 / 0.18); } /* ölçek yok: yer transform'la verildiği için ölçek düğmeyi kaydırırdı */
+.ok-geri:focus-visible, .oda-kutu-ok:focus-visible { outline: 2px solid #e8c48c; outline-offset: 2px; }
+@media (hover: hover) and (pointer: fine) {
+  .ok-geri:hover { background: rgb(243 238 229 / 0.1); }
+  .oda-kutu-ok:hover:not(:disabled) { background: rgb(17 18 21 / 0.9); }
+}
+.oda-kutu-ipucu {
+  position: absolute;
+  left: 0;
+  top: 0;
+  z-index: 13;
+  display: grid;
+  gap: 2px;
+  max-width: 260px;
+  padding: 8px 12px;
+  border-left: 3px solid #e8c48c;
+  border-radius: 4px;
+  background: rgb(17 18 21 / 0.9);
+  box-shadow: 0 6px 18px rgb(0 0 0 / 0.35);
+  pointer-events: none;
+  color: var(--sc-ink);
+}
+.oda-kutu-ipucu[hidden] { display: none; }
+.oda-kutu-ipucu b { font: 600 15px/1.25 var(--sans); }
+.oda-kutu-ipucu span { font-size: 13px; line-height: 1.35; color: var(--sc-ink-2); }
+.oda-kutu-ipucu small { font-size: 12px; color: #f2b48a; }
+.oda-kutu-ipucu small[hidden] { display: none; }
+/* Telefon ve dikey ekran: alttan yaprak (yakın plan kartı gibi), oklar kutunun iki yanında kalır */
+.oda[data-panel="bottom"] .oda-kutu {
+  top: auto;
+  bottom: calc(16px + env(safe-area-inset-bottom));
+  left: 12px;
+  right: 12px;
+  width: auto;
+  max-height: 46svh;
+  overflow-y: auto;
+  padding: 14px 16px;
+  border-radius: 18px;
+  background: rgb(17 18 21 / 0.92);
+  box-shadow: inset 0 1px 0 rgb(255 255 255 / 0.07), 0 18px 48px rgb(0 0 0 / 0.35);
+}
+.oda[data-panel="bottom"].kutu-acik .oda-scrim { opacity: 0; }
+.oda[data-panel="bottom"] .ok-ad { font-size: clamp(30px, 8.5vw, 42px); }
+.oda[data-panel="bottom"] .ok-metin { margin-bottom: 10px; font-size: 15px; }
+.oda[data-panel="bottom"] .ok-gorsel figcaption { height: 72px; }
+.oda[data-panel="bottom"] .ok-ipucu { display: none; }
+.oda.kutu-acik .oda-next { display: none; }
+@media (prefers-reduced-motion: reduce) { .ok-geri, .oda-kutu-ok { transition: none; } }

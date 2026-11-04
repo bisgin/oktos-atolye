@@ -1,8 +1,20 @@
 # Oda sahnesi: tasarım ve üretim hattı
 
+**Durum 2026-11-01 (C5 P2):** oda orta kattır ve yalnız satılan ürünleri gösterir; araç durağı yok (karar:
+`docs/sayfa-haritasi.md` "Oda durakları: karar"). 14 durak → 7 ürün yuvası (`core/oda-yerler.js` `ZONES`, ürün
+verisinden), bugün 5'i görünür; araçlara giriş `/araclar/` ve reklam bağlantıları. Aşağıdaki tarihli notlar ve "Bölgeler"
+öncesi metin araç dönemini anlatır, geçmiş kaydı olarak duruyor; güncel düzen "Ürün yuvaları" bölümünde.
+
+**Sayfa 2026-11-02'den beri `oda/index.html` (`/oda/`).** Aşağıdaki notlardaki `lab/oda.html` bu sayfadır; eski adres
+yalnız yönlendirmedir (noindex; sorgu ve # korunur, deneme parametreleri `?mod=still`, `?odak=`, `?adim=`, `?bak=`,
+`?cek=1`, `?isinma=`, `?karakter=`, `?kat=1`, `?kamera=`, `?demo=1` aynen çalışır). Çekim ve ölçüm:
+`python scripts/sayfa-cek.py "oda/index.html?odak=anahtarlik" AD --port <port>`,
+`python scripts/donma-olc.py oda/index.html --port <port>`. Yakın plan kartında ürün düğmesinin yanında "Ürün sayfası"
+(`urunler/urun.html?id=<ürün>`, `core/oda-panel.js`).
+
 Taslak, 2026-10-17. **Durum:** hat C seçildi; Aşama 1 (gri kutu) onaylandı. Aşama 2 kuruldu, onay bekliyor:
 12 bölgenin hepsinde araçların gerçek şablonları, odakta şablon değiştirme, kenar paneli ve toz yazısı
-(`core/oda-panel.js`). Deneme `lab/oda.html`.
+(`core/oda-panel.js`). Deneme `lab/oda.html` (2026-11-02'den beri `oda/index.html`).
 2026-10-17: v1 `oda-sahnesi` dalına commitlendi. Yön değişti: ürünlerimiz dışında her şey fotogerçekçi olacak
 (gerçek çiçek ve toprak, ışık huzmeleri, monitör, buzdolabı, cam bardak). Balkon kapısı sürgülü (iki kanat ortadan
 açılır, pencerelerin önünde durur). Önce tek bölgede pilot (pencere kenarı saksıları), gri kutuyla yan yana.
@@ -119,19 +131,34 @@ aynalanmış) ve açık balkon (ahşap zemin, bistro masa, büyük saksılar).
 - **Sağ:** mini buzdolabı.
 - **Kapının ardında:** açık balkon; ahşap zemin, siyah korkuluk, bistro masa, iki sandalye, büyük saksılar.
 
-## Bölgeler ve ürünler
+## Ürün yuvaları (2026-11-01)
 
-| Bölge | Ürün (araç) | Odakta olan | Şablon değişimi | Cümle |
-|---|---|---|---|---|
-| Çekmece | Kutu: çekmece içi, vida ayırıcı, Gridfinity | Çekmece açılır, vidalar yağıp bölmelere dizilir | Yalnız çekmeceye uyanlar | Atölye için organizerler. |
-| Masa üstü | Kutu: kalemlik; yuvarlak tepsi (içinde yapboz parçaları) | Kalemler kalemliğe düşer | Kalemlik şablonları | *(açık: mesaj kesik)* |
-| Klavye yanı | Clicker: anahtarlık fidget'lar (klavyenin sağında) | Tıklama dalgası | Kedi, kalp, yıldız, kutu | Tık. Bir nefes daha. |
-| Raflar | QR: modem ve Wi-Fi tutucu (solda); Puzzle: 3B yapboz (sağda) | Kod yağar; 3B yapboz parça parça toplanır | QR karoları; küre, küp, yumurta, kalp | Misafirin şifre sormasın. / Bir model, yüz parça. |
-| Çerçeveler | Painter rölyefi ve boş yapboz çerçevesi yan yana | Rölyef katman katman basılır; tepsideki yapboz parçaları uçup çerçeveye yerleşir | Manzaralar | Fotoğrafın ışıkta derinleşsin. |
-| Balkon kapısı | 3D Yazı: "Oksijen alma alanı" plakası | Harfler düşüp dizilir | Tabela şablonları | Adın kapında dursun. |
-| Pencere kenarı, balkon | Vazo: saksılar (bitkiler içinde) | Çiçek yerinde kalır, saksı değişir; birkaç şablondan sonra tozdan "Sana özel saksıyı tasarla!" yazısı | Vazo şablonları | Her bitkinize şık bir kıyafet. |
-| Balkon masası | QR: menü standı, bardak altlığı | Altlık dönerek yatar, kod yağar | Menü, kartvizit | *(taslak yazılacak)* |
-| Mini buzdolabı | 3D Yazı: üst rafta "İyi ki doğdun" pasta süsü (raflar yiyecekle dolu); üstünde Text Flip | Kapak açılır; Flip tablası döner | Yazılar; kelime çiftleri | Bir yandan sen, öbür yandan o. (Flip) |
+Ürünler `core/urun-veri.js`'ten (`scripts/urun-veri.py` üretir; yalnız mağazada sayfası olan ürünler). `YUVALAR` sırası
+turun, şeridin ve telefondaki döngünün sırasıdır; ürünü olmayan yuva gizli (işaretçi, kart, seçici, tur durağı yok).
+Kadrajlar (`FOCUS`) eski duraktan taşındı.
+
+| Yuva | Sahne yeri (eski durak) | Ürün | Sahnede bugün |
+|---|---|---|---|
+| `sticker` | çekmece | 0 (gizli) | Organizer dekoru |
+| `anahtarlik` | askı panosu (2026-11-03; önce anahtar tepsisi) | 5 kart anahtarlık, satışta | Arka duvarda dolabın üstünde kodla kurulu delikli pano (huş, 304 × 300 mm, `A.pano`), 3 + 2 kanca, her ürün gerçek boyda (63 × 84 mm kart) kendi kancasında; seçici kartı değiştirmez, seçili kart kancanın ucuna kayar, öne eğilir, yüzü parlar (`panoPoz`). Tepsi halka ve anahtarlarla dekor kaldı (lamba onu aydınlatıyor) |
+| `figur` | kalemlik | 3 minifigür (satışta) + TCG kutusu (stok yok) | Kalemlik çapa |
+| `raf` | modem rafı | 10 diorama plakası (2026-11-04'ten beri açık) | Alt rafın ortasında bir seferde tek ürün silueti (2026-11-02 kararı; `plakaModeli`: g × y mm dik düzlem, `raf.webp` saydam kesit ← Marangoz `urun/<klasör>/2_tam_karsi.jpg`, `scripts/urun-diorama.py` `raf_maskeleri`; alphaTest, temas gölgesi; seçici 10 plakayı tek tek dolaşır); modem ve QR standı rafın sağ ucuna kaydı (`RAF_KAY`). 2026-11-03: modem 230 → 120 mm (kompakt ev modemi); plaka görünen taban 126,5 mm, plaka/modem 0,55 → 1,06 |
+| `kilic` | sol duvar çerçevesi | Katana (stok yok) | Rölyef çerçeve çapa |
+| `maske` | sağ duvar çerçevesi | Skeleton Mask (satışta) | Yapboz çerçeve çapa |
+| `biblo` | pervaz saksıları | 3 balbal (stok yok) | Saksı ve çiçek çapa |
+
+- **Kart:** yuvanın kısa adı, cümle (`ODA_STORY`), ürün seçici (‹ ad n/N ›; tek ürünlü yuvada oklar yok), mağaza fiyatı
+  ve durum, varsa ürün görseli, düğme, "Tüm ürünler" (`../urunler/index.html`). Satışta → "Satın al" (mağaza sayfası);
+  stok yok ya da sayfa yok → "Sipariş ver" (WhatsApp'a hazır mesaj: ürün adı ve mağaza bağlantısı, `core/order-config.js`).
+  İkisi de yeni sekmede (motor `pick`: preset `magaza` + `disari`; adresi `core/oda-panel.js` verir).
+- **3B:** modeli olan ürün (kart anahtarlık; 2026-11-04'ten beri diorama plakası da) yuvada kendi modeliyle durur; olmayanda sahne yerinin dekoru
+  çapa olarak kalır (`core/oda-urunler.js` `urunModeli`, `DEKOR`). Ürün modelleri ve renderları sonraki porsiyonda.
+- **Dekor:** yuvası olmayan yedi eski durak (kartvizit, klavye, tabela, balkon masası, mıknatıs, pasta süsü, Flip)
+  sahnede tıklanmaz dekor olarak kalır (eski durağın ilk şablonu). Buzdolabı kapağı kapalı durur.
+- **Adres:** `?odak=<yuva>` açılışta o yuvaya yakınlaşır (`/urunler/` "Odada gör"); eski durak kimliği de olur
+  (`?odak=kalemlik` → `figur`); gizli ya da bilinmeyen yuva yok sayılır, tur başlar. `?adim=2` o kadar ürün ilerler.
+- **Kaldırılanlar:** toz yazısı, aracın harf hareketleri, "Bu şablonla tasarla", 3B yapboz, QR rafının çoklu yuvası,
+  buzdolabı kapağının açılması ve çok şablonlu listeler (git geçmişinde).
 
 Kaplar ve ürünler bizim baskı modellerimiz; hazır model yalnız içine konanlar için (bitki, yiyecek), kaynağı ve
 lisansıyla (proje kuralı).
@@ -221,16 +248,17 @@ yok: sayfanın en üstünde yukarı kaydırmak üst kata çıkmak sayılır).
   kameraya bakar. Oturanın göğsü yana kaydıkça oturak çok hafif döner, yaylanarak durulur (`AYAR.salinim`); inanamama
   emote'unda kafa sırtın ~45 cm gerisine iner, oyuncu koltuğunun sırtı ~69°'ye kadar yaslanır (`yatir` meta,
   `AYAR.yatirEnCok`).
-- **Yakın planlar:** kadrajı masa başındaki karakterin kapladığı duraklar kendiliğinden bulunur (şu an kalemlik,
-  kartvizit, klavye, modem, çerçeve); kamera bunlara yaklaşırken (varışı tahmin ederek) koltuğuyla kenara (masanın sağ
-  ucunun önü, pencere yanı) kayıp müzik dinler, gerek kalmayınca döner. Kenar yeri kadrajına giren durakta (saksılar)
-  masada kalır. Ürünün önüne karakter ya da koltuk girerse ürün sade bir x-ray dairesinden görünür; kamera karakterin
+- **Yakın planlar:** kadrajı masa başındaki karakterin kapladığı duraklar kendiliğinden bulunur (görünen yuvalardan;
+  2026-11-01 öncesi kalemlik, kartvizit, klavye, modem, çerçeve idi); kamera bunlara yaklaşırken (varışı tahmin ederek) koltuğuyla kenara (masanın sağ
+  ucunun önü, pencere yanı) kayıp müzik dinler, gerek kalmayınca döner. Kenar yeri kadrajına giren durakta (biblo:
+  pervaz) masada kalır. Ürünün önüne karakter ya da koltuk girerse ürün sade bir x-ray dairesinden görünür; kamera karakterin
   içinden geçerken karakter seyrelir.
-- **İmleç dairesi (genel plan):** fare kartvizit, kalemlik ya da tuşların üzerindeyse imlecin çevresinde, ürünün
-  uzaklığında ~12 cm'lik bir daire karakteri ve koltuğu siler, arkadaki ürün görünür; tıklama ürüne gider
-  (ürünler `AYAR.donDurak`'ın anahtarları, `AYAR.fareCap`; dokunmatikte yok, yakın planda eski daire geçerli). İmleç bu ürünlerde ~0,15 sn
-  durunca karakter koltuğuyla birlikte döner (kalemlik, kartvizit saat yönünün tersine ~35°, tuşlar saat yönünde ~43°;
-  `AYAR.donDurak`), yazmayı bırakıp bekler, fare gidince döner. Ölçüm (2026-10-20): genel plan kamerasından kalemlik ve
+- **İmleç dairesi (genel plan):** fare masadaki gizli bir yerin ürününün üzerindeyse (bugün kalemliğin yerindeki `figur`
+  yuvası) imlecin çevresinde, ürünün uzaklığında ~12 cm'lik bir daire karakteri ve koltuğu siler, arkadaki ürün görünür;
+  tıklama ürüne gider (`AYAR.donDurak`'ın anahtarları sahne yerleri: kalemlik, kartvizit, klavye; yuva kimliği yerine
+  çevrilerek bakılır, `donAcisi`; `AYAR.fareCap`; dokunmatikte yok, yakın planda eski daire geçerli). İmleç orada ~0,15 sn
+  durunca karakter koltuğuyla birlikte döner (kalemlik, kartvizit saat yönünün tersine ~35°, klavye saat yönünde ~43°),
+  yazmayı bırakıp bekler, fare gidince döner. Ölçüm (2026-10-20): genel plan kamerasından kalemlik ve
   kartvizit koltuk sırtının (54 cm geniş) tam arkasında; dönüş ürünü açmaz, görünürlüğü daire sağlar.
 - **Oturuş:** ziyaret başına iki klipten biri rastgele: Koltuğa Oturma (`otur`) ya da Oturmaya Geçiş (`otur2`, Mixamo
   "Stand To Sit": koltuğun önünden geri oturur, daha çevik). `otur2`'nin başında kalça kökün ~20 cm önünde: gövde
@@ -259,10 +287,11 @@ yok: sayfanın en üstünde yukarı kaydırmak üst kata çıkmak sayılır).
 ## Açık konular
 
 - Yatay telefonda (kısa ekran) alttan açılan kart sahnenin çoğunu örtüyor; Aşama 5'te kısa ekrana dar yan panel.
-- Taslak cümleler onay bekliyor: kalemlik "Kalemler yerini bilsin.", balkon masası "Menü bir okutma uzağında.",
-  buzdolabı "Pastaya, ekmeğe, kapağa: ne yazmak istersen.", yapboz çerçevesi "Resmin parça parça yerine otursun."
-- Text Flip'in yeri: varsayılan buzdolabının üstü.
-- Ekmek ve pasta: hazır model mi, yerinde üretim mi (görsel dile göre).
+- Taslak cümleler onay bekliyor (`ODA_STORY`, 2026-11-01): figur, kilic, maske, biblo, sticker, raf cümleleri; tur başlığı
+  "Atölyeden çıkanlar", çağrı "Ürünleri gez", lede "Sattığımız ürünler bu odada."
+- Ürün modeli gelene kadar figur, kilic, maske, biblo yuvasında eski dekor çapa (kalemlik, rölyef, yapboz, saksı)
+  duruyor: kart "Katana" derken duvarda rölyef görünür. Sonraki porsiyon: ürün modelleri ya da renderları.
+- Kalkan dekor (buzdolabı, klavye tuşları, kapı plakası, Flip, QR menü ve kartvizit) kalıyor mu: kareye bakıp karar.
 
 ## Riskler
 

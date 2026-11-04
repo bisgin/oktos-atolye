@@ -5,7 +5,9 @@
 //   build(state) → { parts: [{ result, name, color?, ghost?, offset? }], info: [[labelKey, text]] }
 //   init?() → Promise: build'den önce bir kez (kütüphane, yazı tipi yükleme); parça kendi color'ını verebilir
 //   orderLines?(state) → [metin]: sipariş mesajına eklenecek satırlar (ör. fotoğrafın ayrıca gönderileceği)
-// Dışa aktarma (3MF) müşteriye kapalıdır; atölye için ?atolye=1 ile görünür. Sipariş: ziyaretçi önce "Hazır" der,
+//   secret?: [anahtar]: gizli alanlar (ör. Wi-Fi şifresi). Önizlemede kullanılır; sipariş mesajına, paylaşım ve
+//     adres çubuğu bağlantısına girmez (bağlantıda varsayılan değere döner).
+// Dışa aktarma (3MF) müşteriye kapalıdır; atölye için ?atolye=1 ile ve yalnız yerel sunucuda (localhost/127.0.0.1/::1) görünür. Sipariş: ziyaretçi önce "Hazır" der,
 // tahmini fiyat o zaman hazırlanır ve "Sipariş ver" çıkar; tasarım değişince yeniden "Hazır"a döner.
 import { initCSG } from './csg.js';
 import { Viewer } from './viewer.js';
@@ -14,6 +16,8 @@ import { t, addStrings, applyI18n, setLang, getLang, onLang } from './i18n.js';
 import { decodeState, shareURL } from './share.js';
 import { toSTL, to3MF, download } from './export.js';
 import { ORDER } from './order-config.js';
+import { PAKET_SINIF } from './paket-sinif.js';
+import { guvenliAdres } from './guvenli-adres.js';
 
 export const PRINTERS = [
   ['p1s', 'Bambu P1S / X1C / A1', [256, 256, 256]],
@@ -47,6 +51,14 @@ export async function createTool(tool, opts = {}) {
   const shareBtn = $('#share');
   const orderMeta = $('#order-meta');
   const exportsEl = $('#exports');
+  // Gizli alanlar bağlantıya yazılmaz: kopyada varsayılana döner (encodeState varsayılanı atlar).
+  const secret = new Set(tool.secret || []);
+  const linkOf = () => {
+    if (!secret.size) return shareURL(state, tool.defaults);
+    const pub = { ...state };
+    for (const k of secret) pub[k] = tool.defaults[k];
+    return shareURL(pub, tool.defaults);
+  };
 
   // Metinler motor yüklenmeden önce doğru dilde görünsün.
   const localizeDoc = () => {
@@ -69,8 +81,21 @@ export async function createTool(tool, opts = {}) {
   }
   syncLangButtons();
   localizeDoc();
-  exportsEl.hidden = !workshop;
+  // Müşteri STL/3MF indirmez (sabit kural): dışa aktarma ve fiyat önerisi yalnız ?atolye=1 VE yerel sunucuda.
+  // Canlıda ?atolye=1 yalnız teknik HUD satırlarını açar; dışa aktarma kutusu sayfadan tamamen kaldırılır.
+  const yerel = ['127.0.0.1', 'localhost', '[::1]', '::1'].includes(location.hostname);
+  const atolyeYerel = workshop && yerel;
+  if (atolyeYerel && exportsEl) exportsEl.hidden = false;
+  else exportsEl?.remove();
   setReady(false);
+
+  // Atölye fiyat önerisi: katalog depoda değil, gitignore'lu .impeccable/fiyat/katalog.json'dadır
+  // (depo dışı katalog-uret.py kopyalar). Dosya yoksa sessizce hiçbir şey.
+  let katalog = null;
+  const katalogHazir = atolyeYerel
+    ? fetch('/.impeccable/fiyat/katalog.json', { cache: 'no-store' })
+      .then((r) => (r.ok ? r.json() : null)).then((k) => { katalog = k; }).catch(() => {})
+    : Promise.resolve();
 
   const viewer = new Viewer(stage);
   window.oktos = { viewer, state }; // konsoldan hata ayıklama için
@@ -114,12 +139,14 @@ export async function createTool(tool, opts = {}) {
     for (const p of list) if (thumbs[p.id]) grid.setThumb(p.id, thumbs[p.id]);
     markPreset();
   };
+  let basePreset = null; // tasarımın çıktığı son şablon (özel tasarımda paket sınıfının tabanı)
   const presetMatches = (p) => Object.entries(p.values).every(([k, v]) => JSON.stringify(state[k]) === JSON.stringify(v));
   const currentPreset = () => tool.presets.find((p) => (!p.mode || p.mode === state.mode) && presetMatches(p));
   const markPreset = () => grid?.mark(currentPreset()?.id);
   // Şablon = tam tasarım: önce varsayılanlara dön (görünüm tercihleri korunur), sonra şablonun değerleri.
   // Böylece önceki şablondan kalan alakasız değerler (istif, kepçe…) yeni şablona taşınmaz.
   function applyPreset(p, setColor) {
+    basePreset = p.id;
     const keep = { mode: p.mode || state.mode, color: state.color, printer: state.printer, edges: state.edges, quality: state.quality };
     for (const k of Object.keys(tool.defaults)) if (!(k in keep)) state[k] = tool.defaults[k];
     Object.assign(state, keep, p.values);
@@ -158,6 +185,8 @@ export async function createTool(tool, opts = {}) {
     const notes = tool.enforce(state) || [];
     panel?.refresh();
     markPreset();
+    const cp = currentPreset();
+    if (cp) basePreset = cp.id;
     try {
       const t0 = performance.now();
       const out = tool.build(state);
@@ -182,7 +211,7 @@ export async function createTool(tool, opts = {}) {
     state._notes = notes;
     renderNotes();
     busy.classList.remove('on');
-    const url = new URL(shareURL(state, tool.defaults));
+    const url = new URL(linkOf());
     if (workshop) url.searchParams.set('atolye', '1');
     history.replaceState(null, '', url);
     // Ekran okuyucu: ayarlar oturduktan sonra tek bir özet.
@@ -238,10 +267,46 @@ export async function createTool(tool, opts = {}) {
       ...(out.info || []).map(([k, v]) => [t(k), v, true]),
       ...(workshop ? [[t('common.volume'), `${fmtNum(vol / 1000)} cm³`, true], [t('common.triangles'), fmtNum(tris, 0), true]] : []),
     ];
+    const oneri = workshop ? paketOnerisi(grams, size) : null;
+    if (oneri) rows.push([t('common.pkg'), oneri.ust], [t('common.suggested'), oneri.alt, true]);
     hud.innerHTML = rows.map(([k, v, minor]) => `<span${minor ? ' class="minor"' : ''}>${k} <b>${v}</b></span>`).join('') +
       (workshop ? `<span class="${fits ? 'good' : 'bad'}">${fits ? t('common.fits') : t('common.noFit')}: ${pr[1]}</span>` : '');
     lastStats = { size, sizeText, grams, fits, summary: `${t('common.size')} ${sizeText}, ${t('common.weight')} ${grams} g` };
     renderOrderMeta();
+  }
+
+  // Atölye: şablon katalogdaysa onun satırı; özel tasarımda aracın katı→dilim oranıyla aynı kural (sayılar katalogdan).
+  function paketOnerisi(gramKati, size) {
+    if (!katalog) return null;
+    const p = currentPreset();
+    let r = p && katalog.sablonlar.find((x) => x.arac === tool.id && x.sablon === p.id);
+    let not = r ? t(r.kaynak === 'ölçülmüş' ? 'common.measured' : 'common.derived') : t('common.customEst');
+    if (!r) {
+      // Özel tasarım: önce araç:tür (mod / vazo stili; içi boş ve dolu vazonun oranı çok farklı), yoksa araç tablosu.
+      // Tablo katalogdan gelir (hazır doğru + gram bantları); burada formül yok.
+      const ot = katalog.ozel_tahmin;
+      const tur = state.mode || state.style;
+      const o = (tur && ot?.oran[`${tool.id}:${tur}`]) || ot?.oran[tool.id];
+      if (!o) return null;
+      const gram = gramKati * o.kati_dilim;
+      const sure = gram * o.dk_gram;
+      const onerilen = Math.ceil((o.sabit + o.egim * gram) / 10) * 10;
+      const tb = ot.tabla_mm;
+      const sigar = size && size[2] <= tb[2] && ((size[0] <= tb[0] && size[1] <= tb[1]) || (size[1] <= tb[0] && size[0] <= tb[1]));
+      const sira = ot.paketler.map((x) => x.ad);
+      let i = sira.indexOf((o.bantlar.find((b) => gram <= b.gram_en_cok) || o.bantlar.at(-1)).paket);
+      while (i < sira.length - 1 && onerilen > ot.paketler[i].fiyat) i++;
+      r = sigar === false
+        ? { gram, sure_dk: sure, paket: ot.ozel_paket, paket_fiyat: null, onerilen_fiyat: onerilen }
+        : { gram, sure_dk: sure, paket: sira[i], paket_fiyat: ot.paketler[i].fiyat, onerilen_fiyat: onerilen };
+    }
+    const dk = Math.round(r.sure_dk); // önce dakikaya yuvarla: 659,6 dk → "11 sa 0 dk", "10 sa 60 dk" değil
+    const saat = t('common.hm', { h: Math.floor(dk / 60), m: dk % 60 });
+    return {
+      // Tablaya sığmayan (parçalı / özel sipariş): paket fiyatı yok, elle fiyatlanır.
+      ust: r.paket_fiyat == null ? r.paket : `${r.paket} · ${fmtNum(r.paket_fiyat, 0)} ${ORDER.currency}`,
+      alt: `${fmtNum(r.onerilen_fiyat, 0)} ${ORDER.currency} · ${Math.round(r.gram)} g · ${saat} · ${not}`,
+    };
   }
 
   // Sipariş: tahmini fiyat ve teslim süresi (ayarlıysa).
@@ -249,11 +314,41 @@ export async function createTool(tool, opts = {}) {
     if (!ORDER.pricePerGram) return null;
     return Math.max(ORDER.minPrice || 0, Math.ceil(grams * ORDER.pricePerGram));
   }
+  // ikas tasarım paketi (ORDER.paketlerYayinda): şablon → sınıf adı (core/paket-sinif.js). Özel tasarımda
+  // tabanı çıktığı şablonun sınıfı; katı gram × aracın katı→dilim oranı daha büyük bir banda düşerse üst sınıf.
+  // Tablaya sığmayan ve parçalı/özel sipariş şablonu → null (WhatsApp). Adres yalnız mağaza alan adıyla.
+  function paketOf() {
+    if (!ORDER.paketlerYayinda || !lastStats) return null;
+    const tablo = PAKET_SINIF.sablon[tool.id] || {};
+    const sira = PAKET_SINIF.sira;
+    const p = currentPreset();
+    let sinif = p ? tablo[p.id] : null;
+    if (!p) {
+      const [x, y, z] = lastStats.size;
+      const [tx, ty, tz] = PAKET_SINIF.tabla;
+      if (!(z <= tz && ((x <= tx && y <= ty) || (y <= tx && x <= ty)))) return null;
+      const tur = state.mode || state.style;
+      const o = (tur && PAKET_SINIF.oran[`${tool.id}:${tur}`]) || PAKET_SINIF.oran[tool.id];
+      const gram = lastStats.grams * (o?.katiDilim ?? 1);
+      const bant = o?.bant || [];
+      const b = bant.find(([, ust]) => gram <= ust);
+      const tahmin = sira.indexOf(b ? b[0] : sira.at(-1));
+      sinif = sira[Math.max(sira.indexOf(tablo[basePreset]), tahmin, 0)];
+    }
+    if (!sinif || !sira.includes(sinif)) return null;
+    const url = guvenliAdres(ORDER.paketler?.[sinif]);
+    return url ? { sinif, url } : null;
+  }
+
   function renderOrderMeta() {
     if (!lastStats) return;
+    const paket = paketOf();
+    orderBtn.textContent = !paket && ORDER.whatsapp ? t('common.orderWa') : t('common.order');
+    if (paket) orderBtn.dataset.paket = paket.sinif; else delete orderBtn.dataset.paket;
     if (hazirBtn && !hazir) { orderMeta.hidden = true; return; } // fiyat yalnız "Hazır"dan sonra
     const parts = [];
-    const price = priceOf(lastStats.grams);
+    const price = paket ? null : priceOf(lastStats.grams);
+    if (paket) parts.push(t('order.pkgMeta', { p: t('pkg.' + paket.sinif) }));
     if (price) parts.push(`${t('common.estPrice')} ${fmtNum(price, 0)} ${ORDER.currency}`);
     const lead = ORDER.lead?.[getLang()] || ORDER.lead?.tr;
     if (lead) parts.push(t('common.lead', { d: lead }));
@@ -261,22 +356,33 @@ export async function createTool(tool, opts = {}) {
     orderMeta.hidden = !parts.length;
   }
 
-  function colorName() {
-    const item = tool.schema(state).find((x) => x.key === 'color');
-    const opt = item?.options?.find(([v]) => v === state.color);
-    return opt ? t(opt[1]) : state.color;
+  // Sipariş özeti, panelde o an görünen alanlardan: her renk seçici kendi etiketiyle ("Yazı rengi: Krem",
+  // "Gövde rengi: Mürekkep"), her metin kutusu yazılan metinle. Renk seçicisi olmayan araç (painter:
+  // filament listesi orderLines'ta) "Renk: #1f2a3a" gibi ham kod göndermez.
+  function settingLines() {
+    const vis = tool.schema(state).filter((x) => x.key && !secret.has(x.key) && (!x.show || x.show(state)));
+    const swatches = vis.filter((x) => x.type === 'swatch');
+    const colors = swatches.map((x) => {
+      const opt = x.options?.find(([v]) => v === state[x.key]);
+      return `${swatches.length === 1 && x.label === 'p.color' ? t('order.color') : t(x.label)}: ${opt ? t(opt[1]) : state[x.key]}`;
+    });
+    const texts = vis.filter((x) => x.type === 'text' && String(state[x.key] ?? '').trim())
+      .map((x) => `${t(x.label)}: ${String(state[x.key]).trim()}`);
+    return [...texts, ...colors];
   }
 
   function orderMessage() {
     const p = currentPreset();
-    const url = shareURL(state, tool.defaults);
+    const url = linkOf();
+    const price = priceOf(lastStats.grams);
     const lines = [
       t('order.hello'),
       `${t('order.tool')}: ${t(tool.id + '.title')}`,
       `${t('order.preset')}: ${p ? t(p.label) : t('order.custom')}`,
       `${t('common.size')}: ${lastStats.sizeText}`,
       `${t('order.weight')}: ${lastStats.grams} g PLA`,
-      `${t('order.color')}: ${colorName()}`,
+      ...(price ? [`${t('common.estPrice')}: ${fmtNum(price, 0)} ${ORDER.currency}`] : []),
+      ...settingLines(),
       ...(lastStats.fits ? [] : [t('order.split')]),
       ...(tool.orderLines ? tool.orderLines(state) : []),
       `${t('order.design')}: ${url}`,
@@ -284,8 +390,32 @@ export async function createTool(tool, opts = {}) {
     return lines.join('\n');
   }
 
+  // Hızlı çift dokunma iki pencere açmasın: tıktan sonra 1,5 sn kilit.
+  let orderLock = 0;
   orderBtn.addEventListener('click', () => {
     if (!last || !lastStats) return;
+    const now = performance.now();
+    if (now < orderLock) return;
+    orderLock = now + 1500;
+    const paket = paketOf();
+    if (paket) {
+      // Pano yazımı tık anında başlar (kullanıcı hareketi), mağaza sekmesi aynı tıkta eşzamanlı açılır.
+      const not = [...(tool.orderLines ? tool.orderLines(state) : []), `${t('order.design')}: ${linkOf()}`].join('\n');
+      const pano = navigator.clipboard?.writeText ? navigator.clipboard.writeText(not) : Promise.reject();
+      window.open(paket.url, '_blank', 'noopener');
+      pano.then(() => toast(t('order.noteCopied'))).catch(() => {
+        const box = $('#share-fallback');
+        if (box) {
+          box.hidden = false;
+          const inp = box.querySelector('input');
+          inp.value = not.replace(/\n/g, ' · ');
+          inp.focus();
+          inp.select();
+        }
+        toast(t('order.noteManual'));
+      });
+      return;
+    }
     const msg = orderMessage();
     if (ORDER.whatsapp) {
       window.open(`https://wa.me/${ORDER.whatsapp}?text=${encodeURIComponent(msg)}`, '_blank', 'noopener');
@@ -306,7 +436,7 @@ export async function createTool(tool, opts = {}) {
 
   // Paylaşım: pano olmazsa seçili bir metin kutusu (engelleyici pencere yok).
   shareBtn.addEventListener('click', async () => {
-    const url = shareURL(state, tool.defaults);
+    const url = linkOf();
     try {
       await navigator.clipboard.writeText(url);
       toast(t('common.copied'));
@@ -321,17 +451,21 @@ export async function createTool(tool, opts = {}) {
     }
   });
 
-  // Atölye dışa aktarma (yalnız ?atolye=1)
+  // Atölye dışa aktarma (yalnız ?atolye=1 + yerel sunucu; canlıda düğme yok, işleyici de bağlanmaz)
   const fileBase = () => tool.fileName ? tool.fileName(state) : tool.id;
   const solidParts = () => (last?.parts || []).filter((p) => !p.ghost && p.result && !p.result.empty);
-  $('#dl-stl')?.addEventListener('click', () => { // eski sayfalar (STL düğmesi kaldırıldı)
-    const parts = solidParts();
-    if (parts.length) download(toSTL(parts), fileBase() + '.stl');
-  });
-  $('#dl-3mf').addEventListener('click', () => {
-    const parts = solidParts().map((p) => ({ ...p, color: p.color || state.color }));
-    if (parts.length) download(to3MF(parts), fileBase() + '.3mf');
-  });
+  if (atolyeYerel) {
+    $('#dl-stl')?.addEventListener('click', () => { // eski sayfalar (STL düğmesi kaldırıldı)
+      const parts = solidParts();
+      if (parts.length) download(toSTL(parts), fileBase() + '.stl');
+    });
+    $('#dl-3mf')?.addEventListener('click', () => {
+      const parts = solidParts().map((p) => ({ ...p, color: p.color || state.color }));
+      if (parts.length) download(to3MF(parts), fileBase() + '.3mf');
+    });
+  } else {
+    document.querySelectorAll('#dl-stl, #dl-3mf').forEach((b) => b.remove());
+  }
 
   function renderAll(refit = false) {
     renderModes();
@@ -363,6 +497,7 @@ export async function createTool(tool, opts = {}) {
   const idle = () => new Promise((r) => (window.requestIdleCallback ? requestIdleCallback(r, { timeout: 400 }) : setTimeout(r, 30)));
 
   renderAll(true);
+  katalogHazir.then(() => { if (katalog && last) renderStats(last); }); // katalog geç gelirse satırı ekle
   let thumbsOn = !opts.deferThumbs;
   if (thumbsOn) thumbsFor(state.mode);
   modesEl.addEventListener('click', () => { if (thumbsOn) thumbsFor(state.mode); });

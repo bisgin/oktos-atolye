@@ -1,24 +1,28 @@
-// Oda sahnesi (docs/oda-sahnesi.md): ev ofisi ve açık balkon (şimdilik gri kutu: düz bloklar). Her bölgenin
-// ürünü bir yuvada durur; yuvadaki model araçların gerçek şablonu (core/oda-urunler.js). Yakın plandayken şablon
-// değişir (api.show): eski model küçülüp kaybolur, yenisi yerine oturur; saksıda bitki yerinde kalır, yeni saksının
-// ağzına iner. Yerler ve kamera core/oda-yerler.js'ten.
-// Pilot (options.pilot, lab: ?pilot=1): oda kabuğu, pervazlar, kasalar ve balkon Blender'da pişmiş GLB'den gelir
-// (core/oda-ortam.js, scripts/oda-blender.py); camlar gerçek cam, ışık sabah güneşi ve huzmeler, saksıda toprak ve
-// gerçek çiçek. Mobilya şimdilik gri kutu.
-// Davranış: çekmece üzerine gelince aralanır, yakınlaşınca açılır; buzdolabının kapağı yakınlaşınca açılır.
+// Oda sahnesi (docs/oda-sahnesi.md): ev ofisi ve açık balkon; orta kat, yalnız satılan ürünler (2026-11-01). Ürün
+// yuvaları core/oda-yerler.js ZONES'ta (ürün verisinden); görünen her yuva bir işaretçi, yakın plan ve tur durağıdır.
+// Yakın plandayken ürün değişir (api.show): modeli olan ürün (kart anahtarlık) yuvada kendi modeliyle durur, eski model
+// küçülüp kaybolur, yenisi yerine oturur; modeli olmayan üründe yuvada sahne yerinin dekoru çapa olarak kalır. Sahne
+// yerlerinde (eski araç durakları) dekor durur, tıklanmaz (core/oda-urunler.js DEKOR).
+// Pilot (options.pilot): oda kabuğu, pervazlar, kasalar ve balkon Blender'da pişmiş GLB'den gelir (core/oda-ortam.js,
+// scripts/oda-blender.py); camlar gerçek cam, ışık sabah güneşi ve huzmeler, saksıda toprak ve gerçek çiçek.
+// Davranış: çekmece (gizli sticker yuvası açılınca) üzerine gelince aralanır, yakınlaşınca açılır.
 import * as THREE from 'three';
 import { gsap } from 'gsap';
 import { initCSG } from './csg.js';
-import { ZONES, A, SHOTS, LOOK, FOCUS, LIGHTS } from './oda-yerler.js';
-import { TEMPLATES, COKLU, buildTemplate, binModel, vaseModel, OZEL_TUSLAR } from './oda-urunler.js';
+import { ZONES, GORUNEN, A, RAF_KAY, SHOTS, LOOK, FOCUS, LIGHTS, fitShot, BIGGIE_DURAK, FOV } from './oda-yerler.js';
+import { DEKOR, dekorModeli, urunleri, urunModeli, binModel, vaseModel, OZEL_TUSLAR } from './oda-urunler.js';
 import { OLCU, toSun } from './oda-olcu.js';
+import { guvenliAdres } from './guvenli-adres.js';
+import { portfolyoIskelet } from './oda-portfolyo.js';
+import { kadrajAraci } from './oda-kadraj.js';
+import { PORTFOLYO_DURAK } from './story-data.js';
 
 const TAU = Math.PI * 2;
 const { ROOM, GLASS, BALCONY, DESK, SILL, SHELF, PEDESTAL, FRIDGE } = OLCU; // GLASS: pencere | kapı | pencere
 const FRAME = { w: 680, h: 520 };      // sağ duvarda, buzdolabının üstünde cüce savaşçı yapbozu
 const FRAME_K = { w: 512, h: 400 };    // sol duvarda rölyef çerçevesi (önceki 320 × 250'nin 1,6 katı)
 const yieldMain = () => globalThis.scheduler?.yield?.() ?? new Promise((r) => setTimeout(r, 0));
-export const options = { pilot: false }; // sayfa sahne kurulmadan önce açar
+export const options = { pilot: false, portfolyo: true }; // sayfa sahne kurulmadan önce açar (portfolyo: false ölçüm için)
 
 // Pilotun dosyaları (scripts/oda-blender.py çıktıları) ve ışık ayarı; yalnız pilot açıkken yüklenir
 async function pilotYukle() {
@@ -44,7 +48,7 @@ async function pilotYukle() {
 }
 let P_ = null; // props.js (buildScene'e gelir; pilot malzemesi için)
 
-export async function buildScene({ scene, P, lang = 'tr' }) {
+export async function buildScene({ scene, P, lang = 'tr', hafif = false }) {
   P_ = P;
   await initCSG();
   const pilot = options.pilot ? await pilotYukle() : null;
@@ -156,74 +160,104 @@ export async function buildScene({ scene, P, lang = 'tr' }) {
     scene.add(spot, spot.target);
   }
 
-  // ---- yuvalar: bölgenin ürünü burada; şablon değişince yalnız yuvadaki model değişir ----
+  // ---- dekor ve ürün yuvaları ----
+  // Her sahne yerinde dekor durur (DEKOR: eski durağın ilk şablonu, tıklanmaz). Görünen bir yuvanın yerindeyse
+  // (ZONES.yer) yuva orada kurulur: seçici yuvanın ürünlerini dolaşır; modeli olan ürün yuvada kendi modeliyle durur,
+  // modeli olmayanda dekor çapa olarak kalır.
   const slots = {};
+  const YUVA_YERI = Object.fromEntries(GORUNEN.map((z) => [z.yer, z.id])); // sahne yeri → görünen yuva
+  const yerOf = (id) => ZONES.find((z) => z.id === id)?.yer ?? null;    // yuva → sahne yeri
+  const KURULACAK = Object.keys(DEKOR).length + 1; // dekorlu yerler + anahtar halkası (açılış çubuğu)
+  let kurulan = 0;
   let cayBuhari = null; // balkondaki çaydan yükselen buhar (update'te tıklar)
   const ledler = []; // robot süpürgenin sarı ve mavi durum ışığı (malzemeleri)
-  const duvarlar = {}, donen = {}; // yakın planda çevirme: bölge → duvardaki nesne; bölge → { obj, rz0, pos0, w, aci }
-  let klavyeBilgi = null; // klavye kurulunca: tuş yerleri ve anahtarlığın yeri (klavye şablonları için)
-  const agiz = (m) => m.userData.soil ?? m.userData.h; // bitki toprağa (yoksa saksının ağzına) oturur
-  const tag = (o, zone) => o.traverse((x) => { x.userData.hotspot = zone; });
-  // Önbellekte üretimin sözü (promise) durur: önceden üretme ile gösterme yarışsa da aynı şablon iki kez üretilmez
-  function model(zone, id) {
-    const s = slots[zone];
-    if (!s.cache.has(id)) {
-      const p = buildTemplate(zone, id, { lang, saksi: pilot?.saksi, pasta: pilot?.cicek.pasta, klavye: klavyeBilgi, kart: pilot?.esya.kart_anahtarlik }).then((m) => { tag(m, zone); return m; });
-      p.catch(() => s.cache.delete(id)); // üretilemediyse sonraki istekte yeniden denenir
-      s.cache.set(id, p);
-    }
-    return s.cache.get(id);
-  }
-  // Yakın plandaki bölgenin komşu şablonları boşta önceden üretilir: ilk gösterimde takılma olmasın
-  function prefetch(zone) {
-    const s = slots[zone], list = TEMPLATES[zone];
-    if (!s || list.length < 2) return;
-    for (const d of [1, -1]) model(zone, list[(s.index + d + list.length) % list.length].id);
-  }
-  async function slot(zone, host, { plant = null } = {}) {
-    const s = (slots[zone] = { host, plant, cache: new Map(), index: 0, model: null, busy: false });
-    const list = TEMPLATES[zone];
-    if (COKLU[zone]) {
-      // Çoklu yuva (QR): her ürün kendi yerinde, ilk şablonuyla. Ürün düğümü: kok (yer) → mentese (ön kenarda, dikelme
-      // ekseni) → ic (modeli kenara göre geri kaydırır) → model
-      s.coklu = {};
-      for (const [urun, c] of Object.entries(COKLU[zone])) {
-        const t = list.find((x) => x.urun === urun);
-        const u = { ...c, kok: place(new THREE.Group(), c.yer, host), mentese: new THREE.Group(), ic: new THREE.Group(), id: t.id };
-        u.kok.add(u.mentese);
-        u.mentese.add(u.ic);
-        u.model = await model(zone, t.id);
-        u.ic.add(u.model);
-        u.mentese.rotation.x = c.dur ?? 0;
-        kenar(u);
-        s.coklu[urun] = u;
-      }
-      s.model = s.coklu[list[0].urun].model;
-    } else {
-      s.model = await model(zone, list[0].id);
-      host.add(s.model);
-    }
-    if (plant) plant.position.z = agiz(s.model);
-    dispatchEvent(new CustomEvent('oda-kurulum', { detail: Object.keys(slots).length / ZONES.length })); // açılış çubuğu
+  const duvarlar = {}, donen = {}; // yakın planda çevirme: sahne yeri → duvardaki nesne; yuva → { obj, rz0, pos0, w, aci }
+  let klavyeBilgi = null; // klavye kurulunca: tuş yerleri ve anahtarlığın yeri (klavye dekoru için)
+  const agiz = (m) => m?.userData.soil ?? m?.userData.h; // bitki toprağa (yoksa saksının ağzına) oturur
+  const tag = (o, zone) => { o.traverse((x) => { x.userData.hotspot = zone; }); return o; };
+  async function ilerle() {
+    dispatchEvent(new CustomEvent('oda-kurulum', { detail: ++kurulan / KURULACAK })); // açılış çubuğu
     await yieldMain();
+  }
+  // Ürünün modeli; modeli olmayan üründe yuvanın dekoru. Önbellekte üretimin sözü (promise) durur: önceden üretme ile
+  // gösterme yarışsa da aynı model iki kez üretilmez
+  function model(zone, i) {
+    const s = slots[zone], u = s.urunler[i];
+    if (!s.cache.has(u.id)) {
+      const p = urunModeli(u, { kart: pilot?.esya.kart_anahtarlik }).then((m) => (m ? tag(m, zone) : s.dekor));
+      p.catch(() => s.cache.delete(u.id)); // üretilemediyse sonraki istekte yeniden denenir
+      s.cache.set(u.id, p);
+    }
+    return s.cache.get(u.id);
+  }
+  // Yakın plandaki yuvanın komşu ürünleri boşta önceden üretilir: ilk gösterimde takılma olmasın
+  function prefetch(zone) {
+    const s = slots[zone], n = s?.urunler.length;
+    if (!s || n < 2) return;
+    for (const d of [1, -1]) model(zone, (s.index + d + n) % n);
+  }
+  // Yuva: host'ta dekor (çapa; yoksa null) ve ilk ürünün modeli
+  async function yuvaKur(zone, host, dekor, { plant = null } = {}) {
+    const s = (slots[zone] = { host, plant, dekor, urunler: urunleri(zone), cache: new Map(), index: 0, model: dekor, busy: false });
+    if (s.urunler.length) {
+      const m = await model(zone, 0);
+      if (m && m !== dekor) {
+        if (dekor) host.remove(dekor);
+        host.add(m);
+        s.model = m;
+      }
+    }
+    if (plant && agiz(s.model) != null) plant.position.z = agiz(s.model);
     return s;
   }
-  // Çoklu yuvada dikelme ekseni modelin ön kenarında: kenar orada kalır, arkası kalkar (yatan anahtarlık kameraya döner)
-  function kenar(u) {
-    const y = u.model.userData.onKenar ?? 0;
-    u.mentese.position.y = y;
-    u.ic.position.y = -y;
-  }
-  // Seçili ürünü öne çıkarır (yalnız yakın planda; genel planda hepsi yerinde). Diğerleri yerinde kalır, silinmez.
-  function isaretle(zone, { reduced = false } = {}) {
-    const s = slots[zone];
-    if (!s?.coklu) return;
-    const secili = focusedId === zone ? TEMPLATES[zone][s.index].urun : null, d = reduced ? 0.01 : 0.45;
-    for (const [urun, u] of Object.entries(s.coklu)) {
-      const on = urun === secili;
-      gsap.to(u.mentese.rotation, { x: on ? u.egim : u.dur ?? 0, duration: d, ease: 'power3.out', overwrite: true });
-      gsap.to(u.kok.position, { z: u.yer[2] + (on ? u.kalk : 0), duration: d, ease: 'power3.out', overwrite: true });
+  // Askı panosu yuvası (kart anahtarlıklar): her ürün kendi kancasında; seçici ürünü değiştirmez, seçili kartı öne çeker.
+  // İlk kart açılışta beklenir, ötekiler açılıştan sonra boşta yüklenir (açılış süresi değişmesin)
+  function panoKarti(zone, i) {
+    const s = slots[zone], k = s.kancalar[i];
+    if (!k.userData.yuk) {
+      k.userData.yuk = model(zone, i).then((m) => {
+        if (!m) return null;
+        m.traverse((o) => {
+          if (o.name.startsWith('kart_baglanti')) o.visible = false; // halka bağlantısı tepsideki halka içindi
+          if (o.name.startsWith('kart_yuz') && o.material.emissiveIntensity != null) o.material.emissiveIntensity = s.index === i ? 0.16 : 0.03;
+        });
+        k.userData.tut.add(m);
+        return m;
+      });
     }
+    return k.userData.yuk;
+  }
+  // Seçili kart kancanın ucuna kayar, alt ucu öne eğilir ve yüzü biraz daha parlak; ötekiler panoya yaslı, sönük
+  function panoPoz(zone, { reduced = false } = {}) {
+    const s = slots[zone];
+    s.kancalar.forEach((k, j) => {
+      const t = k.userData.tut, on = j === s.index;
+      const y = -(on ? PANO.ileri : PANO.geri), rx = Math.PI / 2 - (on ? PANO.egim : 0);
+      const yuz = [];
+      t.traverse((o) => { if (o.name.startsWith('kart_yuz') && o.material.emissiveIntensity != null) yuz.push(o.material); });
+      const isik = on ? 0.16 : 0.03;
+      gsap.killTweensOf([t.position, t.rotation, ...yuz]);
+      if (reduced) { t.position.y = y; t.rotation.x = rx; yuz.forEach((m) => { m.emissiveIntensity = isik; }); return; }
+      gsap.to(t.position, { y, duration: 0.45, ease: 'power3.out' });
+      gsap.to(t.rotation, { x: rx, duration: 0.6, ease: on ? 'back.out(2)' : 'power3.out' });
+      gsap.to(yuz, { emissiveIntensity: isik, duration: 0.4, ease: 'power2.out' });
+    });
+  }
+  async function panoKur(zone) {
+    const s = (slots[zone] = { host: pano, plant: null, dekor: null, urunler: urunleri(zone), cache: new Map(), index: 0, model: null, busy: false, kancalar });
+    if (!s.urunler.length) return;
+    s.model = await panoKarti(zone, 0);
+    panoPoz(zone, { reduced: true });
+    gsap.delayedCall(1.5, () => kancalar.forEach((_, i) => panoKarti(zone, i)));
+  }
+  // Sahne yeri: dekoru kurar; görünen bir yuvanın yeriyse yuvayı da
+  async function yerlestir(yer, host, { plant = null } = {}) {
+    const m = await dekorModeli(yer, { lang, saksi: pilot?.saksi, pasta: pilot?.cicek.pasta, klavye: klavyeBilgi });
+    host.add(m);
+    if (plant) plant.position.z = agiz(m);
+    if (YUVA_YERI[yer]) await yuvaKur(YUVA_YERI[yer], host, m, { plant });
+    await ilerle();
+    return m;
   }
 
   // ---- çekmeceli dolap; üst çekmece raylı, −y yönünde açılır; içinde Kutu aracının çekmeceye uyan şablonları ----
@@ -247,19 +281,19 @@ export async function buildScene({ scene, P, lang = 'tr' }) {
   }
   place(drawer, [px, py, 490]);
   const DRAWER_Y = py;
-  await slot('cekmece', place(new THREE.Group(), [0, -10, 10], drawer));
+  await yerlestir('cekmece', place(new THREE.Group(), [0, -10, 10], drawer)); // organizer; sticker yuvasının yeri
 
-  // ---- masanın üstü: kalemlik yuvası (monitörün solunda) ----
+  // ---- masanın üstü: kalemlik (monitörün solunda; figur yuvasının çapası) ----
   const penZone = new THREE.Group();
   scene.add(penZone);
-  await slot('kalemlik', place(new THREE.Group(), A.pencup, penZone));
-  // Kalemliğin önünde ayaklı kartvizit (kendi durağı: kamera yaklaşır, dört tasarım)
+  await yerlestir('kalemlik', place(new THREE.Group(), A.pencup, penZone));
+  // Kalemliğin önünde ayaklı kartvizit (dekor)
   const kvZone = new THREE.Group();
   scene.add(kvZone);
-  await slot('kartvizit', place(new THREE.Group(), A.kartvizit, kvZone));
+  await yerlestir('kartvizit', place(new THREE.Group(), A.kartvizit, kvZone));
 
-  // ---- klavye (hafif eğik, arkası ayaklı): Esc, Enter ve yukarı ok boş (MX anahtarı); yuvası klavyenin kendisi,
-  // şablon o tuşlara başlık takar ve klavyenin sağına aynı tasarımın anahtarlığını koyar ----
+  // ---- klavye (hafif eğik, arkası ayaklı): Esc, Enter ve yukarı ok boş (MX anahtarı); dekoru o tuşlara başlık takar
+  // ve klavyenin önüne aynı tasarımın anahtarlığını koyar ----
   const kbZone = new THREE.Group();
   scene.add(kbZone);
   const kbHost = place(new THREE.Group(), A.keyboard, kbZone), kb = P.mechKeyboard({ skip: OZEL_TUSLAR });
@@ -274,24 +308,35 @@ export async function buildScene({ scene, P, lang = 'tr' }) {
     yer: kb.matrixWorld.clone().invert().multiply(new THREE.Matrix4().compose(new THREE.Vector3(A.clickers[0], A.clickers[1], A.clickers[2]),
       new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(0, 0, 1), A.clickers[3]), new THREE.Vector3(1, 1, 1))),
   };
-  await slot('klavye', kb);
+  await yerlestir('klavye', kb);
 
-  // ---- rafta modem (dekor) ve QR yuvası: Wi-Fi standı modemin üstünde, kartvizit sağında, anahtarlık en sağda ----
+  // ---- alt rafta modem ve üstünde QR Wi-Fi standı (dekor); raf yuvası görünürse (diorama plakaları, 2026-11-04)
+  // seçili plaka rafın ortasında (A.plakalar, bir seferde tek plaka), modem ve standı sağ uca kayar (RAF_KAY) ----
   const modemZone = new THREE.Group();
   scene.add(modemZone);
+  const rafYuva = YUVA_YERI.modem ? place(new THREE.Group(), A.plakalar, modemZone) : null;
+  const kay = (a) => (rafYuva ? [a[0] + RAF_KAY, ...a.slice(1)] : a);
+  // Modem kompakt ev modemi ölçüsünde (2026-11-03: 230 → 120 mm; 127 mm'lik diorama plakası yanında 2 kat büyük
+  // görünüyordu, kullanıcı: plaka modemle aynı ya da biraz büyük olmalı)
+  const MODEM = { w: 120, d: 110, h: 30 };
   {
-    const modem = place(new THREE.Group(), A.modem, modemZone);
-    box(230, 150, 36, 0, 0, 0, M.dark, { parent: modem, r: 8 });
-    for (const x of [-80, 80]) place(P.mesh(P.cyl(5, 5, 150, 8), M.dark), [x, 55, 30], modem);
+    const modem = place(new THREE.Group(), kay(A.modem), modemZone);
+    box(MODEM.w, MODEM.d, MODEM.h, 0, 0, 0, M.dark, { parent: modem, r: 6 });
+    for (const x of [-46, 46]) place(P.mesh(P.cyl(4, 4, 110, 8), M.dark), [x, 40, 24], modem);
   }
-  await slot('modem', place(new THREE.Group(), A.qrHolder, modemZone));
+  const qrYeri = place(new THREE.Group(), [-160, -15, MODEM.h], place(new THREE.Group(), kay(A.qrHolder), modemZone));
+  if (rafYuva) {
+    qrYeri.add(await dekorModeli('modem', { lang }));
+    await yuvaKur(YUVA_YERI.modem, rafYuva, null);
+    await ilerle();
+  } else await yerlestir('modem', qrYeri);
 
-  // ---- balkon kapısının üstünde 3D Yazı plakası ("Oksijen alma alanı") ----
+  // ---- balkon kapısının üstünde 3D Yazı plakası ("Oksijen alma alanı"; dekor) ----
   const sign = place(new THREE.Group(), A.sign);
-  duvarlar.tabela = sign;
-  await slot('tabela', sign);
+  await yerlestir('tabela', sign);
 
-  // ---- iki yatay çerçeve: sol duvarda ortada Painter rölyefi, sağ duvarda buzdolabının üstünde resimli yapboz ----
+  // ---- iki yatay çerçeve: sol duvarda ortada Painter rölyefi (kilic yuvasının çapası), sağ duvarda buzdolabının
+  // üstünde resimli yapboz (maske yuvasının çapası) ----
   const frameOf = (at, F2, rz) => {
     const f = place(new THREE.Group(), at);
     box(F2.w, 30, F2.h, 0, 0, 0, M.dark, { parent: f, r: 4 });
@@ -299,15 +344,16 @@ export async function buildScene({ scene, P, lang = 'tr' }) {
     f.rotation.z = rz; // ön yüzü odaya
     return f;
   };
-  const frameA = frameOf(A.frameA, FRAME_K, Math.PI / 2), frameB = frameOf(A.frameB, FRAME, -Math.PI / 2);
+  const duvarYonu = (at) => (at[0] < 0 ? Math.PI / 2 : -Math.PI / 2); // sol duvarda önü +x, sağda −x
+  const frameA = frameOf(A.frameA, FRAME_K, duvarYonu(A.frameA)), frameB = frameOf(A.frameB, FRAME, duvarYonu(A.frameB));
   duvarlar.cerceve = frameA;
   duvarlar.yapboz = frameB;
   const rolyef = place(new THREE.Group(), [0, -20, FRAME_K.h / 2], frameA);
   rolyef.scale.setScalar(1.6); // Painter rölyefi (248 mm + kenar) çerçeveyle birlikte büyür: 472 × 360 mm arkalığa sığar
-  await slot('cerceve', rolyef);
-  await slot('yapboz', place(new THREE.Group(), [0, -20, FRAME.h / 2], frameB));
+  await yerlestir('cerceve', rolyef);
+  await yerlestir('yapboz', place(new THREE.Group(), [0, -20, FRAME.h / 2], frameB));
 
-  // ---- saksılar: soldaki pervaz saksısı yuva (bitki yerinde kalır), diğerleri sabit; balkonda büyük saksılar ----
+  // ---- saksılar: soldaki pervaz saksısı biblo yuvasının çapası (bitki yerinde kalır), yanında ikinci saksı ----
   const pots = new THREE.Group();
   scene.add(pots);
   const sprout = (k = 1) => { // saksıda küçük yeşillik (içerik, yer tutucu)
@@ -319,14 +365,14 @@ export async function buildScene({ scene, P, lang = 'tr' }) {
     const hero = place(new THREE.Group(), [A.sillL[0] - 115, A.sillL[1], A.sillL[2]], pots);
     const plant = pilot?.cicek.cicek_a ?? sprout();
     hero.add(plant);
-    await slot('saksilar', hero, { plant });
+    await yerlestir('saksilar', hero, { plant });
     // Yanında çiçekli ikinci saksı. (Sağ pervazdaki boş saksı ve balkondaki büyük saksılar kullanıcı isteğiyle kalktı.)
     const v = place(vaseModel('tulip', {}, pilot?.saksi), [A.sillL[0] + 115, A.sillL[1], A.sillL[2]], pots);
     const cicekB = pilot ? pilot.cicek.cicek_b : sprout(0.8);
     if (cicekB) { cicekB.position.z = agiz(v); v.add(cicekB); }
   }
 
-  // ---- balkon masası: bistro masa ve rattan sandalyeler (dekor), kupa; QR yuvası (menü / altlık) ----
+  // ---- balkon masası: bistro masa ve rattan sandalyeler, kupa ve QR menü standı (hepsi dekor) ----
   const tableDecor = new THREE.Group();
   scene.add(tableDecor);
   {
@@ -346,10 +392,10 @@ export async function buildScene({ scene, P, lang = 'tr' }) {
   }
   const tableItems = new THREE.Group();
   scene.add(tableItems);
-  await slot('balkonMasa', place(new THREE.Group(), [A.table[0] + 80, A.table[1] + 60, 722, -0.3], tableItems));
+  await yerlestir('balkonMasa', place(new THREE.Group(), [A.table[0] + 80, A.table[1] + 60, 722, -0.3], tableItems));
 
-  // ---- mini buzdolabı (sağ duvar, ön yüzü −x): üst rafta pasta süsü yuvası, iki raf yiyecekle dolu; üstünde döner
-  // tablada Text Flip yuvası ----
+  // ---- mini buzdolabı (sağ duvar, ön yüzü −x): üst rafta pastada süs, iki raf yiyecekle dolu, kapakta mıknatıslar;
+  // üstünde tablada Text Flip (hepsi dekor; kapak kapalı durur) ----
   const F = FRIDGE;
   const fridge = place(new THREE.Group(), A.fridge);
   if (pilot) fridge.add(pilot.esya.buzdolabi); // gerçekçi model (raf ve taban yuvaların yüksekliğinde)
@@ -375,8 +421,8 @@ export async function buildScene({ scene, P, lang = 'tr' }) {
     koy('yiyecek_fasulye', 0, 180, F.floor);
     koy('yiyecek_domates', -60, 80, F.floor, 1.1);
   }
-  await slot('buzdolabi', place(new THREE.Group(), [-40, 0, F.shelf, -Math.PI / 2], fridge));
-  let door; // menteşe arka köşede; yakın planda açılır
+  await yerlestir('buzdolabi', place(new THREE.Group(), [-40, 0, F.shelf, -Math.PI / 2], fridge));
+  let door; // menteşe arka köşede
   if (pilot) door = pilot.esya.buzdolabi.getObjectByName('buzdolabi_kapak');
   else {
     door = place(new THREE.Group(), [-F.d / 2, F.w / 2, 0], fridge);
@@ -388,7 +434,7 @@ export async function buildScene({ scene, P, lang = 'tr' }) {
   kapakYuzu.quaternion.setFromRotationMatrix(new THREE.Matrix4().makeBasis(new THREE.Vector3(0, -1, 0), new THREE.Vector3(0, 0, 1), new THREE.Vector3(-1, 0, 0)));
   kapakYuzu.position.set(-26.5, -F.w / 2, 0);
   door.add(kapakYuzu);
-  await slot('miknatis', kapakYuzu);
+  await yerlestir('miknatis', kapakYuzu);
   // Kapak raflarında markasız içecekler (pilot): üst rafta üç kutu, altta cam su şişesi ve kutu (kapağın yerel düzleminde)
   if (pilot) {
     const O = await import('./oda-ortam.js');
@@ -396,8 +442,7 @@ export async function buildScene({ scene, P, lang = 'tr' }) {
     place(O.suSisesi(), [52, -330, 285], door); // cam su şişesi
     place(O.icecekKutusu(0x3f6fb0), [52, -250, 285], door);
   }
-  // Kapak açılınca iç ışık yanar (pilot). Sahne mm: nokta ışığın gücü bu yüzden büyük (ışık mesafenin karesiyle söner).
-  const icIsik = pilot ? place(new THREE.PointLight(0xfff3e4, 0, 700, 2), [-60, 0, F.h - 120], fridge) : null;
+  // (Kapak açılınca yanan iç ışık buzdolabı durağıyla kalktı, 2026-11-01; kodu git geçmişinde.)
   // Monitör klavyenin arkasında (pilot): ekranında Kutu aracının sayfası; masa altı (kasa, priz, kablo kanalı, fare,
   // mousepad) dünya koordinatında gelir
   if (pilot) {
@@ -420,8 +465,7 @@ export async function buildScene({ scene, P, lang = 'tr' }) {
   }
   const flipZone = place(new THREE.Group(), [A.fridge[0], A.fridge[1], F.h, -Math.PI / 2 + 0.5]);
   flipZone.add(P.mesh(P.cyl(90, 90, 12, 32), M.dark));
-  const spin = place(new THREE.Group(), [0, 0, 12], flipZone);
-  await slot('flip', spin);
+  await yerlestir('flip', place(new THREE.Group(), [0, 0, 12], flipZone));
 
   // ---- pilot: pişmiş kabuk, gökyüzü, yansıma, huzmeler, ürün gölgesinin pişmiş mermere düşmesi ----
   if (pilot) {
@@ -451,9 +495,9 @@ export async function buildScene({ scene, P, lang = 'tr' }) {
     }
   }
 
-  // ---- dolabın üstünde, spot lambanın altında anahtar tepsisi (Kutu aracının tepsisi, mürekkep rengi): içinde
-  // Blender'dan halka ve üç anahtar, halkaya takılı kart anahtarlık yuvası (şablon yalnız kartı değiştirir; kartlar
-  // oktosworkshop.com'daki ürünler) ----
+  // ---- dolabın üstünde, spot lambanın altında anahtar tepsisi (Kutu aracının tepsisi, mürekkep rengi; dekor): içinde
+  // Blender'dan halka ve üç anahtar. Kart anahtarlıklar 2026-11-03'ten beri duvardaki askı panosunda (aşağıda); tepsi
+  // kaldı: lamba onu aydınlatıyor, dolabın üstü boş kalmıyor ve anahtarın asıl yeri ----
   const tepsi = place(new THREE.Group(), A.tepsi);
   place(binModel('tray', { w: 250, d: 220, h: 18, cols: 1, rows: 1, r: 14, wall: 2.2, floor: 2, color: '#2b3036' }), [0, 0, 0], tepsi);
   // Simetrik düzen: halka arkada ortada, kart öne (kameraya) sarkar; anahtarlar halkada kayıp arkaya yelpaze olur
@@ -461,45 +505,102 @@ export async function buildScene({ scene, P, lang = 'tr' }) {
   const anahtarlar = place(pilot?.esya.anahtarlik ?? new THREE.Group(), [0, 36, 2, 0], tepsi); // kart ön duvarın ardında kalmasın
   const KAY = { anahtar_ev: 10, anahtar_kapi: 50, anahtar_kilit_bas: -105, anahtar_kilit_agiz: -105 };
   for (const o of anahtarlar.children) if (KAY[o.name]) o.rotation.z = THREE.MathUtils.degToRad(KAY[o.name]);
-  // Kart halkanın önüne takılı (Blender: kart −y'ye sarkar, kulağı halkadan 18 mm dışarıda), gerçek boyda: 63 × 88 mm
-  // kart, Blender'daki 40 × 58 mm kartın 1,45 katı
-  const kartYuva = place(new THREE.Group(), [0, -18, 0, 0], anahtarlar);
-  kartYuva.scale.setScalar(1.45);
-  await slot('anahtarlik', kartYuva);
 
-  // ---- yakın planda ürünü sürükleyerek çevirme (oda-panel sürüklemeyi verir) ----
-  // dik: yuva kendi dikey ekseninde ±40°; coklu: QR rafında seçili ürün; tabla: Flip döner tablası (iki kelimeyi de
-  // gösterecek kadar); duvar: çerçeve ve plaka döndükçe duvardan ayrılır (yarı eni × |sin| + 8 mm, gömülmesin).
-  // Klavye tuşları, çekmece organizeri, kapaktaki mıknatıslar ve halkadaki kart yerlerine sabit: dönmez.
-  const DONER = { kartvizit: 'dik', kalemlik: 'dik', saksilar: 'dik', balkonMasa: 'dik', buzdolabi: 'dik', modem: 'coklu', flip: 'tabla', cerceve: 'duvar', yapboz: 'duvar', tabela: 'duvar' };
-  const donenNesne = (zone) => {
-    const tur = DONER[zone], s = slots[zone];
-    if (tur === 'coklu') return s.coklu[TEMPLATES[zone][s.index].urun].kok;
-    if (tur === 'duvar') return duvarlar[zone];
-    if (tur === 'tabla') return s.host;
-    return s.host;
-  };
+  // ---- kart anahtarlık askı panosu (2026-11-03, kullanıcı: "anahtarlık duvara, panoya asılmalı"): arka duvarda dolabın
+  // üstünde, kodla kurulu delikli pano (huş kontrplak, 25,4 mm delik aralığı, duvardan 18 mm ayaklı) ve iki sıra kanca (3 + 2); her
+  // kancada bir ürün, gerçek boyda (Blender'daki 40 × 58 mm kartın 1,45 katı: 63 × 84 mm kart + kulak). Seçili kart
+  // kancanın ucuna kayar ve hafif öne eğilir (panoPoz); seçici kartları değiştirmez, öne çeker ----
+  const pano = place(new THREE.Group(), A.pano);
+  const PANO = { aralik: 88, ayak: 18, kalin: 6, kanca: 50, geri: 14, ileri: 44, egim: 0.24 };
+  const kartSayisi = YUVA_YERI.anahtarlik ? urunleri(YUVA_YERI.anahtarlik).length : 0;
+  // Sırada en çok 3 kart (5 ürün: üstte 3, altta 2): pano 304 mm dar kalır, telefonun genel planına da sığar
+  const SIRA = 3, satir = Math.max(2, Math.ceil(kartSayisi / SIRA));
+  const PW = SIRA * PANO.aralik + 40, PH = 45 + (satir - 1) * 125 + 110 + 20;
+  {
+    const W = PW, H = PH;
+    pano.userData.boy = [W, H];
+    const cv = document.createElement('canvas'), px = 2; // 2 piksel / mm
+    cv.width = W * px; cv.height = H * px;
+    const c = cv.getContext('2d');
+    c.fillStyle = '#d2b48c'; c.fillRect(0, 0, cv.width, cv.height); // huş kontrplak
+    let r = 7; const rnd = () => ((r = (r * 16807) % 2147483647) / 2147483647); // sabit tohumlu: her açılışta aynı damar
+    for (let i = 0; i < 70; i++) { // yatay damar
+      const y = rnd() * cv.height;
+      c.strokeStyle = `rgba(${rnd() < 0.5 ? '120,84,50' : '255,240,215'},${0.05 + rnd() * 0.08})`;
+      c.lineWidth = 1 + rnd() * 3;
+      c.beginPath(); c.moveTo(0, y);
+      for (let x = 0; x <= cv.width; x += 60) c.lineTo(x, y + Math.sin(x * 0.004 + i) * 6);
+      c.stroke();
+    }
+    for (let x = 12.7; x < W; x += 25.4) for (let y = 12.7; y < H; y += 25.4) {
+      c.fillStyle = '#2a2018'; c.beginPath(); c.arc(x * px, y * px, 3.2 * px, 0, Math.PI * 2); c.fill();
+      c.fillStyle = 'rgba(255,245,225,0.35)'; c.beginPath(); c.arc(x * px, y * px, 3.2 * px, 0.15 * Math.PI, 0.85 * Math.PI); c.lineWidth = 1; c.strokeStyle = c.fillStyle; c.stroke();
+    }
+    const tex = new THREE.CanvasTexture(cv);
+    tex.colorSpace = THREE.SRGBColorSpace;
+    tex.anisotropy = 8;
+    const yuz = new THREE.MeshStandardMaterial({ map: tex, roughness: 0.7, metalness: 0, envMapIntensity: 0.5 });
+    const kenar = P.clay(0xc2a37a, { rough: 0.75, env: 0.5 });
+    box(W, PANO.kalin, H, 0, -PANO.ayak - PANO.kalin / 2, 0, kenar, { parent: pano, r: 1.5 });
+    const on = new THREE.Mesh(new THREE.PlaneGeometry(W - 3, H - 3).rotateX(Math.PI / 2), yuz); // ön yüz −y, dokunun üstü +z
+    on.position.set(0, -PANO.ayak - PANO.kalin - 0.6, H / 2);
+    on.receiveShadow = true;
+    pano.add(on);
+    for (const sx of [-1, 1]) for (const z of [30, H - 30]) box(14, PANO.ayak, 14, sx * (W / 2 - 30), -PANO.ayak / 2, z - 7, M.metal, { parent: pano, r: 7 });
+  }
+  const celik = new THREE.MeshStandardMaterial({ color: 0xc4c7cc, metalness: 0.9, roughness: 0.32 });
+  const kancaY0 = -PANO.ayak - PANO.kalin;
+  const kancalar = Array.from({ length: kartSayisi }, (_, i) => {
+    const r = Math.floor(i / SIRA), n = Math.min(SIRA, kartSayisi - r * SIRA), col = i - r * SIRA;
+    const k = place(new THREE.Group(), [(col - (n - 1) / 2) * PANO.aralik, kancaY0, PH - 45 - r * 125, 0], pano);
+    const tel = new THREE.Mesh(new THREE.CylinderGeometry(2, 2, PANO.kanca, 10), celik); // Y ekseninde: panodan −y'ye
+    tel.position.y = -PANO.kanca / 2;
+    tel.castShadow = true;
+    const uc = new THREE.Mesh(new THREE.CylinderGeometry(2, 2, 12, 10), celik); // uç yukarı kalkık (kart düşmesin)
+    uc.position.set(0, -PANO.kanca - 2, 5.6);
+    uc.rotation.x = Math.PI / 2 + 0.35;
+    k.add(tel, uc);
+    // Kartın tutulduğu yer (kulağının deliği kancada); içindeki kart −y'ye sarkacak biçimde Blender düzenindedir: X'te
+    // +90° çevrilince aşağı sarkar, yüzü odaya bakar
+    const tut = place(new THREE.Group(), [0, -PANO.geri, 1], k);
+    tut.scale.setScalar(1.45);
+    tut.rotation.x = Math.PI / 2;
+    k.userData.tut = tut;
+    return k;
+  });
+  if (YUVA_YERI.anahtarlik) await panoKur(YUVA_YERI.anahtarlik);
+  await ilerle();
+
+  // ---- portfolyo köşesi (2026-11-03, çatı katından taşındı; core/oda-portfolyo.js): sol duvarda kitaplık ve kara tahta
+  // (hakkımda); sağ duvarda 55" ekran (süreç), altında kutu oyunu rafı, önünde kilim; buzdolabının önünde çöp. Burada
+  // yalnız iskelet (görünmez hacimler, işaretçi yerleri); eşyalar sahne hazır olunca api.portfolyo.yukle() ile ----
+  const port = options.portfolyo ? portfolyoIskelet(scene, { lang, hafif }) : { nesne: {}, yerler: {}, ekran: null, update() {}, doldur: async () => null };
+
+  // ---- yakın planda ürünü sürükleyerek çevirme (oda-panel sürüklemeyi verir); sahne yerine göre ----
+  // dik: yuva kendi dikey ekseninde ±40°; duvar: çerçeve döndükçe duvardan ayrılır (yarı eni × |sin| + 8 mm, gömülmesin).
+  // Çekmece organizeri ve halkadaki kart yerlerine sabit: dönmez.
+  const DONER = { kalemlik: 'dik', saksilar: 'dik', cerceve: 'duvar', yapboz: 'duvar' }; // raftaki plaka sırası dönmez
+  const donTuru = (zone) => DONER[yerOf(zone)];
+  const donenNesne = (zone) => (donTuru(zone) === 'duvar' ? duvarlar[yerOf(zone)] : slots[zone].host);
   function donmeyiBirak(zone, dur = 0.5) {
     const d = donen[zone];
     if (!d) return;
     delete donen[zone];
-    if (DONER[zone] === 'tabla') return; // tabla odaktan çıkınca kendi döner (turn)
     gsap.to(d.obj.rotation, { z: d.rz0, duration: dur, ease: 'power3.out', overwrite: true });
     gsap.to(d.obj.position, { x: d.pos0.x, y: d.pos0.y, z: d.pos0.z, duration: dur, ease: 'power3.out', overwrite: true });
   }
   function dondur(zone, aci) {
-    const tur = DONER[zone];
+    const tur = donTuru(zone);
     if (!tur || !slots[zone]) return 0;
     const o = donenNesne(zone);
     let d = donen[zone];
-    if (d && d.obj !== o) { donmeyiBirak(zone, 0.3); d = null; } // QR rafında seçim değişti
     if (!d) {
       const kutu = new THREE.Box3().setFromObject(o), boy = kutu.getSize(new THREE.Vector3());
-      d = donen[zone] = { obj: o, rz0: o.rotation.z, pos0: o.position.clone(), w: Math.max(boy.x, boy.y), aci: tur === 'tabla' ? o.rotation.z : 0 };
+      d = donen[zone] = { obj: o, rz0: o.rotation.z, pos0: o.position.clone(), w: Math.max(boy.x, boy.y), aci: 0 };
     }
     gsap.killTweensOf([o.rotation, o.position]);
-    d.aci = tur === 'tabla' ? THREE.MathUtils.clamp(aci, -2.4, 0.8) : THREE.MathUtils.clamp(aci, -0.7, 0.7);
-    o.rotation.z = tur === 'tabla' ? d.aci : d.rz0 + d.aci;
+    d.aci = THREE.MathUtils.clamp(aci, -0.7, 0.7);
+    o.rotation.z = d.rz0 + d.aci;
     if (tur === 'duvar') { // duvarın normali: nesnenin yerel −y'si (ön yüzü odaya)
       const cik = (d.w / 2) * Math.abs(Math.sin(d.aci)) + 8 * Math.min(1, Math.abs(d.aci) * 4);
       o.position.set(d.pos0.x + Math.sin(d.rz0) * cik, d.pos0.y - Math.cos(d.rz0) * cik, d.pos0.z);
@@ -509,69 +610,147 @@ export async function buildScene({ scene, P, lang = 'tr' }) {
 
   // ---- davranış ----
   const openDrawer = (k, dur) => gsap.to(drawer.position, { y: DRAWER_Y - k, duration: dur, ease: 'power3.out', overwrite: true });
-  const openDoor = (a, dur) => gsap.to(door.rotation, { z: a, duration: dur, ease: 'power3.out', overwrite: true });
-  const turn = (a, dur) => gsap.to(spin.rotation, { z: a, duration: dur, ease: 'power2.inOut', overwrite: true });
   let focusedId = null;
 
-  // Şablon değişimi: eski model küçülüp kaybolur, yenisi biraz yukarıdan büyüyerek yerine oturur. Saksıda bitki yeni
-  // saksının ağız yüksekliğine kayar. Değişim sürerken (model üretilirken ve eski model küçülürken) gelen istek yok
-  // sayılır, o anki şablon döner: basılı tutulan ok modelleri yanıp söndürmesin. Her değişimde hemen
-  // api.onChange(bölge, bilgi) çağrılır (sayfanın seçicisi; değişim üründen de gelebilir).
+  // Ürün değişimi: modeli değişen yuvada eski model küçülüp kaybolur, yenisi biraz yukarıdan büyüyerek yerine oturur;
+  // model aynı kalıyorsa (dekor çapası) yalnız bilgi değişir. Değişim sürerken (model üretilirken ve eski model
+  // küçülürken) gelen istek yok sayılır, o anki ürün döner: basılı tutulan ok modelleri yanıp söndürmesin. Her değişimde
+  // hemen api.onChange(yuva, bilgi) çağrılır (sayfanın seçicisi; değişim üründen de gelebilir).
   const info = (zone) => {
-    const s = slots[zone], t = TEMPLATES[zone][s.index];
-    return { index: s.index, count: TEMPLATES[zone].length, id: t.id, name: t.name, preset: t.preset, arac: t.arac, url: t.url };
+    const s = slots[zone], u = s.urunler[s.index];
+    return { index: s.index, count: s.urunler.length, id: u?.id ?? null, name: u?.ad ?? null, durum: u?.durum ?? null,
+      magaza: u?.magaza ?? null, fiyat: u?.fiyat ?? null, gorsel: u?.gorsel ?? null };
   };
+  // Kadraj hesabı ve kamera güvenliği (v6, core/oda-kadraj.js): sunum eşya yakın planlarını bununla kurar; motor her
+  // karede kamerayı mobilya hacimlerinin dışında tutar (kameraDuzelt)
+  const kadraj = kadrajAraci(scene);
+  // v7 (2026-11-04, kamera kuralı: göz yüksekliği, oda içi, oda dışı piksel 0, karakter örtmez): yakın plan kadrajları
+  // o anki ekran oranı ve kartın yeri (yan / alt) için core/oda-kadraj.js bul ile hesaplanır, motorun kart ötelemesi
+  // (core/story.js focusShot) denetimde hesaba katılır. Sonuç önbellekte (kimlik + oran + açı + kart); hesap olmazsa
+  // FOCUS'taki sabit kadraj. Kamera sayfa bağlanınca gelir (api.kameraBagla; core/oda-sunum.js)
+  let kam = null;
+  const odakOnbellek = new Map();
+  const Zv = new THREE.Vector3(0, 0, 1);
+  function odakKadraji(id) {
+    const st = FOCUS[id];
+    if (!kam?.camera || !st) return st;
+    const cam = kam.camera, panel = kam.root?.dataset.panel || (cam.aspect < 0.9 ? 'bottom' : 'side');
+    const anahtar = `${id}|${cam.aspect.toFixed(2)}|${cam.fov}|${panel}|${port.dolu ? 1 : 0}`;
+    if (odakOnbellek.has(anahtar)) return odakOnbellek.get(anahtar) ?? st;
+    let k = null;
+    try {
+      const kutu = api.kutu(id);
+      // kutuZ: çok uzun eşyada (kitaplık 2,35 m) kadrajın konusu yalnız bu yükseklik bandı (oda içinden bütünü sığmıyor)
+      if (kutu && st.kutuZ) { kutu.min.z = Math.max(kutu.min.z, st.kutuZ[0]); kutu.max.z = Math.min(kutu.max.z, st.kutuZ[1]); }
+      if (kutu && !kutu.isEmpty()) {
+        const fov = cam.fov, aspect = cam.aspect, tv = Math.tan((fov * Math.PI) / 360), alt = aspect < 0.9 || panel !== 'side';
+        // Motorun yakın plan ötelemesi (story.js focusShot: alttaki kartta kadraj aşağı, yan kartta sola)
+        const kaydir = (pos, c) => {
+          const dir = pos.clone().sub(c), L = dir.length(); dir.divideScalar(L);
+          const halfH = L * tv;
+          if (alt) { const up = Zv.clone().addScaledVector(dir, -dir.z).normalize(); c.addScaledVector(up, -0.4 * halfH); } // altKaydirma 'hedef': kamera yerinde
+          else { const sag = new THREE.Vector3().crossVectors(dir.clone().negate(), Zv).normalize(), s = -0.16 * 2 * halfH * aspect; c.addScaledVector(sag, s); pos.addScaledVector(sag, s); }
+          return { pos, target: c };
+        };
+        // Duraktaki Biggie: durduğu yer ve eşyaya doğru eğildiği yer (egil_bak gövdeyi ~0,4 m öne taşır)
+        const D = BIGGIE_DURAK.find((d) => d.id === id || d.yuva === id);
+        let sanal = null;
+        if (D?.yer) {
+          const c = kutu.getCenter(new THREE.Vector3()), dx = c.x - D.yer[0], dy = c.y - D.yer[1], L = Math.hypot(dx, dy) || 1, e = Math.min(420, L * 0.6);
+          sanal = [{ x: D.yer[0], y: D.yer[1], z0: 0, z1: 1450, r: 240 }, { x: D.yer[0] + (dx / L) * e * 0.5, y: D.yer[1] + (dy / L) * e * 0.5, z0: 600, z1: 1450, r: 270 },
+            { x: D.yer[0] + (dx / L) * e, y: D.yer[1] + (dy / L) * e, z0: 600, z1: 1400, r: 240 }];
+        }
+        const o = api.model(id), haric = new Set(o ? [o] : []);
+        const tercih = [st.pos[0] - st.target[0], st.pos[1] - st.target[1], 0];
+        const ara = (ek) => kadraj.bul({ kutu, haric, govde: false, sanal, tercih, doluluk: 0.58, fov, aspect, kaydir, ...ek });
+        k = ara({ govdeKadraj: 0.8 });
+        if (!k?.pos) k = ara({});
+        if (!k?.pos) k = ara({ sanal: null, doluluk: 0.75 });
+        // Kart ötelemesiyle hiçbir yer odada kalmıyorsa (kitaplık gibi büyük eşya, kamera uzak duvarda): ötelemesiz kadraj
+        // bulunur, motorun ötelemesi önceden geri alınır (eşya ortada, kartın bir kısmı üstüne biner; kamera odada kalır)
+        if (!k?.pos) {
+          const gec = (x) => (x?.pos ? x : null);
+          const k2 = gec(ara({ kaydir: null, doluluk: 0.75 })) ?? gec(ara({ kaydir: null, sanal: null, doluluk: 0.8 }))
+            ?? gec(ara({ kaydir: null, sanal: null, doluluk: 0.8, disariPay: false })); // salınım payı olmadan (kitaplık: uzak köşe)
+          if (k2?.pos) {
+            const p = new THREE.Vector3(...k2.pos), t = new THREE.Vector3(...k2.target), s = kaydir(p.clone(), t.clone());
+            k = { ...k2, pos: p.clone().sub(s.pos.clone().sub(p)).toArray().map(Math.round), target: t.clone().sub(s.target.clone().sub(t)).toArray().map(Math.round) };
+          }
+        }
+      }
+    } catch (e) { console.error('kadraj', id, e); }
+    const v = k?.pos ? { pos: k.pos, target: k.target } : null;
+    odakOnbellek.set(anahtar, v);
+    return v ?? st;
+  }
+  const odakVekil = new Proxy(FOCUS, { get: (t, id) => (typeof id === 'string' && id in t ? odakKadraji(id) : t[id]) });
   const api = {
-    templates: (zone) => TEMPLATES[zone] || [],
+    kadraj,
+    kameraBagla(camera, root) { kam = { camera, root }; odakOnbellek.clear(); },
+    odakKadraji,
+    // Ürünün (ya da portfolyo durağının) dünya sınır kutusu (v6 kadraj ölçümü)
+    kutu: (zone) => { const o = slots[zone]?.model ?? port.nesne[zone]; return o ? new THREE.Box3().setFromObject(o) : null; },
+    model: (zone) => slots[zone]?.model ?? port.nesne[zone] ?? null,
+    urunler: (zone) => slots[zone]?.urunler ?? [],
     current: (zone) => (slots[zone] ? info(zone) : null),
     show,
     onChange: null,
-    // Yakın planda sürükleyerek çevirme: donebilir(bölge), donus(bölge) şimdiki açı, dondur(bölge, açı) → uygulanan açı
-    donebilir: (zone) => !!DONER[zone],
-    donus: (zone) => donen[zone]?.aci ?? (DONER[zone] === 'tabla' && slots[zone] ? slots[zone].host.rotation.z : 0),
+    // Yakın planda sürükleyerek çevirme: donebilir(yuva), donus(yuva) şimdiki açı, dondur(yuva, açı) → uygulanan açı
+    donebilir: (zone) => !!donTuru(zone),
+    donus: (zone) => donen[zone]?.aci ?? 0,
     dondur,
-    // Ürünün dünyadaki ortası: sayfa ekrana izdüşürür (toz yazısının zerreleri buradan kalkar)
-    center: (zone) => (slots[zone] ? new THREE.Box3().setFromObject(slots[zone].model).getCenter(new THREE.Vector3()) : null),
+    // Ürünün (ya da çapasının) dünyadaki ortası: sayfa ve karakter ekrana izdüşürür. Portfolyo durağında nesnenin ortası
+    center: (zone) => {
+      const o = slots[zone]?.model ?? port.nesne[zone];
+      return o ? new THREE.Box3().setFromObject(o).getCenter(new THREE.Vector3()) : null;
+    },
+    // Portfolyo köşesi: TV denetçisi (core/cati-ekran.js; kart adım listesini buradan sürer) ve Biggie'nin işaretçisiz
+    // durakları için nesneler (sunum tıklamayı bunlarla yakalar): buzdolabi, cop (userData.agiz: elmanın düşeceği yer), masa
+    portfolyo: { get ekran() { return port.ekran; }, yukle: (derle) => port.doldur(derle).then((r) => { kadraj.yenile(); return r; }), get dolu() { return !!port.dolu; }, parcalar: () => port.parcalar?.() ?? null, get armut() { return port.armut ?? null; } },
+    nesne: (id) => ({ buzdolabi: fridge, cop: port.nesne.cop, masa: kbZone })[id] ?? port.nesne[id] ?? slots[id]?.host ?? null,
   };
   async function show(zone, index, { reduced = false } = {}) {
-    const s = slots[zone], list = TEMPLATES[zone];
-    if (!s || s.busy) return s ? info(zone) : null;
-    const i = ((index % list.length) + list.length) % list.length;
+    const s = slots[zone], n = s?.urunler.length;
+    if (!s || s.busy || !n) return s ? info(zone) : null;
+    const i = ((index % n) + n) % n;
     if (i === s.index) return info(zone);
+    if (s.kancalar) { // askı panosu: model değişmez, seçili kart öne gelir
+      s.index = i;
+      s.model = (await panoKarti(zone, i)) ?? s.model;
+      if (s.index !== i) return info(zone); // beklerken başka ürün seçildi
+      panoPoz(zone, { reduced });
+      api.onChange?.(zone, info(zone));
+      return info(zone);
+    }
     s.busy = true;
     try {
-      // Çoklu yuvada yalnız şablonun ürünü değişir (öbürleri yerinde kalır); ürün zaten bu şablondaysa yalnız öne çıkar
-      const u = s.coklu?.[list[i].urun], host = u ? u.ic : s.host, old = u ? u.model : s.model;
-      const next = u && u.id === list[i].id ? old : await model(zone, list[i].id);
-      const simdiki = () => (u ? u.model : s.model);
+      const host = s.host, old = s.model, next = (await model(zone, i)) ?? old;
       s.index = i;
       s.model = next;
-      if (u) { u.model = next; u.id = list[i].id; isaretle(zone, { reduced }); }
-      if (next === old) {
+      if (next === old || !next) {
         measure(zone);
         api.onChange?.(zone, info(zone));
         return info(zone);
       }
-      if (u) kenar(u);
-      // Parçalı şablon (klavyedeki tuş başlıkları): her parça kendi yerinde küçülür/büyür, grup merkezine kaymaz
-      const olcek = (m) => (m.userData.parcali ? m.children.map((c) => c.scale) : [m.scale]);
+      const olcek = (m) => [m.scale];
+      if (old) gsap.killTweensOf(olcek(old));
       gsap.killTweensOf([...olcek(next), next.position]);
       host.add(next);
-      if (reduced) {
-        host.remove(old);
+      const az = agiz(next);
+      if (reduced || !old) {
+        if (old) host.remove(old);
         olcek(next).forEach((x) => x.setScalar(1));
         next.position.z = 0;
-        if (s.plant) s.plant.position.z = agiz(next);
+        if (s.plant && az != null) s.plant.position.z = az;
         measure(zone);
         api.onChange?.(zone, info(zone));
       } else {
-        gsap.killTweensOf(olcek(old));
-        gsap.to(olcek(old), { x: 0.001, y: 0.001, z: 0.001, duration: 0.2, ease: 'power2.in', onComplete: () => { if (simdiki() !== old) host.remove(old); olcek(old).forEach((x) => x.setScalar(1)); } });
+        gsap.to(olcek(old), { x: 0.001, y: 0.001, z: 0.001, duration: 0.2, ease: 'power2.in', onComplete: () => { if (s.model !== old) host.remove(old); olcek(old).forEach((x) => x.setScalar(1)); } });
         olcek(next).forEach((x) => x.setScalar(0.55));
         next.position.z = 24;
         gsap.to(olcek(next), { x: 1, y: 1, z: 1, duration: 0.5, delay: 0.12, ease: 'back.out(1.7)' });
-        gsap.to(next.position, { z: 0, duration: 0.5, delay: 0.12, ease: 'power3.out', onComplete: () => { if (simdiki() === next) measure(zone); } });
-        if (s.plant) gsap.to(s.plant.position, { z: agiz(next), duration: 0.5, delay: 0.1, ease: 'power3.out', overwrite: true });
+        gsap.to(next.position, { z: 0, duration: 0.5, delay: 0.12, ease: 'power3.out', onComplete: () => { if (s.model === next) measure(zone); } });
+        if (s.plant && az != null) gsap.to(s.plant.position, { z: az, duration: 0.5, delay: 0.1, ease: 'power3.out', overwrite: true });
         api.onChange?.(zone, info(zone));
         await new Promise((r) => gsap.delayedCall(0.22, r)); // eski model küçülene kadar kilit
       }
@@ -582,9 +761,8 @@ export async function buildScene({ scene, P, lang = 'tr' }) {
     return info(zone);
   }
 
-  // İşaretçinin yeri ürünün tepesi (sahne yer vermediyse): şablon değişince yeniden ölçülür, kısa şablonda havada
-  // kalmasın. Motor Vector3 olarak verilen yeri kendisi kopyalamaz, her karede okur.
-  // İşaretçi ürünün kendisinin (yuvadaki modelin) tepesinde; yuvası olmayan bölgede bölgenin tepesinde
+  // İşaretçinin yeri yuvadaki modelin (ürün ya da çapa) tepesi (sahne yer vermediyse): ürün değişince yeniden ölçülür,
+  // kısa modelde havada kalmasın. Motor Vector3 olarak verilen yeri kendisi kopyalamaz, her karede okur.
   const anchors = {}, box3 = new THREE.Box3(), mid = new THREE.Vector3();
   function measure(zone) {
     const a = anchors[zone];
@@ -593,26 +771,49 @@ export async function buildScene({ scene, P, lang = 'tr' }) {
     box3.setFromObject(a.object).getCenter(mid);
     a.v.set(mid.x, mid.y, box3.max.z + 18);
   }
-  const Z = Object.fromEntries(ZONES.map((z) => [z.id, z]));
+  // Ürün yuvası işaretçisi. preset 'magaza' + disari: motor karttaki düğmede adresi yeni sekmede açar (core/story.js
+  // pick); adres ve düğme yazısı seçili ürünün durumuna göre panelden gelir (core/oda-panel.js: mağaza ya da WhatsApp).
+  // tool 'urun': işaretçinin rengi (core/oda.css)
   const hs = (id, object, opts = {}) => {
     if (!opts.anchor) {
       anchors[id] = { v: new THREE.Vector3(), object: slots[id]?.host ?? object };
       measure(id);
       opts = { ...opts, anchor: anchors[id].v };
     }
-    return { id, tool: Z[id].tool, preset: TEMPLATES[id][0].preset, object, ...opts };
+    return { id, tool: 'urun', preset: 'magaza', disari: guvenliAdres(slots[id]?.urunler[0]?.magaza), object, ...opts };
   };
+  // Sahne yeri → işaretçinin nesnesi ve ayarı (yalnız yuva olabilen yerler; görünen yuvalar bunlardan seçilir)
+  const YER_HS = {
+    cekmece: () => [drawer, { extra: [pedestal], noLift: true, anchor: [px, DRAWER_Y - PED.d / 2 + 60, PED.h + 50] }], // kapalı çekmecenin üstünde
+    anahtarlik: () => [pano, { noLift: true }], // askı panosu (2026-11-03; önce tepsi)
+    kalemlik: () => [penZone],
+    modem: () => [rafYuva ?? modemZone, { noLift: true }], // raf: yalnız plakalar (modem tıklanmaz)
+    cerceve: () => [frameA, { noLift: true }],
+    yapboz: () => [frameB, { noLift: true }],
+    saksilar: () => [pots, { noLift: true }],
+  };
+  // Telefon katmanı (hafif; core/story.js): geçirgen cam yerine saydam cam (core/oda-ortam.js camSadelestir; geçirgenlik
+  // geçişi her karede sahneyi iki kez çizdiriyordu). Masaüstü aynı kalır
+  if (hafif && pilot) (await import('./oda-ortam.js')).camSadelestir(scene);
   return {
     shots: SHOTS,
     lights: pilot ? pilot.isik : LIGHTS,
     look: LOOK,
-    focusShots: FOCUS,
+    // v7: yakın planda fareyle dönüş kısık (motor 0,24 rad: kamera hesaplanan yerden 14° dönüp odanın dışını gösterebiliyordu)
+    focusYaw: 0.05, focusPitch: 0.03,
+    altKaydirma: 'hedef', // v7: alttaki kartta kamera göz yüksekliğinde kalır, yalnız bakış aşağı (core/story.js focusShot)
+    focusShots: odakVekil, // v7: kimliğe göre o anki ekran için hesaplanır (odakKadraji), olmazsa FOCUS
+    // v7: görüş açısı sabit ve geniş (kullanıcı kuralı: yakınlaşma kameranın yeriyle, zoom yok); oda-yerler FOV
+    fov: FOV.yatay, squareFov: FOV.kare,
     focusShift: 0.16, // yatay ekranda yakın plandaki ürün sağa kayar: sol kenarda başlık paneli
-    touchOrbit: false, // dokunmatikte yakın planda yana kaydırma şablon değiştirir (etrafa bakma yok)
+    touchOrbit: false, // dokunmatikte yakın planda yana kaydırma ürün değiştirir (etrafa bakma yok)
     langGeometry: true,
+    golgeVekili: hafif,
+    kameraDuzelt: (p) => kadraj.disari(p), // v6: kamera hiçbir karede mobilya hacminin içine girmez // telefon katmanı: duran eşyaların gölgesi bölüm başına tek çizim (core/golge-vekili.js)
     update(t) {
       pilot?.perde?.userData.tick(t);
       cayBuhari?.userData.tick(t);
+      port.update(t); // ekranın süreç videosu ve geçişleri
       // Süpürge ışıkları: sarı 6 sn'de bir iki kez çakar, mavi 9 sn'de bir yavaşça yanıp söner
       if (ledler.length === 2) {
         const s = t % 6, m = t % 9;
@@ -623,60 +824,35 @@ export async function buildScene({ scene, P, lang = 'tr' }) {
     // Telefonun dikey ekranı: genel motor kamerayı odanın dışına çekip tepeden gökyüzünü gösteriyordu; oda kendi
     // kadrajını verir (içeriden, geniş açıyla: masa, raflar ve sol pencere)
     portraitShot: SHOTS.portrait,
-    portraitFov: 58,
+    portraitFov: FOV.dikey,
+    fitShot, // genel plan ekran oranına göre: beş işaretçi de kadrajda (oda-yerler)
     outlineFocus: !pilot, // gerçekçi sahnede yakın plandaki ürünün çevresine çizgi çekilmez (yaprakları tek tek çiziyordu)
+    // Yalnız görünen yuvalar (ürünü olan), ZONES sırasıyla (şerit ve tur). Kadrajlar FOCUS'ta (oda-yerler)
+    // Ardından portfolyo durakları (PORTFOLYO_DURAK sırası; ürün seçicisi ve düğmesi yok: preset yok)
     hotspots: [
-      // Sıra ZONES'la aynı (şerit ve tur). Kadrajlar FOCUS'ta (oda-yerler)
-      hs('cekmece', drawer, { extra: [pedestal], noLift: true, anchor: [px, DRAWER_Y - PED.d / 2 + 60, PED.h + 50] }), // kapalı çekmecenin üstünde
-      // Mağaza ürünü: düğme mağazayı yeni sekmede açar
-      hs('anahtarlik', tepsi, { noLift: true, cta: { tr: 'Satın al', en: 'Buy' }, disari: TEMPLATES.anahtarlik[0].url }),
-      hs('kalemlik', penZone),
-      hs('kartvizit', kvZone),
-      hs('klavye', kbZone),
-      hs('modem', modemZone),
-      hs('cerceve', frameA, { noLift: true }),
-      hs('yapboz', frameB, { noLift: true }),
-      hs('tabela', sign, { noLift: true }),
-      hs('saksilar', pots, { noLift: true }),
-      hs('balkonMasa', tableItems, { extra: [tableDecor] }),
-      hs('miknatis', kapakYuzu, { noLift: true }),
-      hs('buzdolabi', fridge, { noLift: true, anchor: [A.fridge[0] - F.d / 2 - 30, A.fridge[1] - 60, F.h - 140] }), // kapağın önünde (pasta içeride)
-      hs('flip', flipZone),
+      ...GORUNEN.filter((z) => YER_HS[z.yer] && slots[z.id]).map((z) => hs(z.id, ...YER_HS[z.yer]())),
+      ...PORTFOLYO_DURAK.filter((id) => port.nesne[id]).map((id) => ({ id, tool: 'urun', object: port.nesne[id], noLift: true, anchor: port.yerler[id] })),
     ],
-    // Sayfanın şablon seçicisi buradan konuşur (story denetleyicisinde api)
+    // Sayfanın ürün seçicisi buradan konuşur (story denetleyicisinde api)
     api,
-    // Yakın plandaki ürüne yeniden tıklamak sıradaki şablonu getirir
-    onPoke(id, { reduced } = {}) { if (slots[id]) show(id, slots[id].index + 1, { reduced }); },
-    // Üzerine gelince çekmece aralanır (davet); yakın plandayken dokunulmaz
-    onHover(id) { if (focusedId !== 'cekmece') openDrawer(id === 'cekmece' ? 60 : 0, 0.35); },
+    // Yakın plandaki ürüne yeniden tıklamak sıradaki ürünü getirir; ekrana yeniden tıklamak sıradaki süreç adımını
+    onPoke(id, { reduced } = {}) {
+      if (id === 'ekran') { port.ekran?.ileri(); return; }
+      if (slots[id]) show(id, slots[id].index + 1, { reduced });
+    },
+    // Üzerine gelince çekmece aralanır (davet; çekmecede yuva varsa); yakın plandayken dokunulmaz
+    onHover(id) { if (yerOf(focusedId) !== 'cekmece') openDrawer(yerOf(id) === 'cekmece' ? 60 : 0, 0.35); },
     onFocus(id, { reduced } = {}) {
       focusedId = id;
       pilot?.huzme.userData.guc(0.25, reduced ? 0.01 : 0.8, gsap); // yakın planda huzme kısılır (pus ürünü örtmesin)
       gsap.delayedCall(reduced ? 0.1 : 1.3, () => { if (focusedId === id) prefetch(id); }); // kamera uçuşu bitince
-      if (id === 'cekmece') openDrawer(590, reduced ? 0.01 : 0.9); // tam açılan ray: organizerin tamamı görünür
-      if (id === 'miknatis') openDoor(0, reduced ? 0.01 : 0.6); // mıknatıslar kapalı kapakta
-      if (id === 'buzdolabi') { // kapalı başlar: kapağı bir an görünür, sonra açılır, iç ışık yanar
-        const bekle = reduced ? 0 : 1.4;
-        gsap.delayedCall(bekle, () => {
-          if (focusedId !== id) return;
-          openDoor(-1.75, reduced ? 0.01 : 0.9);
-          if (icIsik) gsap.to(icIsik, { intensity: 14000, duration: reduced ? 0.01 : 0.4, delay: reduced ? 0 : 0.15, overwrite: true });
-        });
-      }
-      if (id === 'flip' && !reduced) turn(-Math.PI / 2, 1.1); // ikinci kelime kameraya döner
-      isaretle(id, { reduced }); // QR: seçili ürün öne çıkar
+      if (yerOf(id) === 'cekmece') openDrawer(590, reduced ? 0.01 : 0.9); // tam açılan ray: içi bütünüyle görünür
     },
     onUnfocus(id) {
       if (focusedId === id) focusedId = null;
       donmeyiBirak(id);
       if (!focusedId) pilot?.huzme.userData.guc(1, 0.8, gsap);
-      if (id === 'cekmece') openDrawer(0, 0.5);
-      if (id === 'buzdolabi') {
-        openDoor(0, 0.6);
-        if (icIsik) gsap.to(icIsik, { intensity: 0, duration: 0.3, overwrite: true });
-      }
-      if (id === 'flip') turn(0, 0.8);
-      isaretle(id); // QR: ürünler yerine oturur
+      if (yerOf(id) === 'cekmece') openDrawer(0, 0.5);
     },
   };
 }

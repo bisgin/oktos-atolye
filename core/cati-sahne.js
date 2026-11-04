@@ -14,7 +14,7 @@
 // core/cati-kilim.js; teleskop, armut ve sehpa core/cati-esya.js.
 // Işık canlı (pişirme yok): güneş core/oda-olcu.js SUN (gölgeli), ortam ışığı gökyüzü panoramasından. Pencereden uzak
 // yüzeyler köşe rengiyle karartılır (ışık payı: açıklıklara uzaklık ve yön): TV köşesi gölgede kalır.
-// Birim mm, Z yukarı, +x doğu, +y kuzey, döşeme z = 0. Motor core/story.js. Metin core/cati-veri.js, sayfa lab/cati.html.
+// Birim mm, Z yukarı, +x doğu, +y kuzey, döşeme z = 0. Motor core/story.js. Metin core/cati-veri.js, sayfa portfolyo/index.html.
 import * as THREE from 'three';
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 import { DRACOLoader } from 'three/addons/loaders/DRACOLoader.js';

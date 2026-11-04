@@ -1,0 +1,333 @@
+<!doctype html>
+<!-- Otomatik üretildi: scripts/urun-sayfa-uret.py (şablon urunler/urun.html). Elle düzenleme. -->
+<html lang="tr">
+<head>
+<meta charset="utf-8">
+<base href="../">
+<meta name="oktos:urun" content="rock-lee-ve-gaara">
+<link rel="canonical" href="https://oktos.org/urunler/rock-lee-ve-gaara/">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Naruto: Rock Lee, Gaara ve Kum Dikenleri · Oktos Workshop</title>
+<meta name="description" content="Naruto&#x27;dan Rock Lee ile Gaara&#x27;nın dövüşü, manga paneli gibi: Lee öne atılırken arkasında su kabağıyla Gaara duruyor, en önde kum dikenleri yükseliyor.">
+<meta property="og:type" content="product">
+<meta property="og:site_name" content="Oktos Workshop">
+<meta property="og:locale" content="tr_TR">
+<meta property="og:url" content="https://oktos.org/urunler/rock-lee-ve-gaara/">
+<meta property="og:title" content="Naruto: Rock Lee, Gaara ve Kum Dikenleri">
+<meta property="og:description" content="Naruto&#x27;dan Rock Lee ile Gaara&#x27;nın dövüşü, manga paneli gibi: Lee öne atılırken arkasında su kabağıyla Gaara duruyor, en önde kum dikenleri yükseliyor.">
+<meta property="og:image" content="https://oktos.org/assets/urunler/og/rock-lee-ve-gaara.jpg">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta property="og:image:alt" content="Naruto: Rock Lee, Gaara ve Kum Dikenleri">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="Naruto: Rock Lee, Gaara ve Kum Dikenleri">
+<meta name="twitter:description" content="Naruto&#x27;dan Rock Lee ile Gaara&#x27;nın dövüşü, manga paneli gibi: Lee öne atılırken arkasında su kabağıyla Gaara duruyor, en önde kum dikenleri yükseliyor.">
+<meta name="twitter:image" content="https://oktos.org/assets/urunler/og/rock-lee-ve-gaara.jpg">
+<meta name="theme-color" content="#eaedeb">
+<link rel="icon" href="../core/icon.svg" type="image/svg+xml">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Schibsted+Grotesk:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<link rel="stylesheet" href="../core/style.css">
+<!-- Modüller zincir beklemeden birlikte insin: ilk görsel bunlar gelince yazılır -->
+<link rel="modulepreload" href="../core/i18n.js">
+<link rel="modulepreload" href="../core/order-config.js">
+<link rel="modulepreload" href="../core/site-metin.js">
+<link rel="modulepreload" href="../core/urun-veri.js">
+</head>
+<body>
+<header class="topbar">
+  <a class="brand" href="../index.html"><img src="../core/icon.svg" alt="" width="26" height="26"><span data-i18n="app.name">Oktos Workshop</span></a>
+  <span class="spacer"></span>
+  <nav class="sitenav" aria-label="Site">
+    <a href="../araclar/" data-i18n="nav.olustur">Hizmetler</a>
+    <a href="./" aria-current="true" data-i18n="nav.urunler">Ürünler</a>
+    <a href="../oda/" data-i18n="nav.portfolyo">Portfolyo</a>
+  </nav>
+  <div class="lang" role="group" aria-label="Dil / Language"><button type="button" data-lang="tr" aria-pressed="true">TR</button><button type="button" data-lang="en" aria-pressed="false">EN</button></div>
+</header>
+<main class="home urun-sayfa" id="urun-sayfa" aria-busy="true"></main>
+<script type="module">
+  // Tek ürün sayfası: urunler/urun.html?id=<id>. Veri core/urun-veri.js (betikle üretilir); eksik alan zarifçe atlanır
+  // (ölçü, parça, malzeme, kutu, açıklama, galeri, video yoksa o satır/bölüm çıkmaz). Bilinmeyen/boş/bozuk id →
+  // "Ürün bulunamadı". Ana eylem ve Odada gör, listeyle ortak yardımcılardan (core/site-metin.js).
+  // Sınama: python .impeccable/urun-sayfa-sina.py sina (body[data-durum] = hazir | yok | hata; ilk görsel performance.mark)
+  import { t } from '../core/i18n.js';
+  import { YUVA_SIMGE, OK_SIMGE, svg, kacis, siteSayfasi, eylemDugmesi, odaAdresi, guvenliAdres } from '../core/site-metin.js';
+
+  const kok = document.getElementById('urun-sayfa');
+  const reduce = matchMedia('(prefers-reduced-motion: reduce)').matches;
+  const DURUMLAR = ['satista', 'stok-yok', 'sayfa-yok'];
+  const OK_SOL = '<path d="M19 12H5M11 6l-6 6 6 6"/>';
+  // Paylaşım sayfası (urunler/<id>/index.html, scripts/urun-sayfa-uret.py): bu dosyanın kopyası, kimlik <meta name="oktos:urun">'da
+  // ve <base href="../"> ile göreli yollar urunler/'den çözülür; adres düzeltmesi yalnız ?id= ile gelende
+  const sabit = document.querySelector('meta[name="oktos:urun"]')?.content || null;
+  const kimlik = sabit ?? new URLSearchParams(location.search).get('id');
+
+  // Veri ayrı yüklenir: dosya o an yeniden yazılıyorsa ya da bozuksa sayfa çökmez, "yüklenemedi" der
+  let veri = null;
+  try { veri = await import('../core/urun-veri.js'); } catch (_) { veri = null; }
+  const URUNLER = Array.isArray(veri?.URUNLER) ? veri.URUNLER : [];
+  const YUVALAR = Array.isArray(veri?.YUVALAR) ? veri.YUVALAR : [];
+  // Kimlik büyük/küçük harf duyarsız eşleşir (../, boş, çok uzun ya da HTML taşıyan değer hiçbir ürüne denk gelmez);
+  // farklı yazılmışsa adres ürünün kendi kimliğine düzeltilir (tek adres)
+  // Eski kimlik (ESKI_KIMLIK: kaldırılan kimlik → bugünkü) bugünkü ürüne yönlenir; adres de bugünkü kimliğe düzeltilir
+  const ESKI = veri?.ESKI_KIMLIK && typeof veri.ESKI_KIMLIK === 'object' ? veri.ESKI_KIMLIK : {};
+  const ham = typeof kimlik === 'string' && kimlik.length <= 120 ? kimlik.toLowerCase() : null;
+  const anahtar = ham && Object.hasOwn(ESKI, ham) && typeof ESKI[ham] === 'string' ? ESKI[ham].toLowerCase() : ham;
+  const urun = anahtar ? URUNLER.find((u) => u && typeof u.id === 'string' && u.id.toLowerCase() === anahtar) ?? null : null;
+  if (urun && !sabit && urun.id !== kimlik) {
+    const q = new URLSearchParams(location.search); q.set('id', urun.id);
+    history.replaceState(null, '', `${location.pathname}?${q}${location.hash}`);
+  }
+
+  const yazi = (o, lang) => (o && typeof o === 'object' ? o[lang] || o.tr || '' : typeof o === 'string' ? o : '');
+  const sayi = (n, lang) => new Intl.NumberFormat(lang === 'en' ? 'en-GB' : 'tr-TR', { maximumFractionDigits: 1 }).format(n);
+  const yerTutucu = (yuva) => `<span class="urun-yer">${svg(YUVA_SIMGE[yuva] || YUVA_SIMGE.raf)}</span>`;
+
+  function gorseller(u) {
+    const g = Array.isArray(u.galeri) ? u.galeri.filter((s) => typeof s === 'string' && s) : [];
+    return g.length ? g : typeof u.gorsel === 'string' && u.gorsel ? [u.gorsel] : [];
+  }
+  // Galerinin küçük resmi (240 px, aynı sıra); yoksa büyük görselin kendisi
+  const kucukResim = (u, gs, i) => (Array.isArray(u.kucuk) && typeof u.kucuk[i] === 'string' && u.kucuk[i] ? u.kucuk[i] : gs[i]);
+  // Dioramada sıra sabit (1 kapak … 6 ölçü): alt metin görünümü ürün adıyla söyler; ötekilerde ad (+ sıra)
+  const diorama = (u, i) => u.grup === 'diorama' && i < 6;
+  const altMetni = (u, ad, i, n) => (diorama(u, i) ? t(`urun.gorsel.${i + 1}`, { ad }) : n > 1 ? t('urun.gorsel', { ad, i: i + 1 }) : ad);
+  const gorunum = (u, i) => (diorama(u, i) ? t(`urun.gorunum.${i + 1}`) : '');
+
+  function olcuMetni(o, lang) {
+    if (!o || typeof o !== 'object') return null;
+    const v = ['g', 'd', 'y'].map((k) => Number(o[k]));
+    if (v.some((x) => !(x > 0))) return null;
+    const [g, d, y] = v.map((x) => sayi(x / 10, lang)); // mm → cm
+    return t('urun.olcuDeger', { g, d, y });
+  }
+
+  // Meta açıklama: açıklamanın ilk cümleleri (~155 harf), yoksa ad + durum
+  function metaMetni(u, ad, lang) {
+    const a = yazi(u.aciklama, lang).replace(/\s+/g, ' ').trim();
+    if (a) {
+      let s = '';
+      for (const c of a.match(/[^.!?]+[.!?]*/g) || []) { if ((s + c).length > 155 && s) break; s += c; }
+      s = s.trim();
+      return s.length > 160 ? s.slice(0, 157).replace(/\s+\S*$/, '') + '…' : s;
+    }
+    return t('urun.meta', { ad, durum: DURUMLAR.includes(u.durum) ? t('durum.' + u.durum) : t('urunler.title') });
+  }
+
+  const metaYaz = (ad, icerik) => {
+    document.querySelector('meta[name="description"]').setAttribute('content', icerik);
+    document.title = `${ad} · ${t('app.name')}`;
+  };
+
+  // --- Bulunamadı / yüklenemedi ---
+  function yokCiz(hata) {
+    document.body.dataset.durum = hata ? 'hata' : 'yok';
+    if (!document.querySelector('meta[name="robots"]')) document.head.append(Object.assign(document.createElement('meta'), { name: 'robots', content: 'noindex' }));
+    const baslik = t(hata ? 'urun.title' : 'urun.bulunamadi');
+    metaYaz(baslik, t(hata ? 'urun.yuklenemedi' : 'urun.bulunamadi.d'));
+    kok.innerHTML = `<div class="urun-yok">
+      <h1>${kacis(baslik)}</h1>
+      <p class="intro">${kacis(t(hata ? 'urun.yuklenemedi' : 'urun.bulunamadi.d'))}</p>
+      <a class="btn primary" href="./">${svg(OK_SOL, 24).replace('<svg', '<svg class="ok"')}${kacis(t('urun.listeyeDon'))}</a>
+    </div>`;
+  }
+
+  // --- Ürün ---
+  let secili = 0; // dil değişince galeri aynı görselde kalsın
+  let ilkIsaret = false;
+
+  function ciz(lang) {
+    const u = urun;
+    const ad = yazi(u.ad, lang) || u.id;
+    const yuva = YUVALAR.find((y) => y.id === u.yuva);
+    const gs = gorseller(u);
+    const n = Math.max(gs.length, 1);
+    const satista = u.durum === 'satista' && !!guvenliAdres(u.magaza); // düğmeyle aynı denetim (eylemDugmesi)
+    const oda = odaAdresi(u, YUVALAR);
+    metaYaz(ad, metaMetni(u, ad, lang));
+
+    // Kapak hemen yüklenir; dioramada kart.webp kapağın 600 px'i (sözleşme: core/urun-veri.js), dar ekranda o iner.
+    // Öteki büyük görseller yalnız seçilince ya da şerit kaydırılınca yüklenir (data-src → src: kareYukle)
+    const kapakSrcset = u.grup === 'diorama' && typeof u.gorsel === 'string' && u.gorsel && gs[0] !== u.gorsel
+      ? ` srcset="../${kacis(u.gorsel)} 600w, ../${kacis(gs[0])} 1200w" sizes="(max-width: 700px) 100vw, (max-width: 1100px) 56vw, 620px"` : '';
+    const kareler = gs.length
+      ? gs.map((g, i) => `<figure class="galeri-kare" data-i="${i}"><img ${i === 0 ? `src="../${kacis(g)}"${kapakSrcset} fetchpriority="high"`
+          : `data-src="../${kacis(g)}"`} alt="${kacis(altMetni(u, ad, i, n))}" decoding="async"></figure>`).join('')
+      : `<figure class="galeri-kare" data-i="0">${yerTutucu(u.yuva)}</figure>`;
+    // Küçük resimler (240 px'lik kopyalar) ilk görsel inince yüklenir (data-src): kapakla bant genişliği yarışmasın
+    const kucukler = gs.length > 1
+      ? `<div class="galeri-kucuk" role="group" aria-label="${kacis(t('urun.galeri', { ad }))}">${gs.map((g, i) =>
+          `<button type="button" data-i="${i}" aria-current="${i === 0}" aria-label="${kacis(t('urun.gorselSec', { i: i + 1, etiket: gorunum(u, i) || altMetni(u, ad, i, n) }))}"><img data-src="../${kacis(kucukResim(u, gs, i))}" alt="" decoding="async"></button>`).join('')}</div>`
+      : '';
+    const oklar = gs.length > 1
+      ? `<button type="button" class="galeri-ok" data-yon="-1" aria-label="${kacis(t('urun.onceki'))}" disabled>${svg('<path d="M15 6l-6 6 6 6"/>', 24)}</button>
+         <button type="button" class="galeri-ok" data-yon="1" aria-label="${kacis(t('urun.sonraki'))}">${svg('<path d="M9 6l6 6-6 6"/>', 24)}</button>
+         <p class="galeri-sayac" aria-hidden="true"></p>`
+      : '';
+
+    const satirlar = [
+      [t('urun.olcu'), olcuMetni(u.olcu, lang), 'sayi'],
+      [t('urun.parca'), Number(u.parca) > 0 ? t('urun.parcaDeger', { n: sayi(Number(u.parca), lang) }) : null, ''],
+      [t('urun.malzeme'), yazi(u.malzeme, lang) || null, ''],
+      [t('urun.kutu'), yazi(u.kutu, lang) || null, ''],
+    ].filter(([, v]) => v);
+    const ozellik = satirlar.length
+      ? `<section class="urun-ozellik" aria-labelledby="ozellik-b"><h2 id="ozellik-b">${kacis(t('urun.ozellik'))}</h2><dl>${
+          satirlar.map(([k, v, s]) => `<div><dt>${kacis(k)}</dt><dd${s ? ` class="${s}"` : ''}>${kacis(v)}</dd></div>`).join('')}</dl></section>`
+      : '';
+    const paragraf = yazi(u.aciklama, lang).split(/\n\s*\n/).map((p) => p.trim()).filter(Boolean);
+    const aciklama = paragraf.length
+      ? `<section class="urun-aciklama" aria-labelledby="hakkinda-b"><h2 id="hakkinda-b">${kacis(t('urun.hakkinda'))}</h2>${paragraf.map((p) => `<p>${kacis(p)}</p>`).join('')}</section>`
+      : '';
+    // Video: ürüne yakın kırpılmış dönüş; boyutu veriden (video_boyut) gelirse kutu videoya sarılır ve en çok 1,25× büyür
+    // (core/style.css .video-sahne[style]); poster videonun ilk karesi (video_kapak), yoksa kapak görseli
+    const vb = u.video_boyut && Number(u.video_boyut.g) > 0 && Number(u.video_boyut.y) > 0
+      ? { g: Math.round(Number(u.video_boyut.g)), y: Math.round(Number(u.video_boyut.y)) } : null;
+    const poster = typeof u.video_kapak === 'string' && u.video_kapak ? u.video_kapak : gs[0];
+    const video = typeof u.video === 'string' && u.video
+      ? `<section class="urun-video" aria-labelledby="video-b"><h2 id="video-b">${kacis(t('urun.video'))}</h2>
+          <div class="video-sahne"${vb ? ` style="--vg: ${vb.g}; --vy: ${vb.y}"` : ''}><video src="../${kacis(u.video)}"${poster ? ` poster="../${kacis(poster)}"` : ''}${
+            vb ? ` width="${vb.g}" height="${vb.y}"` : ''} muted loop playsinline controls preload="none"
+            disablepictureinpicture controlslist="nodownload noplaybackrate" aria-label="${kacis(t('urun.videoAria', { ad }))}"></video></div></section>`
+      : '';
+    let fiyatNot = '';
+    if (u.fiyat && guvenliAdres(u.magaza) && veri.URUN_VERI_TARIHI) {
+      const tarih = new Intl.DateTimeFormat(lang === 'en' ? 'en-GB' : 'tr-TR', { day: 'numeric', month: 'long', year: 'numeric' })
+        .format(new Date(veri.URUN_VERI_TARIHI + 'T12:00:00'));
+      fiyatNot = `<p class="urun-not">${kacis(t('urunler.not', { tarih }))}</p>`;
+    }
+
+    kok.innerHTML = `
+      <nav class="iz" aria-label="${kacis(t('urun.iz'))}"><a href="./">${kacis(t('nav.urunler'))}</a>${
+        yuva && yuva.urun > 0 ? `<span aria-hidden="true">/</span><a href="./?grup=${encodeURIComponent(yuva.id)}">${kacis(yazi(yuva.ad, lang))}</a>` : ''}</nav>
+      <div class="urun-duzen">
+        <section class="galeri${u.grup === 'diorama' ? ' doldur' : ''}" aria-label="${kacis(t('urun.galeri', { ad }))}">
+          <div class="galeri-sahne">
+            <div class="galeri-serit"${gs.length > 1 ? ' tabindex="0"' : ''}>${kareler}</div>
+            ${oklar}
+          </div>
+          ${kucukler}
+        </section>
+        <div class="urun-yan">
+          <h1>${kacis(ad)}</h1>
+          <p class="urun-kunye">${u.fiyat ? `<span class="fiyat">${kacis(u.fiyat)}</span>` : ''}${
+            DURUMLAR.includes(u.durum) ? `<span class="durum durum-${u.durum}">${t('durum.' + u.durum)}</span>` : ''}</p>
+          <div class="urun-eylem">${eylemDugmesi(u, ad)}${oda
+            ? `<a class="urun-oda-git" data-eylem="oda" href="${kacis(oda)}" aria-label="${kacis(t('urun.odaAria', { ad }))}">${kacis(t('urun.oda'))}${svg(OK_SIMGE, 24).replace('<svg', '<svg class="ok"')}</a>` : ''}</div>
+          ${satista ? '' : `<p class="urun-ozel">${kacis(t('urun.ozel'))}</p>`}
+          ${ozellik}
+          ${aciklama}
+          ${fiyatNot}
+        </div>
+        ${video}
+      </div>`;
+    document.body.dataset.durum = 'hazir';
+    galeriBagla(u, ad, gs.length);
+    videoBagla();
+  }
+
+  function kucukleriYukle() {
+    kok.querySelectorAll('.galeri-kucuk img[data-src]').forEach((im) => { im.src = im.dataset.src; im.removeAttribute('data-src'); });
+  }
+
+  // Büyük görsel j: ilk kez gerektiğinde (seçilince, şerit kaydırılınca) yüklenir
+  function kareYukle(j) {
+    const im = kok.querySelectorAll('.galeri-kare img')[j];
+    if (im && im.dataset.src) { im.src = im.dataset.src; im.removeAttribute('data-src'); }
+  }
+
+  function galeriBagla(u, ad, n) {
+    // İlk görsel: yüklenince ölçüm işareti (bir kez) ve küçük resimler
+    const ilk = kok.querySelector('.galeri-kare img');
+    const ilkHazir = () => {
+      if (!ilkIsaret) { ilkIsaret = true; performance.mark('urun-ilk-gorsel'); }
+      kucukleriYukle();
+      // Boyutu veride olmayan videoda üst bilgi kapaktan sonra gelsin (çerçeve oturur); boyutu bilinen video görünene dek inmez
+      const v = kok.querySelector('.urun-video video');
+      if (v && !v.hasAttribute('width') && v.preload === 'none') v.preload = 'metadata';
+    };
+    if (!ilk) ilkHazir();
+    else if (ilk.complete && ilk.naturalWidth) ilkHazir();
+    else { ilk.addEventListener('load', ilkHazir, { once: true }); ilk.addEventListener('error', kucukleriYukle, { once: true }); setTimeout(kucukleriYukle, 2500); }
+    if (n < 2) return;
+
+    const serit = kok.querySelector('.galeri-serit');
+    const kucuk = [...kok.querySelectorAll('.galeri-kucuk button')];
+    const oklar = [...kok.querySelectorAll('.galeri-ok')];
+    const sayac = kok.querySelector('.galeri-sayac');
+    let i = -1, hedef = null, kare = 0;
+    const goster = (j) => {
+      if (j === i) return;
+      i = secili = j;
+      kucuk.forEach((b, k) => b.setAttribute('aria-current', String(k === j)));
+      oklar.forEach((b) => { b.disabled = b.dataset.yon === '-1' ? j === 0 : j === n - 1; });
+      const g = gorunum(u, j);
+      sayac.textContent = `${j + 1} / ${n}${g ? ` · ${g}` : ''}`;
+    };
+    const git = (j) => {
+      j = Math.max(0, Math.min(n - 1, j));
+      kareYukle(j);
+      hedef = j;
+      serit.scrollTo({ left: j * serit.clientWidth, behavior: reduce ? 'auto' : 'smooth' });
+      goster(j);
+    };
+    // Kaydırma (parmak, iz paneli, ok tuşu) seçili görseli günceller; düğmeyle başlayan kaydırma bitene dek ara kareler sayılmaz
+    serit.addEventListener('scroll', () => {
+      const x = serit.scrollLeft / Math.max(1, serit.clientWidth); // görünen iki kare (kaydırma sırasında yarım kalan dahil)
+      kareYukle(Math.floor(x)); kareYukle(Math.ceil(x));
+      cancelAnimationFrame(kare);
+      kare = requestAnimationFrame(() => {
+        const j = Math.round(serit.scrollLeft / Math.max(1, serit.clientWidth));
+        if (hedef !== null) { if (j !== hedef) return; hedef = null; }
+        goster(j);
+      });
+    }, { passive: true });
+    kucuk.forEach((b) => b.addEventListener('click', () => git(Number(b.dataset.i))));
+    oklar.forEach((b) => b.addEventListener('click', () => git(i + Number(b.dataset.yon))));
+    serit.addEventListener('keydown', (e) => {
+      if (e.key !== 'ArrowLeft' && e.key !== 'ArrowRight') return;
+      e.preventDefault();
+      git(i + (e.key === 'ArrowRight' ? 1 : -1));
+    });
+    const bas = Math.min(secili, n - 1);
+    if (bas > 0) { kareYukle(bas); serit.scrollLeft = bas * serit.clientWidth; }
+    goster(bas);
+  }
+
+  // Video: sessiz döngü, görünür olunca oynar, görünmezken durur. Hareket azaltmada kendiliğinden oynamaz (poster + denetimler).
+  function videoBagla() {
+    const v = kok.querySelector('.urun-video video');
+    if (!v) return;
+    v.muted = true;
+    v.addEventListener('error', () => v.closest('.urun-video')?.remove(), { once: true });
+    // Boyutu veride yoksa: tarayıcı ilk kare gelene dek kutuyu posterin boyunda çizer, oynayınca videonun oranına zıplar:
+    // oranı üst bilgiden sabitle (boyutu bilinen videoda width/height öznitelikleri bunu baştan yapar)
+    if (!v.hasAttribute('width')) {
+      const oran = () => { if (v.videoWidth && v.videoHeight) v.style.aspectRatio = `${v.videoWidth} / ${v.videoHeight}`; };
+      if (v.readyState >= 1) oran(); else v.addEventListener('loadedmetadata', oran, { once: true });
+    }
+    if (reduce || !('IntersectionObserver' in window)) return;
+    new IntersectionObserver(([e]) => {
+      if (!v.isConnected) return;
+      if (e.isIntersecting) v.play().catch(() => {}); else v.pause();
+    }, { threshold: 0.35 }).observe(v);
+  }
+
+  // Görsel yüklenemezse kırık resim yerine yuva simgesi (error olayı kabarcıklanmaz: yakalama evresinde dinlenir)
+  kok.addEventListener('error', (e) => {
+    const img = e.target;
+    if (img.tagName !== 'IMG' || !urun) return;
+    img.replaceWith(Object.assign(document.createElement('span'), { innerHTML: yerTutucu(urun.yuva) }).firstChild);
+  }, true);
+
+  siteSayfasi((lang) => {
+    if (!veri) yokCiz(true);
+    else if (!urun) yokCiz(false);
+    else ciz(lang);
+    kok.removeAttribute('aria-busy');
+  });
+</script>
+</body>
+</html>

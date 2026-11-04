@@ -321,11 +321,11 @@ function abrasBandi(W, r, [parlak, sicak]) {
 }
 
 // Desen + dokuma → renk ve normal kanvasları
-function dokuUret({ en, boy, seed }) {
+function dokuUret({ en, boy, seed, dokuMaks = DOKU_MAKS }) {
   // Basamak 3200 × 2200'de 6,25 mm; başka ölçüde desen orantılı büyür / küçülür (çerçeve ve göller sığsın)
   const hucre = HUCRE * Math.min(en / 3200, boy / 2200);
   const W = 2 * Math.round(en / hucre / 2), H = 2 * Math.round(boy / hucre / 2);
-  const PX = Math.max(1, Math.floor(DOKU_MAKS / Math.max(W, H)));
+  const PX = Math.max(1, Math.floor(dokuMaks / Math.max(W, H)));
   const g = desenKur(W, H), r = rnd(seed);
   const CW = W * PX, CH = H * PX;
   const abras = ABRAS.map((a) => abrasBandi(W, r, a));
@@ -489,11 +489,12 @@ function puskulGeo(en, boy, kay, r) {
 }
 
 // Kilim: gövde (üst yüz desenli, yanlar kenar örgüsü rengi), püsküller, kenarda ince temas gölgesi.
-// Merkez orijinde, alt yüzü z = 0, uzun kenar x ekseninde; ışın atma kapalı.
-export function kilim({ en = 3200, boy = 2200, seed = 23 } = {}) {
+// Merkez orijinde, alt yüzü z = 0, uzun kenar x ekseninde; ışın atma kapalı. dokuMaks: dokunun uzun kenarı en çok (px;
+// odanın telefon katmanı 1400 verir: hücre başına 2 px, üretim ~2,2 kat kısa)
+export function kilim({ en = 3200, boy = 2200, seed = 23, dokuMaks = DOKU_MAKS } = {}) {
   const r = rnd(seed * 7 + 1);
   const kay = kenarDalgasi(en, boy, r);
-  const { renk, normal } = dokuUret({ en, boy, seed });
+  const { renk, normal } = dokuUret({ en, boy, seed, dokuMaks });
   const map = dokuAyarla(new THREE.CanvasTexture(renk), true);
   const nmap = dokuAyarla(new THREE.CanvasTexture(normal), false);
   const ust = new THREE.MeshStandardMaterial({ map, normalMap: nmap, normalScale: new THREE.Vector2(0.8, 0.8), roughness: 1, metalness: 0 });
