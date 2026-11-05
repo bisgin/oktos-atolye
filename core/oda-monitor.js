@@ -14,13 +14,16 @@ const TASARIMLAR = ['duck-hunt', 'super-mario-1-1', 'doom-1993-koridoru', 'itach
 const KOK = new URL('../assets/urunler/diorama/', import.meta.url);
 const EN = 640, BOY = 360; // ekran 16:9
 const MASA_EKRAN = new URL('../assets/oda/masa-ekran.mp4', import.meta.url).href;
+// v8.1 (koordinatör): ikinci video, heykel yontma kaydı; ikisi sırayla (dönüş → yontma → dönüş …), her biri bitince
+// ('ended', döngü kapalı) ötekine geçilir. Yontma dosyası yüklenemezse dönüş tek başına döngüde
+const MASA_YONTMA = new URL('../assets/oda/masa-ekran-sculpt.mp4', import.meta.url).href;
 
 export function odaMonitoru(scene, { reduce = false } = {}) {
   let ekran = null, eskiMat = null, mat = null, video = null, tuval = null, g = null, doku = null;
   let sira = (() => { try { return Number(sessionStorage.getItem('oda-monitor-sira')) || 0; } catch { return 0; } })();
   let oynuyor = false;
   // masa-ekran.mp4: null bilinmiyor, true yüklendi, false yok (eski döngü)
-  let masaVar = null, vMat = null, vDoku = null, mVideo = null, kaynak = null;
+  let masaVar = null, vMat = null, vDoku = null, mVideo = null, kaynak = null, sira2 = 'donus', yontmaVar = null;
   const bul = () => (ekran ??= scene.getObjectByName('monitor_ekran') ?? null);
   function hazirla() {
     if (mat || !bul()) return !!mat;
@@ -50,7 +53,7 @@ export function odaMonitoru(scene, { reduce = false } = {}) {
   function masaHazirla() {
     if (vMat || !hazirla()) return !!vMat;
     mVideo = document.createElement('video');
-    Object.assign(mVideo, { muted: true, loop: true, playsInline: true, preload: 'auto', crossOrigin: 'anonymous' });
+    Object.assign(mVideo, { muted: true, loop: false, playsInline: true, preload: 'auto', crossOrigin: 'anonymous' });
     mVideo.setAttribute('playsinline', '');
     vDoku = new THREE.VideoTexture(mVideo);
     vDoku.colorSpace = THREE.SRGBColorSpace;
@@ -61,7 +64,17 @@ export function odaMonitoru(scene, { reduce = false } = {}) {
     vMat.emissiveMap = vDoku;
     vMat.emissive = new THREE.Color(0xffffff);
     vMat.emissiveIntensity = eskiMat.emissiveIntensity || 1;
+    // Sıradaki video: aynı öğe, kaynak değişir (tek VideoTexture). Yontma yoksa dönüş baştan
+    mVideo.addEventListener('ended', () => {
+      if (!oynuyor || kaynak !== 'masa') return;
+      const sonraki = sira2 === 'donus' && yontmaVar !== false ? 'yontma' : 'donus';
+      sira2 = sonraki;
+      if (mVideo.src !== (sonraki === 'yontma' ? MASA_YONTMA : MASA_EKRAN)) mVideo.src = sonraki === 'yontma' ? MASA_YONTMA : MASA_EKRAN;
+      else mVideo.currentTime = 0;
+      if (!reduce) mVideo.play().catch(() => {});
+    });
     mVideo.addEventListener('loadeddata', () => {
+      if (sira2 === 'yontma') yontmaVar = true;
       masaVar = true;
       const va = (mVideo.videoWidth || 16) / (mVideo.videoHeight || 9), sa = EN / BOY, r = ilk?.repeat ?? { x: 1, y: 1 }, o = ilk?.offset ?? { x: 0, y: 0 };
       const kx = va > sa ? sa / va : 1, ky = va > sa ? 1 : va / sa;
@@ -69,7 +82,15 @@ export function odaMonitoru(scene, { reduce = false } = {}) {
       vDoku.offset.set(o.x + (r.x * (1 - kx)) / 2, o.y + (r.y * (1 - ky)) / 2);
     }, { once: true });
     // Dosya yoksa ya da çözülemezse eski döngü (oynuyorsa hemen geçer)
-    mVideo.addEventListener('error', () => { masaVar = false; if (oynuyor && kaynak === 'masa') { oynuyor = false; ekran.material = eskiMat; eskiBasla(); } }, { once: true });
+    mVideo.addEventListener('error', () => {
+      if (sira2 === 'yontma') { // yontma kaydı yok: dönüşe dön, bundan sonra yalnız o
+        yontmaVar = false; sira2 = 'donus'; mVideo.src = MASA_EKRAN;
+        if (oynuyor && !reduce) mVideo.play().catch(() => {});
+        return;
+      }
+      masaVar = false;
+      if (oynuyor && kaynak === 'masa') { oynuyor = false; ekran.material = eskiMat; eskiBasla(); }
+    });
     return true;
   }
   function eskiBasla() {
@@ -115,5 +136,6 @@ export function odaMonitoru(scene, { reduce = false } = {}) {
     get sira() { return sira; },
     get kaynak() { return oynuyor ? kaynak : null; },
     get masaVar() { return masaVar; },
+    get video() { return kaynak === 'masa' ? sira2 : null; }, // v8.1: 'donus' | 'yontma' (test)
   };
 }

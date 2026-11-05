@@ -93,9 +93,11 @@ function odayiUzat(kok, scene) {
         // 1 mm altından ve odanın 2 mm içinden başlar: o şeridi aşağıdan örter (dikiş görünmez)
         const pi = w[i], pj = w[j], y0 = ad === 'tavan' ? ROOM.y0 + 2 : duzlem(i), dz = ad === 'tavan' && pi.z < ROOM.h + 1 ? -1 : 0;
         for (const [q, yy] of [[pi, y0], [pj, y0], [pj, Y], [pi, y0], [pj, Y], [pi, Y]]) P.push(q.x, yy, q.z + dz);
-        // Uzantı boyunca içerideki UV (kenarın dokusu atlasın kenarına denk gelebiliyor: tavanda gri şerit)
-        for (const q of [i, j, j, i, j, i]) U.push(...icOf(q));
-        kenar[ad].push({ p: pi, uv: icOf(i) }, { p: pj, uv: icOf(j) });
+        // v8.2 (kullanıcı: uzantı duvarları başka renkte görünüyordu): duvar, zemin ve süpürgelikte uzantı kenarın KENDİ dokusunu
+        // taşır (dikişte ton birebir aynı); yalnız tavanda kenar atlasın kenarına denk geldiği için içerideki UV
+        const uvOf = (q) => (ad === 'tavan' ? icOf(q) : [uv.getX(q), uv.getY(q)]);
+        for (const q of [i, j, j, i, j, i]) U.push(...uvOf(q));
+        kenar[ad].push({ p: pi, uv: uvOf(i) }, { p: pj, uv: uvOf(j) });
       }
     }
     if (!P.length) continue;
@@ -485,6 +487,23 @@ export async function buildScene({ scene, P, lang = 'tr', hafif = false }) {
   if (pilot) {
     place(pilot.esya.monitor, A.monitor);
     scene.add(pilot.esya.masa_alti);
+    // v8.2 (kullanıcı): fare avucunu doldursun: fare ve tekerleği tabanının ortası çevresinde 1,8 kat (kablo yerinde);
+    // 'fare' grubu sunum'da fare klibi oynarken ele bağlanır (core/oda-sunum.js fareKaresi)
+    {
+      const ma = pilot.esya.masa_alti, fare = ma.getObjectByName('fare'), tek = ma.getObjectByName('fare_tekerlek');
+      if (fare) {
+        ma.updateMatrixWorld(true);
+        const b = new THREE.Box3().setFromObject(fare), c = b.getCenter(new THREE.Vector3());
+        const g = new THREE.Group();
+        g.name = 'fare_grubu';
+        g.position.set(c.x, c.y, b.min.z);
+        scene.add(g);
+        g.updateMatrixWorld(true);
+        for (const o of [fare, tek].filter(Boolean)) g.attach(o);
+        g.scale.setScalar(1.8);
+        g.userData.ev = g.position.clone();
+      }
+    }
     if (pilot.perde) scene.add(pilot.perde);
     // Oyuncu koltuğu: masanın sağ önünde, halının üstünde (durak kameralarının önüne girmez)
     if (pilot.esya.koltuk) place(pilot.esya.koltuk, [OLCU.CHAIR.x, OLCU.CHAIR.y, 0, OLCU.CHAIR.rz]);
@@ -546,6 +565,31 @@ export async function buildScene({ scene, P, lang = 'tr', hafif = false }) {
 
   // ---- v8 (2026-11-04, kullanıcı kararı): arka duvardaki kart anahtarlık askı panosu (anahtarlik yuvası) kalktı; kart
   // anahtarlıklar Ürünler sekmesinde. Dolabın üstündeki anahtar tepsisi dekor olarak kaldı. Kodu git geçmişinde ----
+
+  // ---- v8.1 (2026-11-05, kullanıcı isteği): tavan lambası. Odanın ortasında, kilimin üstünde kısa sarkıt: tavanda
+  // basık göbek, 240 mm kordon, mat koyu kubbe başlık (alt kenarı z ≈ 2310: genel planda ve durak kadrajlarında başların
+  // çok üstünde). Işık yalnız başlığın içi ve ampulün yumuşak sıcak parıltısı (ışıyan malzeme); yeni ışık ve gölge yok
+  // (telefon bütçesi). Kadraj hesabında engel sayılır (core/oda-kadraj.js), tıklanmaz ----
+  {
+    const L = { x: -200, y: -150, kordon: 240, r: 175, boy: 135 };
+    const lamba = new THREE.Group();
+    lamba.name = 'sarkit_lamba';
+    const koyu = new THREE.MeshStandardMaterial({ color: 0x3a2f27, roughness: 0.82, metalness: 0.05, envMapIntensity: 0.5 });
+    const ic = new THREE.MeshStandardMaterial({ color: 0x1c1712, emissive: 0xffb36a, emissiveIntensity: 0.45, roughness: 0.9, side: THREE.BackSide });
+    const ampul = new THREE.MeshStandardMaterial({ color: 0x000000, emissive: 0xffe2b0, emissiveIntensity: 3.2, roughness: 0.4 });
+    const ust = ROOM.h;
+    const gobek = new THREE.Mesh(new THREE.CylinderGeometry(55, 60, 18, 32).rotateX(Math.PI / 2).translate(0, 0, ust - 9), koyu);
+    const kordon = new THREE.Mesh(new THREE.CylinderGeometry(2.5, 2.5, L.kordon, 8).rotateX(Math.PI / 2).translate(0, 0, ust - 18 - L.kordon / 2), koyu);
+    // Kubbe: dış yüz mat koyu, iç yüz sıcak ışıyan (aynı eğri, tek kat; arka yüz)
+    const tepe = ust - 18 - L.kordon, prof = [];
+    for (let i = 0; i <= 16; i++) { const a = (i / 16) * (Math.PI / 2); prof.push(new THREE.Vector2(Math.max(14, Math.sin(a) * L.r), -(1 - Math.cos(a)) * L.boy)); }
+    const kubbe = new THREE.LatheGeometry(prof, 40).rotateX(Math.PI / 2).translate(0, 0, tepe);
+    const dis = new THREE.Mesh(kubbe, koyu), icYuz = new THREE.Mesh(kubbe, ic);
+    const amp = new THREE.Mesh(new THREE.SphereGeometry(32, 20, 14).translate(0, 0, tepe - L.boy + 45), ampul);
+    for (const m of [gobek, kordon, dis, icYuz, amp]) { m.castShadow = false; m.receiveShadow = false; lamba.add(m); }
+    lamba.position.set(L.x, L.y, 0);
+    scene.add(lamba);
+  }
 
   // ---- portfolyo köşesi (2026-11-03, çatı katından taşındı; core/oda-portfolyo.js): sol duvarda kitaplık ve kara tahta
   // (hakkımda); sağ duvarda 55" ekran (süreç), altında kutu oyunu rafı, önünde kilim; buzdolabının önünde çöp. Burada
@@ -745,6 +789,7 @@ export async function buildScene({ scene, P, lang = 'tr', hafif = false }) {
   // işaretçisi, kartı ve tur durağı yok (ürünler masada, pervazda dekor olarak durur, tıklanmaz; Ürünler sekmesinde).
   // İşaretçiler: armut (Hakkımda), kitaplık, masa, buzdolabı, ekran (Süreç), kutu oyunları (PORTFOLYO_DURAK sırası).
   // Masa ve buzdolabının tıklama hacmi görünmez kutu (masa: tabla + monitör; buzdolabı: gövde)
+  const FOV_SEC = (() => { const q = new URLSearchParams(globalThis.location?.search ?? '').get('fov'); const v = q ? q.split(',').map(Number) : []; return [v[0] || FOV.yatay, v[1] || v[0] || FOV.kare, v[2] || FOV.dikey]; })();
   const vekilM = new THREE.MeshBasicMaterial({ visible: false });
   const hacim = (x0, x1, y0, y1, z0, z1) => {
     const g = new THREE.Group(), m = new THREE.Mesh(new THREE.BoxGeometry(x1 - x0, y1 - y0, z1 - z0), vekilM);
@@ -772,7 +817,8 @@ export async function buildScene({ scene, P, lang = 'tr', hafif = false }) {
     altKaydirma: 'hedef', // v7: alttaki kartta kamera göz yüksekliğinde kalır, yalnız bakış aşağı (core/story.js focusShot)
     focusShots: odakVekil, // v7: kimliğe göre o anki ekran için hesaplanır (odakKadraji), olmazsa FOCUS
     // v7: görüş açısı sabit ve geniş (kullanıcı kuralı: yakınlaşma kameranın yeriyle, zoom yok); oda-yerler FOV
-    fov: FOV.yatay, squareFov: FOV.kare,
+    // ?fov=yatay,kare,dikey (deneme: genel plan seçenekleri; v8.2)
+    fov: FOV_SEC[0], squareFov: FOV_SEC[1],
     focusShift: 0.16, // yatay ekranda yakın plandaki ürün sağa kayar: sol kenarda başlık paneli
     touchOrbit: false, // dokunmatikte yakın planda yana kaydırma ürün değiştirir (etrafa bakma yok)
     langGeometry: true,
@@ -792,10 +838,10 @@ export async function buildScene({ scene, P, lang = 'tr', hafif = false }) {
     // Telefonun dikey ekranı: genel motor kamerayı odanın dışına çekip tepeden gökyüzünü gösteriyordu; oda kendi
     // kadrajını verir (içeriden, geniş açıyla: masa, raflar ve sol pencere)
     portraitShot: SHOTS.portrait,
-    portraitFov: FOV.dikey,
+    portraitFov: FOV_SEC[2],
     // v8: genel plan ekran oranına göre odanın içinden; altı işaretçi de kadrajda (oda-yerler fitShot)
     // Ek noktalar: armudun ve kutu rafının alt kısmı da kadrajda (yalnız işaretçi değil, eşyanın kendisi görünsün)
-    fitShot: (aspect, fov) => fitShot(aspect, fov, [...isaretler().map((x) => x.anchor), [-1560, -560, 250], [1800, -700, 150], [1800, 200, 150],
+    fitShot: (aspect, fov) => fitShot(aspect, fov, [...isaretler().map((x) => x.anchor), [-1380, -560, 250], [1800, -700, 150], [1800, 200, 150],
       ...[-1, 1].flatMap((sx) => [[sx * 2050, ROOM.y1, 2600], [sx * 2050, ROOM.y1, 60]])]), // arka duvarın dört köşesi: oda dört yanıyla
     // v8: kamera hiçbir zaman odanın dışında değil (motorun setView ve yakın plan geri çekilmesi bu kutuda durur)
     cameraBounds: { min: [ROOM.x0 + 160, ON_DUVAR.y + 160, 300], max: [ROOM.x1 - 160, ROOM.y1 - 160, ROOM.h - 150] },

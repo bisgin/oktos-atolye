@@ -27,7 +27,7 @@ export const A = {
   pedestal: [PEDESTAL.x, PEDESTAL.y, 0, 0], // çekmeceli dolap (üst çekmece −y yönünde açılır)
   tepsi: [PEDESTAL.x + 90, PEDESTAL.y + 210, PEDESTAL.h, 0], // dolabın üstünde, arkada, spot lambanın başının altında (dekor)
   pencup: [-1400, 1520, 740, 0],      // monitörün solunda (önceki yerde kalemler monitörün içine giriyordu)
-  keyboard: [-930, 1330, 740, 0.02],
+  keyboard: [-1015, 1320, 740, 0.02], // v8.2: yaz klibinin parmak uçlarının altında (ölçüm: uçların ortası x −1003, y 1315)
   monitor: [MONITOR.x, MONITOR.y, 740, 0], // klavyenin arkasında (pilotta gerçekçi monitör)
   kartvizit: [-1385, 1395, 740, -0.22], // kalemliğin önü, kameraya hafif dönük
   clickers: [-760, 1235, 743, -0.35], // anahtarlık clicker: klavyenin önünde, mousepad'in üstünde (tuş setiyle aynı tasarım)
@@ -67,7 +67,9 @@ export function fitShot(aspect, fov, isaretler = null) {
   // yana kaydırarak bakılır (core/oda-sunum.js; sınırlar PORTRE_BAKIS)
   if (aspect < 0.9) {
     const xs0 = pts.map((p) => p[0]), cx0 = Math.round((Math.min(...xs0) + Math.max(...xs0)) / 2 / 50) * 50;
-    return { main: { pos: [cx0, -2400, 1450], target: [cx0, 800, 1150] }, intro: { pos: [cx0 + 250, -3000, 1750], target: [cx0 - 100, 800, 1300] } };
+    // v8.2: görüş açısı genişledikçe kamera yaklaşır (58° → y −2400; her derece 25 mm öne; 70° → −2100)
+    const yk = Math.min(-1300, -2400 + Math.max(0, fov - 58) * 25);
+    return { main: { pos: [cx0, yk, 1450], target: [cx0, 800, 1150] }, intro: { pos: [cx0 + 250, yk - 600, 1750], target: [cx0 - 100, 800, 1300] } };
   }
   const tv = Math.tan((fov * Math.PI) / 360), th = tv * aspect;
   const xs = pts.map((p) => p[0]), cx = Math.round((Math.min(...xs) + Math.max(...xs)) / 2 / 50) * 50;
@@ -100,12 +102,15 @@ export function fitShot(aspect, fov, isaretler = null) {
   return { main, intro };
 }
 // Altı işaretçinin yaklaşık yeri (sahne kendi yerlerini verene dek yedek; core/oda-sahne.js hotspot anchor'ları)
-const GENEL_ISARET = [[-1560, -560, 1150], [-1675, 520, 1980], [-1000, 1400, 1150], [1700, 850, 1000], [1980, -250, 1656], [1655, 142, 480]];
+const GENEL_ISARET = [[-1380, -560, 1150], [-1675, 520, 1980], [-1000, 1400, 1150], [1700, 850, 1000], [1980, -250, 1656], [1655, 142, 480]];
 
 // Görüş açısı (derece, dikey; 2026-11-04 v7 kamera kuralı): ekran oranına göre sabit, etkileşimde değişmez (yaklaşma
 // kameranın yeriyle). Oda içinde göz yüksekliğinden kadraj kurulabilsin diye geniş: yatay ekranda 42° (önce 30°: 4,2 m'lik
 // odada kitaplık ve raf ancak duvarın dışından sığıyordu), kareye yakın 48°, dikey 58°
-export const FOV = { yatay: 42, kare: 48, dikey: 58 };
+// v8.2 (kullanıcı: genel plan çok geride; daha yakından, daha geniş açı): üç seçenek denendi (yatay 42 / 55 / 65°, dikey
+// 58 / 70 / 80°; Drive v8.2/oda karşılaştırma kareleri); seçilen yatay 55° (kamera −4200'den −3000'e), dikey 70°
+// (genel plan −2100; yana kaydırma sürer). Yakın planlar aynı açıyla hesaplanır (oda-sahne odakKadraji)
+export const FOV = { yatay: 55, kare: 60, dikey: 70 };
 
 // Kenardan bakma sınırları (radyan, artı sola): solda dolap ve çerçeveler, sağda pencere ve buzdolabı
 export const LOOK = { min: -0.52, max: 0.46, edge: 0.2, speed: 0.75 };
@@ -122,13 +127,14 @@ export const FOCUS = {
   oyunlar: { pos: [-1669, -1750, 1481], target: [1700, -250, 500], w: 2240 },
   ekran: { pos: [-900, -1900, 1600], target: [2075, -250, 1253], w: 2169 },
   // Armut (Hakkımda): TV tarafından, odanın içinden (v8: oda önde kapalı, köşedeki armuda da göz yüksekliğinden bakılır)
-  armut: { pos: [300, -1700, 1550], target: [-1560, -560, 600], w: 1400 },
+  armut: { pos: [300, -1700, 1550], target: [-1380, -560, 600], w: 1400 },
   // dikey (v8b): telefonda hesaplanan kadraj Biggie'yi ekranı dolduracak yakınlıkta veriyordu; odanın ortasından,
   // Biggie ve açık buzdolabı birlikte ekranın üst yarısında (kart altta)
   buzdolabi: { pos: [-1641, -1452, 1568], target: [1700, 850, 700], w: 1439, dikey: { pos: [-450, -1500, 1650], target: [1400, 600, 650] } },
   // Masa (v8, kullanıcı: masanın ~1,3 m (iki adım) sağında, göz yüksekliğinde; bütün masa ve çalışan Biggie)
   // dikey (telefon): masanın sağ önünden çapraz (yandan bütün masa dar ekrana ancak duvarın dışından sığıyordu)
-  masa: { pos: [1000, 1700, 1600], target: [-900, 1600, 850], w: 1900, sabit: true, dikey: { pos: [750, -450, 1600], target: [-950, 1250, 900] } },
+  // v8.2 (kullanıcı): bir adım sola ve daha çapraz: monitörün ekranı okunur (video), Biggie ekranın önünü örtmez
+  masa: { pos: [520, 380, 1600], target: [-950, 1450, 950], w: 1900, sabit: true, dikey: { pos: [450, -450, 1600], target: [-950, 1350, 950] } },
 };
 
 // ---- Biggie'li sunumun durakları (senaryo: C:\Oktos\calisma\oktos-dijital-site\senaryo\biggie-sunum.md, "Durak
@@ -144,15 +150,17 @@ export const FOCUS = {
 // v8 (2026-11-04): altı durak (armut, kitaplık, masa, buzdolabı, ekran, kutu oyunları) ve çöp (elma atışı; tıklanmaz).
 // Ürün yuvalarının ve kara tahtanın durakları kalktı.
 // Armut ve TV aynı oturuş: kök armudun ekseninden armut_yat.armut.eksen_mm önde (capa; armut core/oda-portfolyo.js
-// PORT.armut (−1560, −560), önü TV'ye, rz π/2 + 0,08 ≈ 95°). Armut: armut_yat → armut_uyukla döngüsü (gözler kapalı,
+// PORT.armut (−1380, −560; v8.2), önü TV'ye, rz π/2 + 0,08 ≈ 95°). Armut: armut_yat → armut_uyukla döngüsü (gözler kapalı,
 // uyuklar), kart Hakkımda. TV: armut_yat eller ensede karesine dek, orada durur (gözler açık, TV izler), kart Süreç
 // (core/oda-sunum.js armutDurak / ekranDurak).
-const ARMUT_CAPA = { anahtar: 'armut.eksen_mm', nokta: [-1560, -560], klip: 'armut_yat' };
+const ARMUT_CAPA = { anahtar: 'armut.eksen_mm', nokta: [-1380, -560], klip: 'armut_yat' }; // v8.2: armut 180 mm öne
 export const BIGGIE_DURAK = [
   // Kitaplık (v8, kullanıcı: yüzü kitaplığa dönük; önce sırtını yaslıyordu): rafın +y ucunun önünde, kitaplığa bakar
   // (−x); kamera odanın içinden, Biggie odağın (gözler) önünde değil. Büste tıklanınca kitap_al_* ile eline alır
   // (core/oda-sunum.js bustAl)
-  { id: 'kitaplik', yer: [-1330, 930], yon: -90, klip: 'dur', sure: 3, kitapKlip: ['kitap_al_alt', 'kitap_al_orta', 'kitap_al_ust'],
+  // v8.1 (kullanıcı: masanın ve sandalyenin içine giriyordu): kitaplığın ortasının önü, büstlerin (y ≈ 220) yanı; gövdesi
+  // masadan (y ≥ 1100) ve sandalyeden uzak (sunum-test gövde sütunu denetimi)
+  { id: 'kitaplik', yer: [-1330, 560], yon: -90, klip: 'dur', sure: 3, kitapKlip: ['kitap_al_alt', 'kitap_al_orta', 'kitap_al_ust'],
     kadraj: { pos: [600, -1500, 1550], target: [-1702, 520, 1225], w: 1587 } },
   // Kutu oyunları rafı (v7): rafa tıklanınca Biggie rafın buzdolabı tarafında bekler; kutuya tıklanınca diz_cok →
   // kutu_al_diz (kutu rafın üstüne) → diz_bekle döngüsü; oklar kutu_cevir_sag/_sol, "Geri" kutu_rafa_birak → diz_kalk
@@ -160,13 +168,13 @@ export const BIGGIE_DURAK = [
     kutuV7: { bekle: 'diz_bekle', cevir: 'kutu_cevir_sag', cevirSol: 'kutu_cevir_sol', birak: 'kutu_rafa_birak', kalk: 'diz_kalk' },
     kadraj: { pos: [-1950, -1150, 1600], target: [1623, 0, 725], w: 1808 } },
   // TV: armuda oturur, 'bas' karesinde TV açılır, eller ensede izler. yer yalnız yedek (kök capa ile)
-  { id: 'ekran', yer: [-1045, -520], yon: 95, klip: 'armut_yat', sure: 10, oturus: true, izle: true,
-    capa: ARMUT_CAPA, otur: [-1560, -560, 220], acAn: { meta: 'bas', kesir: 0.3 },
+  { id: 'ekran', yer: [-865, -520], yon: 95, klip: 'armut_yat', sure: 10, oturus: true, izle: true,
+    capa: ARMUT_CAPA, otur: [-1380, -560, 220], acAn: { meta: 'bas', kesir: 0.3 },
     kadraj: { pos: [-900, -1900, 1600], target: [1490, -279, 1153], w: 1855 } },
   // Armut (Hakkımda): armuda gömülür, gözlerini kapatıp uyuklar
-  { id: 'armut', yer: [-1045, -520], yon: 95, klip: 'armut_yat', sure: 10, oturus: true,
-    capa: ARMUT_CAPA, otur: [-1560, -560, 220],
-    kadraj: { pos: [300, -1700, 1550], target: [-1560, -560, 600], w: 1400 } },
+  { id: 'armut', yer: [-865, -520], yon: 95, klip: 'armut_yat', sure: 10, oturus: true,
+    capa: ARMUT_CAPA, otur: [-1380, -560, 220],
+    kadraj: { pos: [300, -1700, 1550], target: [-1380, -560, 600], w: 1400 } },
   // Buzdolabı: meyve varken buzdolabi_ac (elmayı alır), bitince buzdolabi_bos; duruş kapağın süpürme yayının dışında
   // (core/oda-karakter.js buzDurus: meta durus_mm, yoksa menteşe kapak_en + pay uzaklığa uzatılır)
   { id: 'buzdolabi', yer: [1220, 300], yon: 90, klip: 'buzdolabi_ac', yedek: 'buzdolabi_bos', sure: 5, durus: { meta: 'durus_mm', pay: 190 },
@@ -179,7 +187,7 @@ export const BIGGIE_DURAK = [
   // Masa (v6): sandalyeye oturur, masaya kayar, yazar; monitörde masa-ekran.mp4 ('oturdu'; core/oda-monitor.js). Kamera
   // FOCUS.masa (sabit; masanın ~1,3 m sağı). v8: başka durağa tıklanınca kalk klibiyle kalkıp gider
   { id: 'masa', yer: [-960, 812.5], yon: 180, klip: 'otur', yedek: 'otur2', sure: null, masa: true,
-    kadraj: { pos: [1000, 1700, 1600], target: [-900, 1600, 850], w: 1900 } },
+    kadraj: { pos: [520, 380, 1600], target: [-950, 1450, 950], w: 1900 } },
 ];
 
 export const LIGHTS = {

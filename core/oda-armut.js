@@ -11,6 +11,7 @@
 // Normaller alanın Jacobian'ıyla döner (geometri dizinsiz, kırık normalli: yeniden hesaplamak düz gölgelerdi). Hesap
 // tekil köşelerde (aynı konumdaki köşeler birleştirilir, ~1/6'sı), yalnız t değişince.
 import * as THREE from 'three';
+import { armutEzAlani } from './cati-esya.js';
 
 // Meta yoksa (eski GLB) Blender'ın v7 değerleri
 export const GOMULU_VARSAYILAN = {
@@ -34,24 +35,10 @@ export function armutEzici(grup, g = null) {
   const P0 = new Float32Array(tek), m = P0.length / 3;
   const N0 = na ? new Float32Array(na.array) : null;
   const Pn = new Float32Array(m * 3), Jc = new Float32Array(m * 9);
-  const ZH = A.z_harita;
-  function zHarita(z) {
-    let i = 1;
-    while (i < ZH.length - 1 && z > ZH[i][0]) i++;
-    const [a, va] = ZH[i - 1], [b, vb] = ZH[i];
-    return va + ((vb - va) * (z - a)) / (b - a);
-  }
-  const out = [0, 0, 0];
-  function alan(x, y, z, t) {
-    const zz = zHarita(z);
-    const s = 1 + A.siskinlik * Math.sin(Math.PI * Math.min(1, Math.max(0, z / A.oturak_once_mm)));
-    const X = x * s;
-    let Y = y * (y < 0 ? 1 + (s - 1) * A.on_carpan : s);
-    const a = (zz - A.oturak_mm) / A.yumusak_mm;
-    Y += A.k * A.yumusak_mm * (a > 30 ? a : Math.log1p(Math.exp(a)));
-    out[0] = x + t * (X - x); out[1] = y + t * (Y - y); out[2] = z + t * (zz - z);
-    return out;
-  }
+  // v8.2: alan Blender'la ortak core/cati-esya.js armutEzAlani'ndan (tepe yayılması ve çukur dahil; v7 meta'sında
+  // ek terimler 0). Tek çıktı dizisi: ayarla() her çağrının sonucunu hemen okur
+  const ez = armutEzAlani(A), out = [0, 0, 0];
+  const alan = (x, y, z, t) => ez(x, y, z, t, out);
   let t0 = -1;
   const e = 1.5;
   function ayarla(t) {

@@ -21,6 +21,7 @@ import * as PORTF from './oda-portfolyo.js'; // ENGEL (yol bulma), çöp kovası
 import { odaMonitoru } from './oda-monitor.js'; // v5: Biggie masaya oturunca monitörde tasarım döngüsü
 import { kutuPaneli } from './oda-kutu-panel.js'; // v7: kutu oyunu paneli (dört yüz = dört sayfa), oklar, ipucu
 import { armutEzici } from './oda-armut.js'; // v7: armut Biggie yatınca içine göçer
+import { bustTutusu } from './oda-ik.js'; // v8.1: büstü alttan ve arkadan tutan eller, başı büste
 
 const AYAR = {
   isimGir: 1.4,          // sn: "Arda Bişgin" belirir (yavaş)
@@ -188,7 +189,7 @@ export function odaSunumu(root, { t, giris = 'dans', reduce = false, lang = 'tr'
     if (ad === 'dans-basla') { isaret('dansBasla'); if (giris === 'dans') isimGoster(); }
     else if (ad === 'dans-bitti') { isaret('dansBitti'); dansBitti = true; dansBittiCb?.(); }
     else if (ad === 'kobe') balonGoster();
-    else if (ad === 'oturdu') { masada = true; monitorGuncelle(); }
+    else if (ad === 'oturdu') { masada = true; monitorGuncelle(); fareEvi(); }
     else if (ad === 'kalkti') { masada = false; monitorGuncelle(); }
     else if (ad === 'eylem-bitti' && v?.id === sonIstek) sonBitti = true;
     else if (ad === 'tutuyor') { kutuTutuyor(); bustTutuyor(); }
@@ -201,13 +202,13 @@ export function odaSunumu(root, { t, giris = 'dans', reduce = false, lang = 'tr'
   // eşya yerinde kalır, bırakılırken doğrudan hedefe kayar
   // kemik: el kemiğinin adı (yoksa el.R); tut: eşyanın merkezi kemiğin yerelinde (metre; meta mm / 1000)
   // q: eşyanın kemiğin yerelindeki dönüşü (v6 meta el_yerel_q, Blender sırası [w, x, y, z]); verilirse ona da döner
-  function eleAl(obj, tut = [0, 0.09, 0.05], kemik = null, q = null) {
+  function eleAl(obj, tut = [0, 0.09, 0.05], kemik = null, q = null, sn = 0.3) {
     // three.js kemik adlarındaki noktayı atar (Blender 'tutma.R' → 'tutmaR')
     const el = (kemik && (karakter?.kemik?.(kemik) ?? karakter?.kemik?.(kemik.replace(/\./g, '')))) || karakter?.elKemigi;
     if (!el || !obj) return false;
     gsap.killTweensOf(obj.position); gsap.killTweensOf(obj.quaternion);
     el.attach(obj);
-    gsap.to(obj.position, { x: tut[0], y: tut[1], z: tut[2], duration: reduce ? 0.01 : 0.3, ease: 'power2.out' });
+    gsap.to(obj.position, { x: tut[0], y: tut[1], z: tut[2], duration: reduce ? 0.01 : sn, ease: 'power2.out' });
     if (Array.isArray(q) && q.length === 4) {
       const q0 = obj.quaternion.clone(), q1 = new THREE.Quaternion(q[1], q[2], q[3], q[0]).normalize(), o = { u: 0 };
       gsap.to(o, { u: 1, duration: reduce ? 0.01 : 0.3, ease: 'power2.out', onUpdate: () => obj.quaternion.slerpQuaternions(q0, q1, o.u) });
@@ -259,14 +260,34 @@ export function odaSunumu(root, { t, giris = 'dans', reduce = false, lang = 'tr'
   }
   // Rafın önü (dünya x) ve kutunun gözle üst arasındaki yolu
   const rafOnX = () => { const D0 = durakBul('oyunlar'), b = D0 && kutuOf(D0); return b ? b.min.x : 1695; };
+  // v8.2 (kullanıcı: kutu küçük rafın içinden geçmesin): kutu gözüne ya da gözünden yalnız yatay kayar (tahtanın 10 mm
+  // üstünde); yükselip alçalması rafın önünde, kutunun bütünü rafın ön yüzünün dışındayken (merkez: ön yüz − yarı en
+  // büyük kenar − 30). Yol noktaları dünyada; raf grubu dünya kökünde
+  // Dışarıdaki x: kutunun bütünü (dönerken köşegeni dahil) rafın ön yüzünün dışında
+  const disX = (K) => { const s = [...(K.P.olcu ?? [300, 300, 80])].sort((a, b) => b - a); return rafOnX() - Math.hypot(s[0], s[1]) / 2 - 30; }; // en büyük iki kenarın köşegeni
   function rafaKoy(K, sn = 0.9) {
-    const p = K.P.yuva.p, onX = rafOnX() - 60 - K.P.kalin, cur = K.m.getWorldPosition(V());
-    const yol = cur.z > (PORTF.OYUN_RAFI_UST ?? 420) - 20 ? [V().set(onX - 120, cur.y, cur.z + 30), V().set(onX - 120, p.y, p.z + 10), V().set(p.x - 140, p.y, p.z), p] : [V().set(Math.min(cur.x, onX - 120), p.y, p.z + 10), p];
-    yolla(K.m, K.ust, yol, K.P.yuva.q, sn, () => { K.ustte = false; });
+    const p = K.P.yuva.p, dx = disX(K), cur = K.m.getWorldPosition(V()), qs = K.m.getWorldQuaternion(new THREE.Quaternion());
+    const ust = (PORTF.OYUN_RAFI_UST ?? 420) + 40 + Math.max(...(K.P.olcu ?? [300])) / 2;
+    // 1) dönmeden rafın önüne (üstündeyse rafın üstünden yatay, yükselerek); 2) rafın önünde, dışarıda dönüp gözünün
+    // yüksekliğine iner; 3) gözün içine dönmeden kayar, iner
+    const a = [V().set(dx, cur.y, Math.max(cur.z, cur.z > (PORTF.OYUN_RAFI_UST ?? 420) - 20 ? ust : cur.z))];
+    const b = [V().set(dx, p.y, p.z + 2)], c = [V().set(p.x, p.y, p.z + 2), p];
+    yolla(K.m, K.ust, a, qs, sn * 0.3, () => yolla(K.m, K.ust, b, K.P.yuva.q, sn * 0.35, () => yolla(K.m, K.ust, c, K.P.yuva.q, sn * 0.35, () => { K.ustte = false; })));
   }
   function rafUstuneKoy(K, sn = 1.0) {
-    const onX = rafOnX() - 60 - K.P.kalin, p = K.P.yuva.p, h = K.hedefP;
-    yolla(K.m, K.ust, [V().set(p.x - 140, p.y, p.z), V().set(onX - 120, p.y, p.z + 10), V().set(onX - 120, h.y, h.z + 40), h], K.hedefQ, sn, () => { K.ustte = true; });
+    const dx = disX(K), p = K.P.yuva.p, h = K.hedefP, ust = (PORTF.OYUN_RAFI_UST ?? 420) + 40 + K.P.kalin;
+    // Gözden dönmeden çıkar, dönüş rafın önünde
+    // Gözden dönmeden çıkar; rafın önünde (dışarıda) yükselirken döner; rafın üstüne dönmeden gelir
+    const ust2 = (PORTF.OYUN_RAFI_UST ?? 420) + 40 + Math.max(...(K.P.olcu ?? [300])) / 2;
+    yolla(K.m, K.ust, [V().set(p.x, p.y, p.z + 2), V().set(dx, p.y, p.z + 2)], K.P.yuva.q, sn * 0.3,
+      () => yolla(K.m, K.ust, [V().set(dx, h.y, Math.max(h.z + 40, ust2))], K.hedefQ, sn * 0.35,
+        () => { // rafın üstüne inişin yüksekliği kutunun bu duruştaki gerçek kutusundan (vitrin kutusu hafif eğik: kalınlığı büyük)
+          const q0 = K.m.quaternion.clone(); K.m.quaternion.copy(K.hedefQ); K.m.updateMatrixWorld(true);
+          const bb = new THREE.Box3().setFromObject(K.m), alt = (PORTF.OYUN_RAFI_UST ?? 420) + 1 - (bb.min.z - K.m.getWorldPosition(V()).z);
+          K.m.quaternion.copy(q0); K.m.updateMatrixWorld(true);
+          K.hedefP.z = Math.max(K.hedefP.z, alt);
+          yolla(K.m, K.ust, [V().set(h.x, h.y, h.z + 40), h], K.hedefQ, sn * 0.35, () => { K.ustte = true; });
+        }));
   }
   // Panelin kart modu: yan kart (masaüstü) ya da alttaki yaprak (telefon); kadraj buna göre ötelenir
   function kartModu() {
@@ -330,9 +351,10 @@ export function odaSunumu(root, { t, giris = 'dans', reduce = false, lang = 'tr'
   function alAnlari(K) {
     const km = K.km, ey = Array.isArray(km.el_yerel) ? km.el_yerel.map((v) => v / 1000) : [0, 0.1, 0.05];
     return [
-      [{ meta: 'al', kesir: 0.3 }, () => { K.elde = eleAl(K.m, ey, km.kemik ?? 'el.R', km.el_yerel_q); logla('kutu-al', { no: K.P.no + 1 }); }],
+      // v8.2: kutu ele bağlanmaz; 'al'dan 'birak'a dek site kutuyu gözünden yatay çıkarıp rafın önünden üstüne taşır
+      // (klibin eli rafın içinden geçiyordu; kutu_al_diz Blender'da yenileniyor)
+      [{ meta: 'al', kesir: 0.3 }, () => { const m = karakter?.meta?.(durakBul('oyunlar').kutuDizi?.[1] ?? 'kutu_al_diz') ?? {}; const sn = m.al && m.birak ? Math.max(0.8, (m.birak - m.al) / 30) : 1.6; rafUstuneKoy(K, reduce ? 0.01 : sn); K.elde = false; logla('kutu-al', { no: K.P.no + 1 }); }],
       [{ meta: 'birak', kesir: 0.75 }, () => {
-        if (K.elde) birak(K.m, K.ust, K.hedefP, K.hedefQ, 0.35); else rafUstuneKoy(K, 0.8);
         K.elde = false; K.ustte = true; K.durum = 'ustte';
         logla('kutu-ustte', { no: K.P.no + 1 });
       }],
@@ -342,8 +364,8 @@ export function odaSunumu(root, { t, giris = 'dans', reduce = false, lang = 'tr'
   function birakAnlari(K) {
     const km = karakter?.meta?.(V7().birak)?.kutu ?? {}, ey = Array.isArray(km.el_yerel) ? km.el_yerel.map((v) => v / 1000) : null;
     return [
-      [{ meta: 'al', kesir: 0.12 }, () => { K.cevir = null; if (ey) K.elde = eleAl(K.m, ey, km.kemik ?? 'el.R', km.el_yerel_q); }],
-      [{ meta: 'birak', kesir: 0.2 }, () => { rafaKoy(K, K.elde ? 0.35 : 1.0); K.elde = false; }],
+      // v8.2: kutu ele bağlanmaz; site rafın üstünden önüne, oradan gözüne yatay kaydırır
+      [{ meta: 'al', kesir: 0.12 }, () => { K.cevir = null; rafaKoy(K, reduce ? 0.01 : 1.4); K.elde = false; }],
     ];
   }
   function kutuIptal(K) {
@@ -552,13 +574,11 @@ export function odaSunumu(root, { t, giris = 'dans', reduce = false, lang = 'tr'
       let k = null;
       // v8 büst: Biggie odaya dönük, büst önünde; kamera önünden (gövde kadrajın konusu, ışın engeli değil)
       const bustMu = !!obj?.userData?.parca?.bust;
-      if (bustMu && portre()) {
-        // v8b telefon: kamera tam önünden, göz yüksekliğinde (alttaki kart büstü örtmesin diye bakış aşağıda, aşağıda)
+      if (bustMu) {
+        // v8.1: kamera tam önünden, insan gözünün en alçak yüksekliğinden (1400; Biggie kısa, yukarıdan bakınca büyük başı
+        // yüzünü saklıyordu), 1,6 m geriden; büst ve yüz birlikte. Odanın içinde (kök kitaplığın önünde, yüzü odaya)
         const psi = karakter.durum?.psi ?? 0, cc = kutu.getCenter(V());
-        k = { pos: [cc.x + Math.sin(psi) * 1450, cc.y - Math.cos(psi) * 1450, 1500] };
-      } else if (bustMu) {
-        const psi = karakter.durum?.psi ?? 0, on = [Math.sin(psi), -Math.cos(psi)];
-        for (const t of [[on[0], on[1], 0], [on[0] - on[1] * 0.6, on[1] + on[0] * 0.6, 0], [on[0] + on[1] * 0.6, on[1] - on[0] * 0.6, 0]]) if ((k = kadrajAra([kutu], { haric: hr, govde: false, doluluk: 0.45, tercih: t, enAz: 800 }))) break;
+        k = { pos: [cc.x + Math.sin(psi) * 1600, cc.y - Math.cos(psi) * 1600, 1400] };
       }
       if (!k) for (const t of [[gor.x, gor.y, 0.5], [0, 1, 0.5], [0, -1, 0.5], [1, 0, 0.5]]) if ((k = kadrajAra([kutu], { haric: hr, doluluk: 0.55, tercih: t, enAz: 280, govdeKadraj: true, yukseklik: yk }))) break;
       // Bulunamazsa gövde yalnız kadrajın kenarında (eşyanın bulunduğu orta bölge temiz), en son yalnız ışın engeli
@@ -591,101 +611,208 @@ export function odaSunumu(root, { t, giris = 'dans', reduce = false, lang = 'tr'
     const h = karakter.elNoktasi(V()), hp = [h.x, h.y, h.z];
     story.setView(hp.map((x, i) => x + yakinOfs[i]), hp.map((x, i) => x + yakinHed[i]));
   });
-  // ---- v8 (2026-11-04): kitaplıktaki büstler. Kitaplık durağındayken her büstün üstünde küçük bir nokta (yalnız büstler
-  // tıklanır; vazo ve kitaplar dekor). Büste (noktaya ya da büstün kendisine) tıklanınca Biggie onun önüne gelir, kitap_al_*
-  // klibiyle (eşyanın yüksekliğine en yakın: alt / orta / üst) büstü eline alır ('al' karesinde tutma.R'ye bağlanır),
-  // 'goster' aralığının başında poz durur (tut.bolum): büst elinde dik durur, site onu kendi ekseninde yavaşça çevirir,
-  // kamera elden yakın plan (elYakin), kartta büstün adı, cümlesi, ölçüsü ve fotoğrafı ('oda-bust' olayı → core/cati-panel.js).
-  // "Geri": klip kaldığı yerden sürer ('koy' karesinde büst rafa döner), kamera kitaplığa, kart kitaplığa. Yeni Blender
-  // klibi yok; ışık kutusundaki tam ekran resim yok.
-  const bust = { aktif: null, hiz: 0.45 }; // hiz: elde dönüş (rad/sn)
+  // ---- Kitaplıktaki büstler (v8; v8.2 Blender klipleriyle). Kitaplık durağındayken her büstün üstünde küçük bir nokta
+  // (yalnız büstler tıklanır). Büste tıklanınca Biggie büstün önüne gelir (kök, klibin raf_nokta'sı büstün tabanına
+  // otursun diye: rafın önünden raf_on_mm geride, yüzü rafa) ve bust_al_alt / bust_al_orta ile alır: 'al' karesine dek
+  // büst rafta, sonra klibin bust.yol'unda (karakter yereli, taban merkezi; dönmez), klip bitince sağ elin soketinde
+  // (bust.kemik el.R, el_yerel / el_yerel_q; büstün o anki açısı sokete göre korunur: kendi ekseninde dönmez). Üst gövde
+  // katmanı bust_tut (yürürken bust_tut_yuru) ile armut tarafına yürür, orada bekler; kamera elden yakın plan, kartta büstün
+  // bilgisi ('oda-bust' → core/cati-panel.js). "Geri": rafın önüne döner, bust_birak_* ile koyar (yol'da; raftan geçmez:
+  // Blender ölçüsü + sunum-test denetimi). Parmaklar büstün ağının dışında (core/oda-ik.js parmak: klibin pozundan göreli)
+  const bust = { aktif: null };
   const bustOlay = (eser) => dispatchEvent(new CustomEvent('oda-bust', { detail: { eser: eser ?? null } }));
+  // Büstün yüksekliğine en yakın raf_mm'li klip (bust_al_alt 725, bust_al_orta 1105)
+  const bustKlibi = (z, tur) => ['alt', 'orta'].map((k) => `bust_${tur}_${k}`).filter((k) => karakter?.klipVar?.(k))
+    .sort((a, b) => Math.abs((karakter.meta(a)?.raf_mm ?? 0) - z) - Math.abs((karakter.meta(b)?.raf_mm ?? 0) - z))[0] ?? null;
   function bustAl(obj) {
     const D0 = durakBul('kitaplik'), eser = obj?.userData?.parca?.eser;
     if (!D0 || !obj || !eser) return;
     if (bust.aktif?.obj === obj) return;
     if (bust.aktif) { bustBirakHemen(); }
-    if (!aktif || !karakter) { bust.aktif = { obj, eser, yok: true, durum: 'elde' }; bustOlay(eser); logla('bust-panel', { eser: eser.id }); return; }
-    const ust = obj.parent, p = obj.position.clone(), q = obj.quaternion.clone(), q0w = obj.getWorldQuaternion(new THREE.Quaternion());
-    const wp = new THREE.Box3().setFromObject(obj).getCenter(V());
-    const klip = kitapKlibi(wp.z), km = karakter.meta?.(klip) ?? {}, rn = km.nesne?.raf_nokta ?? [-45, -340, 1000];
-    const onX = kutuOf(D0)?.max.x ?? -1705;
-    const yer = [onX + (km.raf_on_mm ?? 280), Math.min(1000, Math.max(80, wp.y + rn[0]))];
-    const g0 = Array.isArray(km.goster) ? km.goster[0] : 62, dur = g0 + 10;
-    const B = bust.aktif = { obj, ust, p, q, q0w, klip, eser, durum: 'aliyor', aci: 0 };
+    const kb = new THREE.Box3().setFromObject(obj), taban = V().set((kb.min.x + kb.max.x) / 2, (kb.min.y + kb.max.y) / 2, kb.min.z);
+    const klip = aktif && karakter ? bustKlibi(taban.z, 'al') : null, birak = klip ? bustKlibi(taban.z, 'birak') : null;
+    if (!klip || !birak || !karakter.klipVar('bust_tut')) { bust.aktif = { obj, eser, yok: true, durum: 'elde' }; bustOlay(eser); logla('bust-panel', { eser: eser.id }); return; }
+    // Kök: yüzü rafa (ψ −90°: ileri −x dünya, yerel +x (sol) = −y dünya); yerel (v0, v1) → dünya (+v1, −v0)
+    const rn = karakter.meta(klip).bust?.raf_nokta ?? [-15, -380, taban.z];
+    const yer = [taban.x - rn[1], taban.y + rn[0]];
+    const B = bust.aktif = { obj, ust: obj.parent, p: obj.position.clone(), q: obj.quaternion.clone(), q0w: obj.getWorldQuaternion(new THREE.Quaternion()),
+      yari: (kb.max.z - kb.min.z) / 2, tabanZ: kb.min.z, klip, birak, eser, durum: 'aliyor', yer, w: 0 };
     logla('bust-sec', { eser: eser.id, klip });
     const D = {
-      ...D0, yer, yon: -90, dizi: [{ klip, sure: 5, kadar: dur, anlar: [
-        [{ meta: 'al', kesir: 0.2 }, () => { eleAl(obj, [0, 0, 0], km.nesne?.kemik ?? 'tutma.R'); logla('bust-al', { eser: eser.id, klip }); }],
-        [{ meta: 'goster.0', kesir: 0.4 }, () => { if (bust.aktif === B) B.durum = 'tutuldu'; }],
+      ...D0, yer, yon: -90, dizi: [{ klip, sure: 3, anlar: [
+        [{ meta: 'al', kesir: 0.3 }, () => { if (bust.aktif === B) { story.scene.attach(obj); karakter.kay?.(BUST_GERI, 0, reduce ? 0.01 : 0.3); logla('bust-al', { eser: eser.id, klip }); } }],
+        [{ meta: 'tutuldu', kesir: 0.75 }, () => { if (bust.aktif === B) B.durum = 'tutuldu'; }],
       ] }],
-      tut: { klip: null, bolum: [dur, dur + 0.5] }, // poz 'goster' başında durur (gözler büstte)
-      iptal: () => { if (bust.aktif === B) { bust.aktif = null; elYakin(false); birak(obj, ust, p, q, 0.25); bustOlay(null); } },
+      tut: { klip: null },
+      iptal: () => { if (bust.aktif === B) { elYakin(false); karakter.ustKatman?.(null); bustRafa(B, 0.4); bustOlay(null); } },
     };
     sonIstek = null;
     biggieGitsin(D);
   }
-  // Poz durunca ('tutuyor'): kitaplıkla Biggie'nin arasında büste bakan kamera yeri yok (yüzü rafa, büst karnının önünde,
-  // başı üstüne eğik); Biggie büst elindeyken yerinde odaya döner (yüzü +x, biraz kameranın tarafına), büst önünde dik
-  // durur, kamera odanın içinden elden yakın plan
-  const BUST_ODA_PSI = Math.PI / 2 - 0.35;
+  // v8.2 (kullanıcı): büst elindeyken Biggie odanın armut tarafına yürür ve orada bekler (masaya, sandalyeye girmeden:
+  // yol bulma; sunum-test gövde sütunu denetimi)
+  const BUST_BEKLE = { x: -760, y: -160, psi: 0.55 }; // armudun sağ önü, yüzü kameraya (genel plan) dönük
+  // Klibin yolu büstü rafın önünden ancak ~30 mm çıkarıp öyle indiriyor (Blender'ın rafı bizim gözün tahtalarından sığ):
+  // Biggie alırken 'al' karesinde 115 mm geri adım kayar, bırakırken o kadar geriden gelip büst gözünün yüksekliğine
+  // çıkınca (bırak klibinin 47. karesi) öne kayar. Büst rafın önünü geçmeden tahtanın hizasında inip kalkmaz
+  const BUST_GERI = 115, BIRAK_KAY = 46 / 30;
   function bustTutuyor() {
     const B = bust.aktif;
-    if (!B || B.yok || (B.durum !== 'tutuldu' && B.durum !== 'aliyor') || !karakter?.don) return;
-    B.durum = 'donuyor';
-    karakter.don(BUST_ODA_PSI, reduce ? 0.01 : 0.9).then((ok) => {
+    if (!B || B.yok || (B.durum !== 'tutuldu' && B.durum !== 'aliyor') || !karakter?.komut) return;
+    B.durum = 'yuruyor';
+    karakter.ustKatman('bust_tut');
+    logla('bust-yuru', { eser: B.eser.id });
+    karakter.komut([{ yuru: BUST_BEKLE, son: 'dur' }]).then((ok) => {
       if (bust.aktif !== B || !ok) return;
       B.durum = 'elde';
-      elYakin(true, B.obj);
       bustOlay(B.eser);
+      setTimeout(() => { if (bust.aktif === B && B.durum === 'elde') elYakin(true, B.obj); }, reduce ? 0 : 450);
       logla('bust-elde', { eser: B.eser.id });
     });
   }
-  // Büst yerine: Biggie rafa geri döner, klip 'goster' sonundan sürer, 'koy' karesinde büst rafa; kamera ve kart kitaplığa döner
+  // Büst yerine: alış yerine yürür (yüzü rafa; katman sürer), bust_birak_* (başı bust_tut pozu) yol'uyla rafa koyar
   function bustGeri() {
     const B = bust.aktif;
     if (!B) return;
     bustOlay(null);
     if (B.yok) { bust.aktif = null; return; }
     elYakin(false);
-    if (!['elde', 'donuyor'].includes(B.durum) || !karakter?.tutuyor) { // daha almadan (yürürken, uzanırken): durağa yeniden gönder, iptal yerine koyar
+    if (!['elde', 'yuruyor'].includes(B.durum) || !karakter?.tutuyor) { // daha almadan: durağa yeniden gönder, iptal yerine koyar
       biggieGitsin(durakBul('kitaplik'));
       return;
     }
-    B.durum = 'koyuyor';
+    B.durum = 'donuyor';
     logla('bust-geri', { eser: B.eser.id });
-    karakter.don(-Math.PI / 2, reduce ? 0.01 : 0.8).then(() => karakter.komut([{ klip: B.klip, devam: true, sure: 3, anlar: [
-      [{ meta: 'koy', kesir: 0.83 }, () => { birak(B.obj, B.ust, B.p, B.q, 0.4); if (bust.aktif === B) bust.aktif = null; logla('bust-birak', { eser: B.eser.id }); }],
-    ] }], { son: true })).then((ok) => { if (!ok && bust.aktif === B) { bust.aktif = null; birak(B.obj, B.ust, B.p, B.q, 0.25); } });
+    karakter.komut([{ yuru: { x: B.yer[0] + BUST_GERI, y: B.yer[1], psi: -Math.PI / 2 }, son: 'dur' }]).then((ok) => {
+      if (!ok || bust.aktif !== B) return;
+      B.durum = 'koyuyor';
+      karakter.ustKatman(null);
+      karakter.komut([{ klip: B.birak, sure: 3, anlar: [
+        [{ kesir: BIRAK_KAY / 2.7 }, () => karakter.kay?.(-BUST_GERI, 0, reduce ? 0.01 : 0.25)],
+        [{ meta: 'koy', kesir: 0.7 }, () => logla('bust-birak', { eser: B.eser.id })],
+      ] }], { son: true }).then((ok2) => { if (bust.aktif === B) bustRafa(B, ok2 ? 0.15 : 0.3); });
+    });
+  }
+  // Büst rafındaki yerine (klibin yolu orada biter; kesildiyse ya da kök birkaç mm kaydıysa kısa kayma). Rafın dışındaysa
+  // önce gözün önüne (tabanı tahtanın 15 mm üstünde), sonra yatay içeri, sonra iner
+  function bustRafa(B, sn) {
+    if (bust.aktif === B) bust.aktif = null;
+    const ust = B.ust, raf = ust.localToWorld(B.p.clone()), simdi = B.obj.getWorldPosition(V()), onX = -1705;
+    const kb = new THREE.Box3().setFromObject(B.obj), yari = (kb.max.x - kb.min.x) / 2;
+    const ara = kb.min.x < onX ? [V().set(raf.x, raf.y, Math.max(simdi.z, raf.z + 2))] : [V().set(onX + yari + 60, raf.y, raf.z + 15), V().set(raf.x, raf.y, raf.z + 15)];
+    yolla(B.obj, ust, [...ara, raf].map((w) => ust.worldToLocal(w)), B.q, reduce ? 0.01 : sn * 1.6);
   }
   function bustBirakHemen() {
     const B = bust.aktif;
     if (!B) return;
     bust.aktif = null;
     bustOlay(null);
-    if (!B.yok) { elYakin(false); birak(B.obj, B.ust, B.p, B.q, 0.25); }
+    if (!B.yok) { elYakin(false); karakter?.ustKatman?.(null); bustRafa(B, 0.3); }
   }
-  // Elde dönüş: büst dünyada dik (raftaki duruşu), dikey ekseni çevresinde yavaşça döner (merkezi elde kalır)
-  const bq = new THREE.Quaternion(), bq2 = new THREE.Quaternion(), ZEK = new THREE.Vector3(0, 0, 1);
-  gsap.ticker.add((_, dms) => {
+  // Her karede klip karıştırıldıktan sonra (karakter.kareSonu): büstün yeri klipten. Kip: 'raf' (al karesinden önce),
+  // 'yol' (al / bırak kliplerinde, karakter yereli), 'soket' (elde). Kip değişince 0,25 sn'de geçer (yol sonu ile soket
+  // arası ≤ hata_mm)
+  const bq = new THREE.Quaternion(), bq2 = new THREE.Quaternion(), bv2 = new THREE.Vector3(), bv3 = new THREE.Vector3();
+  const yolNokta = (yol, f) => {
+    if (!Array.isArray(yol) || !yol.length) return null;
+    let i = 0;
+    while (i < yol.length - 1 && yol[i + 1][0] <= f) i++;
+    const [f0, a] = yol[i], [f1, b] = yol[Math.min(i + 1, yol.length - 1)], u = f1 > f0 ? Math.min(1, Math.max(0, (f - f0) / (f1 - f0))) : 0;
+    return a.map((x, k) => x + (b[k] - x) * u);
+  };
+  let tutus = null;
+  function bustKaresi(dt) {
     const B = bust.aktif;
-    if (!B || B.yok || !['tutuldu', 'donuyor', 'elde'].includes(B.durum) || !B.obj.parent?.isBone) return;
-    if (B.durum === 'elde') B.aci += (reduce ? 0 : bust.hiz) * Math.min(0.1, (dms || 16) / 1000);
-    B.obj.parent.getWorldQuaternion(bq).invert();
-    bq2.setFromAxisAngle(ZEK, B.aci).multiply(B.q0w);
-    B.obj.quaternion.copy(bq.multiply(bq2));
-    // v8b: büst iki avucunun arasında, göğsünün önünde durur: iki tutma kemiğinin ortası, tabanı avuçlarda (merkezi yarı boyun
-    // ~%70'i yukarıda), baktığı yönde 40 mm önde (dünya); elden kopmasın diye yalnız bu iki kemiğe bağlı, geçiş 0,3 sn
-    const psi = karakter?.durum?.psi ?? 0, hp = B.obj.parent.getWorldPosition(bv2);
-    const tl = karakter?.kemik?.('tutmaL'), tr = karakter?.kemik?.('tutmaR');
-    if (tl && tr) hp.copy(tl.getWorldPosition(bv4)).add(tr.getWorldPosition(bv5)).multiplyScalar(0.5);
-    const yari = (B.yari ??= (() => { const b = new THREE.Box3().setFromObject(B.obj); return (b.max.z - b.min.z) / 2; })());
-    B.ust_k = Math.min(1, (B.ust_k ?? 0) + Math.min(0.1, (dms || 16) / 1000) / 0.3);
-    const k = B.ust_k, w0 = B.obj.getWorldPosition(bv6);
-    bv3.set(hp.x + Math.sin(psi) * 40, hp.y - Math.cos(psi) * 40, hp.z + yari * 0.7);
-    B.obj.position.copy(B.obj.parent.worldToLocal(bv3.lerp(w0, 1 - k)));
-  });
-  const bv2 = new THREE.Vector3(), bv3 = new THREE.Vector3(), bv4 = new THREE.Vector3(), bv5 = new THREE.Vector3(), bv6 = new THREE.Vector3();
+    if (!B || B.yok || B.obj.parent !== story.scene) return;
+    const kz = karakter.klipZamani(), m = kz ? karakter.meta(kz.ad) : null;
+    let kip = 'soket', f = 0;
+    if (kz && (kz.ad === B.klip || kz.ad === B.birak) && kz.agirlik > 0.5) { kip = 'yol'; f = kz.kare; }
+    if (kz?.ad === B.klip && f < (m?.al ?? 26)) kip = 'raf';
+    if (kip === 'raf') return;
+    const sk = karakter.meta('bust_tut')?.bust ?? {}, el = karakter.kemik('elR') ?? karakter.elKemigi;
+    karakter.elNoktasi(bv2); // dünya matrisleri bu kareye
+    let p = null, q = null;
+    if (kip === 'soket' && el) {
+      const ey = sk.el_yerel ?? [0, 0, 0], eq = sk.el_yerel_q ?? [0, 0, 0, 1];
+      bq.set(eq[0], eq[1], eq[2], eq[3]).premultiply(el.getWorldQuaternion(bq2));
+      if (!B.qRel) B.qRel = bq.clone().invert().multiply(B.obj.quaternion); // sokete göre o anki açı korunur
+      q = bq.multiply(B.qRel);
+      p = el.localToWorld(bv3.set(ey[0] / 1000, ey[1] / 1000, ey[2] / 1000));
+    } else if (kip === 'yol') {
+      const n = yolNokta(m?.bust?.yol, f);
+      if (n) { const w = karakter.yerelDunya(n); p = bv3.set(w[0], w[1], n[2]); }
+      q = B.q0w;
+      B.qRel = null;
+    }
+    if (!p) return;
+    // taban merkezi → kabın orijini (büstün ortası: kabın yerel z'sinde yarı boy yukarı)
+    // İtme (büstün yerelinde, yatay): parmak seçimi bir eklemi büstün dışına çıkaramadıysa (sol başparmak klipte ~10 mm
+    // içeride) büst o noktadan uzağa birkaç mm kayar (sağ avuç tabanın altında kalır); en çok 30 mm
+    B.itme ??= new THREE.Vector3();
+    const hedef = p.clone().add(V().set(B.itme.x, B.itme.y, B.yari).applyQuaternion(q));
+    if (B.kip !== kip) { B.kip = kip; B.gec = 0; B.p0 = B.obj.position.clone(); B.q0 = B.obj.quaternion.clone(); }
+    B.gec = Math.min(1, B.gec + dt / (reduce ? 0.01 : 0.25));
+    const u = B.gec * B.gec * (3 - 2 * B.gec);
+    B.obj.position.lerpVectors(B.p0, hedef, u);
+    B.obj.quaternion.slerpQuaternions(B.q0, q, u);
+    B.obj.updateMatrixWorld(true);
+    rafKilavuzu(B);
+    B.w = kip === 'soket' ? u : 0;
+    // Parmaklar büstün ağının dışında (yalnız elde; kolları ve elleri klip yazar)
+    if (kip === 'soket') {
+      const karKok = story.scene.getObjectByName('karakter');
+      tutus ??= bustTutusu({ getObjectByName: (ad) => karakter.kemik(ad), traverse: (fn) => karKok?.traverse(fn), updateMatrixWorld: () => karakter.elNoktasi(bv2) });
+      if (!B.ikBasladi) { tutus.sifirla(); B.ikBasladi = true; }
+      B.ik = tutus.parmak(B.obj, u);
+      B.sayac = (B.sayac ?? 0) + 1;
+      if (u > 0.98 && !(B.sayac % (B.temiz ? 30 : 8)) && B.itme.length() < 30) {
+        const ic = (tutus.icindeAd?.()?.[0] ?? []).flat();
+        B.temiz = !ic.length;
+        if (ic.length) {
+          const d = ic.reduce((t, [, x, y]) => t.add(V().set(x, y, 0)), V()).normalize().multiplyScalar(-4);
+          B.itme.add(d);
+        }
+      }
+    }
+  }
+  // v8.2 (Blender fare klibi): fare klibi oynarken fare masada klibin yolu kadar kayar (fare.yol − fare.merkez_mm, karakter
+  // yereli; yükseklik ve açı yerinde); klip bitince evine döner
+  // Oturunca farenin evi klibin merkezine (fare.merkez_mm; el oraya uzanır): mat geniş, fare onun üstünde kalır
+  function fareEvi() {
+    const g = story?.scene?.getObjectByName('fare_grubu'), mc = karakter?.meta?.('fare')?.fare?.merkez_mm;
+    if (!g?.userData.ev || !mc || g.userData.evKlip) return;
+    const w = karakter.yerelDunya([mc[0], mc[1], 0]);
+    g.userData.ev.set(w[0], w[1], g.userData.ev.z);
+    g.position.copy(g.userData.ev);
+    g.userData.evKlip = true;
+  }
+  function fareKaresi() {
+    const kz = karakter?.klipZamani?.(), g = story?.scene?.getObjectByName('fare_grubu');
+    if (!g?.userData.ev) return;
+    const m = kz?.ad === 'fare' && kz.agirlik > 0.5 ? karakter.meta('fare')?.fare : null, n = m ? yolNokta(m.yol, kz.kare) : null, mc = m?.merkez_mm;
+    if (!n || !mc) { if (g.userData.kaydi) { g.position.copy(g.userData.ev); g.userData.kaydi = false; } return; }
+    const a = karakter.yerelDunya([n[0], n[1], 0]), b = karakter.yerelDunya([mc[0], mc[1], 0]);
+    g.position.set(g.userData.ev.x + a[0] - b[0], g.userData.ev.y + a[1] - b[1], g.userData.ev.z);
+    g.userData.kaydi = true;
+  }
+  // Raf kılavuzu (v8.2, kullanıcı: büst rafın içinden geçmesin): büstün kutusu kitaplığın önünden içerideyken (x < raf
+  // önü) gözünün iç yüksekliğine sıkıştırılır (tabanı gözün tahtasının, tepesi üst tahtanın 2 mm içinde); klip eli rafın
+  // içinde yukarı-aşağı oynatsa da büst tahtaya girmez
+  const RAF_GOZ = [700, 1080, 1460, 1840, 2325], RAF_T = 25, kb3 = new THREE.Box3();
+  function rafKilavuzu(B) {
+    const onX = -1705; // kitaplığın ön yüzü (core/oda-portfolyo.js: DUVAR_SOL + derinlik)
+    kb3.setFromObject(B.obj);
+    if (kb3.min.x >= onX - 1) return;
+    const i = RAF_GOZ.findIndex((z) => Math.abs(z + RAF_T - B.tabanZ) < 30);
+    if (i < 0) return;
+    const alt = RAF_GOZ[i] + RAF_T + 2, ust = (RAF_GOZ[i + 1] ?? 9e9) - 2;
+    const dz = Math.max(0, alt - kb3.min.z) + Math.min(0, ust - kb3.max.z);
+    if (Math.abs(dz) < 0.01) return;
+    const w = B.obj.getWorldPosition(new THREE.Vector3());
+    w.z += dz;
+    B.obj.position.copy(B.obj.parent.worldToLocal(w));
+    B.obj.updateMatrixWorld(true);
+  }
   // Noktalar: kitaplık durağındayken (kart açık, elde büst yok) her büstün tepesinin biraz üstünde
   const noktaKat = root.querySelector('.oda-bust-noktalar');
   const noktalar = new Map(); // büst → düğme
@@ -1079,6 +1206,7 @@ export function odaSunumu(root, { t, giris = 'dans', reduce = false, lang = 'tr'
       if (!k) { if (giris === 'dans' && hazirOldu) isimGoster(); return; }
       k.dinle(olay);
       k.xrayHaric?.(['armut', 'masa', 'buzdolabi', 'ekran', 'oyunlar']); // v8: bu duraklarda konu Biggie'nin kendisi
+      k.kareSonu?.((dt) => { bustKaresi(dt); fareKaresi(); }); // v8.1: büst tutuşu (IK); v8.2: fare elde
       story?.api?.kadraj?.kemikBagla(() => k.govdeKemikleri ?? [], () => k.deriAglari?.() ?? []);
       k.sunumAyar({
         engel: Array.isArray(PORTF.ENGEL) ? PORTF.ENGEL : [],
@@ -1111,7 +1239,11 @@ export function odaSunumu(root, { t, giris = 'dans', reduce = false, lang = 'tr'
     // v8: durak seçimi (işaretçi, eşyanın kendisi, klavye şeridi; id null: Geri / Esc). Döner: işlendi mi
     sec,
     get aktifDurak() { return aktifDurak; },
-    get bust() { const B = bust.aktif; return B ? { ad: B.eser.id, durum: B.durum, aci: +B.aci.toFixed(2), elde: !!B.obj?.parent?.isBone } : null; },
+    // Test (v8.1): büst elde iken büstün ağının İÇİNDE kalan parmak eklemi / ucu sayısı [sağ el, sol el]
+    bustParmakIcinde: () => tutus?.icindeSay?.() ?? null,
+    bustParmakAd: () => tutus?.icindeAd?.() ?? null,
+    get tutus() { return tutus; },
+    get bust() { const B = bust.aktif; return B ? { ad: B.eser.id, durum: B.durum, aci: +(B.aci ?? 0).toFixed(2), elde: B.kip === 'soket' && (B.w ?? 0) > 0.5, kip: B.kip ?? null, w: +(B.w ?? 0).toFixed(2), ik: B.ik ?? null, tamam: tutus?.tamam ?? null } : null; },
     // Test ve demo: durağa doğrudan (işaretçi tıklanmış gibi; sonIstek sıfırlanır: aynı durak yeniden de sunulur)
     git(id) {
       if (!durakBul(id) || !story) return false;

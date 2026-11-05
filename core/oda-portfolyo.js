@@ -49,7 +49,8 @@ export const PORT = {
   // v8 (2026-11-04, kullanıcı kararı): sol duvarın önüne, kitaplığın öne (−y) bakan yanına, kara tahtanın (kalktı) yerine;
   // önü TV'ye (+x'ten ~5° +y'ye). Oda önde uzayıp kapandığı için (ON_DUVAR) köşede de kamera kuralına uyan kadraj var.
   // Kitaplığın ucuna (y −30) ~470 mm, arka duvara (sırtın ezik tepesi dahil) ~90 mm pay
-  armut: { x: -1560, y: -560, rz: Math.PI / 2 + 0.08, r: 450, oturZ: 330 },
+  // v8.2 (kullanıcı): duvardan odaya çeyrek adım (180 mm) öne: x −1560 → −1380
+  armut: { x: -1380, y: -560, rz: Math.PI / 2 + 0.08, r: 450, oturZ: 330 },
 };
 const DUVAR_SOL = ROOM.x0 + 15, DUVAR_SAG = ROOM.x1 - 15; // süpürgeliğin önü
 
@@ -167,9 +168,16 @@ function kitaplikGovde(r, { yerler, kutular, kitaplar }) {
     kutular.push(geo.translate(x, y, z));
   };
   const xMin = -W / 2 + t + 8, xMax = W / 2 - t - 8, yOn = -D / 2 + 25;
-  const duzen = (gozNo, z0, bos) => {
+  // v8.1 (kullanıcı: Biggie kitaplıkta masanın ve sandalyenin içine giriyordu): elin yetiştiği iki alt gözde büstün yeri
+  // gözün −y yarısında (yerel x −300; dünya y ≈ 220), masadan (y ≥ 1100) uzak; Biggie onun önünde durur (kök y ≈ 175).
+  // Gözün geri kalanı (yerel x −190'dan) her zamanki düzen
+  const BUST_X = -300;
+  const duzen = (gozNo, z0, bos, bustlu = false) => {
     let x = xMin;
     const tip = gozNo % 4;
+    // v8.2: büstün tabanının ortası gözün ön kenarından 100 mm içeride (Blender bust_al_*: kök rafın önünden 280 mm
+    // geride, raf_nokta kökün 380 mm önünde)
+    if (bustlu) { yerler.push([BUST_X, -D / 2 + 100, z0, true]); x = BUST_X + 110; }
     if (tip === 0 || tip === 2) { // yatay yığın + dik dizili sırtlar
       const sw = 300 + r() * 20, sd = 300;
       let zz = z0;
@@ -191,7 +199,7 @@ function kitaplikGovde(r, { yerler, kutular, kitaplar }) {
       if (x + fw + 160 < xMax) yerler.push([x + fw + 90, -40, z0]);
     }
   };
-  for (let i = 0; i < 4; i++) duzen(i + Math.floor(r() * 2), RAF_Z[i] + t, RAF_Z[i + 1] - RAF_Z[i] - t);
+  for (let i = 0; i < 4; i++) duzen(i + Math.floor(r() * 2), RAF_Z[i] + t, RAF_Z[i + 1] - RAF_Z[i] - t, i < 2);
   return { govde: g, cekmece: cek };
 }
 // Sol duvara: yerel önü −y → dünya +x (rotateZ +90°), arkası duvarda
@@ -218,14 +226,15 @@ function kitaplik(M) {
   grup.userData.kitaplar = im;
   // Tıklama vekili: kitaplığın bütün hacmi (gözlerin boşluğuna tıklamak da kitaplık)
   grup.add(new THREE.Mesh(solDuvara(aralik(-K.en / 2, K.en / 2, -K.derin / 2 - 10, K.derin / 2, 0, K.boy), K.y, K.derin), new THREE.MeshBasicMaterial({ visible: false })));
-  const yerler = k.yerler.map(([x, y, z]) => [cx - y, K.y + x, z]);
+  const yerler = k.yerler.map(([x, y, z, bust]) => [cx - y, K.y + x, z, !!bust]);
   return { grup, yerler };
 }
 // Tasarım çalışmaları rafta: Modern Balbal büstleri (v8b: boy 280 mm, taş tozu tonu) ve vazolarımız
 export const BUST_BOY = 280; // v8b (kullanıcı: göründüklerinin iki katı); göz yüksekliği 355 mm
 async function rafEserleri(grup, yerler, M) {
   const isler = [], bustler = ESERLER.filter((e) => e.model), eserListe = (grup.userData.eserler ??= []);
-  const bustYeri = new Set(yerler.map((y, i) => [y[2], i]).filter(([z]) => z <= 1500).sort((a, c) => a[0] - c[0]).map(([, i]) => i));
+  // v8.1: büstler ayrılmış yerlerde (iki alt gözün −y yarısı; kitaplikGovde duzen)
+  const bustYeri = new Set(yerler.map((y, i) => (y[3] ? i : -1)).filter((i) => i >= 0));
   const vazolar = [['tulip', 0xece9e2], ['ribbed', 0x8fa58a], ['silk', 0xd49a9a], ['star', 0x2c3e66], ['amphora', 0xc49a3c]];
   yerler.forEach(([x, y, z], i) => {
     // v8: büstler Biggie'nin eli yetişen gözlere (z ≤ 1500; kitap_al_ust ~1395'e uzanır), alçaktan başlayarak; kalan
@@ -378,18 +387,18 @@ const yaziTipleri = () => Promise.race([
   new Promise((r) => setTimeout(r, 1500)),
 ]).catch(() => {});
 
-// ---- çöp kovası: pedallı, mat çelik (Biggie'nin elma atışı) ----
+// ---- çöp kovası: mat çelik, kapaksız (v8.2; Biggie'nin elma atışı) ----
 function copKovasi() {
   const C = PORT.cop, g = new THREE.Group();
   const govdeM = new THREE.MeshStandardMaterial({ color: 0xb9bcc0, metalness: 0.75, roughness: 0.35, envMapIntensity: 0.8 });
   const siyah = new THREE.MeshStandardMaterial({ color: 0x232527, roughness: 0.6 });
   const govde = new THREE.Mesh(new THREE.CylinderGeometry(C.r, C.r - 8, C.boy - 30, 40, 1, true).rotateX(Math.PI / 2).translate(0, 0, (C.boy - 30) / 2 + 12), govdeM);
   const taban = new THREE.Mesh(new THREE.CylinderGeometry(C.r - 6, C.r - 6, 12, 40).rotateX(Math.PI / 2).translate(0, 0, 6), siyah);
-  const kapak = new THREE.Mesh(new THREE.CylinderGeometry(C.r + 3, C.r + 3, 18, 40).rotateX(Math.PI / 2).translate(0, 0, C.boy - 9), govdeM);
-  const pedal = new THREE.Mesh(new THREE.BoxGeometry(90, 50, 14).translate(0, -C.r - 18, 18), siyah);
-  for (const m of [govde, taban, kapak, pedal]) { m.castShadow = m.receiveShadow = true; g.add(m); }
+  // v8.2 (kullanıcı): kapaksız, ağzı açık kova: üstte ince kıvrık ağız (halka), içi koyu; elma içine düşer
+  const agiz = new THREE.Mesh(new THREE.TorusGeometry(C.r - 1, 6, 10, 48).translate(0, 0, C.boy - 6), govdeM);
+  const ic = new THREE.Mesh(new THREE.CylinderGeometry(C.r - 6, C.r - 12, C.boy - 40, 40, 1, true).rotateX(Math.PI / 2).translate(0, 0, (C.boy - 40) / 2 + 18), new THREE.MeshStandardMaterial({ color: 0x2a2c2e, roughness: 0.8, side: THREE.BackSide }));
+  for (const m of [govde, taban, agiz, ic]) { m.castShadow = m.receiveShadow = true; g.add(m); }
   g.position.set(C.x, C.y, 0);
-  g.rotation.z = -1.1; // pedalı odaya dönük
   g.userData.agiz = [C.x, C.y, C.boy]; // elmanın düşeceği yer (dünya, mm)
   return g;
 }

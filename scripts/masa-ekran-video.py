@@ -5,7 +5,7 @@ Amaç: Oda sahnesindeki masa monitörü için Biggie Blender'da çalışıyormu�
   çizgi geometrisidir (overlay render'a çıkmaz). Motor: Workbench, Studio ışık, gri kil (hızlı, viewport'un kendisi).
   Arka plan saydam bırakılır; degrade, ızgara solması ve arayüz çerçevesi 2. adımda (masa-ekran-kurgu.py) eklenir.
 Girdi:
-  blender.exe -b --factory-startup -P scripts/masa-ekran-video.py -- [--model GLB] [--cikti KLASOR] [--w 1044] [--h 688]
+  blender.exe -b --factory-startup -P scripts/masa-ekran-video.py -- [--model GLB] [--cikti KLASOR] [--w 1044] [--h 688] [--hedef-z 1.45]
   Varsayılan model: assets/cati/modeller/kadere-kinali.glb (Draco; Blender glTF içe aktarıcısı açar).
 Çıktı: KLASOR/v_0001.png ... v_0240.png (RGBA, viewport alanı, 2x boyut; 2. adım küçültür). Var olanların üzerine
   yazar (aynı girdiden aynı kareler; tekrar çalıştırmak güvenli). Varsayılan KLASOR: %TEMP%/masa-ekran-kareler.
@@ -27,6 +27,7 @@ ap.add_argument("--cikti", default=os.path.join(tempfile.gettempdir(), "masa-ekr
 ap.add_argument("--w", type=int, default=1044)
 ap.add_argument("--h", type=int, default=688)
 ap.add_argument("--kare", type=int, default=240)
+ap.add_argument("--hedef-z", type=float, default=1.45)  # kamera bakış yüksekliği; büyüdükçe büst kadrajda aşağı iner (eski 1.25)
 a = ap.parse_args(argv)
 os.makedirs(a.cikti, exist_ok=True)
 
@@ -106,7 +107,7 @@ cam_d.lens = 50
 cam = bpy.data.objects.new("Kam", cam_d)
 sc.collection.objects.link(cam)
 sc.camera = cam
-hedef = Vector((0, 0, 1.25))
+hedef = Vector((0, 0, a.hedef_z))
 cam.location = Vector((0, -7.6, 3.4))
 cam.rotation_euler = (hedef - cam.location).to_track_quat("-Z", "Y").to_euler()
 

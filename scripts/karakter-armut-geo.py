@@ -158,7 +158,19 @@ def armut_kur(seed=1):
 #      x ← x · s;  y ← y · (y < 0 ? 1 + (s − 1) · on_carpan : s)   (ön yüz daha az şişer: ayaklar önünde)
 #   3. sırt yatışı (yumuşak kesme): y ← y + k · w · ln(1 + exp((z' − S) / w))   (z' 1. adımın sonucu; w yumusak_mm)
 #      k ölçülerek seçilir: sırtın ön yüzü (|x| < 40, oturağın arkası) S + 80 … B − 80 arasında dikeyden sirt_egim_derece.
-ARMUT_GOMULU = {'oturak_mm': 220.0, 'sirt_mm': 650.0, 'sirt_egim_derece': 40.0, 'siskinlik': 0.08, 'on_carpan': 0.4, 'yumusak_mm': 40.0}
+#   v8.2 (2026-11-05, kullanıcı: "armudun baş kısmı oturunca daha çok yayılıp yassılsın; sırtı ve başı anatomik yerleşsin";
+#   "içine gömülsün"): iki ek terim (sitede core/cati-esya.js armutEzAlani aynı formül):
+#   4. üst yayılma: u = smoothstep(zs, H, z) (orijinal z); x ← x · (1 + ust_yayilma · u); y > 0 (arka) ← y · (1 + ust_yayilma · u)
+#   5. çukur (ortası yanlarından derin çöker: armudun kolları kalçanın iki yanında yüksek kalır):
+#      z' ← z' − cukur_mm · exp(−(x / cukur_r_mm)²) · smoothstep(0, cukur_z_mm, z)
+#   Sırt daha alçak (sirt_mm 650 → 560) ve daha yatık (40° → 48°): baş ve sırt armudun yayılan tepesine yaslanır.
+ARMUT_GOMULU = {'oturak_mm': 250.0, 'sirt_mm': 560.0, 'sirt_egim_derece': 48.0, 'siskinlik': 0.08, 'on_carpan': 0.4, 'yumusak_mm': 40.0,
+                'ust_yayilma': 0.16, 'cukur_mm': 55.0, 'cukur_r_mm': 190.0, 'cukur_z_mm': 260.0}
+
+
+def _ss(a, b, x):
+    t = min(1.0, max(0.0, (x - a) / (b - a))) if b != a else (1.0 if x >= b else 0.0)
+    return t * t * (3 - 2 * t)
 
 
 def armut_oturak_z(verts):
@@ -175,6 +187,10 @@ def armut_ez(v, E, t=1.0):
     s = 1 + E['siskinlik'] * math.sin(math.pi * min(1.0, max(0.0, z / zs)))
     x2 = x * s
     y2 = y * (1 + (s - 1) * E['on_carpan'] if y < 0 else s)
+    uy = E.get('ust_yayilma', 0.0) * _ss(zs, H, z)
+    x2 *= 1 + uy
+    if y > 0: y2 *= 1 + uy
+    z2 -= E.get('cukur_mm', 0.0) * math.exp(-(x / E.get('cukur_r_mm', 1.0)) ** 2) * _ss(0.0, E.get('cukur_z_mm', 1.0), z)
     w = E['yumusak_mm']; a = (z2 - S) / w
     y2 += E['k'] * w * (a + math.log1p(math.exp(-a)) if a > 30 else math.log1p(math.exp(a)))
     return (x + t * (x2 - x), y + t * (y2 - y), z + t * (z2 - z))

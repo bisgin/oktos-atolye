@@ -33,7 +33,10 @@ EK = {'sirt_ac': 'Sırt Açma', 'kaydir': 'Koltukla Kayma'}
 # Biggie'li sunumun eylem klipleri (scripts/karakter-klip-eylem.py; aksiyon adı = klip adı)
 for k in ('buzdolabi_ac', 'buzdolabi_bos', 'elma_ye', 'elma_firlat', 'yaslan', 'egil_bak', 'kumanda', 'kutu_al',
           'armut_yat', 'armut_uyukla', 'armut_kalk', 'diz_cok', 'kutu_al_diz', 'diz_kalk', 'diz_bekle', 'kutu_cevir_sag',
-          'kutu_cevir_sol', 'kutu_rafa_birak', 'kitap_al_alt', 'kitap_al_orta', 'kitap_al_ust'):   # v7: tv_armut → armut_* (takma_ad)
+          'kutu_cevir_sol', 'kutu_rafa_birak', 'kitap_al_alt', 'kitap_al_orta', 'kitap_al_ust',   # v7: tv_armut → armut_* (takma_ad)
+          # v8.2 (05.11): büst, fare, elma dizisi (scripts/karakter-klip-v82.py)
+          'bust_al_alt', 'bust_al_orta', 'bust_birak_alt', 'bust_birak_orta', 'bust_tut', 'bust_tut_yuru', 'fare',
+          'elma_isir_1', 'elma_isir_2', 'elma_isir_3', 'elma_isir_4', 'elma_tut', 'elma_tut_yuru'):
     EK[k] = k
 for k, a in EK.items():
     if bpy.data.actions.get('Hareket - ' + a):
@@ -185,6 +188,7 @@ if ELMA_K:
         rig.animation_data.action = act
         if act.slots: rig.animation_data.action_slot = act.slots[0]
         f0, f1 = act.frame_range
+        if meta['klip'].get(k, {}).get('elma_serbest'): continue   # v8.2: elmayı önceki klipten taşıyan klipler (elma_tut, elma_tut_yuru)
         for b in ELMA_K:
             yol = f'pose.bones["{b}"].scale'
             if any(fc.data_path == yol for l in act.layers for st in l.strips for cb in st.channelbags for fc in cb.fcurves): continue
@@ -193,6 +197,22 @@ if ELMA_K:
                 fc.keyframe_points.add(2); fc.keyframe_points.foreach_set('co', [f0, 0.0, f1, 0.0]); fc.update()
     rig.animation_data.action = None
     meta['elma_kemik'] = ELMA_K
+
+# ---- v8.2: karın kemiği (scripts/karakter-rig-v82.py) yalnız armut kliplerinde anahtarlı: diğer bütün kliplere ölçek 1
+# sabiti (yarıda kesilen armut klibinden sonra karın çökük kalmasın; three.js'te anahtarsız kanal son değerde kalır)
+if 'karın' in rig.data.bones:
+    yol = 'pose.bones["karın"].scale'
+    for k, a in KLIP.items():
+        act = bpy.data.actions['Hareket - ' + a]
+        if any(fc.data_path == yol for l in act.layers for st in l.strips for cb in st.channelbags for fc in cb.fcurves): continue
+        rig.animation_data.action = act
+        if act.slots: rig.animation_data.action_slot = act.slots[0]
+        f0, f1 = act.frame_range
+        for i in range(3):
+            fc = act.fcurve_ensure_for_datablock(rig, yol, index=i)
+            fc.keyframe_points.add(2); fc.keyframe_points.foreach_set('co', [f0, 1.0, f1, 1.0]); fc.update()
+    rig.animation_data.action = None
+    meta['karin_kemik'] = 'karın'
 
 # ---- rig: ölçek ve klipler (NLA izleri) ----
 rig.scale = (OLCEK, OLCEK, OLCEK)

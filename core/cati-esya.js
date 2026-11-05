@@ -511,6 +511,40 @@ function kumasDokusu(tur) {
   return (kumasDoku[tur] = { map: doku(c1), normal: doku(c2, { srgb: false }) });
 }
 
+// Oturunca ezilme alanı (v8.2, 2026-11-05): Blender'la ortak tek formül, Python ikizi scripts/karakter-armut-geo.py armut_ez
+// (birebir aynı sıra). g = GLB meta'sı `armut_yat.armut.gomulu`. Armudun yereli (mm; orijin tabanın merkezi, önü −y, z yukarı):
+//   z' = z_harita(z) (parçalı doğrusal); s = 1 + siskinlik · sin(π · min(1, max(0, z / oturak_once_mm)))
+//   x' = x · s;  y' = y · (y < 0 ? 1 + (s − 1) · on_carpan : s)
+//   üst yayılma: u = smoothstep(oturak_once_mm, tepe_once_mm, z); x' ·= 1 + ust_yayilma · u; y > 0 ise y' ·= 1 + ust_yayilma · u
+//   çukur: z' −= cukur_mm · exp(−(x / cukur_r_mm)²) · smoothstep(0, cukur_z_mm, z)
+//   y' += k · yumusak_mm · ln(1 + e^((z' − oturak_mm) / yumusak_mm))
+//   ezilme t ile: v_t = v + t · (D(v) − v)
+// v7 meta'sında (ust_yayilma, cukur_* yok) iki ek terim 0 olur: eski formülle aynı sonuç.
+// Döner: alan(x, y, z, t, out = [0, 0, 0]) → out (ezilmiş köşe).
+export function armutEzAlani(g) {
+  const A = g, ZH = A.z_harita, uy = A.ust_yayilma ?? 0, cm = A.cukur_mm ?? 0, cr = A.cukur_r_mm ?? 1, cz = A.cukur_z_mm ?? 1;
+  const zs = A.oturak_once_mm, H = A.tepe_once_mm ?? ZH[ZH.length - 1][0];
+  function zHarita(z) {
+    let i = 1;
+    while (i < ZH.length - 1 && z > ZH[i][0]) i++;
+    const [a, va] = ZH[i - 1], [b, vb] = ZH[i];
+    return va + ((vb - va) * (z - a)) / (b - a);
+  }
+  return function alan(x, y, z, t, out = [0, 0, 0]) {
+    let zz = zHarita(z);
+    const s = 1 + A.siskinlik * Math.sin(Math.PI * Math.min(1, Math.max(0, z / zs)));
+    let X = x * s, Y = y * (y < 0 ? 1 + (s - 1) * A.on_carpan : s);
+    const u = uy * yumus(zs, H, z);
+    X *= 1 + u;
+    if (y > 0) Y *= 1 + u;
+    zz -= cm * Math.exp(-((x / cr) ** 2)) * yumus(0, cz, z);
+    const a = (zz - A.oturak_mm) / A.yumusak_mm;
+    Y += A.k * A.yumusak_mm * (a > 30 ? a + Math.log1p(Math.exp(-a)) : Math.log1p(Math.exp(a)));
+    out[0] = x + t * (X - x); out[1] = y + t * (Y - y); out[2] = z + t * (zz - z);
+    return out;
+  };
+}
+
 export function armut({ renk = 0xc8962e, seed = 1, kumas = seed % 2 ? 'kadife' : 'keten' } = {}) {
   const r = rnd(seed * 7919 + 13), H = 1030 + r() * 70; // tepe yüksekliği
   const P = {

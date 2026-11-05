@@ -11,7 +11,7 @@
 #        <klasör>/olcum<sonek>.json; <inceleme.blend> (her klibin eşyaları "İnceleme <klip>" koleksiyonunda).
 # Tekrar çalıştırmak güvenli (çıktıların üzerine yazar). ffmpeg PATH'te olmalı.
 import bpy, json, math, os, subprocess, sys, bmesh
-from mathutils import Vector, Matrix
+from mathutils import Vector, Matrix, Quaternion
 
 arg = sys.argv[sys.argv.index('--') + 1:] if '--' in sys.argv else []
 SONEK = '_v7'
@@ -33,6 +33,9 @@ if '--yalniz' in arg:   # v7: yalnız verilen klipler (virgüllü)
 KOK = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 exec(open(os.path.join(KOK, 'scripts', 'karakter-armut-geo.py'), encoding='utf-8').read())   # v6: armudun gerçek yüzeyi
 G = Vector((0, 0, -9810 / MM))
+U = 1 / MM
+for _k in ('IK_kol.L', 'IK_kol.R', 'IK_bacak.L', 'IK_bacak.R'): rig[_k] = 0.0   # v8.2: FK klipler (Klavye Tuşlama) IK'sız
+exec(open(os.path.join(KOK, 'scripts', 'karakter-klip-v82.py'), encoding='utf-8').read())   # v8.2: büst modeli (bust_model), FARE
 
 
 def akt(ad): return bpy.data.actions['Hareket - ' + ad]
@@ -303,6 +306,31 @@ def kur(ad):
         kutu(K, 'Kitap Kapak', -w / 2, w / 2, -d / 2 - 0.002, -d / 2 - 0.0005, -hh / 2 + 0.01, hh / 2 - 0.01, (0.95, 0.85, 0.3), k)
         B['Kitap'] = (k, bagla(k, 'tutma.R', m['al'], m['koy'], son, W0=Matrix.Translation(p)), 0.0)
         B['Kitap'][1]['hedef'] = p
+    elif ad.startswith('bust_'):   # v8.2: gerçek büst modeli (280 mm); al/bırak klibinde meta yolu, tutuşta el.R soketi
+        bm = bust_model(); me = bpy.data.meshes.new('Büst ' + ad); me.from_pydata(bm['verts'], [], bm['faces'])
+        me.materials.append(malzeme('Büst_m', (0.82, 0.8, 0.76)))
+        for pl in me.polygons: pl.use_smooth = True
+        b = bpy.data.objects.new('Büst ' + ad, me); K.objects.link(b)
+        bu = m['bust']
+        if 'raf_nokta' in bu:
+            r = Vector(bu['raf_nokta']) / MM; on = m['raf_on_mm'] / MM
+            kutu(K, 'Kitaplık Göz', -0.4, 0.4, -on - 0.3, -on, r.z - 0.02, r.z, (0.55, 0.42, 0.3))
+            kutu(K, 'Kitaplık Üst Göz', -0.4, 0.4, -on - 0.3, -on, r.z + 380 / MM - 0.02, r.z + 380 / MM, (0.55, 0.42, 0.3))   # gözler 725 / 1105
+            kutu(K, 'Kitaplık Arka', -0.4, 0.4, -on - 0.32, -on - 0.3, 0, 1.3, (0.5, 0.38, 0.27))
+            for f, p in bu['yol']:
+                b.location = Vector(p) / MM; b.keyframe_insert('location', frame=f)
+        else:
+            kare(1); q = bu['el_yerel_q']
+            L = Matrix.Translation(Vector(bu['el_yerel']) / MM) @ Quaternion((q[3], q[0], q[1], q[2])).to_matrix().to_4x4()
+            B['Büst'] = (b, bagla(b, 'el.R', 1, son + 1, son, W0=kemik_w('el.R') @ L), 0.0)
+    elif ad in ('fare', 'Klavye Tuşlama'):   # v8.2: Blender sahnesinin masası (üst 420), klavye, fare (1,8 kat)
+        kutu(K, 'Masa', -0.45, 0.45, -0.62, -0.2, 0.26, 0.28, (0.55, 0.42, 0.3))
+        kutu(K, 'Klavye', -0.2, 0.16, -0.405, -0.285, 0.28, 0.2967, (0.2, 0.2, 0.22))
+        if ad == 'fare':
+            fm = m['fare']; ex, ey, ez = (v / MM / 2 for v in fm['olcu_mm'])
+            fo = kutu(K, 'Fare', -ex, ex, -ey, ey, 0, 2 * ez, (0.85, 0.85, 0.88))
+            for f, p in fm['yol']:
+                fo.location = Vector(p) / MM; fo.keyframe_insert('location', frame=f)
     KUR[ad] = (K, B, son)
 
 
@@ -450,6 +478,9 @@ def kameralar(ad):
     if ad == 'tv_armut' or ad.startswith('armut_'): kam_yer(ON, (-1.6, -2.2, 1.3), (0, 0.15, 0.45), 2.0); kam_yer(YAN, (-3.2, 0.15, 0.55), (0, 0.15, 0.45), 1.9)
     if ad in ('kutu_al_diz', 'diz_cok', 'diz_kalk', 'diz_bekle', 'kutu_cevir_sag', 'kutu_cevir_sol', 'kutu_rafa_birak'): kam_yer(ON, (-1.4, 1.2, 1.3), (0, -0.25, 0.25), 1.6); kam_yer(YAN, (-3.2, -0.25, 0.42), (0, -0.25, 0.38), 1.5)
     if ad.startswith('kitap_al'): kam_yer(YAN, (-3.2, -0.25, 0.75), (0, -0.25, 0.6), 1.9); kam_yer(ON, (-1.5, -2.4, 1.4), (0, -0.2, 0.6), 1.9)
+    if ad.startswith('bust_'): kam_yer(ON, (1.0, 1.5, 1.35), (-0.06, -0.2, 0.62), 1.3); kam_yer(YAN, (-2.6, -0.2, 0.75), (0, -0.2, 0.6), 1.5)
+    if ad in ('fare', 'Klavye Tuşlama'): kam_yer(ON, (0.5, -1.6, 1.3), (-0.12, -0.33, 0.33), 0.75); kam_yer(YAN, (-1.9, -0.3, 0.55), (0, -0.3, 0.4), 0.9)
+    if ad.startswith('elma_isir') or ad.startswith('elma_tut'): kam_yer(ON, (-0.9, -1.8, 1.2), (0, -0.1, 0.62), 1.0); kam_yer(YAN, (-2.4, -0.1, 0.7), (0, -0.1, 0.6), 1.1)
 
 
 def goster(ad):

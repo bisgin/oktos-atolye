@@ -319,8 +319,12 @@ async function sozlesme7() {
   kontrol('yeni klipler GLB\'de (animasyon + meta)', yeni.every((a) => S[a] > 0 && K[a]), yeni.filter((a) => !(S[a] > 0 && K[a])).join(', '));
   kontrol('tv_armut kalktı, takma adı armut_* üçlüsü', !S.tv_armut && JSON.stringify(M.takma_ad?.tv_armut) === JSON.stringify(['armut_yat', 'armut_uyukla', 'armut_kalk']), M.takma_ad);
   const g = K.armut_yat?.armut?.gomulu ?? {};
-  kontrol('armut.gomulu: oturak 220, sırt 650, sırt 35–45°', g.oturak_mm === 220 && g.sirt_mm === 650 && g.sirt_egim_derece >= 35 && g.sirt_egim_derece <= 45
-    && g.z_harita?.length === 3 && g.z_harita[1][0] > 400 && g.z_harita[2][0] > g.z_harita[1][0], g);
+  // v8.2 (05.11): armut daha alçak ve yatık ezilir (oturak 250, sırt 560, 48°), tepe yayılır (ust_yayilma), ortası çukur (cukur_mm)
+  kontrol('armut.gomulu v8.2: oturak 250, sırt 560, sırt 45–52°, yayılma ve çukur', g.oturak_mm === 250 && g.sirt_mm === 560 && g.sirt_egim_derece >= 45 && g.sirt_egim_derece <= 52
+    && g.ust_yayilma > 0 && g.cukur_mm > 0 && g.z_harita?.length === 3 && g.z_harita[1][0] > 400 && g.z_harita[2][0] > g.z_harita[1][0], g);
+  const yeni82 = ['bust_al_alt', 'bust_al_orta', 'bust_birak_alt', 'bust_birak_orta', 'bust_tut', 'bust_tut_yuru', 'fare', 'elma_isir_1', 'elma_isir_2', 'elma_isir_3', 'elma_isir_4', 'elma_tut', 'elma_tut_yuru'];
+  kontrol('v8.2 klipleri GLB\'de (animasyon + meta), soketler', yeni82.every((a) => S[a] > 0 && K[a]) && K.bust_tut?.bust?.el_yerel?.length === 3 && K.fare?.fare?.el_yerel_q?.length === 4
+    && K.yaz?.tus?.length > 50, yeni82.filter((a) => !(S[a] > 0 && K[a])).join(', '));
   const egri = (a) => K[a]?.armut?.ezilme_egrisi ?? [];
   const tekdu = (e, yon) => e.every((p, i) => i === 0 || (yon > 0 ? p[1] >= e[i - 1][1] - 1e-9 : p[1] <= e[i - 1][1] + 1e-9));
   const icinde = (e, a) => e.every(([f, t]) => f >= 1 && (f - 1) / 30 <= S[a] + 2 / 30 + 1e-6 && t >= 0 && t <= 1);
