@@ -346,6 +346,17 @@ async function sozlesme7() {
   const yeni83 = ['masa_otur', 'masa_kalk', 'elma_tut_otur', 'elma_isir_otur_1', 'elma_isir_otur_4', 'elma_firlat_otur'];
   kontrol('v8.3 klipleri GLB\'de (masa, oturarak elma; sandalye yolu, atış)', yeni83.every((a) => S[a] > 0 && K[a]) && K.masa_otur?.koltuk_yol?.length > 10
     && K.elma_firlat_otur?.onerilen_hiz_mm_s?.length === 3 && (K.elma_firlat_otur?.tepe_z_mm ?? 9e9) <= 2200, yeni83.filter((a) => !(S[a] > 0 && K[a])).join(', '));
+  // v8.4 (05.11, kullanıcı: "kol kopmuş", "fareyi tutmuyor"): büst tutuşunda sağ kol erişim sınırında değil, bilek düz,
+  // avuç tabanda; fare odadakiyle aynı biçimde, avuç sırtta, parmaklar fareye girmez, uçları ön kenarı geçmez
+  const bt = K.bust_tut?.bilek, by = K.bust_tut_yuru?.bilek;
+  kontrol('v8.4 büst: sağ kol bükük, bilek düz (erişim ≤ 0,95, bilek bükümü ≤ 25°, bilekte burgu ≤ 30°), avuç tabanda (−2…3 mm)',
+    [bt, by].every((b) => b?.R && b.R.erisim <= 0.95 && b.R.bilek_bukum_derece <= 25 && b.R.bilekte_burgu_derece <= 30)
+    && (bt?.avuc_taban_mm ?? []).length > 0 && bt.avuc_taban_mm.every((g) => g >= -2 && g <= 3), JSON.stringify({ tut: bt?.R, yuru: by?.R, avuc: bt?.avuc_taban_mm }));
+  const fm = K.fare?.fare, fo = fm?.oturus;
+  kontrol('v8.4 fare: ergonomik biçim OLCU.MOUSE.form ile aynı, masa + mat yüksekliğinde, avuç sırtta (0–3 mm), parmaklar girmez (≥ −1 mm), uçlar ön kenarın gerisinde, kol ≤ 0,95',
+    fm?.form === 'ergonomik_sag_v84' && JSON.stringify(fm.form_ayar) === JSON.stringify(OLCU.MOUSE.form) && fm.masa_z_mm === OLCU.DESK.top + OLCU.MAT.t - 335
+    && fo?.avuc_mm?.[0] >= 0 && fo.avuc_mm[1] <= 3 && fo.parmak_min_mm >= -1 && fo.on_kenar_min_mm >= 0 && fm.bilek?.erisim <= 0.95 && fm.el_kayma_mm <= 1,
+    JSON.stringify({ form: fm?.form, z: fm?.masa_z_mm, oturus: fo, bilek: fm?.bilek }));
   kontrol('v8.2 klipleri GLB\'de (animasyon + meta), soketler', yeni82.every((a) => S[a] > 0 && K[a]) && K.bust_tut?.bust?.el_yerel?.length === 3 && K.fare?.fare?.el_yerel_q?.length === 4
     && K.yaz?.tus?.length > 50, yeni82.filter((a) => !(S[a] > 0 && K[a])).join(', '));
   const egri = (a) => K[a]?.armut?.ezilme_egrisi ?? [];

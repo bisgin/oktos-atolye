@@ -4,6 +4,8 @@
 // Birim mm, Z yukarı; arka duvarın iç yüzü y = ROOM.y1, balkon onun arkasında.
 // SUN: güneşin geldiği yön. azimuth: +y'den (balkon tarafı) +x'e doğru derece; elevation: ufuktan derece. Sabah güneşi
 // balkondan odaya, kameraya doğru girer: huzmeler kameradan görünür, saksılar arkadan ışık alır.
+// MOUSE.form (v8.4): masadaki sağ el faresinin biçimi (gerçek mm, ölçeklemeden önce; önü +y, sağı +x, taban z 0):
+// core/oda-sahne.js ergonomikFare ağı kurar, scripts/karakter-klip-v84.py fare klibinde aynı yüzeye eli oturtur.
 // CHAIR.sirtDik: oyuncu koltuğunun sırtı açılınca menteşede geriye yatıklığı (rad; katlı hâli −90°). Karakter
 // (core/oda-karakter.js) ve sırt açma klibi (scripts/karakter-klipler.py) aynı değeri okur.
 export const OLCU = {
@@ -18,7 +20,7 @@ export const OLCU = {
   "MONITOR": { "x": -930, "y": 1610, "w": 545, "h": 320, "lift": 120 },
   "PC": { "x": -1380, "y": 1480, "w": 200, "d": 440, "h": 440 },
   "MAT": { "x": -855, "y": 1340, "w": 590, "d": 220, "t": 3 },
-  "MOUSE": { "x": -650, "y": 1345 },
+  "MOUSE": { "x": -650, "y": 1345, "form": { "b": 56, "a_arka": 35, "a_on": 29, "n": 2.4, "H": 38, "yp": -14, "on_dus": 0.42, "arka_dus": 0.38, "egim": 0.16, "kenar": 5, "taban": 3.5, "oluk": 0.11, "oluk_y": -6, "oluk_yy": 24, "oluk_z": 0.42, "oluk_zz": 0.22, "ys": 8, "yarik": 0.9, "teker_r": 8.5, "teker_w": 6, "teker_y": 22, "olcek": 1.8 } },
   "RACEWAY": { "x": -760, "z0": 110, "z1": 980 },
   "SOCKET": { "x": -560, "z": 300 },
   "RUG": { "x": -200, "y": -150, "w": 1700, "d": 2300 },

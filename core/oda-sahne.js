@@ -511,13 +511,12 @@ export async function buildScene({ scene, P, lang = 'tr', hafif = false }) {
         scene.add(g);
         g.updateMatrixWorld(true);
         for (const o of [fare, tek].filter(Boolean)) g.attach(o);
-        // v8.3 (kullanıcı): lila fare, sol ve sağ tuş ayrı (ortada yarık, avuçla tuşlar arasında ek yeri), kablosuz. Eski
-        // ağlar gizli; yenisi aynı boyda (grubun yereli, 1,8 kat öncesi mm)
-        const bb = new THREE.Box3().setFromObject(fare), en = (bb.max.x - bb.min.x) / 2, boy = (bb.max.y - bb.min.y) / 2, yuk = bb.max.z - bb.min.z;
+        // v8.4 (kullanıcı): siyah ergonomik sağ el faresi, kablosuz; biçim OLCU.MOUSE.form (fare klibi aynı yüzeye eli
+        // oturtur: scripts/karakter-klip-v84.py). Eski ağlar gizli; taban merkezi grubun orijini, önü +y
         fare.visible = false; if (tek) tek.visible = false;
         const kablo = ma.getObjectByName('fare_kablosu'); if (kablo) kablo.visible = false;
-        g.add(lilaFare(en, boy, yuk));
-        g.scale.setScalar(1.8);
+        g.add(ergonomikFare(OLCU.MOUSE.form));
+        g.scale.setScalar(OLCU.MOUSE.form.olcek);
         g.userData.ev = g.position.clone();
       }
     }
@@ -892,25 +891,99 @@ export async function buildScene({ scene, P, lang = 'tr', hafif = false }) {
   };
 }
 
-// v8.3: lila fare (kablosuz): avuç kabuğu (arka yarı), sol ve sağ tuş (ön çeyrekler, aralarında ~1,5 mm yarık), koyu iç
-// kabuk yarıklardan görünür, tekerlek yarığın içinde, koyu taban. en/boy: yarı genişlik ve yarı uzunluk, yuk: boy (mm);
-// önü +y, taban z 0
-function lilaFare(en, boy, yuk) {
+// v8.4: siyah ergonomik sağ el faresi (kablosuz). F = OLCU.MOUSE.form (gerçek mm; önü +y, sağı +x, taban merkezi orijin).
+// Sırt arkada yüksek, öne alçalır, sağa eğimli (egim), kenarlar yuvarlanır (kenar); sol yanda başparmak oluğu. Yüzey tuş
+// ekinin merkezi (0, ys) çevresinde açısal ağ: sağ tuş 0–90°, sol tuş 90–180°, gövde 180–360°; aralarındaki yarık (yarik,
+// tekerlek bölgesinde genişler) koyu iç kabuğu gösterir. Python ikizi: scripts/karakter-klip-v84.py (fare_ust, fare_oluk, fare_R).
+function ergonomikFare(F) {
   const g = new THREE.Group();
-  g.name = 'fare_lila';
-  const taban = 4, h = yuk - taban - 1, d = Math.PI / 180;
-  const kabuk = (p0, p1) => new THREE.SphereGeometry(1, 40, 16, p0, p1 - p0, 0, Math.PI / 2).rotateX(Math.PI / 2).scale(en, boy, h).translate(0, 0, taban);
-  const lila = new THREE.MeshStandardMaterial({ color: 0xb59ad6, roughness: 0.42 }), tus = new THREE.MeshStandardMaterial({ color: 0xc4ade2, roughness: 0.38 });
-  const koyu = new THREE.MeshStandardMaterial({ color: 0x2a2530, roughness: 0.7 });
-  const parca = [new THREE.Mesh(kabuk(1.2 * d, 178.8 * d), lila), new THREE.Mesh(kabuk(181.2 * d, 269.2 * d), tus), new THREE.Mesh(kabuk(270.8 * d, 358.8 * d), tus)];
-  const ic = new THREE.Mesh(new THREE.SphereGeometry(1, 24, 10, 0, Math.PI * 2, 0, Math.PI / 2).rotateX(Math.PI / 2).scale(en * 0.985, boy * 0.985, h * 0.985).translate(0, 0, taban), koyu);
-  const alt = new THREE.Mesh(new THREE.CylinderGeometry(1, 1, taban, 40).rotateX(Math.PI / 2).scale(en * 0.97, boy * 0.97, 1).translate(0, 0, taban / 2), koyu);
-  // Tekerlek: yarığın içinde, önden ~%35'te, üst yüzeyin 1,5 mm üstüne çıkar
-  const ty = boy * 0.35, tz = taban + h * Math.sqrt(Math.max(0, 1 - (ty / boy) ** 2));
-  const teker = new THREE.Mesh(new THREE.CylinderGeometry(4.5, 4.5, 3, 20), koyu);
+  g.name = 'fare_ergonomik';
+  const aY = (y) => F.a_on + (F.a_arka - F.a_on) * (0.5 - (0.5 * y) / F.b);
+  const sOf = (x, y) => ((Math.abs(x) / aY(y)) ** F.n + (Math.abs(y) / F.b) ** F.n) ** (1 / F.n);
+  const ust = (x, y) => {
+    const s = sOf(x, y);
+    if (s >= 1) return 0;
+    const t = y - F.yp;
+    const hl = t >= 0 ? 1 - F.on_dus * (t / (F.b - F.yp)) ** 2 : 1 - F.arka_dus * (t / (F.b + F.yp)) ** 2;
+    return F.H * hl * (1 - (F.egim * x) / aY(y)) * Math.sqrt(1 - s ** F.kenar);
+  };
+  const oluk = (x, y, z) => (x >= 0 ? 1 : 1 - F.oluk * Math.exp(-(((y - F.oluk_y) / F.oluk_yy) ** 2)) * Math.exp(-((((z - F.taban) / F.H - F.oluk_z) / F.oluk_zz) ** 2)));
+  const Rcache = new Map();
+  const R = (th) => {
+    const k = th.toFixed(5);
+    if (Rcache.has(k)) return Rcache.get(k);
+    let lo = 0, hi = 2 * F.b;
+    for (let i = 0; i < 40; i++) {
+      const m = (lo + hi) / 2;
+      if (sOf(m * Math.cos(th), F.ys + m * Math.sin(th)) < 1) lo = m; else hi = m;
+    }
+    Rcache.set(k, lo);
+    return lo;
+  };
+  const nokta = (th, rho, kx = 1, kz = 1) => {
+    const r = R(th), x = rho * r * Math.cos(th), y = F.ys + rho * r * Math.sin(th), z = F.taban + ust(x, y) * kz;
+    return [x * oluk(x, y, z) * kx, y, z];
+  };
+  const N = 30, rh = Array.from({ length: N + 1 }, (_, i) => Math.sin((Math.PI / 2) * (i / N)));
+  // Yarığın yarı genişliği (mm) bir sınır açısında ve halkada: ortadaki yarık tekerleğin yanında genişler
+  const yarik = (phi, rho) => {
+    if (Math.abs(phi - Math.PI / 2) < 1e-6) {
+      const y = F.ys + rho * R(phi);
+      if (Math.abs(y - (F.ys + F.teker_y)) < F.teker_r + 1) return F.teker_w / 2 + 0.6;
+    }
+    return F.yarik;
+  };
+  // Parça: [a, b] açı aralığı, iki uçta yarık kadar içeri; çok küçük halkalar atlanır
+  const parca = (a, b, M) => {
+    const pos = [], idx = [];
+    let onceki = -1;
+    for (let i = 1; i <= N; i++) {
+      const rho = rh[i], da = Math.asin(Math.min(0.99, yarik(a, rho) / (rho * R(a)))), db = Math.asin(Math.min(0.99, yarik(b, rho) / (rho * R(b))));
+      const t0 = a + da, t1 = b - db;
+      if (t1 - t0 < 0.05) { onceki = -1; continue; }
+      const bas = pos.length / 3;
+      for (let j = 0; j <= M; j++) pos.push(...nokta(t0 + ((t1 - t0) * j) / M, rho));
+      if (onceki >= 0) for (let j = 0; j < M; j++) idx.push(onceki + j, bas + j, bas + j + 1, onceki + j, bas + j + 1, onceki + j + 1);
+      onceki = bas;
+    }
+    const geo = new THREE.BufferGeometry();
+    geo.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3));
+    geo.setIndex(idx);
+    geo.computeVertexNormals();
+    return geo;
+  };
+  const govdeM = new THREE.MeshStandardMaterial({ color: 0x141416, roughness: 0.7 });
+  const tusM = new THREE.MeshStandardMaterial({ color: 0x232327, roughness: 0.36 });
+  const ic = new THREE.MeshStandardMaterial({ color: 0x060607, roughness: 0.9 });
+  g.add(new THREE.Mesh(parca(Math.PI, 2 * Math.PI, 64), govdeM), new THREE.Mesh(parca(Math.PI / 2, Math.PI, 32), tusM), new THREE.Mesh(parca(0, Math.PI / 2, 32), tusM));
+  // İç kabuk (yarıklardan görünen koyu yüzey): aynı yüzey biraz içeride
+  {
+    const M = 96, pos = [], idx = [];
+    pos.push(0, F.ys, F.taban + ust(0, F.ys) * 0.96);
+    for (let i = 1; i <= N; i++) for (let j = 0; j < M; j++) pos.push(...nokta((2 * Math.PI * j) / M, rh[i], 0.985, 0.96));
+    const ix = (i, j) => 1 + (i - 1) * M + (j % M);
+    for (let j = 0; j < M; j++) idx.push(0, ix(1, j), ix(1, j + 1));
+    for (let i = 1; i < N; i++) for (let j = 0; j < M; j++) idx.push(ix(i, j), ix(i + 1, j), ix(i + 1, j + 1), ix(i, j), ix(i + 1, j + 1), ix(i, j + 1));
+    const geo = new THREE.BufferGeometry();
+    geo.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3));
+    geo.setIndex(idx);
+    geo.computeVertexNormals();
+    g.add(new THREE.Mesh(geo, ic));
+  }
+  // Taban: dış çizgiden taban kalınlığında koyu dilim
+  {
+    const sh = new THREE.Shape();
+    for (let j = 0; j <= 96; j++) {
+      const th = (2 * Math.PI * j) / 96, r = R(th) * 0.99, x = r * Math.cos(th), y = F.ys + r * Math.sin(th);
+      if (j === 0) sh.moveTo(x, y); else sh.lineTo(x, y);
+    }
+    g.add(new THREE.Mesh(new THREE.ExtrudeGeometry(sh, { depth: F.taban, bevelEnabled: false, curveSegments: 1 }), new THREE.MeshStandardMaterial({ color: 0x0b0b0c, roughness: 0.8 })));
+  }
+  // Tekerlek: yarığın genişlediği yerde, üstü yüzeyden 1,2 mm çıkar
+  const ty = F.ys + F.teker_y, teker = new THREE.Mesh(new THREE.CylinderGeometry(F.teker_r, F.teker_r, F.teker_w, 24), new THREE.MeshStandardMaterial({ color: 0x2b2b2e, roughness: 0.85 }));
   teker.rotation.z = Math.PI / 2;
-  teker.position.set(0, ty, tz - 3);
-  g.add(...parca, ic, alt, teker);
+  teker.position.set(0, ty, F.taban + ust(0, ty) + 1.2 - F.teker_r);
+  g.add(teker);
   g.traverse((o) => { if (o.isMesh) { o.castShadow = true; o.receiveShadow = true; } });
   return g;
 }

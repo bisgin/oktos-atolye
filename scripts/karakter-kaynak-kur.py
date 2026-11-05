@@ -29,6 +29,8 @@ exec(open(os.path.join(KOK, 'scripts', 'karakter-klip-v82.py'), encoding='utf-8'
 for k in ('IK_kol.L', 'IK_kol.R', 'IK_bacak.L', 'IK_bacak.R'): rig[k] = 0.0   # FK klipler (Klavye Tuşlama) IK'sız ölçülür
 # v8.3: büst tutuşu, fare, oturarak elma, masaya oturma/kalkma (karakter-klip-v83.py v82'nin işlevlerini ezer)
 exec(open(os.path.join(KOK, 'scripts', 'karakter-klip-v83.py'), encoding='utf-8').read())
+# v8.4: büst tutuşunda iki kol göğsün dışında, sağ bilek düz; siyah ergonomik fare ve avuçla kavrayış (karakter-klip-v84.py v83'ün işlevlerini ezer)
+exec(open(os.path.join(KOK, 'scripts', 'karakter-klip-v84.py'), encoding='utf-8').read())
 for a in v82_bust() + v82_fare() + v82_klavye() + v82_elma() + v83_elma_otur() + v83_masa(): print('EYLEM_V82', a.name, tuple(a.frame_range), a.get('site_meta', '')[:200])
 OLCUM_V7.setdefault('zincir', {}).update(zincir_olc([('bust_al_alt', 'bust_tut'), ('bust_al_orta', 'bust_tut'), ('bust_tut', 'bust_tut'),
     ('bust_tut', 'bust_birak_alt'), ('bust_tut', 'bust_birak_orta'), ('fare', 'fare'), ('elma_tut', 'elma_tut'), ('elma_tut', 'elma_isir_1'),
@@ -36,6 +38,7 @@ OLCUM_V7.setdefault('zincir', {}).update(zincir_olc([('bust_al_alt', 'bust_tut')
     ('elma_tut_otur', 'elma_isir_otur_1'), ('elma_isir_otur_1', 'elma_tut_otur'), ('elma_isir_otur_4', 'elma_tut_otur'), ('elma_tut_otur', 'elma_firlat_otur'),
     ('elma_firlat_otur', 'Klavye Tuşlama'), ('masa_otur', 'Klavye Tuşlama'), ('Klavye Tuşlama', 'masa_kalk')]))
 OLCUM_V82['v83'] = OLCUM_V83
+OLCUM_V82['v84'] = OLCUM_V84
 bpy.context.scene['olcum_v82'] = json.dumps(OLCUM_V82, ensure_ascii=False)
 print('OLCUM_V82', json.dumps(OLCUM_V82, ensure_ascii=False))
 bpy.context.scene['olcum_v7'] = json.dumps(OLCUM_V7, ensure_ascii=False)
