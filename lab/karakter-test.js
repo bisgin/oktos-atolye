@@ -9,6 +9,7 @@ import { karakterOlustur, AYAR } from '../core/oda-karakter.js';
 import { OLCU } from '../core/oda-olcu.js';
 import { ENGEL, PORT } from '../core/oda-portfolyo.js';
 import { BIGGIE_DURAK } from '../core/oda-yerler.js';
+import { robotSurucu, rotaPayi, ROTA, ROBOT_R } from '../core/oda-robot.js';
 
 const KARE = 1 / 60;
 const sonuc = [];
@@ -357,6 +358,18 @@ async function sozlesme7() {
     fm?.form === 'ergonomik_sag_v84' && JSON.stringify(fm.form_ayar) === JSON.stringify(OLCU.MOUSE.form) && fm.masa_z_mm === OLCU.DESK.top + OLCU.MAT.t - 335
     && fo?.avuc_mm?.[0] >= 0 && fo.avuc_mm[1] <= 3 && fo.parmak_min_mm >= -1 && fo.on_kenar_min_mm >= 0 && fm.bilek?.erisim <= 0.95 && fm.el_kayma_mm <= 1,
     JSON.stringify({ form: fm?.form, z: fm?.masa_z_mm, oturus: fo, bilek: fm?.bilek }));
+  // v8.5 (05.11, kullanıcı: "başlarda havayı tutuyor", "elma alırken buzdolabının içine giriyor"): fare 12. karede avuçla
+  // kavranır (kavrayış biçimi havada), oda harmanı ≤ 0,15 sn; buzdolabında gövde/kol/el katı gövdeye (duvar, tavan, raf)
+  // girmez, gövde ve baş açıklıktan içeri girmez; elma odadaki buzdolabının içinde (raf üstü, ön yüzden içeride)
+  kontrol('v8.5 fare: ilk kavrayış ≤ 14. kare, giriş harmanı ≤ 0,2 sn, tut 12',
+    K.fare?.ilk_kavrayis > 0 && K.fare.ilk_kavrayis <= 14 && K.fare.giris_solma_sn <= 0.2 && K.fare.tut?.[0] <= 14, JSON.stringify({ ilk: K.fare?.ilk_kavrayis, solma: K.fare?.giris_solma_sn, tut: K.fare?.tut }));
+  const bk = (a) => K[a]?.govde_kesisim;
+  kontrol('v8.5 buzdolabı: gövde, kol, el katı gövdeye ≤ 1 mm; gövde açıklıktan içeri ≤ 1 mm (buzdolabi_ac, _bos)',
+    ['buzdolabi_ac', 'buzdolabi_bos'].every((a) => bk(a) && ['govde', 'kol', 'el', 'govde_bosluk'].every((g) => bk(a)[g].en_derin_mm <= 1)),
+    JSON.stringify(['buzdolabi_ac', 'buzdolabi_bos'].map((a) => bk(a) && Object.fromEntries(['govde', 'kol', 'el', 'govde_bosluk'].map((g) => [g, bk(a)[g].en_derin_mm])))));
+  const ey85 = K.buzdolabi_ac?.elma?.buzdolabi_yerel_mm;
+  kontrol('v8.5 elma: buzdolabının içinde, raf üstünde, ön yüzden ≥ 40 mm içeride',
+    ey85?.length === 3 && ey85[0] >= -OLCU.FRIDGE.d / 2 + 40 && ey85[0] <= OLCU.FRIDGE.d / 2 && Math.abs(ey85[1]) <= OLCU.FRIDGE.w / 2 - 60 && Math.abs(ey85[2] - OLCU.FRIDGE.shelf) <= 3, ey85);
   kontrol('v8.2 klipleri GLB\'de (animasyon + meta), soketler', yeni82.every((a) => S[a] > 0 && K[a]) && K.bust_tut?.bust?.el_yerel?.length === 3 && K.fare?.fare?.el_yerel_q?.length === 4
     && K.yaz?.tus?.length > 50, yeni82.filter((a) => !(S[a] > 0 && K[a])).join(', '));
   const egri = (a) => K[a]?.armut?.ezilme_egrisi ?? [];
@@ -407,6 +420,92 @@ async function yolV8() {
   kontrol('kara tahta engeli ve durağı yok', !ENGEL.some((e) => e.ad === 'tahta') && !BIGGIE_DURAK.some((d) => d.id === 'hakkimda'));
 }
 
+// v8.5: kutu oyunları durağı (rafın +y ucu), çöp köşede (hiçbir durak çöpün önünde değil), balkondan her durağa yol
+async function duraklarV85() {
+  grup = 'Duraklar ve çöp (v8.5)';
+  const { k, D } = kur({ zorla: 'merdiven' });
+  k.sunumAyar({ engel: ENGEL });
+  const E = D.engeller(), O = BIGGIE_DURAK.find((d) => d.id === 'oyunlar'), R = PORT.oyunRafi, F = OLCU.FRIDGE, C = PORT.cop;
+  const [x, y] = O.yer;
+  kontrol('kutu durağı rafın +y (buzdolabı) ucunda: buzdolabının önü ile rafın ucu arası, ikisine de ≥ 200 mm',
+    y > R.y + R.en / 2 && y < F.y - F.w / 2 && x < 1695 && Math.hypot(x - 1550, y - (F.y - F.w / 2)) >= 200 && Math.hypot(x - 1695, y - (R.y + R.en / 2)) >= 200, O.yer);
+  kontrol('kutu durağında yüzü rafa (ψ 30–70°) ve v8.5 klip adları tanımlı', O.yon >= 30 && O.yon <= 70 && O.kutuV85?.al && Array.isArray(O.kutuV85.ust), O.kutuV85);
+  // Engel kutuları köşede kare büyür (kutuKeser): durak bir engelin kare payının içinde olmasın (yol bulunamaz)
+  const icerde = E.filter((e) => e.k && x > e.k[0] - AYAR.pay && x < e.k[1] + AYAR.pay && y > e.k[2] - AYAR.pay && y < e.k[3] + AYAR.pay);
+  kontrol('kutu durağı hiçbir engelin (kare) payının içinde değil', !icerde.length, icerde.map((e) => e.ad ?? e.k));
+  const balkon = { x: 1560, y: 3057.5 }, yok = [];
+  for (const d of BIGGIE_DURAK.filter((d) => !d.capa && d.id !== 'masa')) {
+    const h = { x: d.yer[0], y: d.yer[1] };
+    if (!D.serbest(balkon, h, E) && D.yolBul(balkon, h, E).length < 2) yok.push(d.id);
+  }
+  kontrol('balkondan (inişin sonu) her durağa yol var', !yok.length, yok);
+  kontrol('çöp köşede: sağ duvar ve arka duvarın süpürgeliğine ≤ 30 mm, buzdolabının arkasında',
+    OLCU.ROOM.x1 - 14 - (C.x + C.r) <= 30 && OLCU.ROOM.y1 - 14 - (C.y + C.r) <= 30 && C.y - C.r >= F.y + F.w / 2, C);
+  const yakin = BIGGIE_DURAK.filter((d) => !d.capa && Math.hypot(d.yer[0] - C.x, d.yer[1] - C.y) < 800).map((d) => d.id);
+  kontrol('hiçbir durak çöpün önünde değil (her durak çöpe ≥ 800 mm)', !yakin.length, yakin);
+}
+
+// v8.5: robot süpürge (core/oda-robot.js): rota engellerden uzak, istasyondan çıkıp döner, Biggie'ye çarpmaz, fırça döner,
+// hareket azaltmada gezmez. Sahte sahne: süpürge kökü (fırça ağları adlarıyla), Biggie ('karakter' grubu)
+function robotKok() {
+  const kok = new THREE.Group();
+  for (const ad of ['supurge_govde', 'supurge_firca', 'supurge_firca001', 'supurge_firca002', 'supurge_firca_gobek', 'supurge_alt_isik']) {
+    const m = new THREE.Mesh(new THREE.BoxGeometry(10, 10, 10), new THREE.MeshStandardMaterial());
+    m.name = ad;
+    kok.add(m);
+  }
+  return kok;
+}
+async function robotV85() {
+  grup = 'Robot süpürge (v8.5)';
+  const { ROBOT, ROOM, DESK, PEDESTAL, FRIDGE, CHAIR } = OLCU, Lk = PORT.kilim;
+  // Zemindeki engeller (duvardaki pervazlar 850 mm yukarıda: robot altından geçer). Sandalyenin iki duruşu (masanın altında
+  // ve masa_kalk'ın bıraktığı yer), Biggie'nin sunumdaki bekleme yeri, kilimin gövdesi (püsküller hariç)
+  const E = [
+    ...ENGEL,
+    { ad: 'masa', k: [DESK.x0, DESK.x1, DESK.y0, DESK.y1] },
+    { ad: 'dolap', k: [PEDESTAL.x - PEDESTAL.w / 2, PEDESTAL.x + PEDESTAL.w / 2, PEDESTAL.y - PEDESTAL.d / 2, PEDESTAL.y + PEDESTAL.d / 2] },
+    { ad: 'buzdolabi', k: [FRIDGE.x - FRIDGE.d / 2, ROOM.x1, FRIDGE.y - FRIDGE.w / 2, FRIDGE.y + FRIDGE.w / 2] },
+    { ad: 'kilim', k: [Lk.x - Lk.boy / 2, Lk.x + Lk.boy / 2, Lk.y - Lk.en / 2, Lk.y + Lk.en / 2] },
+    { ad: 'sandalye', d: [CHAIR.x, CHAIR.y, 340] }, { ad: 'sandalye-cekik', d: [-930, 737, 380] },
+    { ad: 'biggie-bekle', d: [520, 760, 300] },
+    { ad: 'duvar-sol', k: [ROOM.x0 - 500, ROOM.x0 + 14, -9000, 9000] }, { ad: 'duvar-sag', k: [ROOM.x1 - 14, ROOM.x1 + 500, -9000, 9000] },
+    { ad: 'duvar-arka', k: [-9000, 9000, ROOM.y1 - 14, ROOM.y1 + 500] },
+  ];
+  const p = rotaPayi(E);
+  kontrol(`rota her engelden robotun yarıçapı + 20 mm uzak (en az ${p.pay} mm; gerek ${ROBOT_R + 20})`, p.pay >= ROBOT_R + 20, p);
+  kontrol('rota istasyonda başlar ve biter, odanın asıl bölümünde (y ≥ −1700)', ROTA[0][0] === ROBOT.x && ROTA[0][1] === ROBOT.y && ROTA.at(-1)[0] === ROBOT.x && ROTA.every(([, y]) => y >= -1700), ROTA.length);
+  // Sürüş: 600 sn (en az bir tur), Biggie yok
+  const sahne = new THREE.Scene(), kok = robotKok();
+  sahne.add(kok);
+  const r = robotSurucu(kok, sahne);
+  const iz = [];
+  for (let s = 0; s < 400 && r.durum.tur < 1; s++) { r.ilerlet(1); iz.push(r.durum); }
+  const d = r.durum;
+  kontrol('istasyondan çıkar, rotayı bitirip istasyona döner (tur ≤ 400 sn)', d.tur >= 1 && d.durum === 'istasyon' && Math.hypot(d.x - ROBOT.x, d.y - ROBOT.y) < 2, { sn: iz.length, ...d });
+  kontrol('yan fırça döner (gezerken)', Math.abs(d.firca) > 50 && kok.getObjectByName('supurge_firca').parent !== kok, d.firca);
+  kontrol('kırmızı ışık robotun kendisinde (altında, onunla gezer)', kok.getObjectByName('supurge_hale')?.parent === kok);
+  const enUzak = Math.max(...iz.map((o) => Math.hypot(o.x - ROBOT.x, o.y - ROBOT.y)));
+  kontrol('odayı gezer (istasyondan ≥ 3 m uzaklaşır)', enUzak > 3000, Math.round(enUzak));
+  // Biggie rotanın ortasında (−650, −50) dururken: ona hiç yaklaşmaz, geri döner, yine istasyona varır
+  const s2 = new THREE.Scene(), k2 = robotKok(), big = new THREE.Group();
+  big.name = 'karakter'; big.position.set(-650, -50, 0);
+  s2.add(k2, big);
+  const r2 = robotSurucu(k2, s2);
+  let enYakin = Infinity, dondu = false;
+  for (let s = 0; s < 400 && r2.durum.tur < 1; s++) {
+    for (let j = 0; j < 4; j++) { r2.ilerlet(0.25); const o = r2.durum; enYakin = Math.min(enYakin, Math.hypot(o.x - big.position.x, o.y - big.position.y)); if (o.ileri < 0) dondu = true; }
+  }
+  kontrol(`Biggie'ye çarpmaz: en yakın ${Math.round(enYakin)} mm (gövde 300 + robot ${ROBOT_R})`, enYakin >= 300 + ROBOT_R, Math.round(enYakin));
+  kontrol('önü Biggie ile kapanınca döner, istasyona öbür yandan varır', dondu && r2.durum.tur >= 1 && r2.durum.durum === 'istasyon', r2.durum);
+  // Hareket azaltma: istasyonda kalır
+  const s3 = new THREE.Scene(), k3 = robotKok();
+  s3.add(k3);
+  const r3 = robotSurucu(k3, s3, { reduce: true });
+  r3.ilerlet(60);
+  kontrol('hareket azaltmada istasyonda kalır, fırça durur', r3.durum.durum === 'istasyon' && r3.durum.x === ROBOT.x && r3.durum.firca === 0, r3.durum);
+}
+
 async function azalt() {
   grup = 'Hareket azaltma';
   const s = kur({ reduce: true }), { k, D, hikaye } = s;
@@ -448,7 +547,7 @@ async function calistir() {
   const geri = tohumla(20261020), t0 = performance.now();
   try {
     bilgi = await glbBilgi();
-    const senaryo = [() => inisMasa('merdiven'), () => inisMasa('ip'), kenarDonme, iptal, () => kalkOtur('otur'), () => kalkOtur('otur2'), azalt, sozlesme7, yolV8];
+    const senaryo = [() => inisMasa('merdiven'), () => inisMasa('ip'), kenarDonme, iptal, () => kalkOtur('otur'), () => kalkOtur('otur2'), azalt, sozlesme7, yolV8, duraklarV85, robotV85];
     for (const f of senaryo) {
       try { await f(); } catch (e) { kontrol('beklenmeyen hata', false, e?.stack ?? String(e)); }
     }

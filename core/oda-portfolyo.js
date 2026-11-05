@@ -8,7 +8,7 @@
 // - Sağ duvar (önü −x): 55" ekran (çatıdaki 75" OLED'in süreç sunumu, core/cati-ekran.js; 55/75 ölçekli), altında üç
 //   gözlü alçak küp raf (TV sehpası; 1125 × 390 × 420, gözü 339 × 344: standart kare oyun kutusu sığar) ve içinde 8
 //   kapalı kutu oyunu (gerçek kutu oranları; kapak görseli yok: düz renk, kapakta desen, sırtta yazı); önünde kilim
-//   (core/cati-kilim.js, odaya göre küçük). Buzdolabının kameraya bakan yanında çöp kovası (Biggie elmayı oraya atar).
+//   (core/cati-kilim.js, odaya göre küçük). Çöp kovası buzdolabının arkasındaki köşede (v8.5; Biggie elmayı oraya atar).
 // - Taşınmayan: teleskop (18" Dobson, ayağı Ø 620: odaya da balkona da sığmadı; core/cati-esya.js'te duruyor).
 // - Armut koltuk (2026-11-03 v5, kullanıcı isteği; önceki "taşınmaz" kararının yerine): kitaplığın solunda, TV'ye dönük;
 //   TV durağında Biggie oturur (PORT.armut, ENGEL).
@@ -37,7 +37,10 @@ export const PORT = {
   kilim: { x: 1180, y: -400, en: 1900, boy: 1000 },        // uzun kenar y boyunca (en), kısa x
   // v8.3 (kullanıcı): çöp buzdolabıyla raf arasından (Biggie kutu rafında onun önünde bekliyordu) sağ pencerenin önüne,
   // arka duvara; masadaki sandalyeden (Biggie oturuşta ~(−960, 810)) ~2,6 m: oturduğu yerden bombeli atışla
-  cop: { x: 1500, y: 1610, r: 130, boy: 420 },
+  // v8.5 (kullanıcı: "çöpü en köşeye çekelim"; çizim: buzdolabı ile balkon kapısı tarafındaki duvarın köşesi, robotun
+  // eski kırmızı halesinin yeri): buzdolabının arkasında (y 1100'den sonra), sağ duvar ve arka duvarın süpürgeliğine
+  // 6 mm. Masadaki oturuştan (−960, 812) ~3,0 m: Kobe yayı daha uzun, tepe yine ≤ tavan − 500
+  cop: { x: 1950, y: 1650, r: 130, boy: 420 },
   // Armut koltuk (2026-11-03 v5, kullanıcı isteği: TV durağında Biggie armuta oturup TV'yi açar): kitaplığın solunda
   // (kitaplığa karşıdan bakınca sol = −y; kitaplık y −30'dan başlar, armut Ø ~900 ona değmesin), önü TV'ye (+x).
   // Çatıdaki model (core/cati-esya.js armut) olduğu gibi; oturak yüksekliği ~330 mm (önü çökük profil)

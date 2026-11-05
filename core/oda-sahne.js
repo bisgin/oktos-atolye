@@ -14,6 +14,7 @@ import { DEKOR, dekorModeli, urunleri, urunModeli, binModel, vaseModel, OZEL_TUS
 import { OLCU, toSun, ON_DUVAR } from './oda-olcu.js';
 import { portfolyoIskelet } from './oda-portfolyo.js';
 import { kadrajAraci } from './oda-kadraj.js';
+import { robotSurucu } from './oda-robot.js';
 import { PORTFOLYO_DURAK } from './story-data.js';
 
 const TAU = Math.PI * 2;
@@ -265,6 +266,7 @@ export async function buildScene({ scene, P, lang = 'tr', hafif = false }) {
   let kurulan = 0;
   let cayBuhari = null; // balkondaki çaydan yükselen buhar (update'te tıklar)
   const ledler = []; // robot süpürgenin sarı ve mavi durum ışığı (malzemeleri)
+  let robot = null; // v8.5: robot süpürgenin sürücüsü (core/oda-robot.js)
   const duvarlar = {}, donen = {}; // yakın planda çevirme: sahne yeri → duvardaki nesne; yuva → { obj, rz0, pos0, w, aci }
   let klavyeBilgi = null; // klavye kurulunca: tuş yerleri ve anahtarlığın yeri (klavye dekoru için)
   const agiz = (m) => m?.userData.soil ?? m?.userData.h; // bitki toprağa (yoksa saksının ağzına) oturur
@@ -523,9 +525,11 @@ export async function buildScene({ scene, P, lang = 'tr', hafif = false }) {
     if (pilot.perde) scene.add(pilot.perde);
     // Oyuncu koltuğu: masanın sağ önünde, halının üstünde (durak kameralarının önüne girmez)
     if (pilot.esya.koltuk) place(pilot.esya.koltuk, [OLCU.CHAIR.x, OLCU.CHAIR.y, 0, OLCU.CHAIR.rz]);
-    // Robot süpürge buzdolabı ile balkon duvarı arasında; durum ışıkları update'te yanıp söner
+    // Robot süpürge: istasyonu sağ duvarın ön köşesinde (OLCU.ROBOT); durum ışıkları update'te yanıp söner.
+    // v8.5: odayı süpürür (core/oda-robot.js: rota, engeller, yan fırça, altındaki kırmızı ışık robotla gezer)
     if (pilot.esya.supurge) {
       place(pilot.esya.supurge, [OLCU.ROBOT.x, OLCU.ROBOT.y, 0, OLCU.ROBOT.rz]);
+      robot = robotSurucu(pilot.esya.supurge, scene, { reduce: !!globalThis.matchMedia?.('(prefers-reduced-motion: reduce)').matches || /[?&]mod=still/.test(globalThis.location?.search ?? '') });
       for (const ad of ['supurge_led_sari', 'supurge_led_mavi']) {
         const m = pilot.esya.supurge.getObjectByName(ad);
         if (!m?.isMesh) continue;
@@ -746,6 +750,8 @@ export async function buildScene({ scene, P, lang = 'tr', hafif = false }) {
     // durakları için nesneler (sunum tıklamayı bunlarla yakalar): buzdolabi, cop (userData.agiz: elmanın düşeceği yer), masa
     portfolyo: { get ekran() { return port.ekran; }, yukle: (derle) => port.doldur(derle).then((r) => { kadraj.yenile(); return r; }), get dolu() { return !!port.dolu; }, parcalar: () => port.parcalar?.() ?? null, get armut() { return port.armut ?? null; } },
     nesne: (id) => (id === 'cop' ? port.nesne.cop : istasyonNesne(id)) ?? slots[id]?.host ?? null,
+    // v8.5: robot süpürgenin sürücüsü (core/oda-robot.js; sunum Biggie'yi bağlar, Biggie'nin yolu robotun yerini engel sayar)
+    get robot() { return robot; },
   };
   async function show(zone, index, { reduced = false } = {}) {
     const s = slots[zone], n = s?.urunler.length;
@@ -844,6 +850,7 @@ export async function buildScene({ scene, P, lang = 'tr', hafif = false }) {
       pilot?.perde?.userData.tick(t);
       cayBuhari?.userData.tick(t);
       port.update(t); // ekranın süreç videosu ve geçişleri
+      robot?.update(t); // v8.5: robot süpürge odada tur atar
       // Süpürge ışıkları: sarı 6 sn'de bir iki kez çakar, mavi 9 sn'de bir yavaşça yanıp söner
       if (ledler.length === 2) {
         const s = t % 6, m = t % 9;

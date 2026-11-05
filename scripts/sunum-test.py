@@ -125,7 +125,8 @@ def kutu_oyunlari(pg, test, klasor=None):
     kk = json.loads(pg.evaluate("""(() => { const S = window.story, c = S.camera, K = S.api.kadraj, m = S.api.portfolyo.parcalar().oyun[window.sunum.kutu.no];
       const kutu = new (S.api.kutu('oyunlar').constructor)().setFromObject(m);
       return JSON.stringify(K.olcum({ pos: c.position.toArray(), target: S.view().target }, { kutu, nesne: m, fov: c.fov, aspect: c.aspect })); })()"""))
-    test.kontrol(G, 'kutu sahnesi kadrajı: göz yüksekliği, oda içi, oda dışı piksel 0, Biggie kutuyu örtmüyor (≤ %10, gövde kemiği küreleri)', kk.get('goz') and kk.get('oda') and kk.get('disari') == 0 and kk.get('ortu') is not None and kk['ortu'] <= 0.10, json.dumps(kk))
+    # v8.5: kamera rafın sabit kadrajında, alçaktan (900–1700; kullanıcı çizimi)
+    test.kontrol(G, 'kutu sahnesi kadrajı: rafın sabit kadrajı (z 900–1700), oda içi, oda dışı piksel 0, Biggie kutuyu örtmüyor (≤ %10, gövde kemiği küreleri)', 900 <= (kk.get('z') or 0) <= 1700 and kk.get('oda') and kk.get('disari') == 0 and kk.get('ortu') is not None and kk['ortu'] <= 0.10, json.dumps(kk))
     test.kutu_kadraj = kk
     kare_al(pg, klasor, '11-kutu-rafin-ustunde')
     oklar = pg.evaluate("[...document.querySelectorAll('.oda-kutu-ok')].map((b) => [b.getAttribute('aria-label'), !b.hidden])")
@@ -235,7 +236,9 @@ def kamera_kurali(pg, test, klasor=None):
         r = json.loads(pg.evaluate(olc, id_))
         sonuc[id_] = r
         konu = id_ in ('armut', 'masa')
-        ok = r.get('goz') and r.get('oda') and r.get('disari') == 0 and (konu or (r.get('ortu') or 0) <= 0.10)
+        # v8.5 (kullanıcı çizimi): kutu rafına alçaktan (göz yüksekliğinin altı, 900–1700) bakılır
+        goz = r.get('goz') or (id_ == 'oyunlar' and 900 <= (r.get('z') or 0) <= 1700)
+        ok = goz and r.get('oda') and r.get('disari') == 0 and (konu or (r.get('ortu') or 0) <= 0.10)
         test.kontrol(G, f"{id_}: z {r.get('z')}, oda dışı {r.get('disari')}, karakter örtmesi {r.get('ortu')}", ok, json.dumps(r))
     test.kamera = sonuc
 
@@ -371,8 +374,13 @@ def kitaplik_bust(pg, test, klasor=None):
     d = json.loads(pg.evaluate('JSON.stringify(window.karakter.durum)'))
     kart = pg.evaluate("(() => { const k = document.querySelector('.story-card:not([hidden]) .cati-bust'); return k ? [k.querySelector('h3')?.textContent, !!k.querySelector('img')] : null })()")
     kutu_yok = pg.evaluate("document.querySelector('.cati-kutu')?.hidden !== false")
-    test.kontrol(G, 'noktaya tıklama: büstü eline aldı, onunla armut tarafına yürüyüp bekliyor; kartta adı ve fotoğrafı; tam ekran resim yok',
-                 xy and e and bu and bu['elde'] and kart and kart[0] and kutu_yok and abs(d['x'] + 600) < 60 and abs(d['y'] + 380) < 60, json.dumps([xy, bu, d, kart], ensure_ascii=False))
+    # v8.5 (kullanıcı: raftan uzaklaşmasın, yalnız dönsün): Biggie rafın önünde (alış yerinde) kalır, yerinde ψ 0,8'e döner
+    test.kontrol(G, 'noktaya tıklama: büstü eline aldı, rafın önünde yerinde dönüp büstü gösteriyor (ψ ≈ 0,8); kartta adı ve fotoğrafı; tam ekran resim yok',
+                 xy and e and bu and bu['elde'] and kart and kart[0] and kutu_yok and d['x'] < -1050 and abs(d['psi'] - 0.8) < 0.1, json.dumps([xy, bu, d, kart], ensure_ascii=False))
+    kb = json.loads(pg.evaluate("""(() => { const S = window.story, c = S.camera, o = window.story.api.portfolyo.parcalar().eser.find((x) => x.parent?.isScene);
+      const kutu = new (S.api.kutu('oyunlar').constructor)().setFromObject(o);
+      return JSON.stringify({ cam: c.position.toArray().map(Math.round), ...S.api.kadraj.olcum({ pos: c.position.toArray(), target: S.view().target }, { kutu, nesne: o, fov: c.fov, aspect: c.aspect }) }); })()"""))
+    test.kontrol(G, 'büst kadrajı: kamera odanın içinde, kitaplığın önünde değil (x > −1500), oda dışı piksel 0', kb.get('oda') and kb.get('disari') == 0 and kb['cam'][0] > -1500, json.dumps(kb))
     QJS = "(() => { const o = window.story.api.portfolyo.parcalar().eser.find((x) => x.parent?.isScene); return o ? o.getWorldQuaternion(new (o.quaternion.constructor)()).toArray() : null })()"
     q1 = pg.evaluate(QJS)
     time.sleep(1.5)

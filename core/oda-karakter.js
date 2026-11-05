@@ -175,7 +175,7 @@ const DUGUM = [
 const koltukDugumleri = (k) => [[k.x + 550, k.y - 330], [k.x + 450, k.y + 270]];
 // Engeller: k = kutu [x0, x1, y0, y1], d = daire [x, y, r]. Koltuk ayrıca (yerinde duruyorsa) daire olarak eklenir.
 const CEPHE = ROOM.y1 + ROOM.wall + 45; // duvarın dış yüzü ve önündeki açık sürgü kanatları
-const SABIT_ENGEL = [
+export const SABIT_ENGEL = [
   { k: [ROOM.x0 - 200, GLASS.door0 + 30, ROOM.y1, CEPHE] },                       // arka duvar ve sol kanat
   { k: [GLASS.door1 - 30, ROOM.x1 + 200, ROOM.y1, CEPHE] },                       // kapının sağı
   { k: [GLASS.x0 - SILL.over / 2, GLASS.door0, ROOM.y1 - SILL.inset - SILL.depth / 2, ROOM.y1] }, // pervazlar
@@ -574,6 +574,7 @@ export function karakterOlustur(g, { reduce = false, zorla = null, sunum: sunumA
     await oynat('yuru', { solma: 0.3 });
     const a = akt.get('yuru');
     let i = 0, t = 0;
+    ben.yolKalan = () => yol.slice(i); // v8.5: robot süpürge Biggie'nin yürüdüğü yolun kalanından uzak durur
     const r = await kare((dt) => {
       if (!d()) return 'iptal';
       t += dt;
@@ -599,6 +600,7 @@ export function karakterOlustur(g, { reduce = false, zorla = null, sunum: sunumA
       return null;
     });
     if (a) a.act.timeScale = 1;
+    ben.yolKalan = null;
     if (r !== 'tamam') return false;
     if (son) await oynat(son, { tekrar: true, solma: 0.35 });
     return d();
@@ -1637,7 +1639,8 @@ export function karakterOlustur(g, { reduce = false, zorla = null, sunum: sunumA
         for (const [w, s] of havuz) { if ((r -= w) < 0) { sec = s; break; } }
         sonEmote = sec;
         if (!(await dizi(sec, dk))) { if (!d()) return; continue; }
-        await oynat('yaz', { solma: 0.5 });
+        const sonAd = [sec[sec.length - 1]].flat()[0];
+        await oynat('yaz', { solma: sonAd === 'fare' ? fareSolma() : 0.5 });
         sonraki = saat + rastgele(AYAR.bosta);
         continue;
       }
@@ -1645,11 +1648,14 @@ export function karakterOlustur(g, { reduce = false, zorla = null, sunum: sunumA
       if (!r) return;
     }
   }
+  // v8.5 (Blender fare klibi: avuç 12. karede farede): yaz ↔ fare harmanı meta fare.giris_solma_sn (yoksa 0,15 sn); 0,45 sn
+  // harmanda el havada süzülüyor gibi okunuyordu
+  const fareSolma = () => { const v = M.klip.fare?.fare?.giris_solma_sn; return typeof v === 'number' && v >= 0 ? v : 0.15; };
   async function dizi(sira, d) {
     for (const x of sira) {
       const [ad, sure] = Array.isArray(x) ? x : [x];
       if (!var_(ad)) continue;
-      if (!(await oynat(ad, { solma: 0.45, ...(sure ? { tekrar: true, sure } : { tekrar: false }) }, d))) return false;
+      if (!(await oynat(ad, { solma: ad === 'fare' ? fareSolma() : 0.45, ...(sure ? { tekrar: true, sure } : { tekrar: false }) }, d))) return false;
     }
     return true;
   }
@@ -2169,6 +2175,8 @@ export function karakterOlustur(g, { reduce = false, zorla = null, sunum: sunumA
     kalcaNoktasi(v = new THREE.Vector3()) { return kalca ? kalca.getWorldPosition(v) : v.set(ben.x, ben.y, 700); },
     yukari() { if (reduce) { nesil++; ben.gorunur = false; ben.yer = 'ust'; return; } yonet('yukari'); },
     masayaKoy,
+    // v8.5: yürürken yolun kalan düğümleri ([{ x, y }]; robot süpürge bunlardan uzak durur), yürümüyorsa null
+    get yolKalan() { return ben.yolKalan?.() ?? null; },
     get durum() { return { yer: ben.yer, x: Math.round(ben.x), y: Math.round(ben.y), psi: +ben.psi.toFixed(2), arac: ben.arac, klip: simdiki?.clip.name ?? null, koltuk: { katlama: koltuk.katlama, bagli: koltuk.bagli } }; },
     debug: {
       ben, koltuk, koltukYeri, YER, M, akt, oturAd, engeller, serbest: (a, b, E = engeller()) => serbest(a, b, E, AYAR.pay),

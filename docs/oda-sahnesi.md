@@ -284,6 +284,20 @@ yok: sayfanın en üstünde yukarı kaydırmak üst kata çıkmak sayılır).
 - **Kaynak:** model kullanıcının Tripo hesabından üretilip Blender'da yeniden kuruldu; hareketler Mixamo (Adobe;
   projede ücretsiz kullanım, tek başına dağıtım yasak). Model Tripo'da ücretli plan aktifken üretildi (ticari kullanım; kullanıcı beyanı). Lisans kaydı `assets/oda/KAYNAKLAR.md`'de.
 
+## v8.5 (2026-11-05, kullanıcının canlı v8.4 geri bildirimi)
+
+- **Büst:** alınınca Biggie rafın önünde kalır, yerinde ψ 0,8'e döner, büstü kameraya gösterir (`core/oda-sunum.js`
+  `BUST_GOSTER_PSI`); bırakırken yerinde rafa döner. Armut tarafına yürüyüş kalktı.
+- **Kutu oyunları:** durak (1410, 420) ψ 50° (buzdolabının önü ile rafın +y ucu arası); kamera sabit, alçaktan, rafın sağ
+  önünden (`FOCUS.oyunlar`), kutu açılınca da yerinde. Yeni uzanma klipleri (`kutuV85`) GLB'de varsa Biggie durağından
+  uzanıp alır (kutu klibin yolunda ya da el soketinde; raf kılavuzu); yoksa v7 akışı. Sözleşme `klip-meta-v5.md` "v8.5 — oda
+  tarafı".
+- **Robot süpürge:** `core/oda-robot.js`; istasyon OLCU.ROBOT, rota odanın açık zemininde, Biggie'nin kökü ve yürüdüğü yolun
+  kalanı, sandalye, açık buzdolabı kapağı hareketli engel; önü kapalı kalırsa döner. Yan fırça döner, kırmızı ışık
+  robotun altında canlı halka; pişmiş zemindeki eski hale silindi (`scripts/oda-hale-sil.py`, yeniden pişirilirse yeniden
+  çalıştır). Hareket azaltmada istasyonda durur.
+- **Çöp:** buzdolabının arkasındaki köşe (1950, 1650); Kobe yayı oraya (tepe ≤ 2200). Kareler: `scripts/oda-v85-kare.py`.
+
 ## Açık konular
 
 - Yatay telefonda (kısa ekran) alttan açılan kart sahnenin çoğunu örtüyor; Aşama 5'te kısa ekrana dar yan panel.

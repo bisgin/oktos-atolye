@@ -127,7 +127,10 @@ export const FOCUS = {
   kitaplik: { pos: [600, -1500, 1550], target: [-1890, 520, 1300], w: 1410, kutuZ: [650, 2000], sabit: true },
   // v8.3 (kullanıcı: ilk tıklamada kutular görünür açıda): rafın önüne ~37° (önceki kadraj rafın yüzünü sıyırıyordu);
   // Biggie rafın balkon ucunda (kadrajın solu), diz çöküp kutu alırken bakış çizgisinin yanında
-  oyunlar: { pos: [300, -1350, 1450], target: [1800, -150, 330], w: 1500, sabit: true, dikey: { pos: [150, -1450, 1500], target: [1800, -150, 380] } },
+  // v8.5 (kullanıcı çizimi: kamera rafın sağ ve ön tarafından, alçaktan rafa bakıyor; bütün kutular görünür, Biggie
+  // kadrajın solunda): göz yüksekliğinin altında (1000), rafın −y ucunun önünden; yan kart ötelemesiyle (motor) Biggie
+  // kartın sağında, rafın üstü (kutunun konacağı yer) ve üç göz birlikte. Kutu açılınca da bu kadraj (Biggie kıpırdamaz)
+  oyunlar: { pos: [600, -1650, 1000], target: [1680, -20, 430], w: 1500, sabit: true, dikey: { pos: [500, -2300, 1250], target: [1700, -150, 380] } },
   ekran: { pos: [-900, -1900, 1600], target: [2075, -250, 1253], w: 2169 },
   // Armut (Hakkımda): TV tarafından, odanın içinden (v8: oda önde kapalı, köşedeki armuda da göz yüksekliğinden bakılır)
   armut: { pos: [300, -1700, 1550], target: [-1380, -560, 600], w: 1400 },
@@ -169,8 +172,14 @@ export const BIGGIE_DURAK = [
   // Kutu oyunları rafı (v7): rafa tıklanınca Biggie rafın buzdolabı tarafında bekler; kutuya tıklanınca diz_cok →
   // kutu_al_diz (kutu rafın üstüne) → diz_bekle döngüsü; oklar kutu_cevir_sag/_sol, "Geri" kutu_rafa_birak → diz_kalk
   // v8.3 (kullanıcı): rafın balkon tarafındaki ucunun yanında (eski çöpün yeri), kameradan solda; kutuları örtmez
-  { id: 'oyunlar', yer: [1360, 430], yon: 45, klip: 'bekle', sure: 3, kutuDizi: ['diz_cok', 'kutu_al_diz', 'diz_kalk'],
+  // v8.5 (kullanıcı çizimi: buzdolabının önü ile rafın sol ucu arası): Biggie rafın +y (buzdolabı) ucunun önünde bekler,
+  // yüzü rafın üstüne ve gözlerine (ψ 50°); buzdolabının köşesine (1550, 600) 228 mm, rafın köşesine (1695, 312) 304 mm
+  // (yol bulma engelleri köşede kare büyüdüğü için y < 440 ve x < 1535 olmalı). Kutu seçilince buradan uzanıp alır, rafın
+  // üstüne (ust: kutunun rafın üstündeki merkezi, x, y mm) koyar; kutu klipleri (kutuV85, klip ajanı v8.5) bu durağa göre
+  // parametrik. Klipler gelmeden v7 akışı (gözün önüne yürüyüp diz çöker) sürer
+  { id: 'oyunlar', yer: [1410, 420], yon: 50, klip: 'bekle', sure: 3, kutuDizi: ['diz_cok', 'kutu_al_diz', 'diz_kalk'],
     kutuV7: { bekle: 'diz_bekle', cevir: 'kutu_cevir_sag', cevirSol: 'kutu_cevir_sol', birak: 'kutu_rafa_birak', kalk: 'diz_kalk' },
+    kutuV85: { al: 'kutu_uzan_al', bekle: 'kutu_uzan_bekle', cevir: 'kutu_uzan_cevir_sag', cevirSol: 'kutu_uzan_cevir_sol', birak: 'kutu_uzan_birak', ust: [1890, 140] },
     kadraj: { pos: [300, -1350, 1450], target: [1800, -150, 330], w: 1500 } },
   // TV: armuda oturur, 'bas' karesinde TV açılır, eller ensede izler. yer yalnız yedek (kök capa ile)
   { id: 'ekran', yer: [-865, -520], yon: 95, klip: 'armut_yat', sure: 10, oturus: true, izle: true,
@@ -188,7 +197,9 @@ export const BIGGIE_DURAK = [
     kadraj: { pos: [-1641, -1452, 1568], target: [1580, 820, 725], w: 1439 } },
   // Çöp: elma_firlat bulunduğu yerden de atılır; bu nokta çöpe yürüyüp atmak içindir (işaretçi yok). Çöpün ağzı
   // api.nesne('cop').userData.agiz
-  { id: 'cop', yer: [1250, 1250], yon: 145, klip: 'elma_firlat', sure: 2.5,
+  // v8.5 (kullanıcı: Biggie hiçbir durakta çöpün önünde beklemesin; çöp buzdolabının arkasındaki köşede (1950, 1650)):
+  // atış yeri odanın ortasında, çöpe ~1,5 m, yüzü çöpe (ψ ≈ 116°); çöpün önünü (buzdolabı ile pencere arası) kapatmaz
+  { id: 'cop', yer: [600, 1000], yon: 116, klip: 'elma_firlat', sure: 2.5,
     kadraj: { pos: [-1917, -1599, 1576], target: [1549, 332, 725], w: 1433 } },
   // Masa (v6): sandalyeye oturur, masaya kayar, yazar; monitörde masa-ekran.mp4 ('oturdu'; core/oda-monitor.js). Kamera
   // FOCUS.masa (sabit; masanın ~1,3 m sağı). v8: başka durağa tıklanınca kalk klibiyle kalkıp gider

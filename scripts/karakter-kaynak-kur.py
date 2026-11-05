@@ -14,6 +14,9 @@ KOK = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 # v8.2: rig iyileştirmesi (ön kol burgu + dirsek yardımcı kemikleri, ağırlık yumuşatma, karın kemiği) kliplerden ÖNCE
 exec(open(os.path.join(KOK, 'scripts', 'karakter-rig-v82.py'), encoding='utf-8').read())
 rig_v82()
+# v8.5: kazağın manşeti bilekte elle birlikte (sağ kol "kopuk" görünüyordu; karakter-rig-v85.py)
+exec(open(os.path.join(KOK, 'scripts', 'karakter-rig-v85.py'), encoding='utf-8').read())
+bilek_v85()
 exec(open(os.path.join(KOK, 'scripts', 'karakter-klipler.py'), encoding='utf-8').read())
 ayak_duzelt()   # v8.3: Durma ve Yürüme'de ayak uçları ~7° dışa (ördek duruşu yok); bütün klipler bundan sonra kurulur
 koltuk_al(os.path.join(KOK, 'assets', 'oda', 'oda-esya.glb'))
@@ -31,6 +34,9 @@ for k in ('IK_kol.L', 'IK_kol.R', 'IK_bacak.L', 'IK_bacak.R'): rig[k] = 0.0   # 
 exec(open(os.path.join(KOK, 'scripts', 'karakter-klip-v83.py'), encoding='utf-8').read())
 # v8.4: büst tutuşunda iki kol göğsün dışında, sağ bilek düz; siyah ergonomik fare ve avuçla kavrayış (karakter-klip-v84.py v83'ün işlevlerini ezer)
 exec(open(os.path.join(KOK, 'scripts', 'karakter-klip-v84.py'), encoding='utf-8').read())
+# v8.5: fareye hızlı ve kavrayış biçimli giriş (v82_fare'yi ezer), buzdolabında gövde açıklığın dışında (buzdolabi'yi ezer)
+exec(open(os.path.join(KOK, 'scripts', 'karakter-klip-v85.py'), encoding='utf-8').read())
+for a in (buzdolabi('buzdolabi_ac', False), buzdolabi('buzdolabi_bos', True)): print('EYLEM_V85', a.name, tuple(a.frame_range))
 for a in v82_bust() + v82_fare() + v82_klavye() + v82_elma() + v83_elma_otur() + v83_masa(): print('EYLEM_V82', a.name, tuple(a.frame_range), a.get('site_meta', '')[:200])
 OLCUM_V7.setdefault('zincir', {}).update(zincir_olc([('bust_al_alt', 'bust_tut'), ('bust_al_orta', 'bust_tut'), ('bust_tut', 'bust_tut'),
     ('bust_tut', 'bust_birak_alt'), ('bust_tut', 'bust_birak_orta'), ('fare', 'fare'), ('elma_tut', 'elma_tut'), ('elma_tut', 'elma_isir_1'),
@@ -39,6 +45,7 @@ OLCUM_V7.setdefault('zincir', {}).update(zincir_olc([('bust_al_alt', 'bust_tut')
     ('elma_firlat_otur', 'Klavye Tuşlama'), ('masa_otur', 'Klavye Tuşlama'), ('Klavye Tuşlama', 'masa_kalk')]))
 OLCUM_V82['v83'] = OLCUM_V83
 OLCUM_V82['v84'] = OLCUM_V84
+OLCUM_V82['v85'] = OLCUM_V85
 bpy.context.scene['olcum_v82'] = json.dumps(OLCUM_V82, ensure_ascii=False)
 print('OLCUM_V82', json.dumps(OLCUM_V82, ensure_ascii=False))
 bpy.context.scene['olcum_v7'] = json.dumps(OLCUM_V7, ensure_ascii=False)
