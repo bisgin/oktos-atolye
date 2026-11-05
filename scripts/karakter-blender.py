@@ -36,7 +36,9 @@ for k in ('buzdolabi_ac', 'buzdolabi_bos', 'elma_ye', 'elma_firlat', 'yaslan', '
           'kutu_cevir_sol', 'kutu_rafa_birak', 'kitap_al_alt', 'kitap_al_orta', 'kitap_al_ust',   # v7: tv_armut → armut_* (takma_ad)
           # v8.2 (05.11): büst, fare, elma dizisi (scripts/karakter-klip-v82.py)
           'bust_al_alt', 'bust_al_orta', 'bust_birak_alt', 'bust_birak_orta', 'bust_tut', 'bust_tut_yuru', 'fare',
-          'elma_isir_1', 'elma_isir_2', 'elma_isir_3', 'elma_isir_4', 'elma_tut', 'elma_tut_yuru'):
+          'elma_isir_1', 'elma_isir_2', 'elma_isir_3', 'elma_isir_4', 'elma_tut', 'elma_tut_yuru',
+          # v8.3 (05.11): masaya oturma/kalkma, masada oturarak elma
+          'masa_otur', 'masa_kalk', 'elma_tut_otur', 'elma_isir_otur_1', 'elma_isir_otur_2', 'elma_isir_otur_3', 'elma_isir_otur_4', 'elma_firlat_otur'):
     EK[k] = k
 for k, a in EK.items():
     if bpy.data.actions.get('Hareket - ' + a):

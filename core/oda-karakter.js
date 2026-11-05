@@ -68,6 +68,7 @@ export const AYAR = {
   elmaSayi: 2,           // buzdolabındaki elma (sayfa yenilenince yeniden 2)
   isirik: 3,             // bir elma bu kadar ısırıkta biter
   ilkIsirik: 2.5,        // sn: elma eline gelince ilk ısırığa dek (v8.2)
+  xrayYok: true,        // v8.3: x-ray deliği hiçbir aksiyonda yok
   isirikAra: 17,         // sn (karakter saniyesi): iki ısırık başlangıcı arası; yürürken de sürer (v8.2: elma ~1 dk, araları duraklı)
   elmaAgirlik: 6,        // elma_ye üst gövde katmanının ağırlığı (alttaki yürüyüşe karşı; kollar ~%85 elmada)
   elmaAl: 0.45,          // buzdolabi_ac klibinin bu kesrinde elma ele geçer (meta 'al' karesi varsa o)
@@ -167,6 +168,8 @@ const DUGUM = [
   // v7: çekilmiş sandalyenin solundan (kitaplıkla arasından) geçiş. v8: armut sol duvarın önüne (−1560, −560) taşındı;
   // ilk düğüm armudun engelinden (420 + pay 160) dışarı alındı, armudun önüne bir düğüm (TV / Hakkımda oturuşu)
   [-1100, 30], [-1460, 650], [-700, -820], // v8.2: armut (−1380, −560): düğümler engelinin (420 + pay) dışında
+  [-300, 100], [-1250, 150], [-1494, 240], // v8.3: odada kalan sandalyenin (masa_kalk: çekik) güneyinden kitaplığa
+  [-450, 900], [-1150, 900], // v8.3: masanın önü boyunca (sandalye odada kalınca masadan kalkış iki yana)
 ];
 // Geri çekilmiş koltuğun sağından önüne (arkasından oturma yerine); koltuk dairesine (300 + pay) ~3 cm payla
 const koltukDugumleri = (k) => [[k.x + 550, k.y - 330], [k.x + 450, k.y + 270]];
@@ -266,7 +269,10 @@ function serbest(a, b, E, pay) {
 // dugum: [[x, y], ...] (DUGUM ve karakterin koltuk düğümleri)
 export function yolBul(bas, son, E, dugum, pay = AYAR.pay) {
   if (serbest(bas, son, E, pay)) return [son];
-  const N = [bas, ...dugum.map(([x, y]) => ({ x, y })), son], n = N.length;
+  // v8.3: engelin payının içinde kalan düğüm atılır (serbest uç noktada payı küçültür: odada kalan sandalyenin
+  // dairesindeki düğüm yolu sandalyenin içinden geçiriyordu)
+  const icerde = ([x, y]) => E.some((e) => (e.k ? kutuUzak({ x, y }, e.k) < pay : Math.hypot(x - e.d[0], y - e.d[1]) < e.d[2] + pay));
+  const N = [bas, ...dugum.filter((p) => !icerde(p)).map(([x, y]) => ({ x, y })), son], n = N.length;
   const uz = Array(n).fill(Infinity), once = Array(n).fill(-1), bitti = Array(n).fill(false);
   uz[0] = 0;
   for (;;) {
@@ -554,7 +560,14 @@ export function karakterOlustur(g, { reduce = false, zorla = null, sunum: sunumA
     // taşıyordu: yürürken baş sırtın kutusundaydı; sunum-test gövde sütunu). Oturmaya giderken 300 (oturma yeri içinde kalmasın)
     if (koltuk.bagli || !koltuk.obj) return E;
     const uz = Math.hypot(ben.x - koltuk.x, ben.y - koltuk.y); // Biggie dairenin içinde başlamasın (yol bulunamaz)
-    return [...E, { d: [koltuk.x, koltuk.y, ben.oturacak ? 300 : Math.max(300, Math.min(420, uz - AYAR.pay - 20))] }];
+    // v8.3: sandalye artık odada kalıyor: daire yıldız ayağın yarıçapı (~340); 420 armutla arasındaki geçidi kapatıyordu
+    // v8.3: masa_kalk sandalyeyi çekik (−90°) bırakır; sırtı dönme ekseninden ~380 mm taşar: yürürken engel sandalyenin
+    // kendi kutusu (ayağın dışı biraz içeride), Biggie onun payında başlıyorsa (yeni kalktı) daire
+    if (!ben.oturacak && koltuk.obj && uz > 520) {
+      const b = new THREE.Box3().setFromObject(koltuk.obj);
+      return [...E, { k: [b.min.x + 30, b.max.x - 30, b.min.y + 30, b.max.y - 30] }];
+    }
+    return [...E, { d: [koltuk.x, koltuk.y, ben.oturacak ? 300 : Math.max(300, Math.min(340, uz - AYAR.pay - 20))] }];
   }
   async function yuru(hedef, d, { son = 'dur' } = {}) {
     const E = engeller(), yol = yolBul({ x: ben.x, y: ben.y }, hedef, E, dugum);
@@ -767,9 +780,10 @@ export function karakterOlustur(g, { reduce = false, zorla = null, sunum: sunumA
   // durunca karakter koltuğuyla birlikte o ürünü açan yana döner, fare gidince geri döner (tıklama gerekmez). Masadayken
   // (kenarda ya da kayarken değil), yakın plan yokken; dokunmatikte fare yok
   // Giriş donBekle sonra (dönük değilken), dönükken başka ürüne geçiş hemen, çıkış donBirak sonra
-  const donus = { a: 0, v: 0, zone: null, t0: 0, hedef: 0, son: -9, odak: null };
+  const donus = { a: 0, v: 0, zone: null, t0: 0, hedef: 0, son: -9, odak: null, zorla: null };
   function donusHedefi() {
     if (story && story.focusedId !== donus.odak) { donus.odak = story.focusedId; fare.zone = null; } // imleç bayat kalmasın
+    if (donus.zorla !== null && ben.yer === 'koltuk') return (donus.hedef = donus.zorla); // v8.3: oturarak atış
     const z = donAcisi(fare.zone) !== undefined ? fare.zone : null;
     if (z !== donus.zone) { donus.zone = z; donus.t0 = saat; }
     if (reduce || !story || story.focusedId || ben.yer !== 'koltuk' || !koltuk.bagli
@@ -844,23 +858,93 @@ export function karakterOlustur(g, { reduce = false, zorla = null, sunum: sunumA
     await eylemKapat();
     if (ben.yer === 'ust' || ben.yer === 'merdiven') { if (!(await in_(d))) return false; }
     if (ben.yer === 'koltuk') {
+      if (yeniOturus) { await masaKalk(); if (sunum.aktif) ben.yeniKalkti = true; return d(); }
       if (!(await kaydir(oturuYer(), d))) return false;
       kalktiOlayi();
       await kilitli('kalk', { solma: 0.3 });
       koltuk.bagli = false;
       ben.yer = 'zemin';
-      if (sunum.aktif) {
-        // v8.1: kalkınca sandalye 0,5 sn'de geri ve yana itilir (çekilmiş sandalyenin yüksek sırtı ayağa kalkan Biggie'nin
-        // başının üstüne eğikti: gövde sütunu sandalyenin kutusundaydı), sonra masanın altına toparlanır
-        const [fx, fy] = yon(ben.psi), b0 = { x: koltuk.x, y: koltuk.y };
-        let t = 0;
-        // itiş yönü: arkaya 250 ve odaya doğru (+x) 300: kitaplığın önündeki duruş yerine düşmesin
-        await kare((dt) => { t = Math.min(1, t + dt / 0.5); const u = yumusak(t); koltuk.x = b0.x - fx * 250 * u + 300 * u; koltuk.y = b0.y - fy * 250 * u; return t >= 1 ? 'tamam' : null; });
-        koltukToparla();
-        ben.yeniKalkti = true;
-      }
+      if (sunum.aktif) ben.yeniKalkti = true;
     }
     return d();
+  }
+  // ---- v8.3 (Blender masa_otur / masa_kalk; kullanıcı: sihirli kayma ve sandalyenin çevresinde dolaşma yok) ----
+  // Kök klip boyunca masa durağında (YER.masa, bakış masaya); gövde klibin içinde yürür. Biggie önce gövdenin klipteki
+  // başlangıç yerine (govde_yol) yürür, kök masa durağına alınır, klip oynar; sandalye her karede koltuk_yol'da
+  // ([kare, [x, y] karakter yereli mm, rz derece, + sola, 0 = önü masaya]), kökün yüksekliği klibin z'sinden. Kalkınca
+  // sandalye klibin bıraktığı yerde odada kalır (çekik, −90°); yeniden oturulunca koltuk_yol'da sandalyenin şimdiki
+  // duruşuna en yakın kareden (sandalyeyi çekme adımı atlanır) devam eder
+  const yeniOturus = var_('masa_otur') && var_('masa_kalk') && Array.isArray(M.klip.masa_otur?.koltuk_yol);
+  function yolAnahtar(yol, f) {
+    let i = 0;
+    while (i < yol.length - 1 && yol[i + 1][0] <= f) i++;
+    const a = yol[i], b = yol[Math.min(i + 1, yol.length - 1)], u = b[0] > a[0] ? kenet((f - a[0]) / (b[0] - a[0]), 0, 1) : 0;
+    return { x: a[1][0] + (b[1][0] - a[1][0]) * u, y: a[1][1] + (b[1][1] - a[1][1]) * u, rz: (a[2] ?? 0) + ((b[2] ?? 0) - (a[2] ?? 0)) * u };
+  }
+  const yerelMasa = (v) => yerelDunya(v, YER.masa.x, YER.masa.y, YER.masa.psi);
+  function koltukYolu(m, f) {
+    const p = yolAnahtar(m.koltuk_yol, f), w = yerelMasa([p.x, p.y]);
+    return { x: w[0], y: w[1], rz: YER.masa.psi + Math.PI + (p.rz * Math.PI) / 180 };
+  }
+  // Klip oynarken sandalye koltuk_yol'da (klip değişince ya da bitince bırakır)
+  function koltukSur(ad) {
+    const a = akt.get(ad), m = M.klip[ad];
+    return kare(() => {
+      if (simdiki !== a) return 'tamam';
+      Object.assign(koltuk, koltukYolu(m, a.act.time * fps + 1));
+      return a.act.time >= a.clip.duration - 1e-3 ? 'tamam' : null;
+    });
+  }
+  // Sandalyenin şimdiki duruşuna en yakın masa_otur karesi (oturmadan önceki bölümde: 'sicrama'ya dek)
+  function oturusKaresi() {
+    const m = M.klip.masa_otur, son = (m.sicrama?.[0] ?? 72) - 4;
+    let en = 1, enD = Infinity;
+    for (const [f] of m.koltuk_yol) {
+      if (f > son) break;
+      const p = koltukYolu(m, f), dd = Math.hypot(p.x - koltuk.x, p.y - koltuk.y) + 300 * Math.abs(fark(p.rz, koltuk.rz));
+      if (dd < enD) { enD = dd; en = f; }
+    }
+    return enD < 120 ? en : null;
+  }
+  async function masaOtur(d) {
+    const m = M.klip.masa_otur;
+    let fs = oturusKaresi();
+    if (fs === null) fs = 1; // sandalye beklenmedik bir yerdeyse: klibin başı (sandalye yola oturur)
+    const g = m.govde_yol ? yolAnahtar(m.govde_yol, fs) : { x: m.baslangic_govde_mm?.[0] ?? -600, y: m.baslangic_govde_mm?.[1] ?? 60 };
+    const w = yerelMasa([g.x, g.y]);
+    if (!(await yuru({ x: w[0], y: w[1], psi: YER.masa.psi }, d, { son: 'dur' }))) return false;
+    // Kök masa durağına (gövde yerinde kalır: klibin bu karesinde gövde kökün yerelinde g'de), anında geçiş
+    Object.assign(ben, { x: YER.masa.x, y: YER.masa.y, psi: YER.masa.psi });
+    ben.masaGecis = true;
+    koltuk.bagli = false;
+    ben.yer = 'koltuk';
+    const p = kilitli('masa_otur', { solma: 0.05, bas: fs > 1 ? kare2sn(fs) : 0 });
+    koltukSur('masa_otur');
+    const ok = await p;
+    ben.masaGecis = false;
+    koltuk.bagli = true;
+    if (!ok || !d()) return false;
+    return true;
+  }
+  async function masaKalk() {
+    const m = M.klip.masa_kalk;
+    if (Math.hypot(ben.x - YER.masa.x, ben.y - YER.masa.y) > 20) await kaydir(YER.masa, () => true); // kenara çekilmişse
+    Object.assign(ben, { x: YER.masa.x, y: YER.masa.y, psi: YER.masa.psi });
+    ben.masaGecis = true;
+    koltuk.bagli = false;
+    const an = m.kalkmaya_basla ? kare2sn(m.kalkmaya_basla) : 0;
+    let t = 0;
+    kare((dt) => ((t += dt) >= an ? (olay('kalkti'), 'tamam') : null));
+    const p = kilitli('masa_kalk', { solma: 0.3 });
+    koltukSur('masa_kalk');
+    await p;
+    // Gövde klibin sonunda kökün yerelinde bitis_govde_mm'de: kök oraya, ayakta duruşa anında
+    const w = yerelMasa(m.bitis_govde_mm ?? [-600, 60]);
+    Object.assign(ben, { x: w[0], y: w[1] });
+    Object.assign(koltuk, koltukYolu(m, 1e4));
+    ben.yer = 'zemin';
+    ben.masaGecis = false;
+    await oynat('dur', { tekrar: true, solma: 0.05 });
   }
   // v6: sunumda masadan kalkınca sandalye çekilmiş yerinde (masanın ~0,7 m önünde) kalıyor, kitaplık ile oda arasındaki
   // geçidi kapatıyordu (yol bulunamadı, Biggie içinden yürüdü). Biggie 0,7 m uzaklaşınca sandalye masanın altına geri
@@ -916,7 +1000,8 @@ export function karakterOlustur(g, { reduce = false, zorla = null, sunum: sunumA
     try { return await koltugaOtur0(d); } finally { ben.oturacak = false; }
   }
   async function koltugaOtur0(d) {
-    if (elma.elde) { if (!(await firsat(d, { bekle: true }))) return false; } // masaya elmayla oturmaz: bitirip çöpe atar
+    if (elma.elde && !elma.masada) { if (!(await firsat(d, { bekle: true }))) return false; } // masaya elmayla oturmaz (v8.3: masada yemeye gidiyorsa oturur)
+    if (yeniOturus && koltuk.obj) return masaOtur(d);
     if (koltuk.obj && koltuk.katlama > 0.5) { // katlı: arkasına gidip masadan düz çeker, sonra sırtını açar
       if (!(await yuru(kavrama(), d))) return false;
       if (var_('sirt_ac')) await kilitli('sirt_ac'); // klip koltuğu kendisi çeker (kayma, tut)
@@ -935,11 +1020,14 @@ export function karakterOlustur(g, { reduce = false, zorla = null, sunum: sunumA
   async function yukariCik(d) {
     bakis = null;
     if (ben.yer === 'koltuk') {
-      if (!(await kaydir(oturuYer(), d))) return;
-      kalktiOlayi();
-      await kilitli('kalk', { solma: 0.3 });
-      koltuk.bagli = false;
-      ben.yer = 'zemin';
+      if (yeniOturus) await masaKalk();
+      else {
+        if (!(await kaydir(oturuYer(), d))) return;
+        kalktiOlayi();
+        await kilitli('kalk', { solma: 0.3 });
+        koltuk.bagli = false;
+        ben.yer = 'zemin';
+      }
       if (!d()) return;
     }
     await cik(d);
@@ -1011,9 +1099,12 @@ export function karakterOlustur(g, { reduce = false, zorla = null, sunum: sunumA
     // paralel, hedefin tarafına bir adım (çekilmiş sandalye arkasında, yol bulma onun dairesinin içinden başlıyordu)
     if (ben.yeniKalkti) {
       ben.yeniKalkti = false;
-      // y: masadan yalnız 60 mm uzaklaşır (150 iken adım, itilmiş sandalyenin köşesini sıyırıyordu: sunum-test bacak −1 mm)
-      const yan = Math.sign(hx - ben.x) || -1, ara = { x: kenet(ben.x + yan * 420, ROOM.x0 + 600, ROOM.x1 - 400), y: ben.y - 60 };
-      if (serbest(ben, ara, engeller(), 0)) { if (!(await yuru(ara, d, { son: null }))) return; }
+      // v8.3: masaya paralel (y aynı): sandalye arkasında (AYAR.koltukBirak), adım onun önünden geçmesin
+      const yan = Math.sign(hx - ben.x) || -1, ara = { x: kenet(ben.x + yan * 480, ROOM.x0 + 600, ROOM.x1 - 400), y: ben.y - 25 };
+      // v8.3: adım yürüyüşün payıyla serbest değilse (sandalye o yanda) yapılmaz: yol bulma adımı sandalyenin
+      // arkasından dolaştırıp onun içinden geri getiriyordu
+      const E = engeller(), ic = E.some((e) => (e.k ? kutuUzak(ara, e.k) < AYAR.pay : Math.hypot(ara.x - e.d[0], ara.y - e.d[1]) < e.d[2] + AYAR.pay));
+      if (!ic && serbest(ben, ara, E, AYAR.pay)) { if (!(await yuru(ara, d, { son: null }))) return; } // adımın ucu engelde değil (serbest uçta payı küçültür)
     }
     if (!(await yuru({ x: hx, y: hy, psi }, d, { son: null }))) return;
     olay('vardi', { id: D.id });
@@ -1022,6 +1113,9 @@ export function karakterOlustur(g, { reduce = false, zorla = null, sunum: sunumA
     // v8.2 (kullanıcı): elmayı alınca odanın uzak köşesine (armut tarafı) yürür, orada duraklayarak yer; bitince oradan
     // çöpe atar (bosta → firsat)
     if (D.id === 'buzdolabi' && elma.elde && !elma.bitti && sunum.aktif) {
+      // v8.3 (kullanıcı): elmayı alınca masaya gider, sandalyesine oturur, orada ısırarak yer; bitince oturduğu yerden
+      // çöpe atar ("Kobe!"), sonra çalışmaya döner
+      if (D.masaya) { olay('eylem-bitti', { id: D.id }); if (await masadaElma(d)) await masaDongusu(d); return; }
       if (!(await yuru(ELMA_KOSE, d, { son: 'dur' }))) return;
     }
     olay('eylem-bitti', { id: D.id });
@@ -1185,7 +1279,7 @@ export function karakterOlustur(g, { reduce = false, zorla = null, sunum: sunumA
   // kemik ölçeği. buzdolabi_ac ve elma_firlat kendi kanallarıyla gösterir; öteki her klipte site her karede ölçeği yazar:
   // elde elma varsa elma_ye katmanının karesine göre (elma_adim) tek kemik 1, yoksa hepsi 0 (alttaki klip ile katman
   // karışırken yarım ölçek görünmesin; meta notu). Uçan koçan sitede (elma_firlat 'birak' karesinde rig koçanı 0'a iner).
-  const ELMA_KLIP = new Set(['buzdolabi_ac', 'elma_firlat']);
+  const ELMA_KLIP = new Set(['buzdolabi_ac', 'elma_firlat', 'elma_firlat_otur']);
   const elmaKemikAd = Array.isArray(M.elma_kemik) ? M.elma_kemik : ['elma_g0', 'elma_g1', 'elma_g2', 'elma_g3', 'elma_kocan'];
   const elmaKemik = elmaKemikAd.map((ad) => model.getObjectByName(ad) ?? null);
   const glbElma = elmaKemik.some(Boolean);
@@ -1216,7 +1310,7 @@ export function karakterOlustur(g, { reduce = false, zorla = null, sunum: sunumA
     // Elmalı klipte kanal klibin; geçişte (alttaki klibin 0'ıyla karışırken) yarım ölçek görünmesin: var ya da yok
     if (simdiki && ELMA_KLIP.has(simdiki.clip.name)) { for (const k of elmaKemik) if (k) k.scale.setScalar(k.scale.x > 0.01 ? 1 : 0); return; }
     let gor = -1;
-    if (yeniElma) { if (elma.elde && !elma.atiliyor) gor = elma.gor ?? 0; }
+    if (yeniElma) { if (elma.elde && (!elma.atiliyor || (elma.oturarak && !elma.birakti))) gor = elma.gor ?? 0; }
     else if (elma.elde && !elma.atiliyor) {
       const f = elmaKatman ? elmaKatman.kare : 1;
       gor = ['g0', 'g1', 'g2', 'g3', 'kocan'].findIndex((a) => { const r = elmaAdim[a]; return r && f >= r[0] && f < r[1]; });
@@ -1318,33 +1412,46 @@ export function karakterOlustur(g, { reduce = false, zorla = null, sunum: sunumA
   // (elma_isir_k; 'isirik' karesinde ısırık, elma_adim ile görünen parça), dört ısırıkta koçan kalır; bitince firsat
   // (bosta) çöpe döner ve fırlatır. Aralar AYAR.isirikAra (ısırık başlangıçları arası)
   function elmaPlani(dt) {
-    if (!elma.elde || elma.atiliyor || reduce) { if (/^elma/.test(ust.ad ?? '')) ustKatman(null); return; }
+    if (!elma.elde || elma.atiliyor || reduce) { if (/^elma_(tut|isir)/.test(ust.ad ?? '')) ustKatman(null); return; }
     if (simdiki && ELMA_KLIP.has(simdiki.clip.name)) return; // buzdolabi_ac kendi kanallarıyla
+    // v8.3: masada oturuyorsa Blender'ın oturuş klipleri (elma_tut_otur ↻, elma_isir_otur_k; bütün gövde, alttaki klip
+    // olarak); ayaktayken üst gövde katmanı (elma_tut / elma_tut_yuru, elma_isir_k)
+    const otur = ben.yer === 'koltuk' && !ben.masaGecis && var_('elma_tut_otur');
+    const tutAd = otur ? 'elma_tut_otur' : 'elma_tut', isirAd = (k) => (otur ? `elma_isir_otur_${k}` : `elma_isir_${k}`);
+    const tut = () => {
+      if (otur) { if (ust.ad) ustKatman(null); if (simdiki?.clip.name !== tutAd) oynat(tutAd, { tekrar: true, solma: 0.35 }); }
+      else if (ust.ad !== tutAd) ustKatman(tutAd);
+    };
     if (elma.isiriyor) {
-      const m = M.klip[elma.isiriyor] ?? {}, f = ust.t * fps + 1;
-      for (const [g, r] of Object.entries(m.elma_adim ?? {})) if (ELMA_IX[g] !== undefined && f >= r[0]) elma.gor = Math.max(elma.gor ?? 0, ELMA_IX[g]);
-      if (!elma.isirdi && f >= (m.isirik ?? 20)) {
+      const ad = elma.isiriyor, m = M.klip[ad] ?? {}, oturKlip = /_otur_/.test(ad);
+      const calan = oturKlip ? simdiki?.clip.name === ad : ust.ad === ad;
+      const t = !calan ? Infinity : oturKlip ? simdiki.act.time : ust.t, f = t * fps + 1;
+      for (const [g, r] of Object.entries(m.elma_adim ?? {})) if (ELMA_IX[g] !== undefined && f >= r[0] && t < Infinity) elma.gor = Math.max(elma.gor ?? 0, ELMA_IX[g]);
+      if (!elma.isirdi && f >= (m.isirik ?? 20) && t < Infinity) {
         elma.isirdi = true;
         elma.isirik++;
         olay('isirik', { n: elma.isirik });
       }
-      if (ust.ad !== elma.isiriyor || ust.t >= klipSure(elma.isiriyor, 3) - 1e-3) {
+      if (!calan || t >= klipSure(ad, 3) - 1e-3) {
+        if (!elma.isirdi) { elma.isirdi = true; elma.isirik++; olay('isirik', { n: elma.isirik }); } // yarıda kesildiyse de sayılır
         elma.isiriyor = null;
         elma.k++;
         elma.bekle = Math.max(1, AYAR.isirikAra - klipSure('elma_isir_1', 3));
         if (elma.isirik >= AYAR.isirik) { elma.bitti = true; olay('elma-bitti'); }
-        ustKatman('elma_tut');
+        tut();
       }
       return;
     }
-    if (ust.ad !== 'elma_tut') ustKatman('elma_tut');
+    tut();
     if (elma.bitti) return;
     elma.bekle -= dt;
     if (elma.bekle > 0) return;
-    const ad = `elma_isir_${Math.min(elma.k, 4)}`;
+    const ad = isirAd(Math.min(elma.k, 4));
+    if (!var_(ad)) { elma.bekle = 1; return; }
     elma.isiriyor = ad;
     elma.isirdi = false;
-    ustKatman(ad, { tekrar: false });
+    if (otur) oynat(ad, { tekrar: false, solma: 0.3 });
+    else ustKatman(ad, { tekrar: false });
   }
   function elmaKaresi(dt) {
     if (elmaKatman) {
@@ -1400,7 +1507,7 @@ export function karakterOlustur(g, { reduce = false, zorla = null, sunum: sunumA
     await p;
     return d();
   }
-  function elmaUcur(c) {
+  function elmaUcur(c, { tepe = null } = {}) {
     let g = elma.elde;
     if (!g) return Promise.resolve();
     if (glbElma) { // rig koçanı birak karesinde 0'a iner: aynı yerde site koçanı uçar
@@ -1413,9 +1520,14 @@ export function karakterOlustur(g, { reduce = false, zorla = null, sunum: sunumA
     sahne.attach(g); // dünya dönüşümü korunur
     // v8.2 (kullanıcı): balistik yay (yerçekimi), uzaktan çöpün ağzına: uçuş süresi uzaklıktan, ilk hız ağızdaki hedefe
     // tam iner diye çözülür (p2 = p0 + v·T + ½·g·T²)
-    const p0 = g.position.clone(), p2 = new THREE.Vector3(c.x, c.y, c.z + 30);
-    const T = Math.max(AYAR.ucus, 0.45 + Math.hypot(p2.x - p0.x, p2.y - p0.y) / 3200), G = -9810;
-    const v0 = p2.clone().sub(p0).divideScalar(T); v0.z -= 0.5 * G * T;
+    // v8.3 (kullanıcı: bombeli, yavaş; tepe tavanın 500 mm altını geçmez): tepe yüksekliği H seçilir (iki ucun üstünden
+    // uzaklığın 0,35'i kadar, en çok ROOM.h − 500), dikey hız ondan, uçuş süresi çıkış + iniş, yatay hız d / T
+    const p0 = g.position.clone(), p2 = new THREE.Vector3(c.x, c.y, c.z + 30), G = -9810;
+    const dYat = Math.hypot(p2.x - p0.x, p2.y - p0.y);
+    const H = Math.min(ROOM.h - 500, tepe ? Math.max(tepe, Math.max(p0.z, p2.z) + 150) : Math.max(p0.z, p2.z) + Math.max(250, dYat * 0.35));
+    const vz = Math.sqrt(2 * -G * Math.max(1, H - p0.z)), T = (vz + Math.sqrt(2 * -G * Math.max(1, H - p2.z))) / -G;
+    const v0 = new THREE.Vector3((p2.x - p0.x) / T, (p2.y - p0.y) / T, vz);
+    elma.yay = { tepe: Math.round(H), T: +T.toFixed(2), d: Math.round(dYat) };
     const dus = c.z - 160; // ağızdan içeri
     let t = 0;
     return kare((dt) => {
@@ -1438,6 +1550,58 @@ export function karakterOlustur(g, { reduce = false, zorla = null, sunum: sunumA
       olay('isabet', { isabet, x: Math.round(g.position.x), y: Math.round(g.position.y) });
       return 'tamam';
     });
+  }
+
+  // v8.3: masada elma: sandalyeye oturur (masaya kayar), oturuş beklemesinde elma katmanı (elma_tut / elma_isir_k) yer;
+  // bitince oturarakAt
+  async function masadaElma(d) {
+    elma.masada = true;
+    try { return await masadaElma0(d); } finally { elma.masada = false; }
+  }
+  async function masadaElma0(d) {
+    if (ben.yer !== 'koltuk') {
+      if (!(await yereIn(d))) return false;
+      if (!(await koltugaOtur(d))) return false;
+    }
+    if (!(await kaydir(YER.masa, d))) return false;
+    olay('oturdu');
+    await oynat(var_('elma_tut_otur') ? 'elma_tut_otur' : var_('bekle') ? 'bekle' : 'yaz', { tekrar: true, solma: 0.4 });
+    olay('masada-elma');
+    if ((await kare(() => (!d() ? 'iptal' : !elma.elde || elma.bitti ? 'tamam' : null))) !== 'tamam') return false;
+    if (elma.elde) return oturarakAt(d);
+    return d();
+  }
+  // Oturduğu yerden çöpe (v8.3): koltukla çöpe doğru döner (en çok 75°), "Kobe!" balonu, elma_firlat'ın üst gövdesi katman
+  // olarak (bacaklar oturuşta); 'birak' karesinde koçan bombeli yayla kovaya (elmaUcur)
+  async function oturarakAt(d) {
+    const c = copNoktasi();
+    // v8.3 Blender elma_firlat_otur: gövde ve baş çöpe döner (klip), 'birak' karesinde koçan klibin tepe_z_mm'sine çıkan
+    // bombeli yayla kovaya
+    if (var_('elma_firlat_otur')) {
+      const m = M.klip.elma_firlat_otur, an = kare2sn(m.birak ?? 28);
+      Object.assign(elma, { atiliyor: true, oturarak: true, birakti: false });
+      olay('kobe', { cop: c });
+      let t = 0;
+      const birak = kare((dt) => ((t += dt) >= an ? 'tamam' : null)).then(() => { elma.birakti = true; return elmaUcur(c, { tepe: m.tepe_z_mm }); });
+      await kilitli('elma_firlat_otur', { solma: 0.3 });
+      await birak;
+      elma.oturarak = false;
+      return d();
+    }
+    donus.zorla = kenet(fark(ben.psi, aciOf(c.x - ben.x, c.y - ben.y)), -1.3, 1.3);
+    if (!(await bekle(1.0, d))) { donus.zorla = null; return false; }
+    Object.assign(elma, { atiliyor: true, oturarak: true, birakti: false });
+    olay('kobe', { cop: c });
+    const m = M.klip[klipAd('elma_firlat')] ?? {}, an = m.birak ? kare2sn(m.birak) : 0.8;
+    let t = 0;
+    const birak = kare((dt) => ((t += dt) >= an ? 'tamam' : null)).then(() => { elma.birakti = true; return elmaUcur(c); });
+    await ustKatman('elma_firlat', { tekrar: false });
+    ustKatman(null);
+    await birak;
+    elma.oturarak = false;
+    await bekle(0.6, d);
+    donus.zorla = null;
+    return d();
   }
 
   // Masa başı: yazar; ara ara emote; tepki; kadrajı kaplıyorsa kenara çekilir. Hareket azaltmada başlamaz (masayaKoy,
@@ -1758,7 +1922,9 @@ export function karakterOlustur(g, { reduce = false, zorla = null, sunum: sunumA
   function xrayHesapla(cam) {
     // v6: elden yakın planda (core/oda-sunum.js xrayKilit) gövde seyrelmez, daire açılmaz: yarı saydam gövde eldeki eşyayı
     // örtüyordu; kamera açısı gövdeyi eşyanın arkasında tutar
-    if (!story || !ben.gorunur || xr.kilit) { XR.xrGuc.value = 0; XR.xrSol.value = 1; xr.sol = 1; xr.guc = 0; return; }
+    // v8.3 (kullanıcı: "göremiyorsak sorun kamerada"): x-ray deliği ve seyrelme kapalı; kadrajlar Biggie'nin işi
+    // ve nesneyi örtmeyeceği açıda (core/oda-yerler.js, core/oda-sunum.js)
+    if (!story || !ben.gorunur || xr.kilit || AYAR.xrayYok) { XR.xrGuc.value = 0; XR.xrSol.value = 1; xr.sol = 1; xr.guc = 0; return; }
     const r = story.renderer;
     r.getDrawingBufferSize(bufBoy);
     const W = bufBoy.x, H = bufBoy.y, simdi = performance.now() / 1000, dt = Math.min(0.1, simdi - xr.t || 0.016);
@@ -1868,7 +2034,7 @@ export function karakterOlustur(g, { reduce = false, zorla = null, sunum: sunumA
           koltuk.minderTaban = b.min.z;
           koltuk.minderBoy = ust.max.z - b.min.z;
         }
-        koltuk.katlama = reduce ? 0 : 1; // ilk gelişte katlı (hareket azaltmada karakter zaten masada oturur)
+        koltuk.katlama = 0; // v8.3 (kullanıcı): başlangıçta masaya itilmiş, sırtı açık (katlı değil)
       }
       // Merdiven (yangın kaçışı, balkonun sağ duvarında) ve ip: üst kattan iner, yukarı toplanır
       const metal = new THREE.MeshStandardMaterial({ color: 0x2a2b2d, metalness: 0.7, roughness: 0.42 });
@@ -1978,7 +2144,7 @@ export function karakterOlustur(g, { reduce = false, zorla = null, sunum: sunumA
     get sunumda() { return sunum.aktif; },
     // Sahnenin sunuma özgü ek bilgisi: engel (yol bulma: [{ k } | { d }], core/oda-portfolyo.js ENGEL), cop() → { x, y, z, r }
     sunumAyar({ engel, cop } = {}) { if (engel) ekEngel = engel.filter((e) => e.k || e.d); if (cop) copFn = cop; },
-    get elma() { return { kalan: elma.kalan, elde: !!elma.elde, isirik: elma.isirik, bitti: elma.bitti, atilan: elma.atilan, isabet: [...elma.isabet] }; },
+    get elma() { return { kalan: elma.kalan, elde: !!elma.elde, isirik: elma.isirik, bitti: elma.bitti, atilan: elma.atilan, isabet: [...elma.isabet], yay: elma.yay ?? null }; },
     get yerTutucu() { return [...sunum.yerTutucu]; },
     // Sağ el kemiği (v5: eşya ele alınır; kemiğin yerel birimi metre): yoksa null
     get elKemigi() { return elKemik; },

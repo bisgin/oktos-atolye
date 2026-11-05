@@ -169,3 +169,50 @@ def rig_v82():
     RIG_V82['sinirlanan_diger'] = say
     rig_['rig_surum'] = 'v8.2'
     print('RIG_V82', RIG_V82)
+
+
+# ---- v8.3 (2026-11-05, kullanıcı: "ayaktayken ayaklar ördek gibi dışa açık") ----
+# Durma ve Yürüme (FK, Mixamo kökenli) ayak uçları ~25–40° dışa dönüktü. Uyluk kalça ekseninde (dikey) içe döndürülür:
+# ayak ucunun ortalama dışa açısı AYAK_DIS dereceye iner (sol +, sağ −; ayak ucu ile bilek arası yatay yön, −y ileri).
+# Bütün eylem klipleri ayak IK hedefini Durma'nın 1. karesinden aldığı için onlar da düzelir. karakter-klipler.py'den
+# SONRA çağrılır (lq, fcmap, yaz). Tekrar çağırmak güvenli: rig['ayak_v83'] bakılır.
+AYAK_DIS = 7.0
+
+
+def ayak_duzelt(adlar=('Hareket - Durma', 'Hareket - Yürüme')):
+    rig_ = bpy.data.objects['bizzikoloşko_rig']
+    if rig_.get('ayak_v83'): print('AYAK_V83 zaten'); return
+    sc = bpy.context.scene; ozet = {}
+    for k in ('IK_kol.L', 'IK_kol.R', 'IK_bacak.L', 'IK_bacak.R'): rig_[k] = 0.0
+    for ad in adlar:
+        act = bpy.data.actions[ad]; son = int(act.frame_range[1])
+        rig_.animation_data.action = act
+        if act.slots: rig_.animation_data.action_slot = act.slots[0]
+        def olc():
+            top = {'L': 0.0, 'R': 0.0}; n = 0
+            for f in range(1, son + 1, 3):
+                sc.frame_set(f); pb = rig_.pose.bones; n += 1
+                for t in 'LR':
+                    d = pb['ayak_ucu.' + t].tail - pb['ayak.' + t].head
+                    top[t] += math.degrees(math.atan2(d.x, -d.y))
+            return {t: v / n for t, v in top.items()}
+        once = olc()
+        for tur in range(2):
+            y = olc(); hedef = {'L': AYAK_DIS, 'R': -AYAK_DIS}
+            d = {t: hedef[t] - y[t] for t in 'LR'}
+            fc = fcmap(act); seri = {}
+            for t in 'LR':
+                bn = 'uyluk.' + t; yol = f'pose.bones["{bn}"].rotation_euler'
+                if (yol, 0) not in fc: continue
+                v = [[], [], []]; prev = None
+                for f in range(1, son + 1):
+                    from mathutils import Euler
+                    e = Euler([fc[(yol, k)].evaluate(f) for k in range(3)], 'XYZ')
+                    e = (lq(bn, Vector((0, 0, 1)), d[t]) @ e.to_quaternion()).to_euler('XYZ', prev or e); prev = e
+                    for k in range(3): v[k].append(e[k])
+                for k in range(3): seri[(yol, k)] = v[k]
+            yaz(act, seri, list(range(1, son + 1))); act.frame_range = (1, son)
+        ozet[ad] = {'once': {t: round(v, 1) for t, v in once.items()}, 'sonra': {t: round(v, 1) for t, v in olc().items()}}
+    rig_['ayak_v83'] = 1
+    RIG_V82['ayak_v83'] = ozet
+    print('AYAK_V83', ozet)

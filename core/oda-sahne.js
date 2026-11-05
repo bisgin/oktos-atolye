@@ -454,13 +454,24 @@ export async function buildScene({ scene, P, lang = 'tr', hafif = false }) {
     // Kopya bir kabın içinde: düğümün kendi konumu (tabanı orijine getiren kayma, limonda 52 mm) korunur
     const koy = (ad, x, y, z, rz = 0, ust = fridge) => { if (pilot.cicek[ad]) place(new THREE.Group().add(pilot.cicek[ad].clone()), [x, y, z, rz], ust); };
     const sepet = place(O.meyveSepeti(), [40, -110, F.floor, 0.3], fridge);
-    for (const [ad, x, y, z, rz] of [['yiyecek_nar', -18, 22, 8, 0.6], ['yiyecek_elma', 36, -22, 8, 1.2], ['yiyecek_elma', -30, -38, 8, 2.6],
+    // v8.3 (kullanıcı): buzdolabında yalnız iki elma (üst rafta, gerçek boy); sepette elma yok
+    for (const [ad, x, y, z, rz] of [['yiyecek_nar', -18, 22, 8, 0.6],
       ['yiyecek_limon', 40, 34, 8, 0.4], ['yiyecek_misket', -52, 8, 8, 2.1], ['yiyecek_kivi', 6, -54, 8, 0.8], ['yiyecek_misket', 8, 6, 52, 0.3]]) koy(ad, x, y, z, rz, sepet);
     koy('yiyecek_sut', 125, 150, F.floor, 0.25);
     koy('yiyecek_fasulye', 0, 180, F.floor);
     koy('yiyecek_domates', -60, 80, F.floor, 1.1);
   }
-  await yerlestir('buzdolabi', place(new THREE.Group(), [-40, 0, F.shelf, -Math.PI / 2], fridge));
+  // v8.3 (kullanıcı): üst raftaki pasta (yuva) kalktı; yerinde iki elma, Ø 80 mm (Poly Haven yiyecek_elma ölçeklenir).
+  // Biggie bir elma alınca biri gizlenir (core/oda-sunum.js 'elma-al' → buzElmalari)
+  if (pilot?.cicek.yiyecek_elma) {
+    for (const [i, y] of [[0, -60], [1, 45]]) {
+      const e = pilot.cicek.yiyecek_elma.clone(), b = new THREE.Box3().setFromObject(e), sz = b.getSize(new THREE.Vector3());
+      e.scale.multiplyScalar(80 / Math.max(sz.x, sz.y, 1));
+      e.position.z -= new THREE.Box3().setFromObject(e).min.z; // tabanı grubun z 0'ında (rafın üstü)
+      const g = place(new THREE.Group().add(e), [-20 + i * 30, y, F.shelf + 2, i * 1.7], fridge);
+      g.name = `buz_elma_${i}`;
+    }
+  }
   let door; // menteşe arka köşede
   if (pilot) door = pilot.esya.buzdolabi.getObjectByName('buzdolabi_kapak');
   else {
@@ -500,6 +511,12 @@ export async function buildScene({ scene, P, lang = 'tr', hafif = false }) {
         scene.add(g);
         g.updateMatrixWorld(true);
         for (const o of [fare, tek].filter(Boolean)) g.attach(o);
+        // v8.3 (kullanıcı): lila fare, sol ve sağ tuş ayrı (ortada yarık, avuçla tuşlar arasında ek yeri), kablosuz. Eski
+        // ağlar gizli; yenisi aynı boyda (grubun yereli, 1,8 kat öncesi mm)
+        const bb = new THREE.Box3().setFromObject(fare), en = (bb.max.x - bb.min.x) / 2, boy = (bb.max.y - bb.min.y) / 2, yuk = bb.max.z - bb.min.z;
+        fare.visible = false; if (tek) tek.visible = false;
+        const kablo = ma.getObjectByName('fare_kablosu'); if (kablo) kablo.visible = false;
+        g.add(lilaFare(en, boy, yuk));
         g.scale.setScalar(1.8);
         g.userData.ev = g.position.clone();
       }
@@ -873,4 +890,27 @@ export async function buildScene({ scene, P, lang = 'tr', hafif = false }) {
       if (yerOf(id) === 'cekmece') openDrawer(0, 0.5);
     },
   };
+}
+
+// v8.3: lila fare (kablosuz): avuç kabuğu (arka yarı), sol ve sağ tuş (ön çeyrekler, aralarında ~1,5 mm yarık), koyu iç
+// kabuk yarıklardan görünür, tekerlek yarığın içinde, koyu taban. en/boy: yarı genişlik ve yarı uzunluk, yuk: boy (mm);
+// önü +y, taban z 0
+function lilaFare(en, boy, yuk) {
+  const g = new THREE.Group();
+  g.name = 'fare_lila';
+  const taban = 4, h = yuk - taban - 1, d = Math.PI / 180;
+  const kabuk = (p0, p1) => new THREE.SphereGeometry(1, 40, 16, p0, p1 - p0, 0, Math.PI / 2).rotateX(Math.PI / 2).scale(en, boy, h).translate(0, 0, taban);
+  const lila = new THREE.MeshStandardMaterial({ color: 0xb59ad6, roughness: 0.42 }), tus = new THREE.MeshStandardMaterial({ color: 0xc4ade2, roughness: 0.38 });
+  const koyu = new THREE.MeshStandardMaterial({ color: 0x2a2530, roughness: 0.7 });
+  const parca = [new THREE.Mesh(kabuk(1.2 * d, 178.8 * d), lila), new THREE.Mesh(kabuk(181.2 * d, 269.2 * d), tus), new THREE.Mesh(kabuk(270.8 * d, 358.8 * d), tus)];
+  const ic = new THREE.Mesh(new THREE.SphereGeometry(1, 24, 10, 0, Math.PI * 2, 0, Math.PI / 2).rotateX(Math.PI / 2).scale(en * 0.985, boy * 0.985, h * 0.985).translate(0, 0, taban), koyu);
+  const alt = new THREE.Mesh(new THREE.CylinderGeometry(1, 1, taban, 40).rotateX(Math.PI / 2).scale(en * 0.97, boy * 0.97, 1).translate(0, 0, taban / 2), koyu);
+  // Tekerlek: yarığın içinde, önden ~%35'te, üst yüzeyin 1,5 mm üstüne çıkar
+  const ty = boy * 0.35, tz = taban + h * Math.sqrt(Math.max(0, 1 - (ty / boy) ** 2));
+  const teker = new THREE.Mesh(new THREE.CylinderGeometry(4.5, 4.5, 3, 20), koyu);
+  teker.rotation.z = Math.PI / 2;
+  teker.position.set(0, ty, tz - 3);
+  g.add(...parca, ic, alt, teker);
+  g.traverse((o) => { if (o.isMesh) { o.castShadow = true; o.receiveShadow = true; } });
+  return g;
 }

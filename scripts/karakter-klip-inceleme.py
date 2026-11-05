@@ -43,6 +43,7 @@ def meta(ad): return json.loads(akt(ad)['site_meta'])
 
 
 def tak(ad):
+    KOK_Z['ad'] = ad
     a = akt(ad); rig.animation_data.action = a
     if a.slots: rig.animation_data.action_slot = a.slots[0]
 
@@ -50,10 +51,30 @@ def tak(ad):
 def kare(f):
     # Aynı kareye yeniden gelince (aksiyon değişmiş olsa da) Blender pozu yeniden hesaplamıyor: önce başka kareye geç
     if sc.frame_current == int(f): sc.frame_set(int(f) + 1)
+    kok_z(f)
     sc.frame_set(int(f)); bpy.context.view_layer.update()
 
 
 def kemik_w(kemik): return rig.matrix_world @ rig.pose.bones[kemik].matrix
+
+
+# v8.3: sitenin kök yüksekliği (meta 'z': masa başı, sıçrayış): rig bir boş nesneye bağlanır, her karede o yükselir
+KOK_BOS = bpy.data.objects.new('İnc Kök', None); bpy.context.scene.collection.objects.link(KOK_BOS)
+rig.parent = KOK_BOS
+KOK_Z = {'ad': None}
+
+
+def kok_z(f):
+    ad = KOK_Z['ad']
+    z = 0.0
+    if ad:
+        m = json.loads(bpy.data.actions['Hareket - ' + ad].get('site_meta') or '{}')
+        if ad == 'Klavye Tuşlama' or (m.get('masa') and 'z' not in m): z = 335
+        if isinstance(m.get('z'), (int, float)): z = m['z']
+        elif isinstance(m.get('z'), list) and m['z']:
+            k = m['z']
+            z = k[0][1] if f <= k[0][0] else k[-1][1] if f >= k[-1][0] else next(v0 + (v1 - v0) * (f - f0) / (f1 - f0) for (f0, v0), (f1, v1) in zip(k, k[1:]) if f0 <= f <= f1)
+    KOK_BOS.location = (0, 0, z / MM)
 
 
 def anahtar(k, f):
@@ -323,14 +344,33 @@ def kur(ad):
             kare(1); q = bu['el_yerel_q']
             L = Matrix.Translation(Vector(bu['el_yerel']) / MM) @ Quaternion((q[3], q[0], q[1], q[2])).to_matrix().to_4x4()
             B['Büst'] = (b, bagla(b, 'el.R', 1, son + 1, son, W0=kemik_w('el.R') @ L), 0.0)
-    elif ad in ('fare', 'Klavye Tuşlama'):   # v8.2: Blender sahnesinin masası (üst 420), klavye, fare (1,8 kat)
-        kutu(K, 'Masa', -0.45, 0.45, -0.62, -0.2, 0.26, 0.28, (0.55, 0.42, 0.3))
-        kutu(K, 'Klavye', -0.2, 0.16, -0.405, -0.285, 0.28, 0.2967, (0.2, 0.2, 0.22))
+    elif ad in ('masa_otur', 'masa_kalk'):   # v8.3: sitenin masası (üst 740) ve oyuncu sandalyesi (oturak 548, kolçak 715), koltuk_yol
+        z0 = 0
+        kutu(K, 'Masa', -710 / MM, 610 / MM, -967.5 / MM, -287.5 / MM, 712 / MM, 740 / MM, (0.55, 0.42, 0.3))
+        kok = bpy.data.objects.new('Sandalye', None); K.objects.link(kok)
+        for nm, x0, x1, y0, y1, a0, a1 in (('Oturak', -235, 235, -268, 233, 470, 548), ('Sırt', -190, 190, 170, 270, 548, 1150),
+                                          ('Kolçak R', -355, -265, -148, 112, 690, 715), ('Kolçak L', 265, 355, -148, 112, 690, 715), ('Ayak', -30, 30, -30, 30, 60, 470)):
+            kutu(K, 'Sandalye ' + nm, x0 / MM, x1 / MM, y0 / MM, y1 / MM, a0 / MM, a1 / MM, (0.18, 0.18, 0.2), kok)
+        kok.rotation_mode = 'XYZ'
+        for f, p, r in m['koltuk_yol']:
+            kok.location = (p[0] / MM, p[1] / MM, 0); kok.rotation_euler = (0, 0, math.radians(r))
+            kok.keyframe_insert('location', frame=f); kok.keyframe_insert('rotation_euler', frame=f)
+    elif ad in ('fare', 'Klavye Tuşlama') or ad.startswith('elma_') and ad.endswith(('_otur', 'otur_1', 'otur_2', 'otur_3', 'otur_4')):   # Blender masası (üst 420; kök sitede +335)
+        zk = 335 / MM   # kök sitede masa yüksekliğinde (rig İnc Kök ile yükselir; vekiller dünyada)
+        kutu(K, 'Masa', -0.45, 0.45, -0.62, -0.2, 0.26 + zk, 0.28 + zk, (0.55, 0.42, 0.3))
+        kutu(K, 'Klavye', -0.2, 0.16, -0.405, -0.285, 0.28 + zk, 0.2967 + zk, (0.2, 0.2, 0.22))
         if ad == 'fare':
             fm = m['fare']; ex, ey, ez = (v / MM / 2 for v in fm['olcu_mm'])
-            fo = kutu(K, 'Fare', -ex, ex, -ey, ey, 0, 2 * ez, (0.85, 0.85, 0.88))
+            fo = kutu(K, 'Fare', -ex, ex, -ey, ey, 0, 2 * ez, (0.85, 0.85, 0.88)); fo.rotation_euler = (0, 0, math.radians(fm.get('yaw_derece', 0)))
             for f, p in fm['yol']:
-                fo.location = Vector(p) / MM; fo.keyframe_insert('location', frame=f)
+                fo.location = Vector(p) / MM + Vector((0, 0, zk)); fo.keyframe_insert('location', frame=f)
+        if ad == 'elma_firlat_otur':
+            c = Vector(m['hedef_yerel_mm']) / MM; r = 0.087
+            kutu(K, 'Çöp', c.x - r, c.x + r, c.y - r, c.y + r, 0, c.z, (0.35, 0.37, 0.4))
+            kc = bpy.data.objects['Elma koçan'].copy(); kc.parent = None; kc.matrix_parent_inverse = Matrix.Identity(4); K.objects.link(kc)
+            kare(m['birak']); p0 = (kemik_w('el.R') @ Matrix.Translation(Vector(m['kocan']['el_yerel']) / MM)).translation
+            B['Koçan'] = (kc, bagla(kc, 'el.R', 1, m['birak'], son, yerel=Vector(m['kocan']['el_yerel']) / MM, ucus=(p0, Vector(m['onerilen_hiz_mm_s']) / MM)), 0.012)
+            gor(kc, [(1, False), (m['birak'] + 1, True)])
     KUR[ad] = (K, B, son)
 
 
@@ -480,6 +520,10 @@ def kameralar(ad):
     if ad.startswith('kitap_al'): kam_yer(YAN, (-3.2, -0.25, 0.75), (0, -0.25, 0.6), 1.9); kam_yer(ON, (-1.5, -2.4, 1.4), (0, -0.2, 0.6), 1.9)
     if ad.startswith('bust_'): kam_yer(ON, (1.0, 1.5, 1.35), (-0.06, -0.2, 0.62), 1.3); kam_yer(YAN, (-2.6, -0.2, 0.75), (0, -0.2, 0.6), 1.5)
     if ad in ('fare', 'Klavye Tuşlama'): kam_yer(ON, (0.5, -1.6, 1.3), (-0.12, -0.33, 0.33), 0.75); kam_yer(YAN, (-1.9, -0.3, 0.55), (0, -0.3, 0.4), 0.9)
+    if ad in ('fare', 'Klavye Tuşlama') or (ad.startswith('elma_') and 'otur' in ad):   # kök +335 (masa başı)
+        z = 335 / MM; kam_yer(ON, (0.5, -1.6, 1.3 + z), (-0.12, -0.33, 0.33 + z), 0.75 if ad == 'fare' else 1.0); kam_yer(YAN, (-1.9, -0.3, 0.55 + z), (0, -0.3, 0.4 + z), 0.9 if ad == 'fare' else 1.2)
+    if ad == 'elma_firlat_otur': kam_yer(ON, (1.2, 2.2, 1.9), (-0.9, -0.3, 0.6), 3.2)
+    if ad in ('masa_otur', 'masa_kalk'): kam_yer(ON, (-2.2, -2.0, 1.6), (-0.15, -0.1, 0.4), 1.9); kam_yer(YAN, (0.3, 2.4, 2.2), (-0.15, -0.15, 0.3), 1.9)
     if ad.startswith('elma_isir') or ad.startswith('elma_tut'): kam_yer(ON, (-0.9, -1.8, 1.2), (0, -0.1, 0.62), 1.0); kam_yer(YAN, (-2.4, -0.1, 0.7), (0, -0.1, 0.6), 1.1)
 
 

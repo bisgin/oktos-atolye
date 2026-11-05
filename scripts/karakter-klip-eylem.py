@@ -87,7 +87,7 @@ ELMA_TUT = ((0.4, -1, 0.2), (0, -0.2, 1))                                    # s
 # Tutuş: dirsek yanda ve hafif geride, önkol öne, el göğüs yüksekliğinin altında ve omuz hizasında (dirsek ~95°)
 ELMA_ALT = (-0.17, -0.18, 0.5)
 DIRSEK_TUT = {'R': (-0.42, 0.12, 0.36), 'L': (0.42, 0.12, 0.36)}
-ELMA_KIVRIM = (0.3, 0.4)                                                     # elmayı tutan parmak ve başparmak kıvrımı
+ELMA_KIVRIM = [0.3, 0.4]                                                     # elmayı tutan parmak ve başparmak kıvrımı (v8.3: elma_kavra ölçer)
 
 
 def avuc(taraf, nokta=None):
@@ -98,7 +98,9 @@ def avuc(taraf, nokta=None):
 
 # Elmanın merkezi sağ elde (dinlenme çerçevesi, bileğe göre): parmak köklerinin önünde, avuç tarafında. Karakterin eli
 # iri (avuç ~130 mm), elma 76 mm: avuca gömülmesin, parmak uçlarında görünsün
-ELMA_EL = (-0.07, -0.035, -0.004)
+# v8.3 (kullanıcı: "elma fındık gibi, avuç doğru kavrasın"): Ø 80 mm, merkezi avucun içinde (parmak köklerinin hizası,
+# avuç yüzeyinden bir yarıçap): parmaklar ve başparmak sarar (elma_kavra kıvrımı ölçer: büyüklüğü avuca girmez)
+ELMA_EL = (-0.056, -0.041, 0.002)   # avuca oturur (v8.3 ilk ölçü: 14 mm boşluk vardı)
 
 
 def oyanahtar(k, f):
@@ -242,6 +244,8 @@ def klip_kur(ad, son, S):
     """
     taban0 = taban_degerleri()
     tb1 = taban_kare(S, 1)
+    TK = S.get('taban_karisim')    # (aksiyon, kare, [[k, 0..1]])
+    TKB = taban_degerleri(TK[0], TK[1]) if TK else None
     taban = {**taban0, **tb1} if tb1 else taban0
     kareler = list(range(1, son + 1))
     # v4: bindirme gecikmesi + kalçanın karşı dönüşü (gövde dönerken kalça biraz ters yöne, 2 kare önden)
@@ -271,6 +275,9 @@ def klip_kur(ad, son, S):
     can = S.get('canli', 1.0)
     for f in kareler:
         if tb1 is not None: taban = {**taban0, **taban_kare(S, f)}
+        if TK is not None:   # v8.3: Durma'dan başka bir aksiyonun karesine karışım (ayakta → oturuş)
+            w_ = max(0.0, min(1.0, anahtar(TK[2], f)))
+            taban = {k: v + (TKB.get(k, v) - v) * w_ for k, v in taban0.items()} if w_ > 0 else taban0
         EK = {}
         w = anahtar(BAK['agirlik'], f) if BAK else 0.0
         zarf = can * min(1.0, (f - 1) / 15, (son - f) / 15) if son > 31 else 0.0
@@ -381,7 +388,7 @@ def klip_kur(ad, son, S):
             loc, rot, _ = (ar.inverted() @ Ma).decompose()
             for i in range(3): ekle((f'pose.bones["ayak_IK.{t}"].location', i), loc[i])
             for i in range(4): ekle((f'pose.bones["ayak_IK.{t}"].rotation_quaternion', i), rot[i])
-            ekle((f'["IK_bacak.{t}"]', 0), 1.0)
+            ekle((f'["IK_bacak.{t}"]', 0), max(0.0, min(1.0, anahtar(S.get('bacak_ik', 1.0), f))))
         # v4: kemik ölçeği (yanak şişmesi): {kemik: [[k, s]]}, x ve z ölçeklenir (yana ve öne)
         for bn, k in S.get('olcek', {}).items():
             s = anahtar(k, f)
@@ -825,7 +832,7 @@ def kutu_al():
 # yukarı bakınca sap yukarı. Altında beş kemik: elma_g0 (bütün), g1–g3 (1–3 ısırık), elma_kocan; her birine bir ağ
 # bağlı. Klip 'elma' anahtarıyla hangisinin ölçeği 1 (görünür) olduğunu yazar; anahtarı olmayan klipte
 # karakter-blender.py hepsini 0'a sabitler. Isırık yeri sarımtırak iç malzeme ('Elma İç').
-ELMA_R = 38 / MM                     # Ø 76 mm
+ELMA_R = 40 / MM                     # Ø 80 mm (v8.3; önce 76)
 ELMA_HEDEF = [1.0, 0.72, 0.47, 0.24]  # g0–g3 hacim oranı (her ısırık ≥ çeyrek)
 ISIRIK_ACI = [0, 125, 245]           # ısırıkların elma ekseni etrafındaki açısı (derece; ψ = atan2(x, z))
 
@@ -1609,6 +1616,7 @@ def zemin_raf_coz(ad, son, S, temas, on_mm=None, tur=3, zemin_haric=()):
     OLCUM_V7.setdefault('kalca_ek_mm', {})[ad] = {g: round(v * MM, 1) for g, v in sorted(ek.items()) if v * MM >= 0.5}
     return act
 
+KUTU_DIK = 0.45   # v8.3: uzanırken kalçanın seiza (0) ile dik diz (1) arasındaki yeri
 KUTU7 = {}   # v7: kutu_al_diz'in kurduğu yerler (kutu_cevir, kutu_rafa_birak kullanır)
 KUTU_DIZ = {'ust': 420, 'olcu': (300, 300, 80), 'ic_alt': 38, 'derin': 390, 'pay': 15}
 
@@ -1667,6 +1675,9 @@ def kutu_al_diz():
     # dik diz, ayak üstleri yerde: kalça dizlerin üstünde
     D2 = poz_kopya(Sz); D2['omX'] = 4
     _kalca_diz_mesh(D2, 0.017)
+    # v8.3 (kullanıcı: "diz üstü rahat otursun; göbeğin altında bacaklar sıska ve gergin"): dik dizin kalçası seizaya doğru
+    # indirilir (topuklara yakın): uyluklar katlanır, dolgun ve gevşek görünür
+    D2['kalca'] = Sz['kalca'].lerp(D2['kalca'], KUTU_DIK)
     POZ['DIK_DUZ'] = D2
     # dizin ağının önü (seiza ve dik dizde en öndeki): raf, kutu yere konunca dizlerle arasında pay kalacak uzaklıkta
     on_y = []
@@ -2241,7 +2252,7 @@ def akis7(akis):
     return S
 
 
-def poz7_kopya(p, kalca=None, acik=None, karin=None, ayak=None, **don):
+def poz7_kopya(p, kalca=None, acik=None, karin=None, ayak=None, ayk=None, **don):
     q = {'kalca': (p['kalca'] if kalca is None else kalca).copy(), 'ayak': {t: p['ayak'][t].copy() for t in 'LR'},
          'diz': {t: p['diz'][t].copy() for t in 'LR'}, 'acik': p['acik'], 'karin': p['karin'],
          'don': {b: dict(d) for b, d in p['don'].items()}}
@@ -2252,6 +2263,8 @@ def poz7_kopya(p, kalca=None, acik=None, karin=None, ayak=None, **don):
             q['diz'][t] = Vector((sx[t] * BACAK['diz_x'] * acik, -BACAK['diz_y'] * acik, 0))
         q['acik'] = acik
     if karin is not None: q['karin'] = karin
+    if ayk is not None:   # v8.3: ayakların ileri uzanışı (YAT['ay']'ın kesri; 0 Durma'daki yer, 1 uzanmış bacak)
+        for t in 'LR': q['ayak'][t].y = YAT.get('ay', 0.0) * U * ayk
     if ayak is not None:
         for t in 'LR': q['ayak'][t] = q['ayak'][t] + Vector(ayak)
     for k, v in don.items():
@@ -2292,13 +2305,35 @@ def yat_olc_statik(P, t=1.0):
 
 # Yaslanmış oturuşun pozu: v8.2 armudu (alçak, yatık, yayılan sırt) için yat_bul ile ölçülerek seçilir (ölçüt YAT_OLCUT).
 # Başlangıç v7'nin değerleri; kurulumda yat_bul() en iyiyi YAT'a yazar.
-YAT = {'eksen': 515.0, 'hy': 260.0, 'dz': -151.0, 'kX': -39.0, 'oX': -8.0, 'gX': -15.5, 'bX': 30.0, 'hX': 16.0}
-YAT_OLCUT = {'kalca_alt_mm': -28, 'kazak_mm': -16, 'ense_mm': -4, 'bas_mm': 8, 'govde_yatis': 56}
+YAT = {'eksen': 515.0, 'hy': 260.0, 'dz': -151.0, 'kX': -39.0, 'oX': 4.0, 'gX': 2.0, 'bX': 30.0, 'hX': 16.0, 'ay': -60.0}
+# v8.3 (kullanıcı: "gömülürken beli geriye absürt bükülüyor; pelvis oturağa çöker, bacaklar düz uzanır"): yaslanmayı pelvis
+# (kalça X) yapar, bel ve göğüs geriye bükülmez (YAT_SINIR), bacaklar dizden ~25° kırık düz uzanır (ay: yat_bacak ölçer)
+YAT_SINIR = {'oX': (-1.0, 14.0), 'gX': (-3.0, 12.0), 'bX': (0.0, 40.0), 'kX': (-62.0, -15.0), 'hX': (-10.0, 30.0)}
+DIZ_ACI = 155.0
+YAT_OLCUT = {'kalca_alt_mm': -32, 'kazak_mm': -16, 'ense_mm': -4, 'bas_mm': 8, 'govde_yatis': 50}
 A7_PAY = {'pantolon': -45.0, 'kazak': -35.0}   # ezilme eğrisi: bu gömülmeyi aşmayacak en küçük t (oturma/kalkma anı)
 
 
 def yat_P(**ek):
     return yat_poz(**{k: v for k, v in YAT.items() if k != 'eksen'}, **ek)
+
+
+def diz_acisi(act, f):
+    kare_ayarla(act, f); pb = rig.pose.bones
+    return min(math.degrees((pb['uyluk.' + t].head - pb['baldır.' + t].head).angle(pb['ayak.' + t].head - pb['baldır.' + t].head)) for t in 'LR')
+
+
+def yat_bacak():
+    """YAT['ay']: dizler DIZ_ACI'ya açılana dek ayaklar ileri (ikiye bölme)"""
+    lo, hi = -400.0, 60.0
+    for _ in range(9):
+        YAT['ay'] = (lo + hi) / 2
+        S = akis7([(1, yat_P()), (3, yat_P())]); S['canli'] = 0; S['nefes'] = 0
+        a = klip_kur('_yat_bacak', 3, S); d = diz_acisi(a, 2); bpy.data.actions.remove(a)
+        if d < DIZ_ACI: hi = YAT['ay']
+        else: lo = YAT['ay']
+    YAT['ay'] = round((lo + hi) / 2, 1)
+    print('YATBACAK ay', YAT['ay'], 'diz', round(d, 1))
 
 
 def yat_maliyet(o):
@@ -2324,6 +2359,7 @@ def yat_bul(tur=2):
             for yon in (1, -1):
                 while True:
                     eski = YAT[k]; YAT[k] = eski + yon * adim[k]
+                    if k in YAT_SINIR and not (YAT_SINIR[k][0] <= YAT[k] <= YAT_SINIR[k][1]): YAT[k] = eski; break
                     c, o2 = olc()
                     if c < en - 0.05: en, o = c, o2
                     else: YAT[k] = eski; break
@@ -2429,11 +2465,14 @@ def armut_yat():
             (14, poz7_kopya(A0, kalca=Vector((0, 0.01, -0.02)), omurga_Z=10, kafa_Z=28, omurga_X=4)),
             (22, poz7_kopya(A0, kalca=Vector((0, 0.03, -0.055)), omurga_X=14, omurga_Z=4, kafa_Z=8, kafa_X=4)),
             (28, poz7_kopya(A0, kalca=Vector((0, 0.07, -0.085)), omurga_X=20, kalca_X=4, acik=0.1)),
-            (34, poz7_kopya(P, kalca=Vector((0, K.y * 0.85, K.z * 0.88)), kalca_X=-12, omurga_X=4, gogus_X=-2, boyun_X=6, kafa_X=4, acik=0.35, karin=0.2)),
-            (39, poz7_kopya(P, kalca=K + Vector((0, 0.002, -0.009)), kalca_X=-20, omurga_X=-4, gogus_X=-6, boyun_X=10, kafa_X=8, acik=0.75, karin=0.6, ayak=(0, 0, 0.012))),
-            (45, poz7_kopya(P, kalca=K + Vector((0, 0, 0.004)), kalca_X=-18, omurga_X=-2, gogus_X=-5, boyun_X=10, kafa_X=6, acik=1.04, karin=0.85)),
-            (54, poz7_kopya(P, kalca=K, kalca_X=-22, omurga_X=-4, gogus_X=-6, boyun_X=12, kafa_X=6, acik=1.0, karin=1.0)),
-            (70, poz7_kopya(P, kalca=K + Vector((0, 0, -0.003)), kalca_X=YAT['kX'] - 2, omurga_X=YAT['oX'] - 1)),
+            # v8.3: pelvis oturağa çöker (kalça X ile yaslanır, bel bükülmez); ayaklar yerden kesilip öne uzanır, enerjisi
+            # bitmiş gibi topukları yere düşer (43), küçük sekme (46), bacaklar düz kalır
+            (34, poz7_kopya(P, kalca=Vector((0, K.y * 0.85, K.z * 0.88)), kalca_X=-14, omurga_X=6, gogus_X=2, boyun_X=6, kafa_X=4, acik=0.35, karin=0.2, ayk=0.25, ayak=(0, 0, 0.03))),
+            (39, poz7_kopya(P, kalca=K + Vector((0, 0.002, -0.009)), kalca_X=YAT['kX'] + 10, omurga_X=4, gogus_X=2, boyun_X=10, kafa_X=8, acik=0.8, karin=0.6, ayk=0.85, ayak=(0, 0, 0.034))),
+            (43, poz7_kopya(P, kalca=K + Vector((0, 0, -0.004)), kalca_X=YAT['kX'] + 4, omurga_X=YAT['oX'], gogus_X=YAT['gX'], boyun_X=10, kafa_X=6, acik=1.04, karin=0.85, ayk=1.04)),
+            (46, poz7_kopya(P, kalca=K + Vector((0, 0, 0.002)), kalca_X=YAT['kX'] + 3, acik=1.02, karin=0.95, ayk=1.0, ayak=(0, 0, 0.006))),
+            (50, poz7_kopya(P, kalca=K, kalca_X=YAT['kX'] + 2, acik=1.0, karin=1.0, ayk=1.0)),
+            (70, poz7_kopya(P, kalca=K + Vector((0, 0, -0.003)), kalca_X=YAT['kX'] - 2)),
             (78, P), (96, poz7_kopya(P, gogus_X=YAT['gX'] - 3, boyun_X=YAT['bX'] - 6)), (106, poz7_kopya(P, kafa_X=YAT['hX'] - 6)),
             (118, P), (son, P)]
     S = akis7(akis)
@@ -2502,8 +2541,8 @@ def armut_kalk():
     akis = [(1, P), (10, poz7_kopya(P, kafa_X=YAT['hX'] - 8, boyun_X=YAT['bX'] - 4)), (22, poz7_kopya(P, kafa_X=YAT['hX'] - 6)),
             (34, poz7_kopya(P, kalca_X=-30, omurga_X=-2, gogus_X=-8, boyun_X=18, kafa_X=10)),
             (44, poz7_kopya(P, kalca=K + Vector((0, -0.01, 0.004)), kalca_X=-14, omurga_X=8, gogus_X=2, boyun_X=8, kafa_X=4, acik=0.85, karin=0.9)),
-            (50, poz7_kopya(P, kalca=K + Vector((0, -0.025, 0.008)), kalca_X=-6, omurga_X=16, gogus_X=6, boyun_X=2, kafa_X=0, acik=0.45, karin=0.6, ayak=(0, 0, 0.012))),
-            (55, poz7_kopya(P, kalca=K + Vector((0, -0.04, 0.012)), kalca_X=-2, omurga_X=22, gogus_X=8, boyun_X=0, kafa_X=-4, acik=0.15, karin=0.35)),
+            (50, poz7_kopya(P, kalca=K + Vector((0, -0.025, 0.008)), kalca_X=-6, omurga_X=16, gogus_X=6, boyun_X=2, kafa_X=0, acik=0.45, karin=0.6, ayk=0.45, ayak=(0, 0, 0.022))),
+            (55, poz7_kopya(P, kalca=K + Vector((0, -0.04, 0.012)), kalca_X=-2, omurga_X=22, gogus_X=8, boyun_X=0, kafa_X=-4, acik=0.15, karin=0.35, ayk=0.0)),
             (60, poz7_kopya(A0, kalca=Vector((0, K.y * 0.55, K.z * 0.75)), kalca_X=6, omurga_X=34, gogus_X=10, kafa_X=-10, karin=0.15)),
             (68, poz7_kopya(A0, kalca=Vector((0, K.y * 0.25, K.z * 0.42)), kalca_X=4, omurga_X=28, gogus_X=6, kafa_X=-8)),
             (78, poz7_kopya(A0, kalca=Vector((0, 0.03, -0.035)), omurga_X=12, gogus_X=2, kafa_X=-2)),
@@ -2552,7 +2591,7 @@ def armut_gomulu_meta():
 def armut7_kur():
     """üç armut klibi + meta + ölçüm"""
     ARMUT7['eksen'] = YAT['eksen']
-    yat_bul()   # v8.2: armudun yeni ezilmesine göre yaslanma pozu (YAT) ölçülerek
+    yat_bacak(); yat_bul(); yat_bacak()   # v8.2/v8.3: bacak uzanışı ve yaslanma pozu (YAT) ölçülerek
     gm = armut_gomulu_meta()
     yat, Sy, ey = armut_yat()
     uyk, Su, eu = armut_uyukla()
@@ -2820,11 +2859,37 @@ def diz7_olc():
     return o
 
 
+def elma_kavra():
+    """v8.3: elmayı tutan parmak ve başparmak kıvrımı: elmaya (küre, ELMA_R) girmeyen en büyük (≥ 1 mm), ölçülerek"""
+    N_ = ('sağ parmak 1', 'sağ parmak 2', 'sağ parmak 3', 'sağ parmak 4'); B_ = ('sağ başparmak',)
+    def olc(p, b):
+        S = {'canli': 0, 'nefes': 0, 'el': {'R': {'ik': [[1, 1], [3, 1]], 'nokta': ELMA_EL, 'yer': [(1, ELMA_ALT), (3, ELMA_ALT)], 'yon': [(1, ELMA_TUT), (3, ELMA_TUT)],
+             'dirsek': [(1, DIRSEK_TUT['R']), (3, DIRSEK_TUT['R'])]}}, 'parmak': {'R': [[1, p], [3, p]]}, 'basparmak': {'R': [[1, b], [3, b]]}}
+        a = klip_kur('_kavra', 3, S); kare_ayarla(a, 2); c = el_noktasi('R', ELMA_EL); N = ag_noktalari(N_ + B_ + ('sağ avuç',))
+        d = lambda ad: min(((v - c).length - ELMA_R) * MM for n in ad for v in N[n])
+        o = (d(N_), d(B_), d(('sağ avuç',))); bpy.data.actions.remove(a); return o
+    lo, hi = 0.0, 1.0
+    for _ in range(7):
+        m = (lo + hi) / 2
+        if olc(m, 0.1)[0] >= 1.0: lo = m
+        else: hi = m
+    ELMA_KIVRIM[0] = round(lo, 3); lo, hi = 0.0, 1.0
+    for _ in range(6):
+        m = (lo + hi) / 2
+        if olc(ELMA_KIVRIM[0], m)[1] >= 1.0: lo = m
+        else: hi = m
+    ELMA_KIVRIM[1] = round(lo, 3)
+    o = olc(*ELMA_KIVRIM)
+    OLCUM_V7['elma_kavra'] = {'kivrim': list(ELMA_KIVRIM), 'parmak_mm': round(o[0], 1), 'basparmak_mm': round(o[1], 1), 'avuc_mm': round(o[2], 1), 'cap_mm': round(2 * ELMA_R * MM)}
+    print('ELMA_KAVRA', OLCUM_V7['elma_kavra'])
+
+
 def eylemleri_kur():
     global ELMA_META, ELMA_KUR
     ELMA_KUR = elma_kur()
     agiz_beyaz_kur()
     ELMA_META = _elma_meta()
+    elma_kavra()
     diz_ayarla()
     seiza_ayarla()
     # v7: tv_armut yerine armut_yat / armut_uyukla / armut_kalk (armut7_kur); diz zincirine diz_bekle, kutu_cevir_sag/_sol, kutu_rafa_birak

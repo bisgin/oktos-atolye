@@ -35,7 +35,9 @@ export const PORT = {
   ekran: { y: -250, z: 900, olcek: 55 / 75 },               // ekranın alt kenarı z (55": 1225 × 706)
   oyunRafi: { y: -250, en: 1125, derin: 390, boy: 420 },   // ekranın altında, sağ duvarda
   kilim: { x: 1180, y: -400, en: 1900, boy: 1000 },        // uzun kenar y boyunca (en), kısa x
-  cop: { x: 1890, y: 455, r: 130, boy: 420 },
+  // v8.3 (kullanıcı): çöp buzdolabıyla raf arasından (Biggie kutu rafında onun önünde bekliyordu) sağ pencerenin önüne,
+  // arka duvara; masadaki sandalyeden (Biggie oturuşta ~(−960, 810)) ~2,6 m: oturduğu yerden bombeli atışla
+  cop: { x: 1500, y: 1610, r: 130, boy: 420 },
   // Armut koltuk (2026-11-03 v5, kullanıcı isteği: TV durağında Biggie armuta oturup TV'yi açar): kitaplığın solunda
   // (kitaplığa karşıdan bakınca sol = −y; kitaplık y −30'dan başlar, armut Ø ~900 ona değmesin), önü TV'ye (+x).
   // Çatıdaki model (core/cati-esya.js armut) olduğu gibi; oturak yüksekliği ~330 mm (önü çökük profil)

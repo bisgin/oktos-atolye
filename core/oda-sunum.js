@@ -193,6 +193,31 @@ export function odaSunumu(root, { t, giris = 'dans', reduce = false, lang = 'tr'
     else if (ad === 'kalkti') { masada = false; monitorGuncelle(); }
     else if (ad === 'eylem-bitti' && v?.id === sonIstek) sonBitti = true;
     else if (ad === 'tutuyor') { kutuTutuyor(); bustTutuyor(); }
+    else if (ad === 'elma-al') buzElmalari(v?.kalan ?? 0);
+  }
+
+  // v8.3: buzdolabının üst rafındaki elmalar kalan sayısınca görünür
+  function buzElmalari(kalan) { for (let i = 0; i < 2; i++) { const o = story?.scene?.getObjectByName(`buz_elma_${i}`); if (o) o.visible = i < kalan; } }
+  // v8.3 (kullanıcı): buzdolabı durak değil, tıklanabilir: genel plana dönülür (oradan izlenir), Biggie elmayı alıp masada
+  // yer; elinde elma varken ya da elma kalmadıysa yine gider (buzdolabi_bos)
+  function buzdolabinaGit() {
+    if (!aktif || !karakter) return false;
+    if (karakter.elma?.elde) return false;
+    if (story.focusedId || bust.aktif || KS.aktif) geri();
+    sonIstek = 'buzdolabi';
+    biggieGitsin(durakBul('buzdolabi'));
+    logla('buzdolabi-tik', { kalan: karakter.elma?.kalan });
+    return true;
+  }
+  const buzRay = new THREE.Raycaster();
+  function buzdolabiVurur(x, y) {
+    const o = story?.api?.nesne?.('buzdolabi') ?? story?.scene?.getObjectByName('buzdolabi_kapak');
+    if (!o) return false;
+    const el = story.renderer.domElement, rc = el.getBoundingClientRect();
+    buzRay.setFromCamera(new THREE.Vector2(((x - rc.left) / rc.width) * 2 - 1, -((y - rc.top) / rc.height) * 2 + 1), story.camera);
+    // Yalnız buzdolabının kendisine (ve kapağına) ışın; önündeki eşya örtse de tıklama buzdolabı sayılır
+    const kp = story.scene.getObjectByName('buzdolabi_kapak');
+    return buzRay.intersectObject(o, true).length > 0 || (!!kp && buzRay.intersectObject(kp, true).length > 0);
   }
 
   // ---- v5 (2026-11-03): eşyayı ele alma, rafın kutuları, kitaplığın eserleri, TV'de armut ----
@@ -577,8 +602,11 @@ export function odaSunumu(root, { t, giris = 'dans', reduce = false, lang = 'tr'
       if (bustMu) {
         // v8.1: kamera tam önünden, insan gözünün en alçak yüksekliğinden (1400; Biggie kısa, yukarıdan bakınca büyük başı
         // yüzünü saklıyordu), 1,6 m geriden; büst ve yüz birlikte. Odanın içinde (kök kitaplığın önünde, yüzü odaya)
-        const psi = karakter.durum?.psi ?? 0, cc = kutu.getCenter(V());
-        k = { pos: [cc.x + Math.sin(psi) * 1600, cc.y - Math.cos(psi) * 1600, 1400] };
+        // v8.3 (kullanıcı: büst ve yüz birlikte): büstün yüzü Biggie'nin önünden soluna 50° (Blender bust.yaw_derece);
+        // kamera ikisinin arasında (önünden 26° sola), 1,5 m: Biggie'nin yüzü ve büstün yüzü birlikte
+        const yaw = ((karakter.meta?.('bust_tut')?.bust?.yaw_derece ?? 50) * Math.PI) / 180;
+        const psi = (karakter.durum?.psi ?? 0) + yaw * 0.52, cc = kutu.getCenter(V());
+        k = { pos: [cc.x + Math.sin(psi) * 1500, cc.y - Math.cos(psi) * 1500, 1350] };
       }
       if (!k) for (const t of [[gor.x, gor.y, 0.5], [0, 1, 0.5], [0, -1, 0.5], [1, 0, 0.5]]) if ((k = kadrajAra([kutu], { haric: hr, doluluk: 0.55, tercih: t, enAz: 280, govdeKadraj: true, yukseklik: yk }))) break;
       // Bulunamazsa gövde yalnız kadrajın kenarında (eşyanın bulunduğu orta bölge temiz), en son yalnız ışın engeli
@@ -648,14 +676,19 @@ export function odaSunumu(root, { t, giris = 'dans', reduce = false, lang = 'tr'
     };
     sonIstek = null;
     biggieGitsin(D);
+    kameraUc(KITAP_ALIS, 1.2);
   }
+  // v8.3 (kullanıcı: x-ray deliği yok, "göremiyorsak sorun kamerada"): alış ve koyuş kitaplığın önündeki yandan; Biggie
+  // (kök y ≈ 205) bakış çizgisinin ~400 mm sağında, büst (x −1805) ve rafı ile birlikte görünür
+  const KITAP_ALIS = { pos: [-1150, -950, 1550], target: [-1650, 320, 1000] };
   // v8.2 (kullanıcı): büst elindeyken Biggie odanın armut tarafına yürür ve orada bekler (masaya, sandalyeye girmeden:
   // yol bulma; sunum-test gövde sütunu denetimi)
-  const BUST_BEKLE = { x: -760, y: -160, psi: 0.55 }; // armudun sağ önü, yüzü kameraya (genel plan) dönük
+  // armudun sağ önü, yüzü kameraya (genel plan) dönük. v8.3: sandalye odada kalınca (−700, 360) yatık sırtından uzak
+  const BUST_BEKLE = { x: -600, y: -380, psi: 0.55 };
   // Klibin yolu büstü rafın önünden ancak ~30 mm çıkarıp öyle indiriyor (Blender'ın rafı bizim gözün tahtalarından sığ):
   // Biggie alırken 'al' karesinde 115 mm geri adım kayar, bırakırken o kadar geriden gelip büst gözünün yüksekliğine
   // çıkınca (bırak klibinin 47. karesi) öne kayar. Büst rafın önünü geçmeden tahtanın hizasında inip kalkmaz
-  const BUST_GERI = 115, BIRAK_KAY = 46 / 30;
+  const BUST_GERI = 160, BIRAK_KAY = 46 / 30; // v8.3: 160 (v8.3 soketinde büst 50° dönük, göğüs hizasında rafın önüne taşıyordu)
   function bustTutuyor() {
     const B = bust.aktif;
     if (!B || B.yok || (B.durum !== 'tutuldu' && B.durum !== 'aliyor') || !karakter?.komut) return;
@@ -676,12 +709,14 @@ export function odaSunumu(root, { t, giris = 'dans', reduce = false, lang = 'tr'
     if (!B) return;
     bustOlay(null);
     if (B.yok) { bust.aktif = null; return; }
+    if (['elde', 'yuruyor'].includes(B.durum) && karakter?.tutuyor) yakinDonus = KITAP_ALIS;
     elYakin(false);
     if (!['elde', 'yuruyor'].includes(B.durum) || !karakter?.tutuyor) { // daha almadan: durağa yeniden gönder, iptal yerine koyar
       biggieGitsin(durakBul('kitaplik'));
       return;
     }
     B.durum = 'donuyor';
+    yakinDonus = KITAP_ALIS; // yakın plandan kitaplığın yanındaki koyuş kadrajına
     logla('bust-geri', { eser: B.eser.id });
     karakter.komut([{ yuru: { x: B.yer[0] + BUST_GERI, y: B.yer[1], psi: -Math.PI / 2 }, son: 'dur' }]).then((ok) => {
       if (!ok || bust.aktif !== B) return;
@@ -690,7 +725,10 @@ export function odaSunumu(root, { t, giris = 'dans', reduce = false, lang = 'tr'
       karakter.komut([{ klip: B.birak, sure: 3, anlar: [
         [{ kesir: BIRAK_KAY / 2.7 }, () => karakter.kay?.(-BUST_GERI, 0, reduce ? 0.01 : 0.25)],
         [{ meta: 'koy', kesir: 0.7 }, () => logla('bust-birak', { eser: B.eser.id })],
-      ] }], { son: true }).then((ok2) => { if (bust.aktif === B) bustRafa(B, ok2 ? 0.15 : 0.3); });
+      ] }], { son: true }).then((ok2) => {
+        if (bust.aktif === B) bustRafa(B, ok2 ? 0.15 : 0.3);
+        if (story.focusedId === 'kitaplik' && !bust.aktif) kameraUc(story.shotOf('kitaplik'), 1);
+      });
     });
   }
   // Büst rafındaki yerine (klibin yolu orada biter; kesildiyse ya da kök birkaç mm kaydıysa kısa kayma). Rafın dışındaysa
@@ -732,17 +770,27 @@ export function odaSunumu(root, { t, giris = 'dans', reduce = false, lang = 'tr'
     const sk = karakter.meta('bust_tut')?.bust ?? {}, el = karakter.kemik('elR') ?? karakter.elKemigi;
     karakter.elNoktasi(bv2); // dünya matrisleri bu kareye
     let p = null, q = null;
+    // v8.3: soketin dönüşü büstün yönünü de içerir (bust.yaw_derece 50: yüzü kameraya yarı dönük); büstün kabı Blender'ın
+    // modeliyle aynı düzende (ön yüz yerel −y, z büstün ekseni). Rafta yüzü Biggie'ye; alırken dönüşü klibin eli verir
+    const ey = sk.el_yerel ?? [0, 0, 0], eq = sk.el_yerel_q ?? [0, 0, 0, 1];
+    const qs = el ? bq.set(eq[0], eq[1], eq[2], eq[3]).premultiply(el.getWorldQuaternion(bq2)) : null;
     if (kip === 'soket' && el) {
-      const ey = sk.el_yerel ?? [0, 0, 0], eq = sk.el_yerel_q ?? [0, 0, 0, 1];
-      bq.set(eq[0], eq[1], eq[2], eq[3]).premultiply(el.getWorldQuaternion(bq2));
-      if (!B.qRel) B.qRel = bq.clone().invert().multiply(B.obj.quaternion); // sokete göre o anki açı korunur
-      q = bq.multiply(B.qRel);
+      q = qs;
       p = el.localToWorld(bv3.set(ey[0] / 1000, ey[1] / 1000, ey[2] / 1000));
     } else if (kip === 'yol') {
       const n = yolNokta(m?.bust?.yol, f);
       if (n) { const w = karakter.yerelDunya(n); p = bv3.set(w[0], w[1], n[2]); }
-      q = B.q0w;
-      B.qRel = null;
+      if (!qs) q = B.q0w;
+      else if (kz.ad === B.klip) {
+        // Raftaki açıdan (±10°) sokete: büst gözün içindeyken (45. kareye dek) dik (yalnız soketin yatay açısı; eğilip
+        // tahtaya değmesin), sonra soketin tam dönüşüne
+        const on = V().set(0, -1, 0).applyQuaternion(qs).setZ(0), dik = new THREE.Quaternion().setFromAxisAngle(V().set(0, 0, 1), Math.atan2(-on.x, on.y) + Math.PI);
+        q = B.q0w.clone().slerp(dik, THREE.MathUtils.clamp((f - (m?.al ?? 26)) / 6, 0, 1)).slerp(qs, THREE.MathUtils.clamp((f - 45) / 8, 0, 1));
+      }
+      else { // bırakırken: tek el karesinden 'koy'a dek elin açısından raftaki açısına (koyarken dik ve rafa dönük)
+        const t0 = m?.tek_el ?? 31, t1 = Math.min(m?.koy ?? 57, 45); // gözün içine girmeden (47. kare) dik
+        q = qs.clone().slerp(B.q0w, THREE.MathUtils.clamp((f - t0) / Math.max(1, t1 - t0), 0, 1));
+      }
     }
     if (!p) return;
     // taban merkezi → kabın orijini (büstün ortası: kabın yerel z'sinde yarı boy yukarı)
@@ -756,7 +804,7 @@ export function odaSunumu(root, { t, giris = 'dans', reduce = false, lang = 'tr'
     B.obj.position.lerpVectors(B.p0, hedef, u);
     B.obj.quaternion.slerpQuaternions(B.q0, q, u);
     B.obj.updateMatrixWorld(true);
-    rafKilavuzu(B);
+    if (kip === 'yol') rafKilavuzu(B); // elde (soket) göğüs hizasında: göze sıkıştırma yalnız al/bırak yolunda
     B.w = kip === 'soket' ? u : 0;
     // Parmaklar büstün ağının dışında (yalnız elde; kolları ve elleri klip yazar)
     if (kip === 'soket') {
@@ -782,8 +830,11 @@ export function odaSunumu(root, { t, giris = 'dans', reduce = false, lang = 'tr'
     const g = story?.scene?.getObjectByName('fare_grubu'), mc = karakter?.meta?.('fare')?.fare?.merkez_mm;
     if (!g?.userData.ev || !mc || g.userData.evKlip) return;
     const w = karakter.yerelDunya([mc[0], mc[1], 0]);
-    g.userData.ev.set(w[0], w[1], g.userData.ev.z);
+    g.userData.ev.set(Math.min(w[0], -620), w[1], g.userData.ev.z); // mat x −560'ta biter: fare onun üstünde kalsın
     g.position.copy(g.userData.ev);
+    // v8.3: fare klipteki gibi Biggie'nin bakışına göre fare.yaw_derece (−14°) dönük (karakterin yereli ile dünya aynı açıyla döner)
+    const yaw = karakter.meta('fare')?.fare?.yaw_derece;
+    if (typeof yaw === 'number') g.rotation.z = (yaw * Math.PI) / 180;
     g.userData.evKlip = true;
   }
   function fareKaresi() {
@@ -1141,6 +1192,18 @@ export function odaSunumu(root, { t, giris = 'dans', reduce = false, lang = 'tr'
       const host = s.renderer?.domElement?.parentElement;
       let asagi = null;
       host?.addEventListener('pointerdown', (e) => { asagi = [e.clientX, e.clientY]; });
+      // v8.3: buzdolabına tıklama yakalama evresinde (Biggie önünde dururken karakterin tıklama tepkisi olayı
+      // durduruyordu); nokta Biggie'nin deri ağının üstündeyse karakterin tepkisi kalır
+      let buzAsagi = null;
+      host?.addEventListener('pointerdown', (e) => { buzAsagi = [e.clientX, e.clientY]; }, true);
+      host?.addEventListener('pointerup', (e) => {
+        if (!buzAsagi || Math.hypot(e.clientX - buzAsagi[0], e.clientY - buzAsagi[1]) > 8) return;
+        buzAsagi = null;
+        if (parcaBul(e.clientX, e.clientY) || !buzdolabiVurur(e.clientX, e.clientY)) return;
+        const o = story.api?.nesne?.('buzdolabi');
+        if (o && karakterOnde(e.clientX, e.clientY, o)) return;
+        buzdolabinaGit();
+      }, true);
       monitor = odaMonitoru(s.scene, { reduce });
       // v8b: dikey ekranda genel plan odanın ortasına bakar; parmakla yana kaydırınca kamera yerinde sağa sola döner
       // (story look.yaw; sınırlar oda-yerler PORTRE_BAKIS: armut ve TV kadraja girer). Kapalı odada her yön odanın içi
@@ -1250,10 +1313,12 @@ export function odaSunumu(root, { t, giris = 'dans', reduce = false, lang = 'tr'
       sonIstek = null;
       if (id === aktifDurak) aktifDurak = null;
       if (id === 'cop') { biggieGitsin(durakBul(id)); return true; }
+      if (id === 'buzdolabi') return buzdolabinaGit(); // v8.3: durak değil (genel plandan)
       return sec(id);
     },
     geri,
     kes,
+    buzdolabiVurur, // test: ekrandaki nokta buzdolabına mı (v8.3)
     // Test ve demo: rafın i. kutusu ya da kitaplığın i. büstü (v8) tıklanmış gibi
     parca(tur, i = 0) {
       const pp = story?.api?.portfolyo?.parcalar?.();

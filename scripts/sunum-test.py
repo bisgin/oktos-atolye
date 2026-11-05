@@ -206,7 +206,7 @@ PIKSEL_JS = """async () => {
     const p = new T.Vector3(...sh.main.pos), d = new T.Vector3(...sh.main.target).sub(p).applyAxisAngle(new T.Vector3(0, 0, 1), yaw);
     out[ad] = olc(sh.main.pos, p.clone().add(d).toArray());
   }
-  for (const id of ['armut', 'kitaplik', 'masa', 'buzdolabi', 'ekran', 'oyunlar']) { const k = s.shotOf(id); out[id] = olc(k.pos, k.target); }
+  for (const id of ['armut', 'kitaplik', 'masa', 'ekran', 'oyunlar']) { const k = s.shotOf(id); out[id] = olc(k.pos, k.target); }
   out.canli = olc(cam0.position.toArray(), cam0.position.clone().add(cam0.getWorldDirection(new T.Vector3()).multiplyScalar(1000)).toArray());
   return JSON.stringify(out);
 }"""
@@ -226,7 +226,7 @@ def kamera_kurali(pg, test, klasor=None):
     olc = """(id) => { const S = window.story, c = S.camera, nesne = S.api.model(id) ?? S.api.nesne(id), kutu = S.api.kutu(id) ?? (nesne ? new (S.api.kutu('oyunlar').constructor)().setFromObject(nesne) : null);
       return JSON.stringify(S.api.kadraj.olcum({ pos: c.position.toArray(), target: S.view().target }, { kutu, nesne, fov: c.fov, aspect: c.aspect })); }"""
     sonuc = {}
-    for id_ in ('kitaplik', 'ekran', 'oyunlar', 'armut', 'masa', 'buzdolabi'):
+    for id_ in ('kitaplik', 'ekran', 'oyunlar', 'armut', 'masa'):
         t = simdi(pg)
         pg.evaluate(f"window.sunum.git({json.dumps(id_)})")
         olay_bekle(pg, 'vardi', t, f"e.id === {json.dumps(id_)}", 40)
@@ -234,7 +234,7 @@ def kamera_kurali(pg, test, klasor=None):
         time.sleep(2.2)
         r = json.loads(pg.evaluate(olc, id_))
         sonuc[id_] = r
-        konu = id_ in ('armut', 'masa', 'buzdolabi')
+        konu = id_ in ('armut', 'masa')
         ok = r.get('goz') and r.get('oda') and r.get('disari') == 0 and (konu or (r.get('ortu') or 0) <= 0.10)
         test.kontrol(G, f"{id_}: z {r.get('z')}, oda dışı {r.get('disari')}, karakter örtmesi {r.get('ortu')}", ok, json.dumps(r))
     test.kamera = sonuc
@@ -294,13 +294,15 @@ DENETIM_JS = """async () => {
   const { OLCU } = await import(new URL('../core/oda-olcu.js', location.href).href);
   const D = OLCU.DESK, P = OLCU.PEDESTAL, S = window.story.scene, V = () => new T.Vector3();
   const sabit = { masa: new T.Box3(V().set(D.x0, D.y0, 0), V().set(D.x1, D.y1, D.top)), dolap: new T.Box3(V().set(P.x - P.w / 2, P.y - P.d / 2, 0), V().set(P.x + P.w / 2, P.y + P.d / 2, P.h)) };
-  const kol = S.getObjectByName('koltuk'), RE = /kafa|boyun|g[oö]ğ[uü]s|omurga|kal[cç]a|omuz|uyluk|bald|diz/i, OTUR = /^(otur|otur2|kalk|kaydir|yaz|sirt_ac|bekle|kafa_salla|cekil|uzan|sevin|inanamama|muzik)$/;
+  const kol = S.getObjectByName('koltuk'), RE = /kafa|boyun|g[oö]ğ[uü]s|omurga|kal[cç]a|omuz|uyluk|bald|diz/i, OTUR = /^(otur|otur2|kalk|kaydir|yaz|sirt_ac|bekle|kafa_salla|cekil|uzan|sevin|inanamama|muzik|fare|masa_otur|masa_kalk|elma_tut_otur|elma_isir_otur_\\d|elma_firlat_otur)$/;
   const RZ = [700, 1080, 1460, 1840, 2325], kitapTahta = RZ.map((z) => new T.Box3(V().set(-2085, -5, z), V().set(-1705, 1045, z + 25)));
   const R = { y: -250, en: 1125, d: 390, h: 420, t: 38, ara: 16, goz: 339 }, x0 = 2085 - R.d, x1 = 2085, y0 = R.y - R.en / 2, y1 = R.y + R.en / 2;
   const kucukTahta = [new T.Box3(V().set(x0, y0, R.h - R.t), V().set(x1, y1, R.h)), new T.Box3(V().set(x0, y0, 0), V().set(x1, y1, R.t)),
     new T.Box3(V().set(x0, y0, 0), V().set(x1, y0 + R.t, R.h)), new T.Box3(V().set(x0, y1 - R.t, 0), V().set(x1, y1, R.h))];
   for (const k of [1, 2]) { const lx = -R.en / 2 + R.t + k * R.goz + (k - 0.5) * R.ara, wy = -lx + R.y; kucukTahta.push(new T.Box3(V().set(x0, wy - R.ara / 2, R.t), V().set(x1, wy + R.ara / 2, R.h - R.t))); }
-  const d0 = window.__denetim = { govde: {}, bust: 0, kutu: 0, n: 0 }, taban = new Map();
+  // v8.3: sandalye ile masanın tablası, dolap ve kitaplık (sandalyenin oturağı masanın altına girebilir: tablanın altı boş)
+  const masaUst = new T.Box3(V().set(D.x0, D.y0, D.top - D.t), V().set(D.x1, D.y1, D.top)), kitapK = new T.Box3(V().set(-2100, -30, 0), V().set(-1705, 1070, 2350));
+  const d0 = window.__denetim = { govde: {}, bust: 0, kutu: 0, sandalye: 0, n: 0 }, taban = new Map();
   clearInterval(window.__denetimT);
   window.__denetimT = setInterval(() => {
     d0.n++;
@@ -308,7 +310,8 @@ DENETIM_JS = """async () => {
     // Oturmaya giderken sandalyeyi tutması (arkasına geçip çekmesi) masa durağının işi: sayılmaz
     if (kar && !OTUR.test(kar.durum.klip ?? '') && !kar.debug?.ben?.oturacak) {
       const kb = { ...sabit, kitaplik: new T.Box3(V().set(-2100, -30, 0), V().set(-1705, 1070, 2350)) };
-      if (kol) kb.sandalye = new T.Box3().setFromObject(kol);
+      // v8.3: sandalye parça parça (oturak, sırt, kolçaklar, ayak): bütününün kutusu yıldız ayağın ~710 mm'lik karesiydi
+      if (kol) { let i = 0; kol.traverse((o) => { if (o.isMesh && o.visible) kb['sandalye' + (i++ ? '_' + o.name : '')] = new T.Box3().setFromObject(o); }); }
       for (const b of kar.govdeKemikleri) {
         if (!RE.test(b.name)) continue;
         const p = b.getWorldPosition(V()), r = /kafa/.test(b.name) ? 150 : /uyluk|bald|diz/.test(b.name) ? 70 : 120;
@@ -317,6 +320,17 @@ DENETIM_JS = """async () => {
           if (d < (d0.govde[ad]?.d ?? Infinity)) d0.govde[ad] = { d, kemik: b.name, klip: kar.durum.klip, x: kar.durum.x, y: kar.durum.y, kutu: [k.min.x, k.min.y, k.max.x, k.max.y].map(Math.round), son: window.sunum.kayit.slice(-3).map((e) => e.ad + (e.id ? ':' + e.id : '')) };
         }
       }
+    }
+    if (kol) {
+      // Parça parça (oturak, sırt, kolçaklar, ayak): bütün sandalyenin kutusu masanın altına giren oturağı da tablaya sayardı
+      kol.traverse((o) => {
+        if (!o.isMesh || !o.visible) return;
+        const kb2 = new T.Box3().setFromObject(o).expandByScalar(-2);
+        for (const [ad, k] of [['masa', masaUst], ['dolap', sabit.dolap], ['kitaplik', kitapK]]) if (kb2.intersectsBox(k)) {
+          const x = kb2.clone().intersect(k), m = Math.round(Math.min(x.max.x - x.min.x, x.max.y - x.min.y, x.max.z - x.min.z));
+          if (m > d0.sandalye) { d0.sandalye = m; d0.sandalyeNe = [ad, o.name, kar?.durum.klip ?? null, kar?.durum.koltuk ?? null]; }
+        }
+      });
     }
     const pp = window.story.api.portfolyo.parcalar();
     const ic = (o, tahtalar) => { const k = new T.Box3().setFromObject(o).expandByScalar(-1); let m = 0; for (const t of tahtalar) if (k.intersectsBox(t)) { const x = k.clone().intersect(t); m = Math.max(m, Math.min(x.max.x - x.min.x, x.max.y - x.min.y, x.max.z - x.min.z)); } return m; };
@@ -358,7 +372,7 @@ def kitaplik_bust(pg, test, klasor=None):
     kart = pg.evaluate("(() => { const k = document.querySelector('.story-card:not([hidden]) .cati-bust'); return k ? [k.querySelector('h3')?.textContent, !!k.querySelector('img')] : null })()")
     kutu_yok = pg.evaluate("document.querySelector('.cati-kutu')?.hidden !== false")
     test.kontrol(G, 'noktaya tıklama: büstü eline aldı, onunla armut tarafına yürüyüp bekliyor; kartta adı ve fotoğrafı; tam ekran resim yok',
-                 xy and e and bu and bu['elde'] and kart and kart[0] and kutu_yok and abs(d['x'] + 760) < 60 and abs(d['y'] + 160) < 60, json.dumps([xy, bu, d, kart], ensure_ascii=False))
+                 xy and e and bu and bu['elde'] and kart and kart[0] and kutu_yok and abs(d['x'] + 600) < 60 and abs(d['y'] + 380) < 60, json.dumps([xy, bu, d, kart], ensure_ascii=False))
     QJS = "(() => { const o = window.story.api.portfolyo.parcalar().eser.find((x) => x.parent?.isScene); return o ? o.getWorldQuaternion(new (o.quaternion.constructor)()).toArray() : null })()"
     q1 = pg.evaluate(QJS)
     time.sleep(1.5)
@@ -409,10 +423,10 @@ def masa_kilidi(pg, test, klasor=None):
 def genel_plan(pg, test, klasor=None):
     G = 'Genel plan (v8)'
     ids = pg.evaluate('window.story.hotspots.map((h) => h.id)')
-    test.kontrol(G, 'tam altı işaretçi: armut, kitaplık, masa, buzdolabı, ekran, kutu oyunları', sorted(ids) == sorted(['armut', 'kitaplik', 'masa', 'buzdolabi', 'ekran', 'oyunlar']) and pg.evaluate("document.querySelectorAll('.story-pins .pin').length") == 6, json.dumps(ids))
+    test.kontrol(G, 'tam beş işaretçi (v8.3: buzdolabı durak değil): armut, kitaplık, masa, ekran, kutu oyunları', sorted(ids) == sorted(['armut', 'kitaplik', 'masa', 'ekran', 'oyunlar']) and pg.evaluate("document.querySelectorAll('.story-pins .pin').length") == 5, json.dumps(ids))
     gor = pg.evaluate("""(() => { const r = document.querySelector('.story-canvas').getBoundingClientRect();
       return [...document.querySelectorAll('.story-pins .pin')].filter((p) => { const b = p.getBoundingClientRect(); return getComputedStyle(p).display !== 'none' && b.left >= r.left && b.right <= r.right && b.top >= r.top && b.bottom <= r.bottom; }).length; })()""")
-    test.kontrol(G, 'altı işaretçi de genel planda ekranın içinde', gor == 6, f'{gor} / 6')
+    test.kontrol(G, 'beş işaretçi de genel planda ekranın içinde', gor == 5, f'{gor} / 5')
     yok = pg.evaluate("""[!document.querySelector('.oda-tur-giris'), !document.querySelector('.oda-next'), !document.querySelector('.oda-calisma'),
       (() => { const s = document.querySelector('.story-strip'); const r = s.getBoundingClientRect(); return r.width <= 1 && r.height <= 1; })()]""")
     test.kontrol(G, 'şerit ("Atölyeden çıkanlar" sekmeleri), "Ürünleri gez", "sıradaki" ve "Çalışmaya dön" yok', all(yok), json.dumps(yok))
@@ -442,7 +456,7 @@ def piksel_telefon(b, adres, test):
             cdp.send('Input.dispatchTouchEvent', {'type': tip, 'touchPoints': [] if tip == 'touchEnd' else [{'x': x, 'y': 500}]})
             time.sleep(0.05)
         son = pg.evaluate('window.story.debug.look.yaw')
-        test.kontrol(G, 'telefon 390×844: genel plan odanın içinden, yana kaydırınca altı işaretçinin hepsi görünür', len(gorulen) == 6 and son > bas + 0.2, json.dumps([sorted(gorulen), bas, son]))
+        test.kontrol(G, 'telefon 390×844: genel plan odanın içinden, yana kaydırınca beş işaretçinin hepsi görünür', len(gorulen) == 5 and son > bas + 0.2, json.dumps([sorted(gorulen), bas, son]))
         pg.evaluate('window.story.debug.look.yaw = 0')
         piksel_denetimi(pg, test, G, 'telefon 390×844')
     else:
@@ -493,37 +507,36 @@ def islev(b, adres, test, klasor=None):
     tv = pg.evaluate(f"window.sunum.kayit.some((e) => e.ad === 'vardi' && e.id === 'ekran' && e.t > {t})")
     test.kontrol(G, 'yolda yeni hedef: ekran yerine kutu oyunları', v and not tv and yolda.get('klip') == 'yuru', json.dumps(yolda))
 
-    G = 'Elma'
+    G = 'Elma (v8.3)'
     pg.keyboard.press('Escape')
     time.sleep(2.0)
-    # Gerçek tıklama: buzdolabının işaretçisine (Biggie rafın yanında buzdolabının önünde durabilir: ona tıklamak karakterin
-    # tepkisidir, durak değil)
-    xy = pg.evaluate("(() => { const i = window.story.hotspots.findIndex((h) => h.id === 'buzdolabi'), p = document.querySelectorAll('.story-pins .pin')[i]; if (!p) return null; const r = p.getBoundingClientRect(); return [r.left + r.width / 2, r.top + r.height / 2]; })()")
+    # v8.3: buzdolabı durak değil (işaretçisi yok); genel planda buzdolabının kendisine gerçek tıklama: kamera genel planda
+    # kalır, Biggie elmayı alır, masaya gidip oturur, orada yer, oturduğu yerden bombeli yayla çöpe atar
+    xy = pg.evaluate("(() => { const o = window.story.api.nesne('buzdolabi'); if (!o) return null; const B = window.story.api.kutu('oyunlar').constructor, b = new B().setFromObject(o), c = b.getCenter(new (o.position.constructor)()); c.x = b.min.x; c.y = b.max.y - 80; c.z = b.min.z + 0.75 * (b.max.z - b.min.z); c.project(window.story.camera); const r = window.story.renderer.domElement.getBoundingClientRect(); return [r.left + (c.x + 1) / 2 * r.width, r.top + (1 - c.y) / 2 * r.height]; })()")
     t = simdi(pg)
     if xy:
         pg.mouse.click(xy[0], xy[1])
-    d0 = olay_bekle(pg, 'durak', t, "e.id === 'buzdolabi'", 3)
-    test.kontrol(G, 'buzdolabına gerçek tıklama durağı buldu', d0, json.dumps(xy))
+    d0 = olay_bekle(pg, 'buzdolabi-tik', t, 'true', 3)
+    test.kontrol(G, 'buzdolabına gerçek tıklama (işaretçi yok): Biggie gidiyor, kamera genel planda', d0 and pg.evaluate('window.story.focusedId === null') and pg.evaluate("!window.story.hotspots.some((h) => h.id === 'buzdolabi')"), json.dumps(xy))
     if not d0:
         pg.evaluate("window.sunum.git('buzdolabi')")
     v = olay_bekle(pg, 'elma-al', t, 'true', 40)
-    test.kontrol(G, '1. ziyaret: elma alındı, sayaç 1', v and v.get('kalan') == 1, json.dumps(v))
-    t = simdi(pg)
-    pg.evaluate("window.sunum.git('kitaplik')")  # elmayla başka durağa: yolda yer
-    isirik = olay_bekle(pg, 'isirik', t, 'true', 20)
-    yd = json.loads(pg.evaluate('JSON.stringify(window.karakter.durum)'))
-    test.kontrol(G, 'yürürken ısırık (üst gövde katmanı yürüyüşle)', isirik and yd.get('klip') == 'yuru', json.dumps(yd))
-    k = olay_bekle(pg, 'kobe', t, 'true', 40)
+    gor = pg.evaluate("[0, 1].map((i) => window.story.scene.getObjectByName(`buz_elma_${i}`)?.visible)")
+    test.kontrol(G, '1. ziyaret: elma alındı, sayaç 1; rafta bir elma kaldı', v and v.get('kalan') == 1 and gor == [True, False], json.dumps([v, gor]))
+    o = olay_bekle(pg, 'masada-elma', t, 'true', 60)
+    test.kontrol(G, 'elmayla masaya gidip sandalyesine oturdu', o and pg.evaluate("window.karakter.durum.yer === 'koltuk'"))
+    k = olay_bekle(pg, 'kobe', t, 'true', 60)
     n_isirik = pg.evaluate('window.karakter.debug.AYAR.isirik')
-    test.kontrol(G, f'{n_isirik} ısırıkta bitti, "kobe"', k and pg.evaluate(f"window.sunum.kayit.filter((e) => e.ad === 'isirik' && e.t > {t}).length") == n_isirik)
+    test.kontrol(G, f'masada {n_isirik} ısırıkta bitti, oturduğu yerden "kobe"', k and pg.evaluate("window.karakter.durum.yer === 'koltuk'") and pg.evaluate(f"window.sunum.kayit.filter((e) => e.ad === 'isirik' && e.t > {t}).length") == n_isirik)
     i = olay_bekle(pg, 'isabet', t, 'true', 20)
-    test.kontrol(G, '1. elma çöpe isabet', i and i.get('isabet'), json.dumps(i))
+    yay = pg.evaluate('window.karakter.elma.yay')
+    test.kontrol(G, '1. elma çöpe isabet; yay bombeli (tepe ≥ 1600, tavanın 500 mm altını geçmez, uçuş ≥ 0,8 sn)', i and i.get('isabet') and yay and 1600 <= yay['tepe'] <= 2200 and yay['T'] >= 0.8, json.dumps([i, yay]))
     t = simdi(pg)
     pg.evaluate("window.sunum.git('buzdolabi')")
-    v = olay_bekle(pg, 'elma-al', t, 'true', 40)
+    v = olay_bekle(pg, 'elma-al', t, 'true', 60)
     test.kontrol(G, '2. ziyaret: elma alındı, sayaç 0', v and v.get('kalan') == 0, json.dumps(v))
-    i = olay_bekle(pg, 'isabet', t, 'true', 40)
-    test.kontrol(G, '2. elma çöpe isabet (durakta bitirdi)', i and i.get('isabet'), json.dumps(i))
+    i = olay_bekle(pg, 'isabet', t, 'true', 90)
+    test.kontrol(G, '2. elma masada bitti, çöpe isabet', i and i.get('isabet'), json.dumps(i))
     t = simdi(pg)
     pg.evaluate("window.sunum.git('oyunlar')")
     olay_bekle(pg, 'vardi', t, "e.id === 'oyunlar'", 40)
@@ -545,6 +558,7 @@ def islev(b, adres, test, klasor=None):
     G = 'Çakışma (v8.1/v8.2)'
     test.kontrol(G, f"Biggie'nin gövdesi (ayakta, yürürken) masaya, dolaba, sandalyeye, kitaplığa girmedi ({dn['n']} örnek)", all(v['d'] >= 0 for v in dn['govde'].values()), json.dumps(dn['govde'], ensure_ascii=False))
     test.kontrol(G, 'kutu oyunları alınırken, rafın üstüne konurken ve geri konurken küçük rafın tahtalarına girmedi', dn['kutu'] == 0, json.dumps([dn['kutu'], dn.get('kutuNe')]))
+    test.kontrol(G, 'sandalye masanın tablasına, dolaba, kitaplığa girmedi (v8.3; oturağı tablanın altında olabilir)', dn['sandalye'] == 0, json.dumps([dn['sandalye'], dn.get('sandalyeNe')], ensure_ascii=False))
     yt = pg.evaluate('JSON.stringify({ yerTutucu: window.karakter.yerTutucu, gecici: window.sunum.gecici })')
     test.yer_tutucu = json.loads(yt)
     c.close()
@@ -609,8 +623,7 @@ def video_cek(b, adres, hedef):
     pg.evaluate("window.sunum.git('buzdolabi')")
     olay_bekle(pg, 'elma-al', t, 'true', 40)
     time.sleep(1.0)
-    pg.evaluate("window.sunum.git('cop')")
-    olay_bekle(pg, 'isabet', t, 'true', 40)
+    olay_bekle(pg, 'isabet', t, 'true', 120)
     time.sleep(1.5)
     cdp.send('Page.stopScreencast')
     c.close()

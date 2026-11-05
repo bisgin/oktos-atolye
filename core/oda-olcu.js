@@ -23,7 +23,7 @@ export const OLCU = {
   "SOCKET": { "x": -560, "z": 300 },
   "RUG": { "x": -200, "y": -150, "w": 1700, "d": 2300 },
   "CHAIR": { "x": -930, "y": 1040, "rz": 0, "sirtDik": 0.14 },
-  "ROBOT": { "x": 1830, "y": 1460, "rz": 2.4, "r": 170 },
+  "ROBOT": { "x": 1880, "y": -1250, "rz": 1.5708, "r": 170 },
   "SKIRTING": { "h": 80, "t": 14 },
   "SUN": { "azimuth": 25, "elevation": 42, "color": [1.0, 0.93, 0.84], "strength": 4.5 }
 };

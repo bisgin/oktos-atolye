@@ -244,4 +244,5 @@ export const ODA_STORY = {
 };
 // Odanın durakları (v8: altı işaretçi; sıra işaretçilerin ve klavye şeridinin sırası). Kartta ürün seçici yok, içerik
 // core/cati-panel.js'ten (oda kipi: Hakkımda, raflardan işler, büst, süreç adımları)
-export const PORTFOLYO_DURAK = ['armut', 'kitaplik', 'masa', 'buzdolabi', 'ekran', 'oyunlar'];
+// v8.3 (kullanıcı): buzdolabı durak değil (işaretçisi yok); tıklanınca Biggie elma alıp masada yer, genel plandan izlenir
+export const PORTFOLYO_DURAK = ['armut', 'kitaplik', 'masa', 'ekran', 'oyunlar'];

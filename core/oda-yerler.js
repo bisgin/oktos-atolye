@@ -123,8 +123,11 @@ export const PORTRE_BAKIS = { min: -0.62, max: 0.62 };
 // sabit: hesaplanmaz, verilen kadraj (masa: kullanıcının tarifi).
 export const FOCUS = {
   // Kitaplık: v7: kadraj yalnız gözlerin bandı (z 650–2000; altı çekmece, üstü tepe)
-  kitaplik: { pos: [600, -1500, 1550], target: [-1890, 520, 1300], w: 1410, kutuZ: [650, 2000] },
-  oyunlar: { pos: [-1669, -1750, 1481], target: [1700, -250, 500], w: 2240 },
+  // v8.3: sabit (hesaplanan kadraj, Biggie durağı değişince kamerayı köşeye, kitaplığın yanına kaçırıyordu)
+  kitaplik: { pos: [600, -1500, 1550], target: [-1890, 520, 1300], w: 1410, kutuZ: [650, 2000], sabit: true },
+  // v8.3 (kullanıcı: ilk tıklamada kutular görünür açıda): rafın önüne ~37° (önceki kadraj rafın yüzünü sıyırıyordu);
+  // Biggie rafın balkon ucunda (kadrajın solu), diz çöküp kutu alırken bakış çizgisinin yanında
+  oyunlar: { pos: [300, -1350, 1450], target: [1800, -150, 330], w: 1500, sabit: true, dikey: { pos: [150, -1450, 1500], target: [1800, -150, 380] } },
   ekran: { pos: [-900, -1900, 1600], target: [2075, -250, 1253], w: 2169 },
   // Armut (Hakkımda): TV tarafından, odanın içinden (v8: oda önde kapalı, köşedeki armuda da göz yüksekliğinden bakılır)
   armut: { pos: [300, -1700, 1550], target: [-1380, -560, 600], w: 1400 },
@@ -160,13 +163,15 @@ export const BIGGIE_DURAK = [
   // (core/oda-sunum.js bustAl)
   // v8.1 (kullanıcı: masanın ve sandalyenin içine giriyordu): kitaplığın ortasının önü, büstlerin (y ≈ 220) yanı; gövdesi
   // masadan (y ≥ 1100) ve sandalyeden uzak (sunum-test gövde sütunu denetimi)
-  { id: 'kitaplik', yer: [-1330, 560], yon: -90, klip: 'dur', sure: 3, kitapKlip: ['kitap_al_alt', 'kitap_al_orta', 'kitap_al_ust'],
+  // v8.3: sandalye odada kalınca (masa_kalk: çekik, sırtı kitaplığa dönük) onun sırtından uzak, büstlerin yanında
+  { id: 'kitaplik', yer: [-950, 160], yon: -90, klip: 'dur', sure: 3, kitapKlip: ['kitap_al_alt', 'kitap_al_orta', 'kitap_al_ust'],
     kadraj: { pos: [600, -1500, 1550], target: [-1702, 520, 1225], w: 1587 } },
   // Kutu oyunları rafı (v7): rafa tıklanınca Biggie rafın buzdolabı tarafında bekler; kutuya tıklanınca diz_cok →
   // kutu_al_diz (kutu rafın üstüne) → diz_bekle döngüsü; oklar kutu_cevir_sag/_sol, "Geri" kutu_rafa_birak → diz_kalk
-  { id: 'oyunlar', yer: [1300, 450], yon: 30, klip: 'bekle', sure: 3, kutuDizi: ['diz_cok', 'kutu_al_diz', 'diz_kalk'],
+  // v8.3 (kullanıcı): rafın balkon tarafındaki ucunun yanında (eski çöpün yeri), kameradan solda; kutuları örtmez
+  { id: 'oyunlar', yer: [1360, 430], yon: 45, klip: 'bekle', sure: 3, kutuDizi: ['diz_cok', 'kutu_al_diz', 'diz_kalk'],
     kutuV7: { bekle: 'diz_bekle', cevir: 'kutu_cevir_sag', cevirSol: 'kutu_cevir_sol', birak: 'kutu_rafa_birak', kalk: 'diz_kalk' },
-    kadraj: { pos: [-1950, -1150, 1600], target: [1623, 0, 725], w: 1808 } },
+    kadraj: { pos: [300, -1350, 1450], target: [1800, -150, 330], w: 1500 } },
   // TV: armuda oturur, 'bas' karesinde TV açılır, eller ensede izler. yer yalnız yedek (kök capa ile)
   { id: 'ekran', yer: [-865, -520], yon: 95, klip: 'armut_yat', sure: 10, oturus: true, izle: true,
     capa: ARMUT_CAPA, otur: [-1380, -560, 220], acAn: { meta: 'bas', kesir: 0.3 },
@@ -177,12 +182,13 @@ export const BIGGIE_DURAK = [
     kadraj: { pos: [300, -1700, 1550], target: [-1380, -560, 600], w: 1400 } },
   // Buzdolabı: meyve varken buzdolabi_ac (elmayı alır), bitince buzdolabi_bos; duruş kapağın süpürme yayının dışında
   // (core/oda-karakter.js buzDurus: meta durus_mm, yoksa menteşe kapak_en + pay uzaklığa uzatılır)
-  { id: 'buzdolabi', yer: [1220, 300], yon: 90, klip: 'buzdolabi_ac', yedek: 'buzdolabi_bos', sure: 5, durus: { meta: 'durus_mm', pay: 190 },
+  // v8.3: masaya: elmayı alınca masaya gidip oturarak yer, oradan çöpe atar (core/oda-karakter.js masadaElma)
+  { id: 'buzdolabi', yer: [1220, 300], yon: 90, klip: 'buzdolabi_ac', yedek: 'buzdolabi_bos', sure: 5, durus: { meta: 'durus_mm', pay: 190 }, masaya: true,
     tercih: [-0.4, -1, 0.4],
     kadraj: { pos: [-1641, -1452, 1568], target: [1580, 820, 725], w: 1439 } },
   // Çöp: elma_firlat bulunduğu yerden de atılır; bu nokta çöpe yürüyüp atmak içindir (işaretçi yok). Çöpün ağzı
   // api.nesne('cop').userData.agiz
-  { id: 'cop', yer: [1250, 250], yon: 108, klip: 'elma_firlat', sure: 2.5,
+  { id: 'cop', yer: [1250, 1250], yon: 145, klip: 'elma_firlat', sure: 2.5,
     kadraj: { pos: [-1917, -1599, 1576], target: [1549, 332, 725], w: 1433 } },
   // Masa (v6): sandalyeye oturur, masaya kayar, yazar; monitörde masa-ekran.mp4 ('oturdu'; core/oda-monitor.js). Kamera
   // FOCUS.masa (sabit; masanın ~1,3 m sağı). v8: başka durağa tıklanınca kalk klibiyle kalkıp gider

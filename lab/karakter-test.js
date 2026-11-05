@@ -135,6 +135,7 @@ function kur({ zorla = 'merdiven', otur = 'otur', reduce = false } = {}) {
 async function inisMasa(zorla) {
   grup = `İniş → masa (${zorla})`;
   const s = kur({ zorla }), { k, D } = s, sa = D.M.klip.sirt_ac;
+  if (D.akt.has('masa_otur')) return inisMasa83(s, zorla);
   k.asagi();
   let basta = null;
   await s.kadar(() => (basta ??= k.durum.klip === 'sirt_ac' ? { uz: uzak(D.ben, D.koltuk) } : null), 90);
@@ -147,6 +148,22 @@ async function inisMasa(zorla) {
   kontrol('klibin bıraktığı yer = türetilen koltuk yeri', uzak(birakti, D.koltukYeri) < 1, `${uzak(birakti, D.koltukYeri).toFixed(2)} mm`);
   kontrol('koltuk masadan düz çekildi', Math.abs(D.koltukYeri.x - OLCU.CHAIR.x) < 1e-6 && OLCU.CHAIR.y - D.koltukYeri.y > 300, D.koltukYeri);
   kontrol('masa başında, koltuk bağlı', uzak(D.ben, D.YER.masa) < 1 && D.koltuk.bagli && D.koltuk.katlama === 0, k.durum);
+  kontrol('açık sırt OLCU.CHAIR.sirtDik', Math.abs(D.koltuk.sirt.rotation.x - OLCU.CHAIR.sirtDik) < 1e-9, D.koltuk.sirt.rotation.x);
+  kontrol('tek bekleyen kare işi (masa döngüsü)', D.bekleyen() === 1, D.bekleyen());
+}
+
+// v8.3 (Blender masa_otur / masa_kalk): Biggie gövdenin klipteki başlangıcına yürür, kök masa durağına geçer, sandalye
+// koltuk_yol'da (başı OLCU.CHAIR, sonu yaz'ın koltuk uzaklığı); sırt açma ve kayma yok
+async function inisMasa83(s, zorla) {
+  const { k, D } = s, mo = D.M.klip.masa_otur;
+  k.asagi();
+  let basta = null;
+  await s.kadar(() => (basta ??= k.durum.klip === 'masa_otur' ? { ben: { x: D.ben.x, y: D.ben.y }, koltuk: { x: D.koltuk.x, y: D.koltuk.y, rz: D.koltuk.rz } } : null), 90);
+  const vardi = await s.kadar(() => k.durum.klip === 'yaz', 60);
+  kontrol('yaz klibine varır', vardi, `${s.t.toFixed(1)} sn (sahte iniş eğrisiyle)`);
+  kontrol('sıra: iniş → dans → masa_otur → yaz (sırt açma, kayma yok)', sirali(s.iz, [zorla, DANS, 'masa_otur', 'yaz']) && !s.iz.some((e) => /sirt_ac|kaydir|^otur2?$/.test(e.klip ?? '')), klipler(s.iz));
+  kontrol('masa_otur kökü masa durağında, sandalye OLCU.CHAIR\'dan başlar (koltuk_yol başı)', basta && uzak(basta.ben, D.YER.masa) < 1 && uzak(basta.koltuk, OLCU.CHAIR) < 2, JSON.stringify(basta));
+  kontrol('masa başında, koltuk bağlı, yaz\'ın koltuk uzaklığında', uzak(D.ben, D.YER.masa) < 1 && D.koltuk.bagli && Math.abs(uzak(D.koltuk, D.ben) - Math.abs(D.M.klip.yaz.koltuk ?? mo.koltuk ?? 0)) < 2, `${uzak(D.koltuk, D.ben).toFixed(1)} mm`);
   kontrol('açık sırt OLCU.CHAIR.sirtDik', Math.abs(D.koltuk.sirt.rotation.x - OLCU.CHAIR.sirtDik) < 1e-9, D.koltuk.sirt.rotation.x);
   kontrol('tek bekleyen kare işi (masa döngüsü)', D.bekleyen() === 1, D.bekleyen());
 }
@@ -209,7 +226,8 @@ async function iptal() {
   k.asagi(); // toplanırken
   let vardi = await s.kadar(() => k.durum.klip === 'yaz', 120);
   const yeni = s.iz.slice(i0);
-  kontrol('toplanırken aşağı: aynı araçla iner, dans eder, oturur', vardi && D.ben.arac === 'merdiven' && sirali(yeni, ['merdiven', DANS, 'sirt_ac', /^otur2?$/, 'yaz']), klipler(yeni));
+  const oturSira = D.akt.has('masa_otur') ? ['masa_otur'] : ['sirt_ac', /^otur2?$/];
+  kontrol('toplanırken aşağı: aynı araçla iner, dans eder, oturur', vardi && D.ben.arac === 'merdiven' && sirali(yeni, ['merdiven', DANS, ...oturSira, 'yaz']), klipler(yeni));
   kontrol('tek bekleyen kare işi', D.bekleyen() === 1, D.bekleyen());
 
   s = kur({ zorla: 'ip' }); ({ k, D } = s);
@@ -232,40 +250,42 @@ async function iptal() {
 async function kalkOtur(otur) {
   grup = `Kalk ↔ otur (${otur})`;
   let s = kur({ otur }), { k, D } = s;
+  // v8.3: Blender masa_otur / masa_kalk varsa oturma ve kalkma onlar (otur / otur2 ve kaydir kullanılmaz)
+  const Y83 = D.akt.has('masa_otur'), KALK = Y83 ? 'masa_kalk' : 'kalk', OTUR = Y83 ? 'masa_otur' : otur;
   kontrol('oturma klibi', D.oturAd === otur, D.oturAd);
   k.masayaKoy();
   await s.sure(0.5);
   k.yukari();
-  await s.kadar(() => k.durum.klip === 'kalk', 15);
+  await s.kadar(() => k.durum.klip === KALK, 15);
   await s.sure(0.3);
   let i0 = s.iz.length, kalkEn = 0;
-  const kalkT = D.akt.get('kalk').clip.duration;
+  const kalkT = D.akt.get(KALK).clip.duration;
   k.asagi(); // kalkarken
   const vardi = await s.kadar(() => {
-    if (k.durum.klip === 'kalk') kalkEn = Math.max(kalkEn, D.akt.get('kalk').act.time);
+    if (k.durum.klip === KALK) kalkEn = Math.max(kalkEn, D.akt.get(KALK).act.time);
     return k.durum.klip === 'yaz';
   }, 60);
   let yeni = s.iz.slice(i0);
-  kontrol('kalkarken aşağı: kalkış biter, yeniden oturur', vardi && kalkEn >= kalkT - 0.05 && sirali(yeni, [otur, 'kaydir', 'yaz'])
+  kontrol('kalkarken aşağı: kalkış biter, yeniden oturur', vardi && kalkEn >= kalkT - 0.05 && sirali(yeni, Y83 ? [OTUR, 'yaz'] : [otur, 'kaydir', 'yaz'])
     && !yeni.some((e) => /merdiven|^ip$|sirt_ac|dans_/.test(e.klip ?? '')), `${klipler(yeni)}; kalk ${kalkEn.toFixed(2)}/${kalkT.toFixed(2)} sn`);
   kontrol('masa başında, koltuk klibin dediği uzaklıkta', uzak(D.ben, D.YER.masa) < 1 && D.koltuk.bagli
     && Math.abs(uzak(D.koltuk, D.ben) - Math.abs(D.M.klip.yaz.koltuk)) < 1, `${uzak(D.koltuk, D.ben).toFixed(1)} mm`);
 
   s = kur({ otur }); ({ k, D } = s);
   k.asagi();
-  await s.kadar(() => k.durum.klip === otur, 90);
+  await s.kadar(() => k.durum.klip === OTUR, 90);
   await s.sure(0.3);
   i0 = s.iz.length;
   let oturEn = 0;
-  const oturT = D.akt.get(otur).clip.duration;
+  const oturT = D.akt.get(OTUR).clip.duration;
   k.yukari(); // otururken
   const ustte = await s.kadar(() => {
-    if (k.durum.klip === otur) oturEn = Math.max(oturEn, D.akt.get(otur).act.time);
+    if (k.durum.klip === OTUR) oturEn = Math.max(oturEn, D.akt.get(OTUR).act.time);
     return k.durum.yer === 'ust' && D.ben.arac === null;
   }, 90);
   yeni = s.iz.slice(i0);
-  kontrol('otururken yukarı: oturuş biter, kalkıp tırmanır', ustte && oturEn >= oturT - 0.05 && sirali(yeni, ['kalk', 'yuru', 'merdiven']),
-    `${klipler(yeni)}; ${otur} ${oturEn.toFixed(2)}/${oturT.toFixed(2)} sn`);
+  kontrol('otururken yukarı: oturuş biter, kalkıp tırmanır', ustte && oturEn >= oturT - 0.05 && sirali(yeni, [KALK, 'yuru', 'merdiven']),
+    `${klipler(yeni)}; ${OTUR} ${oturEn.toFixed(2)}/${oturT.toFixed(2)} sn`);
   kontrol('koltuk bırakıldı', !D.koltuk.bagli, D.koltuk.bagli);
 }
 
@@ -323,6 +343,9 @@ async function sozlesme7() {
   kontrol('armut.gomulu v8.2: oturak 250, sırt 560, sırt 45–52°, yayılma ve çukur', g.oturak_mm === 250 && g.sirt_mm === 560 && g.sirt_egim_derece >= 45 && g.sirt_egim_derece <= 52
     && g.ust_yayilma > 0 && g.cukur_mm > 0 && g.z_harita?.length === 3 && g.z_harita[1][0] > 400 && g.z_harita[2][0] > g.z_harita[1][0], g);
   const yeni82 = ['bust_al_alt', 'bust_al_orta', 'bust_birak_alt', 'bust_birak_orta', 'bust_tut', 'bust_tut_yuru', 'fare', 'elma_isir_1', 'elma_isir_2', 'elma_isir_3', 'elma_isir_4', 'elma_tut', 'elma_tut_yuru'];
+  const yeni83 = ['masa_otur', 'masa_kalk', 'elma_tut_otur', 'elma_isir_otur_1', 'elma_isir_otur_4', 'elma_firlat_otur'];
+  kontrol('v8.3 klipleri GLB\'de (masa, oturarak elma; sandalye yolu, atış)', yeni83.every((a) => S[a] > 0 && K[a]) && K.masa_otur?.koltuk_yol?.length > 10
+    && K.elma_firlat_otur?.onerilen_hiz_mm_s?.length === 3 && (K.elma_firlat_otur?.tepe_z_mm ?? 9e9) <= 2200, yeni83.filter((a) => !(S[a] > 0 && K[a])).join(', '));
   kontrol('v8.2 klipleri GLB\'de (animasyon + meta), soketler', yeni82.every((a) => S[a] > 0 && K[a]) && K.bust_tut?.bust?.el_yerel?.length === 3 && K.fare?.fare?.el_yerel_q?.length === 4
     && K.yaz?.tus?.length > 50, yeni82.filter((a) => !(S[a] > 0 && K[a])).join(', '));
   const egri = (a) => K[a]?.armut?.ezilme_egrisi ?? [];
