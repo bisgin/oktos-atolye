@@ -108,9 +108,9 @@ function sahteHikaye() {
 }
 
 // Bir karakter ve onu kare kare süren saat. iz: klip ve yer değiştikçe { t, klip, yer } (t sahte saatin saniyesi)
-function kur({ zorla = 'merdiven', otur = 'otur', reduce = false } = {}) {
+function kur({ zorla = 'merdiven', otur = 'otur', reduce = false, sunum = false } = {}) {
   localStorage.setItem('oktos.karakter.son.otur', otur === 'otur' ? 'otur2' : 'otur'); // iki seçenekten öteki seçilir
-  const k = karakterOlustur(sahteGltf(), { reduce, zorla });
+  const k = karakterOlustur(sahteGltf(), { reduce, zorla, sunum });
   const hikaye = sahteHikaye();
   k.sahneye(sahteOda(), {});
   k.bagla(hikaye);
@@ -441,8 +441,48 @@ async function duraklarV85() {
   kontrol('balkondan (inişin sonu) her durağa yol var', !yok.length, yok);
   kontrol('çöp köşede: sağ duvar ve arka duvarın süpürgeliğine ≤ 30 mm, buzdolabının arkasında',
     OLCU.ROOM.x1 - 14 - (C.x + C.r) <= 30 && OLCU.ROOM.y1 - 14 - (C.y + C.r) <= 30 && C.y - C.r >= F.y + F.w / 2, C);
+  // Kutular gözün önünde (OLCU.OYUN_KUTU; −90° z: modelin genişliği dünya y, derinliği dünya x): yakın yüz ön kenardan
+  // (x 1695) ≤ 60 mm içeride, kutu gözünün içinde (y ve z), aynı gözdeki kutular birbirine girmez
+  const OK = OLCU.OYUN_KUTU ?? [], onX = 1695, gozYc = [105, -250, -605], kut = OK.map((k) => {
+    const [w, d, h] = k.olcu, [x, y, z] = k.merkez;
+    return { no: k.no, goz: k.goz, x0: x - d / 2, x1: x + d / 2, y0: y - w / 2, y1: y + w / 2, z0: z - h / 2, z1: z + h / 2 };
+  });
+  const derin = kut.filter((b) => b.x0 - onX > 60 || b.x0 < onX).map((b) => [b.no, Math.round(b.x0 - onX)]);
+  kontrol('kutular gözün önünde: yakın yüz rafın ön kenarından 0–60 mm içeride (8 kutu)', OK.length === 8 && !derin.length, derin.length ? derin : kut.map((b) => Math.round(b.x0 - onX)));
+  const tasan = kut.filter((b) => b.y0 < gozYc[b.goz - 1] - 169.5 - 0.5 || b.y1 > gozYc[b.goz - 1] + 169.5 + 0.5 || b.z0 < 38 - 0.5 || b.z1 > 382 + 0.5).map((b) => b.no);
+  const cakisan = kut.flatMap((a, i) => kut.slice(i + 1).filter((b) => a.x0 < b.x1 - 0.5 && b.x0 < a.x1 - 0.5 && a.y0 < b.y1 - 0.5 && b.y0 < a.y1 - 0.5 && a.z0 < b.z1 - 0.5 && b.z0 < a.z1 - 0.5).map((b) => [a.no, b.no]));
+  kontrol('her kutu kendi gözünün içinde, kutular birbirine girmez (yığın üst üste)', !tasan.length && !cakisan.length, { tasan, cakisan });
   const yakin = BIGGIE_DURAK.filter((d) => !d.capa && Math.hypot(d.yer[0] - C.x, d.yer[1] - C.y) < 800).map((d) => d.id);
   kontrol('hiçbir durak çöpün önünde değil (her durak çöpe ≥ 800 mm)', !yakin.length, yakin);
+}
+
+// v8.5c (kullanıcı A yolu): kutu durağında diz üstünde bekler (diz_cok → diz_bekle); yakın göze (göz 1, diz noktası durağa
+// ≤ 300 mm) kalkmadan kayıp döner, kutu_al_diz; uzak göze kalkar, yürür, diz çöker (core/oda-sunum.js istasyonD / kutuAl
+// ile aynı durak biçimi)
+async function kutuDiz85() {
+  grup = 'Kutu oyunu: diz üstü bekleme (v8.5c)';
+  const s = kur({ zorla: 'merdiven', sunum: true }), { k, D, iz } = s;
+  k.sunumAyar({ engel: ENGEL });
+  const O = BIGGIE_DURAK.find((d) => d.id === 'oyunlar');
+  k.durakaGit({ ...O, dizi: [{ klip: 'diz_cok', sure: 0.9 }], tut: { klip: 'diz_bekle' } });
+  const bekliyor = await s.kadar(() => k.tutuyor && k.durum.klip === 'diz_bekle', 120);
+  kontrol('istasyonda diz çöker ve diz_bekle ile bekler (ayakta değil), durakta, ψ 50°', bekliyor && uzak(D.ben, { x: O.yer[0], y: O.yer[1] }) < 30 && Math.abs(fark(D.ben.psi, (O.yon * Math.PI) / 180)) < 0.05, k.durum);
+  // Yakın göz (göz 1, diz noktası durağa doğru 100 mm kayık): kalkmadan kayar, döner, kutu_al_diz, yine diz_bekle
+  const yakin = { x: 1695 - 451, y: 205 }, i0 = iz.length;
+  const p = Promise.all([k.kay(yakin.x - D.ben.x, yakin.y - D.ben.y, 1.8), k.don(Math.PI / 2, 1.8)]).then(() => k.komut([{ klip: 'kutu_al_diz', sure: 2.2 }]));
+  let bitti = false;
+  p.then(() => { bitti = true; });
+  await s.kadar(() => bitti, 20);
+  await s.sure(0.5);
+  const iz1 = iz.slice(i0);
+  kontrol(`yakın göz (${Math.round(Math.hypot(yakin.x - O.yer[0], yakin.y - O.yer[1]))} mm): kalkmadan kayar, döner, kutuyu alır, diz üstünde bekler`,
+    bitti && !iz1.some((e) => ['diz_kalk', 'yuru', 'dur'].includes(e.klip)) && sirali(iz1, ['kutu_al_diz', 'diz_bekle']) && uzak(D.ben, yakin) < 5 && Math.abs(fark(D.ben.psi, Math.PI / 2)) < 0.05, klipler(iz1));
+  // Uzak göz (göz 3): diz_kalk → yürür → diz_cok → kutu_al_diz → diz_bekle
+  const i1 = iz.length, uzakY = { x: 1695 - 451, y: -605 };
+  k.durakaGit({ ...O, yer: [uzakY.x, uzakY.y], yon: 90, tut: { klip: 'diz_bekle' }, dizi: [{ klip: 'diz_cok', sure: 0.9 }, { klip: 'kutu_al_diz', sure: 2.2 }] });
+  const vardi = await s.kadar(() => iz.length > i1 + 2 && k.tutuyor && k.durum.klip === 'diz_bekle' && uzak(D.ben, uzakY) < 30, 60);
+  const iz2 = iz.slice(i1);
+  kontrol('uzak göz: kalkar, yürür, diz çöker, kutuyu alır, diz üstünde bekler', vardi && sirali(iz2, ['diz_kalk', 'yuru', 'diz_cok', 'kutu_al_diz', 'diz_bekle']), klipler(iz2));
 }
 
 // v8.5: robot süpürge (core/oda-robot.js): rota engellerden uzak, istasyondan çıkıp döner, Biggie'ye çarpmaz, fırça döner,
@@ -547,7 +587,7 @@ async function calistir() {
   const geri = tohumla(20261020), t0 = performance.now();
   try {
     bilgi = await glbBilgi();
-    const senaryo = [() => inisMasa('merdiven'), () => inisMasa('ip'), kenarDonme, iptal, () => kalkOtur('otur'), () => kalkOtur('otur2'), azalt, sozlesme7, yolV8, duraklarV85, robotV85];
+    const senaryo = [() => inisMasa('merdiven'), () => inisMasa('ip'), kenarDonme, iptal, () => kalkOtur('otur'), () => kalkOtur('otur2'), azalt, sozlesme7, yolV8, duraklarV85, kutuDiz85, robotV85];
     for (const f of senaryo) {
       try { await f(); } catch (e) { kontrol('beklenmeyen hata', false, e?.stack ?? String(e)); }
     }

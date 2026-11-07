@@ -40,6 +40,9 @@ for k in ('buzdolabi_ac', 'buzdolabi_bos', 'elma_ye', 'elma_firlat', 'yaslan', '
           # v8.3 (05.11): masaya oturma/kalkma, masada oturarak elma
           'masa_otur', 'masa_kalk', 'elma_tut_otur', 'elma_isir_otur_1', 'elma_isir_otur_2', 'elma_isir_otur_3', 'elma_isir_otur_4', 'elma_firlat_otur'):
     EK[k] = k
+# v8.5 (05.11): kutu oyunu (scripts/karakter-klip-v85-kutu.py): durakta diz üstü bekleme, kutuya özel al / bırak / çevir
+for k in ['kutu_uzan_bekle'] + [f'kutu_uzan_{t}_k{n}' for t in ('al', 'birak', 'cevir_sag', 'cevir_sol') for n in range(1, 9)]:
+    EK[k] = k
 for k, a in EK.items():
     if bpy.data.actions.get('Hareket - ' + a):
         KLIP[k] = a

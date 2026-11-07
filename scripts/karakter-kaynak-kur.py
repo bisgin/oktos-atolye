@@ -37,12 +37,21 @@ exec(open(os.path.join(KOK, 'scripts', 'karakter-klip-v84.py'), encoding='utf-8'
 # v8.5: fareye hızlı ve kavrayış biçimli giriş (v82_fare'yi ezer), buzdolabında gövde açıklığın dışında (buzdolabi'yi ezer)
 exec(open(os.path.join(KOK, 'scripts', 'karakter-klip-v85.py'), encoding='utf-8').read())
 for a in (buzdolabi('buzdolabi_ac', False), buzdolabi('buzdolabi_bos', True)): print('EYLEM_V85', a.name, tuple(a.frame_range))
+# v8.5: kutu oyunu (kök durakta; diz üstü bekler, kutuya uzanır / yürür, rafın üstüne koyar, çevirir, geri koyar). TASLAK:
+# ölçüt (el–kutu ≤ 10 mm, kutu/gövde–raf 0 mm) henüz tutmuyor, GLB'ye girmiyor (klip-meta-v5.md "v8.5 — klip tarafı").
+# Hazır olunca KUTU86_TASLAK = False.
+KUTU86_TASLAK = True
+if not KUTU86_TASLAK:
+    exec(open(os.path.join(KOK, 'scripts', 'karakter-klip-v85-kutu.py'), encoding='utf-8').read())
+    for a in kutu86_kur(): print('EYLEM_V85', a.name, tuple(a.frame_range))
 for a in v82_bust() + v82_fare() + v82_klavye() + v82_elma() + v83_elma_otur() + v83_masa(): print('EYLEM_V82', a.name, tuple(a.frame_range), a.get('site_meta', '')[:200])
 OLCUM_V7.setdefault('zincir', {}).update(zincir_olc([('bust_al_alt', 'bust_tut'), ('bust_al_orta', 'bust_tut'), ('bust_tut', 'bust_tut'),
     ('bust_tut', 'bust_birak_alt'), ('bust_tut', 'bust_birak_orta'), ('fare', 'fare'), ('elma_tut', 'elma_tut'), ('elma_tut', 'elma_isir_1'),
     ('elma_isir_1', 'elma_tut'), ('elma_isir_2', 'elma_isir_3'), ('elma_isir_4', 'elma_tut'), ('elma_tut', 'elma_firlat'),
     ('elma_tut_otur', 'elma_isir_otur_1'), ('elma_isir_otur_1', 'elma_tut_otur'), ('elma_isir_otur_4', 'elma_tut_otur'), ('elma_tut_otur', 'elma_firlat_otur'),
-    ('elma_firlat_otur', 'Klavye Tuşlama'), ('masa_otur', 'Klavye Tuşlama'), ('Klavye Tuşlama', 'masa_kalk')]))
+    ('elma_firlat_otur', 'Klavye Tuşlama'), ('masa_otur', 'Klavye Tuşlama'), ('Klavye Tuşlama', 'masa_kalk')]
+    + [(a, b) for n in range(1, 9) for a, b in (('kutu_uzan_bekle', f'kutu_uzan_al_k{n}'), (f'kutu_uzan_al_k{n}', 'kutu_uzan_bekle'), ('kutu_uzan_bekle', f'kutu_uzan_cevir_sag_k{n}'),
+        (f'kutu_uzan_cevir_sol_k{n}', 'kutu_uzan_bekle'), ('kutu_uzan_bekle', f'kutu_uzan_birak_k{n}'), (f'kutu_uzan_birak_k{n}', 'kutu_uzan_bekle'))]))
 OLCUM_V82['v83'] = OLCUM_V83
 OLCUM_V82['v84'] = OLCUM_V84
 OLCUM_V82['v85'] = OLCUM_V85

@@ -6,6 +6,10 @@
 // balkondan odaya, kameraya doğru girer: huzmeler kameradan görünür, saksılar arkadan ışık alır.
 // MOUSE.form (v8.4): masadaki sağ el faresinin biçimi (gerçek mm, ölçeklemeden önce; önü +y, sağı +x, taban z 0):
 // core/oda-sahne.js ergonomikFare ağı kurar, scripts/karakter-klip-v84.py fare klibinde aynı yüzeye eli oturtur.
+// OYUN_KUTU (v8.5): TV altındaki küçük raftaki 8 kutu oyununun raftaki yeri (tek kaynak: core/oda-portfolyo.js oyunRafi
+// buradan yerleştirir; klip ajanı kutu kliplerini buradan kurar). merkez dünya mm; q dünya dönüşü [x, y, z, w] (modelin
+// yereli: olcu = [genişlik, derinlik, boy], önü yerel −y; −90° z ile önü odaya, −x); ust_q rafın üstüne konunca varsayılan
+// duruş (klip meta kutu.ust_q_dunya varsa o). goz 1–3 (1 = +y ucu). Yakın yüzler rafın ön kenarından (x 1695) ≤ 30 mm içeride
 // CHAIR.sirtDik: oyuncu koltuğunun sırtı açılınca menteşede geriye yatıklığı (rad; katlı hâli −90°). Karakter
 // (core/oda-karakter.js) ve sırt açma klibi (scripts/karakter-klipler.py) aynı değeri okur.
 export const OLCU = {
@@ -26,6 +30,16 @@ export const OLCU = {
   "RUG": { "x": -200, "y": -150, "w": 1700, "d": 2300 },
   "CHAIR": { "x": -930, "y": 1040, "rz": 0, "sirtDik": 0.14 },
   "ROBOT": { "x": 1880, "y": -1250, "rz": 1.5708, "r": 170 },
+  "OYUN_KUTU": [
+    { "no": 1, "goz": 1, "tur": "yatay", "olcu": [300, 300, 80], "merkez": [1875, 105, 78], "q": [0, 0, -0.7071, 0.7071], "ust_q": [0, 0, -0.7071, 0.7071] },
+    { "no": 2, "goz": 1, "tur": "yatay", "olcu": [270, 270, 75], "merkez": [1860, 105, 157], "q": [0, 0, -0.7071, 0.7071], "ust_q": [0, 0, -0.7071, 0.7071] },
+    { "no": 3, "goz": 1, "tur": "yatay", "olcu": [255, 255, 65], "merkez": [1852.5, 105, 228], "q": [0, 0, -0.7071, 0.7071], "ust_q": [0, 0, -0.7071, 0.7071] },
+    { "no": 4, "goz": 1, "tur": "yatay", "olcu": [190, 130, 45], "merkez": [1790, 55, 283.5], "q": [0, 0, -0.7071, 0.7071], "ust_q": [0, 0, -0.7071, 0.7071] },
+    { "no": 5, "goz": 2, "tur": "kapak", "olcu": [298, 73, 298], "merkez": [1751.5, -250, 187], "q": [0, 0, -0.7071, 0.7071], "ust_q": [0.5, -0.5, -0.5, 0.5] },
+    { "no": 6, "goz": 3, "tur": "dik", "olcu": [73, 298, 298], "merkez": [1864, -484, 187], "q": [0, 0, -0.7071, 0.7071], "ust_q": [0.5, 0.5, -0.5, 0.5] },
+    { "no": 7, "goz": 3, "tur": "dik", "olcu": [80, 300, 300], "merkez": [1865, -564, 188], "q": [0, 0, -0.7071, 0.7071], "ust_q": [0.5, 0.5, -0.5, 0.5] },
+    { "no": 8, "goz": 3, "tur": "dik", "olcu": [75, 270, 270], "merkez": [1850, -645.5, 173], "q": [0, 0, -0.7071, 0.7071], "ust_q": [0.5, 0.5, -0.5, 0.5] }
+  ],
   "SKIRTING": { "h": 80, "t": 14 },
   "SUN": { "azimuth": 25, "elevation": 42, "color": [1.0, 0.93, 0.84], "strength": 4.5 }
 };

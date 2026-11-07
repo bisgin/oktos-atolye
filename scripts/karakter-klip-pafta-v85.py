@@ -1,7 +1,7 @@
 # Biggie v8.5 klip paftaları (Workbench önizleme karesi; GPU final değil). İki kipte çalışır:
 #   1) Blender içinde: kareleri ve bir dizin dosyası yazar.
 #      blender -b kaynak/karakter/bizzikolosko_site.blend --python scripts/karakter-klip-pafta-v85.py -- <klasör> <iş> [--sonek _v84]
-#      iş: bilek (sağ/sol bilek yakın: bust_tut, fare, elma_tut, Durma) | fare (klavyeden fareye geçişin ilk kareleri ve
+#      iş: kutu <no> (kutu_k<no>: al / taşı / çevir / bırak, raf ve kutular) | bilek (sağ/sol bilek yakın: bust_tut, fare, elma_tut, Durma) | fare (klavyeden fareye geçişin ilk kareleri ve
 #          dönüş; masa + fare) | buz (buzdolabi_ac, _bos; OLCU.FRIDGE gövdesi, raf, açılan kapak)
 #   2) Python ile (Blender dışında, Pillow): kareleri etiketli paftaya dizer.
 #      python scripts/karakter-klip-pafta-v85.py --birlestir <klasör> <iş> [--sonek _v84]
@@ -137,6 +137,54 @@ elif IS == 'fare':
         ciz('fare', c + Vector((-0.55, -0.45, 0.45)), c, 50, f'fare {f} sağ ön')
         ciz('fare', c + Vector((0.05, -0.62, 0.22)), c, 50, f'fare {f} ön')
     yaz(f'Fare {SURUM}: klavyeden fareye geçişin ilk kareleri (1–16), tutuş (60), dönüş (130–140)', 6, 400)
+
+elif IS.startswith('kutu'):
+    # kutu_<göz>: rafın tahtaları ve 8 kutu (core/oda-portfolyo.js), etkin kutu klipteki gibi (al–birak el.R soketinde);
+    # kamera odanın FOCUS.oyunlar açısı (600, −1650, 1000) → (1680, −20, 430) ve rafın üstünden
+    exec(open(os.path.join(KOK, 'scripts', 'karakter-klip-v85-kutu.py'), encoding='utf-8').read())
+    no = int(arg[2]); IS = f'kutu_k{no}'; dur, _ = _durak_ust(); kut, _, _ = oyun_kutulari()
+    ps = math.radians(dur[2])
+    Minv = Matrix.Rotation(-ps, 4, 'Z') @ Matrix.Translation(Vector((-dur[0] * U, -dur[1] * U, 0)))
+    def dunya_kutu(ad, x0, x1, y0, y1, z0, z1, renk):
+        o = kutu_ag(ad, x0, x1, y0, y1, z0, z1, renk); o.matrix_world = Minv @ o.matrix_world; return o
+    for k, (x0, x1, y0, y1, z0, z1) in raf_tahtalari().items(): dunya_kutu('_raf_' + k, x0, x1, y0, y1, z0, z1, (0.93, 0.93, 0.9))
+    renkler = [(0.72, 0.22, 0.18), (0.18, 0.28, 0.35), (0.91, 0.77, 0.55), (0.29, 0.38, 0.26), (0.55, 0.35, 0.48), (0.83, 0.38, 0.12), (0.24, 0.43, 0.56), (0.79, 0.64, 0.63)]
+    nes = {}
+    for K in kut:
+        w, d, h = K['olcu']; me = bpy.data.meshes.new('_k%d' % K['no'])
+        v = [(x * d / 2, y * w / 2, z * h / 2) for x in (-1, 1) for y in (-1, 1) for z in (-1, 1)]
+        me.from_pydata([tuple(c * U for c in p) for p in v], [], [(0, 1, 3, 2), (4, 6, 7, 5), (0, 4, 5, 1), (2, 3, 7, 6), (0, 2, 6, 4), (1, 5, 7, 3)])
+        me.materials.append(malz('_km%d' % K['no'], renkler[K['no'] - 1])); o = bpy.data.objects.new('_k%d' % K['no'], me); sc.collection.objects.link(o)
+        o.matrix_world = Minv @ Matrix.Translation(Vector(K['dunya']) * U) @ Matrix.Rotation(K['egik'], 4, 'Y')
+        nes[K['no']] = o
+    ob = nes[no]
+    def kutu_el(a, m, f):
+        t_ = Vector(m['kutu']['el_yerel']) / MM; q = m['kutu']['el_yerel_q']
+        kare(f); return rig.matrix_world @ rig.pose.bones['el.R'].matrix @ Matrix.Translation(t_) @ Quaternion((q[3], q[0], q[1], q[2])).to_matrix().to_4x4()
+    # kutu meshi kutu ölçüsünde, ama soket kutu çerçevesine göre (karakter yerelinde w x'te, d y'de): çerçeve farkı
+    w, d, h = next(K['olcu'] for K in kut if K['no'] == no)
+    me = bpy.data.meshes.new('_aktif'); v = [(x * w / 2, y * d / 2, z * h / 2) for x in (-1, 1) for y in (-1, 1) for z in (-1, 1)]
+    me.from_pydata([tuple(c * U for c in p) for p in v], [], [(0, 1, 3, 2), (4, 6, 7, 5), (0, 4, 5, 1), (2, 3, 7, 6), (0, 2, 6, 4), (1, 5, 7, 3)])
+    me.materials.append(malz('_aktif_m', renkler[no - 1])); akt = bpy.data.objects.new('_aktif', me); sc.collection.objects.link(akt)
+    ob.hide_render = True
+    kp = Minv @ Vector((600 * U, -1650 * U, 1000 * U)); kh = Minv @ Vector((1680 * U, -20 * U, 430 * U))
+    def ciz2(et, f):
+        ciz(et, kp, kh, 32, et)
+        ciz(et, akt.matrix_world.translation + Vector((0.25, 0.55, 0.55)), akt.matrix_world.translation, 40, et + ' (üstten)')
+    a, m = tak('kutu_uzan_al_k%d' % no); son = int(a.frame_range[1]); A = m['anlar']
+    for et, f in (('al bekle', 1), ('al yürür', A['O1'] - 6), ('al uzanır', A['AL']), ('al çeker', A['CIK']), ('al kaldırır', A['KALK']), ('al yatırır', A['YAT']),
+                  ('al taşır', (A['D0'] + A['D1']) // 2), ('al koyar', A['YUK']), ('al bıraktı', A['BIRAK'] + 6)):
+        akt.matrix_world = kutu_el(a, m, min(max(f, m['al']), m['birak'])); kare(f); ciz2(f'k{no} {et} {f}', f)
+    son_M = kutu_el(a, m, m['birak'])
+    a, m = tak('kutu_uzan_cevir_sag_k%d' % no)
+    c = son_M.translation.copy()
+    for f in (12, 23, 34):
+        th = math.radians(dict(m['kutu']['don'])[f]); kare(f)
+        akt.matrix_world = Matrix.Translation(c) @ Matrix.Rotation(th, 4, 'Z') @ Matrix.Translation(-c) @ son_M; ciz2(f'k{no} çevir sağ {f}', f)
+    a, m = tak('kutu_uzan_birak_k%d' % no); son = int(a.frame_range[1])
+    for et, f in (('bırak alır', m['al']), ('bırak taşır', (m['al'] + m['birak']) // 2), ('bırak gözde', m['birak']), ('bırak bekle', son)):
+        akt.matrix_world = kutu_el(a, m, min(max(f, m['al']), m['birak'])); kare(f); ciz2(f'k{no} {et} {f}', f)
+    yaz(f'Kutu {no} (göz {next(K["goz"] for K in kut if K["no"] == no) + 1}) {SURUM}: al / taşı / çevir / bırak; raf ve kutular oda ölçüsünde', 6, 400)
 
 elif IS == 'buz':
     # buzdolabı katı gövdesi (bz_kutulari, karakter yereli), açıklık; kapak hacmi (KAPAK_HACIM) menteşede açıyla döner

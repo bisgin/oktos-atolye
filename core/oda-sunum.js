@@ -269,7 +269,7 @@ export function odaSunumu(root, { t, giris = 'dans', reduce = false, lang = 'tr'
   // rafa geri kaydırır (oda-karakter YER_TUTUCU '').
   // Kamera: kutu rafın üstünde, Biggie'yi sağ omzunun arkasından gösteren açı (Biggie +x'e bakar: arkası −x, sağı −y);
   // core/oda-kadraj.js bul (göz yüksekliği, oda içi, diz çökmüş gövde silindiri kutuyu örtmez)
-  const KS = { aktif: null };
+  const KS = { aktif: null, hepsi: new Set() }; // hepsi: diz üstü bekleyişte (istasyonD) kalkmadan alınan kutular (durak iptalinde rafa)
   const KUTU_SABIT = true; // v8.5: kutu sahnesinde kamera rafın sabit kadrajında (kutuKadraji yalnız ölçüm ve yedek)
   let kutuP = null;
   const Rz = (a) => new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(0, 0, 1), a);
@@ -299,35 +299,53 @@ export function odaSunumu(root, { t, giris = 'dans', reduce = false, lang = 'tr'
     }, onComplete: () => bitti?.() });
   }
   // Rafın önü (dünya x) ve kutunun gözle üst arasındaki yolu
-  const rafOnX = () => { const D0 = durakBul('oyunlar'), b = D0 && kutuOf(D0); return b ? b.min.x : 1695; };
-  // v8.2 (kullanıcı: kutu küçük rafın içinden geçmesin): kutu gözüne ya da gözünden yalnız yatay kayar (tahtanın 10 mm
-  // üstünde); yükselip alçalması rafın önünde, kutunun bütünü rafın ön yüzünün dışındayken (merkez: ön yüz − yarı en
-  // büyük kenar − 30). Yol noktaları dünyada; raf grubu dünya kökünde
-  // Dışarıdaki x: kutunun bütünü (dönerken köşegeni dahil) rafın ön yüzünün dışında
-  const disX = (K) => { const s = [...(K.P.olcu ?? [300, 300, 80])].sort((a, b) => b - a); return rafOnX() - Math.hypot(s[0], s[1]) / 2 - 30; }; // en büyük iki kenarın köşegeni
+  // v8.5c: rafın ön yüzü ölçüden (sağ duvarın süpürgeliği − raf derinliği = 1695); sahne nesnesinin kutusu (tıklama vekili,
+  // kutular) 1721 veriyordu: diz noktası klibin raf_on_mm'sinden (451) 26 mm yakın düşüyordu
+  const rafOnX = () => { const R = PORTF.PORT?.oyunRafi; return R ? 2100 - 15 - R.derin : 1695; };
+  // v8.2 (kullanıcı: kutu küçük rafın içinden geçmesin); v8.5c (A yolu, diz üstü Biggie): kutu gözünden yalnız yatay ve
+  // ancak yakın yüzü rafın önünü 9 mm geçene dek çıkar (kutu_al_diz: "uzak kenarı rafın önünü 9 mm geçince dizlerin önünde
+  // dik kalkar"; önce köşegeni dışarıda olana dek ~210 mm çekiliyordu, diz çökmüş Biggie'nin dizlerine ve boynuna değiyordu),
+  // dönmeden kalkar (tabanı rafın üstünün 25 mm üstüne), rafın üstüne geçer, orada döneceği kadar yükselip döner, iner.
+  // Yol noktaları dünyada; raf grubu dünya kökünde
+  const UST_Z = () => PORTF.OYUN_RAFI_UST ?? 420;
+  // Kutunun verilen duruştaki yarı boyutları (dünya eksenlerinde)
+  function yariBoy(K, q) {
+    const q0 = K.m.quaternion.clone(); K.m.quaternion.copy(q); K.m.updateMatrixWorld(true);
+    const b = new THREE.Box3().setFromObject(K.m), y = b.getSize(V()).multiplyScalar(0.5);
+    const alt = K.m.getWorldPosition(V()).z - b.min.z; // kökten tabana (bu duruşta)
+    K.m.quaternion.copy(q0); K.m.updateMatrixWorld(true);
+    return { y, alt };
+  }
+  const donmeYari = (K) => Math.hypot(...(K.P.olcu ?? [300, 300, 80])) / 2; // dönerken en büyük yarıçap (3B köşegen)
   function rafaKoy(K, sn = 0.9) {
-    const p = K.P.yuva.p, dx = disX(K), cur = K.m.getWorldPosition(V()), qs = K.m.getWorldQuaternion(new THREE.Quaternion());
-    const ust = (PORTF.OYUN_RAFI_UST ?? 420) + 40 + Math.max(...(K.P.olcu ?? [300])) / 2;
-    // 1) dönmeden rafın önüne (üstündeyse rafın üstünden yatay, yükselerek); 2) rafın önünde, dışarıda dönüp gözünün
-    // yüksekliğine iner; 3) gözün içine dönmeden kayar, iner
-    const a = [V().set(dx, cur.y, Math.max(cur.z, cur.z > (PORTF.OYUN_RAFI_UST ?? 420) - 20 ? ust : cur.z))];
-    const b = [V().set(dx, p.y, p.z + 2)], c = [V().set(p.x, p.y, p.z + 2), p];
-    yolla(K.m, K.ust, a, qs, sn * 0.3, () => yolla(K.m, K.ust, b, K.P.yuva.q, sn * 0.35, () => yolla(K.m, K.ust, c, K.P.yuva.q, sn * 0.35, () => { K.ustte = false; })));
+    const p = K.P.yuva.p, qy = K.P.yuva.q, cur = K.m.getWorldPosition(V()), qs = K.m.quaternion.clone(), U = UST_Z();
+    const yr = yariBoy(K, qy).y, onde = rafOnX() - 9 - yr.x, zKalk = U + 25 + yr.z, zDon = U + 10 + donmeYari(K);
+    const adim = [];
+    // Rafın üstündeyse: dönebileceği kadar yükselir, raftaki duruşuna döner; gözünün önüne (dönmeden, tabanı üstün üstünde)
+    if (cur.z > U - 20) {
+      adim.push([[V().set(cur.x, cur.y, Math.max(cur.z, zDon))], qs, 0.2], [[V().set(cur.x, cur.y, Math.max(cur.z, zDon))], qy, 0.2],
+        [[V().set(onde, p.y, zKalk)], qy, 0.2]);
+    } else adim.push([[V().set(onde, p.y, Math.max(cur.z, p.z + 2))], qy, 0.3]);
+    adim.push([[V().set(onde, p.y, p.z + 2)], qy, 0.15], [[V().set(p.x, p.y, p.z + 2), p], qy, 0.25]);
+    const yuru = (i) => { if (i >= adim.length) { K.ustte = false; return; } const [n, q, k] = adim[i]; yolla(K.m, K.ust, n, q, sn * k, () => yuru(i + 1)); };
+    yuru(0);
   }
   function rafUstuneKoy(K, sn = 1.0) {
-    const dx = disX(K), p = K.P.yuva.p, h = K.hedefP, ust = (PORTF.OYUN_RAFI_UST ?? 420) + 40 + K.P.kalin;
-    // Gözden dönmeden çıkar, dönüş rafın önünde
-    // Gözden dönmeden çıkar; rafın önünde (dışarıda) yükselirken döner; rafın üstüne dönmeden gelir
-    const ust2 = (PORTF.OYUN_RAFI_UST ?? 420) + 40 + Math.max(...(K.P.olcu ?? [300])) / 2;
-    yolla(K.m, K.ust, [V().set(p.x, p.y, p.z + 2), V().set(dx, p.y, p.z + 2)], K.P.yuva.q, sn * 0.3,
-      () => yolla(K.m, K.ust, [V().set(dx, h.y, Math.max(h.z + 40, ust2))], K.hedefQ, sn * 0.35,
-        () => { // rafın üstüne inişin yüksekliği kutunun bu duruştaki gerçek kutusundan (vitrin kutusu hafif eğik: kalınlığı büyük)
-          const q0 = K.m.quaternion.clone(); K.m.quaternion.copy(K.hedefQ); K.m.updateMatrixWorld(true);
-          const bb = new THREE.Box3().setFromObject(K.m), alt = (PORTF.OYUN_RAFI_UST ?? 420) + 1 - (bb.min.z - K.m.getWorldPosition(V()).z);
-          K.m.quaternion.copy(q0); K.m.updateMatrixWorld(true);
-          K.hedefP.z = Math.max(K.hedefP.z, alt);
-          yolla(K.m, K.ust, [V().set(h.x, h.y, h.z + 40), h], K.hedefQ, sn * 0.35, () => { K.ustte = true; });
-        }));
+    const p = K.P.yuva.p, h = K.hedefP, qy = K.P.yuva.q, U = UST_Z();
+    const yr = yariBoy(K, qy).y, onde = rafOnX() - 9 - yr.x, zKalk = U + 25 + yr.z, zDon = U + 10 + donmeYari(K);
+    // İnişin yüksekliği kutunun hedef duruştaki gerçek kutusundan (vitrin kutusu dik: kalınlığı en küçük kenarı)
+    const alt = U + 1 + yariBoy(K, K.hedefQ).alt;
+    K.hedefP.z = Math.max(K.hedefP.z, alt);
+    const adim = [
+      [[V().set(p.x, p.y, p.z + 2), V().set(onde, p.y, p.z + 2)], qy, 0.22], // gözden yatay, önü rafın önünü 9 mm geçene dek
+      [[V().set(onde, p.y, zKalk)], qy, 0.18],                                 // dönmeden kalkar (taban üstün 25 mm üstünde)
+      [[V().set(h.x, h.y, zKalk)], qy, 0.18],                                  // rafın üstüne geçer
+      [[V().set(h.x, h.y, zDon)], qy, 0.1],                                    // döneceği kadar yükselir
+      [[V().set(h.x, h.y, zDon)], K.hedefQ, 0.17],                             // döner (rafın üstünde, Biggie'den uzakta)
+      [[V().set(h.x, h.y, h.z + 20), h], K.hedefQ, 0.15],                      // iner
+    ];
+    const yuru = (i) => { if (i >= adim.length) { K.ustte = true; return; } const [n, q, k] = adim[i]; yolla(K.m, K.ust, n, q, sn * k, () => yuru(i + 1)); };
+    yuru(0);
   }
   // Panelin kart modu: yan kart (masaüstü) ya da alttaki yaprak (telefon); kadraj buna göre ötelenir
   function kartModu() {
@@ -395,11 +413,20 @@ export function odaSunumu(root, { t, giris = 'dans', reduce = false, lang = 'tr'
     const km = karakter?.meta?.(koy)?.kutu ?? {}, gy = gozY(m);
     const K = { m, P, ust: m.parent, sayfa: 0, don: 0, ustte: false, elde: false, bekleyen: 0, durum: 'aliniyor', km, goz: gozNo(m), v85: aktif && karakter ? V85() : null };
     P.olcu ??= (() => { const b = new THREE.Box3().setFromObject(m).getSize(V()); return [b.x, b.y, b.z]; })();
-    K.yer = K.v85 ? [...D0.yer] : [rafOnX() - (km.raf_on_mm ?? 451), gy];
+    // v8.5c (kullanıcı A yolu): Biggie durakta diz üstünde bekler. Diz noktası gözün önünden +y'ye (durağa ve kameranın
+    // bakış çizgisinin soluna) kayık: göz 1'de 100 mm (durağa ~250 mm: kalkmadan diz üstünde kayar), göz 2'de 100, göz 3'te
+    // 200 mm (kalkar, yürür; sabit kamera rafın −y ucunun önünden baktığı için gözün tam önünde diz çöken Biggie göz 2–3'ü
+    // ve kutuyu örtüyordu). Kutuyu site taşır (ele bağlı değil): kutu kendi gözünden çıkar
+    const yKay = K.v85 ? 0 : [100, 100, 200][K.goz] ?? 0;
+    K.yer = K.v85 ? [...D0.yer] : [rafOnX() - (km.raf_on_mm ?? 451), gy + yKay];
     const ileri = Array.isArray(km.ust_merkez) ? -km.ust_merkez[1] : 594.7, ust = K.v85?.ust;
     K.hedefP = ust ? new THREE.Vector3(ust[0], ust[1], (PORTF.OYUN_RAFI_UST ?? 420) + P.kalin / 2 + 1)
       : new THREE.Vector3(K.yer[0] + ileri, gy, (PORTF.OYUN_RAFI_UST ?? 420) + P.kalin / 2 + 1);
     K.q0 = P.ustQ.clone();
+    // v8.5: rafın üstündeki duruş klibin meta'sından (kutu.ust_q_dunya [x, y, z, w], dünya; vitrin kutusu kapağı yukarı,
+    // son anda ters dönmesin); meta yoksa sahnenin duruşu. Raf grubu dünya kökünde: yerel = dünya
+    const uq = [K.v85 && klip85(K.v85.al, K), koy].map((ad) => ad && karakter?.meta?.(ad)?.kutu?.ust_q_dunya).find((q) => Array.isArray(q) && q.length === 4);
+    if (uq) K.q0 = K.ust.getWorldQuaternion(new THREE.Quaternion()).invert().multiply(new THREE.Quaternion(...uq).normalize());
     K.hedefQ = K.q0.clone();
     return K;
   }
@@ -544,6 +571,17 @@ export function odaSunumu(root, { t, giris = 'dans', reduce = false, lang = 'tr'
       biggieGitsin(D);
       return;
     }
+    // Diz üstünde bekliyor ve gözün diz noktası yakın: kalkmadan, yavaşça kayıp döner (ψ 90°), kutu_al_diz
+    const dz = dizde();
+    if (dz && Math.hypot(K.yer[0] - dz.x, K.yer[1] - dz.y) <= DIZ_YAKIN) {
+      K.D = { kutular: [K] };
+      KS.hepsi.add(K); // bekleyişin (istasyonD) iptali bu kutuyu rafa koyar
+      logla('kutu-diz-kay', { no: K.P.no + 1, mm: Math.round(Math.hypot(K.yer[0] - dz.x, K.yer[1] - dz.y)) });
+      dizKay(K.yer, Math.PI / 2).then(() => karakter.komut([{ klip: koy, sure: 2.2, anlar: alAnlari(K) }]));
+      return;
+    }
+    // Uzak göz: diz_kalk (karakter eylemKapat) → yürür → diz_cok → kutu_al_diz → diz_bekle
+    logla('kutu-yuru', { no: K.P.no + 1 });
     const D = { ...D0, yer: K.yer, yon: 90, tut: { klip: v7.bekle }, kutular: [K], dizi: [
       { klip: al, sure: 0.9 },
       { klip: koy, sure: 2.2, anlar: alAnlari(K) },
@@ -551,6 +589,39 @@ export function odaSunumu(root, { t, giris = 'dans', reduce = false, lang = 'tr'
     D.iptal = () => { for (const X of D.kutular) kutuIptal(X); };
     K.D = D;
     biggieGitsin(D);
+  }
+  // v8.5c: Biggie diz pozunda (beklemede ya da kutu kliplerinde) ise kökü, değilse null
+  const DIZ_KLIP = /^(diz_cok|diz_bekle|kutu_al_diz|kutu_rafa_birak|kutu_cevir_sag|kutu_cevir_sol)$/;
+  const DIZ_YAKIN = 300, DIZ_HIZ = 150; // mm: kalkmadan kayılacak en uzak diz noktası; mm/sn: diz üstünde kayma (yavaş)
+  function dizde() {
+    if (!aktif || !karakter?.tutuyor) return null;
+    const d = karakter.durum;
+    return DIZ_KLIP.test(d.klip ?? '') ? d : null;
+  }
+  // Diz üstünde kısa kayma ve dönüş (kök kayar, yön döner; ikisi birlikte, yumuşak)
+  function dizKay(yer, psi) {
+    const d = karakter.durum, dx = yer[0] - d.x, dy = yer[1] - d.y, sn = reduce ? 0.01 : Math.max(0.7, Math.hypot(dx, dy) / DIZ_HIZ);
+    return Promise.all([karakter.kay?.(dx, dy, sn), karakter.don?.(psi, sn)]);
+  }
+  // Kutu durağının bekleyişi: yürür, diz çöker, diz_bekle döngüsünde kalır; durak bırakılırsa elden geçen kutular rafa
+  function istasyonD() {
+    const D0 = durakBul('oyunlar'), v7 = V7(), [al] = D0.kutuDizi ?? ['diz_cok'];
+    const D = { ...D0, dizi: [{ klip: al, sure: 0.9 }], tut: { klip: v7.bekle } };
+    D.iptal = () => { for (const X of KS.hepsi) kutuIptal(X); KS.hepsi.clear(); };
+    return D;
+  }
+  // Kutu gözüne konduktan sonra: durak yakınsa diz üstünde kayıp döner, uzaksa kalkar, durağa yürür, yine diz çöker
+  function durakaDon() {
+    const D0 = durakBul('oyunlar'), d = karakter?.durum;
+    if (!D0 || !d || sonIstek !== 'oyunlar') return;
+    if (Math.hypot(D0.yer[0] - d.x, D0.yer[1] - d.y) < 30) return;
+    if (dizde() && Math.hypot(D0.yer[0] - d.x, D0.yer[1] - d.y) <= DIZ_YAKIN) {
+      logla('kutu-durak-kay');
+      dizKay(D0.yer, ((D0.yon ?? 0) * Math.PI) / 180).then(() => logla('kutu-durakta', { diz: true }));
+      return;
+    }
+    logla('kutu-durak-yuru');
+    karakter.komut([{ klip: V7().kalk, sure: 0.9 }], { son: true }).then(() => { if (sonIstek === 'oyunlar' && !KS.aktif) biggieGitsin(istasyonD()); });
   }
   // Kutuya tıklama (sahnede ya da test). Açık kutu varsa: aynı gözdeyse Biggie dizlerinin üstünde kalır, zincir
   // kutu_rafa_birak → kutu_al_diz (Blender v7 zinciri, uçlar aynı poz); başka gözdeyse geri koyar, kalkar, yeni göze gider
@@ -642,17 +713,20 @@ export function odaSunumu(root, { t, giris = 'dans', reduce = false, lang = 'tr'
     }
     if (aktif && karakter?.tutuyor && K.durum === 'ustte') {
       K.durum = 'donuyor';
-      karakter.komut([
-        { klip: v7.birak, sure: 1.4, anlar: birakAnlari(K) },
-        { klip: v7.kalk, sure: 0.9 },
-      ], { son: true }).then((ok) => { if (!ok && K.durum !== 'rafta') rafaKoy(K, 0.3); K.durum = 'rafta'; logla('kutu-rafta', { no: K.P.no + 1 }); sonra?.(); });
+      // v8.5c: diz üstünde kalır; ardından başka kutu (sonra) ya da durağa dönüp diz üstünde bekleme
+      karakter.komut([{ klip: v7.birak, sure: 1.4, anlar: birakAnlari(K) }]).then((ok) => {
+        if (!ok && K.durum !== 'rafta') rafaKoy(K, 0.3);
+        K.durum = 'rafta'; KS.hepsi.delete(K);
+        logla('kutu-rafta', { no: K.P.no + 1 });
+        if (sonra) sonra(); else if (ok) durakaDon();
+      });
       return;
     }
     // Biggie yoksa (ya da beklemeden çıktıysa): kutu kendisi geri, Biggie (sunumdaysa) rafın yanına
     if (K.durum !== 'rafta') { if (K.elde || K.ustte || K.m.parent !== K.ust) rafaKoy(K, 0.6); K.durum = 'rafta'; }
     logla('kutu-rafta', { no: K.P.no + 1 });
     if (sonra) sonra();
-    else if (aktif && karakter) biggieGitsin(durakBul('oyunlar'));
+    else if (aktif && karakter) biggieGitsin(istasyonD());
   }
   // Biggie diz pozunda beklemeye geçti: bekleyen geri komutu, ya da kadrajı gerçek gövdeyle yeniden kur
   function kutuTutuyor() {
@@ -667,7 +741,7 @@ export function odaSunumu(root, { t, giris = 'dans', reduce = false, lang = 'tr'
   function kutuKaresi() {
     if (!kutuP || !story) return;
     const K = KS.aktif;
-    if (geriBekleyen && performance.now() - geriBekleyen.t > 8000) { const g = geriBekleyen; geriBekleyen = null; g.K.durum = 'ustte'; karakter && biggieGitsin(durakBul('oyunlar')); g.sonra?.(); }
+    if (geriBekleyen && performance.now() - geriBekleyen.t > 8000) { const g = geriBekleyen; geriBekleyen = null; g.K.durum = 'ustte'; karakter && biggieGitsin(istasyonD()); g.sonra?.(); }
     if (!K) { kutuP.oklar(null); return; }
     // Kutuyu klip döndürüyor: o karenin açısı (kutu.don) çevirmenin başındaki duruşa eklenir
     if (K.cevir) {
@@ -1220,7 +1294,7 @@ export function odaSunumu(root, { t, giris = 'dans', reduce = false, lang = 'tr'
     // v7: kutu oyunları rafına gelinince Biggie kutu almaz, rafın yanında bekler (kutuya tıklanınca kutuSec). Kutu açıkken
     // rafa yeniden gelinirse Biggie diz pozunda kalır
     if (D.id === 'oyunlar' && KS.aktif) return;
-    biggieGitsin(D);
+    biggieGitsin(D.id === 'oyunlar' ? istasyonD() : D);
   }
   // Başka istasyon: kutu paneli kapanır; Biggie gidince durağın iptal'i kutuyu rafa geri koyar (Biggie'siz sunumda hemen)
   function kutuPaneliBirak() {

@@ -117,9 +117,10 @@ def kutu_oyunlari(pg, test, klasor=None):
     s = olay_bekle(pg, 'kutu-sec', t, f'e.no === {no + 1}', 5)
     test.kontrol(G, 'kutuya tıklama: panel açıldı (sayfa 1, Taslak)', s and pg.evaluate("!document.querySelector('.oda-kutu').hidden && document.querySelector('.oda-kutu .ok-sayac').textContent.includes('1') && !document.querySelector('.ok-taslak').hidden"))
     u = olay_bekle(pg, 'kutu-ustte', t, f'e.no === {no + 1}', 40)
-    tt = olay_bekle(pg, 'tutuyor', t, 'true', 20)
+    # v8.5c (A yolu): göz 1'de Biggie durağın diz üstü bekleyişinden kalkmadan kayar; yeni 'tutuyor' olayı olmaz
+    tt = pg.evaluate('window.karakter.tutuyor') or olay_bekle(pg, 'tutuyor', t, 'true', 20)
     k = kutu_durum(pg)
-    test.kontrol(G, 'Biggie diz çöktü, kutuyu aldı, rafın üstüne koydu (z ≈ 420 + yarı kalınlık), dizlerinde bekliyor', u and tt and k and k['ustte'] and 440 <= k['z'] <= 470 and k['tutuyor'], json.dumps(k))
+    test.kontrol(G, 'Biggie diz üstünde kutuyu aldı, rafın üstüne koydu (z ≈ 420 + yarı kalınlık), dizlerinde bekliyor', u and tt and k and k['ustte'] and 440 <= k['z'] <= 470 and k['tutuyor'], json.dumps(k))
     pg.mouse.move(640, 427)  # imleç ortada: yakın plan salınımı sıfırda
     time.sleep(1.4)
     kk = json.loads(pg.evaluate("""(() => { const S = window.story, c = S.camera, K = S.api.kadraj, m = S.api.portfolyo.parcalar().oyun[window.sunum.kutu.no];

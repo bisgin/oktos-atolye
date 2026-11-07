@@ -366,18 +366,23 @@ function oyunRafi(M) {
     if (o.tur === 'dik') { x = G.x0 + 12 + imlec[o.goz] + w / 2; imlec[o.goz] += w + 4; z = G.z0 + h / 2; }
     else if (o.tur === 'kapak') { x = (G.x0 + G.x1) / 2; z = G.z0 + h / 2; }
     else { x = (G.x0 + G.x1) / 2 + (w < 200 ? 50 : 0); z = G.z0 + imlec[o.goz] + h / 2; imlec[o.goz] += h + 1; }
-    const y = o.tur === 'kapak' ? D / 2 - 30 - d / 2 : yOn + d / 2 + (o.tur === 'yatay' ? 10 : 0);
-    if (o.tur === 'kapak') geo.rotateX(-0.06); // vitrinde arkaya hafif yaslı
+    // v8.5 (klip ajanı: Biggie gözün derinine yetişemiyor, başı üst tahtaya giriyor): bütün kutular gözün önünde, yakın
+    // yüzü rafın ön kenarından ≤ 30 mm içeride; vitrin kutusu (kapak) da önde ve dik (önce arkada, 287 mm içeride, yaslı)
+    const y = yOn + d / 2 + (o.tur === 'yatay' ? 10 : 0);
     const m = new THREE.Mesh(geo, kutuM);
     m.castShadow = m.receiveShadow = true;
     m.name = `oyun-${i + 1}`;
     m.position.set(y + DUVAR_SAG - D / 2, -x + R.y, z);
     m.quaternion.copy(wq);
+    // v8.5: tek kaynak OLCU.OYUN_KUTU (klip ajanı da oradan okur); hesap yalnız yedek ve denetim
+    const T = OLCU.OYUN_KUTU?.[i];
+    if (T?.merkez) { m.position.fromArray(T.merkez); if (T.q) m.quaternion.fromArray(T.q).normalize(); }
     // Rafın üstünde yatık duruş: kapağı yukarı (dik kutu yerel y'de, vitrindeki x'te 90° döner); boyu en kısa kenar
     const yat = new THREE.Quaternion();
     if (o.tur === 'dik') yat.setFromAxisAngle(new THREE.Vector3(0, 1, 0), Math.PI / 2);
     else if (o.tur === 'kapak') yat.setFromAxisAngle(new THREE.Vector3(1, 0, 0), Math.PI / 2);
-    m.userData.parca = { tur: 'oyun', no: i, yuva: { p: m.position.clone(), q: m.quaternion.clone() }, ustQ: wq.clone().multiply(yat), kalin: Math.min(w, d, h) };
+    const ustQ = T?.ust_q ? new THREE.Quaternion().fromArray(T.ust_q).normalize() : wq.clone().multiply(yat);
+    m.userData.parca = { tur: 'oyun', no: i, yuva: { p: m.position.clone(), q: m.quaternion.clone() }, ustQ, kalin: Math.min(w, d, h) };
     kutular.push(m);
   });
   grup.add(...kutular);

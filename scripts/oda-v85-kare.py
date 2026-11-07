@@ -65,7 +65,8 @@ def calis(b, adres, ekran, klasor, sahneler, olcum):
     O = olcum.setdefault(ekran, {})
 
     SIRA = ['genel-plan', 'bust-donuyor', 'bust-yerinde-donus', 'kutu-istasyonu', 'kutu-rafin-ustunde', 'robot-gezerken', 'cop-kosede-kobe-yayi',
-            'bust-sag-bilek', 'fare-gecisi-ilk-an', 'buzdolabi-elma-alma']
+            'bust-sag-bilek', 'fare-gecisi-ilk-an', 'buzdolabi-elma-alma',
+            'kutular-onde', 'kutu-diz-bekleme', 'kutu-alis', 'kutu-rafin-ustunde-diz']
 
     def kare(ad):
         no = SIRA.index(ad) + 1 if ad in SIRA else 99  # sabit numara: tek sahne yeniden çekilince ad aynı kalır
@@ -186,6 +187,22 @@ def calis(b, adres, ekran, klasor, sahneler, olcum):
         f = klip_bekle('buzdolabi_ac', al - 2, al + 2, 30)
         O['elma-kare'] = f
         kare('buzdolabi-elma-alma')
+    if 'kutudiz' in sahneler:
+        # v8.5c (A yolu): durakta diz üstü bekleme; uzak gözden (göz 3, kutu 7) alış; kutu rafın üstünde, Biggie diz üstünde
+        t = simdi(pg)
+        pg.evaluate("window.sunum.git('oyunlar')")
+        olay(pg, 'vardi', t, "e.id === 'oyunlar'", 40)
+        bekle(pg, "window.karakter.durum.klip === 'diz_bekle'", 20)
+        time.sleep(1.0)
+        kare('kutu-diz-bekleme')
+        t = simdi(pg)
+        pg.evaluate("window.sunum.parca('kutu', 6)")
+        O['alis-kare'] = klip_bekle('kutu_al_diz', 60, 66, 60)
+        kare('kutu-alis')
+        olay(pg, 'kutu-ustte', t, 'true', 40)
+        bekle(pg, "window.karakter.durum.klip === 'diz_bekle'", 10)
+        time.sleep(1.0)
+        kare('kutu-rafin-ustunde-diz')
     O['konsol'] = log
     c.close()
 
