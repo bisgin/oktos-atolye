@@ -67,6 +67,22 @@ ESKI_KIMLIK = {"lotus": "black-lotus", "su-kaplumbagasi": "blastoise", "ates-ejd
                "kara-buyucu": "dark-magician", "cicek-sirtli": "venusaur", "kart-kutusu": "tcg-kutu"}
 
 
+def magaza_kimlik(slug, ad):
+    """Mağaza taraması (--magaza) için: adres son parçası + mağaza adı → (kimlik, yuva, TR ad, EN ad) ya da None.
+    Önce URUN tablosu (kimlikler sabit kalsın); yoksa ürün türü adresten okunur (2026-11-09: mağazadaki bütün ürünler)."""
+    if slug in URUN: return URUN[slug]
+    if "-sticker" in slug:  # mağaza adı zaten kısa ve İngilizce (ör. "Be - Sweet")
+        return (re.sub(r"-+", "-", slug.split("-sticker")[0]), "sticker", ad, ad)
+    if "-anahtarlik-canta-takisi" in slug:
+        oz = ad.split(" Anahtarlık")[0].strip()
+        return (slug.split("-anahtarlik-canta-takisi")[0], "anahtarlik", f"{oz} anahtarlık", f"{oz} keychain")
+    if slug.endswith("-evrim-silindiri-diorama"):  # evrim silindirleri: plaka paketinde yok, mağaza ilanıyla girer
+        en = ad.replace("Evrim Silindiri", "Evolution Cylinder")
+        en = re.sub(r"\((\d+)'(?:li|lü|lu|lı)\)", r"(set of \1)", en)
+        return (slug[: -len("-diorama")], "raf", ad, en)
+    return None
+
+
 def fiyat_kisa(metin):
     # "149,00 TL – 199,00 TL" → "149–199 TL"; "139,00 TL" → "139 TL". Mağaza fiyatı; tek doğru yer mağaza.
     sayilar = [s.replace(",00", "") for s in re.findall(r"\d+(?:,\d+)?", metin or "")]
@@ -104,7 +120,8 @@ def vitrin(x):
 
 def main():
     ap = argparse.ArgumentParser()
-    ap.add_argument("--kaynak", required=True, help="envanter.json (depo dışında)")
+    ap.add_argument("--kaynak", help="envanter.json (depo dışında)")
+    ap.add_argument("--magaza", help="magaza-tara.json (depo dışında; mağazadaki bütün ürünler, kaynak bu olur)")
     ap.add_argument("--dry-run", action="store_true")
     ap.add_argument("--perdesiz", action="store_true", help=argparse.SUPPRESS)  # eski bayrak: artık varsayılan, etkisi yok
     ap.add_argument("--diorama", help="diorama plakalarının site paketi (urunler.csv; depo dışında)")
@@ -115,10 +132,31 @@ def main():
     eski = open(CIKTI, encoding="utf-8").read() if os.path.exists(CIKTI) else None
     if not a.diorama and not a.dioramasiz and eski and '"grup": "diorama"' in eski:
         sys.exit("Çıktıda diorama girdileri var: --diorama <site paketi> ver (bilerek düşürmek için --dioramasiz)")
-    env = envanter_oku(a.kaynak)
-    tarih = (env.get("olusturma") or "")[:10]
-    urunler, bilinmeyen = [], []
-    for u in env["urunler"]:
+    if not a.kaynak and not a.magaza: sys.exit("--kaynak <envanter.json> ya da --magaza <magaza-tara.json> ver")
+    urunler, bilinmeyen, dio_magaza = [], [], {}
+    if a.magaza:
+        env = envanter_oku(a.magaza)
+        tarih = (env.get("olusturma") or "")[:10]
+        for u in env["urunler"]:
+            url = (u.get("adres") or "").strip()
+            if not url.startswith(MAGAZA_KOK): sys.exit(f"Mağaza adresi {MAGAZA_KOK} ile başlamıyor: {url[:60]}")
+            durum = "satista" if u.get("stokta") == "evet" else "stok-yok"
+            if u.get("planlı_sku"):  # plaka paketindeki diorama: paket girdisine mağaza adresi ve fiyatı eklenir
+                dio_magaza[u["planlı_sku"]] = {"magaza": url, "fiyat": fiyat_kisa(u.get("fiyat")), "durum": durum}
+                continue
+            k = magaza_kimlik(u.get("slug", ""), u.get("ad", ""))
+            if not k: bilinmeyen.append(u.get("slug", "")); continue
+            kimlik, yuva, tr, en = k
+            gorsel = f"assets/oda/anahtarlik-{kimlik}.webp" if yuva == "anahtarlik" else None
+            if gorsel and not os.path.exists(os.path.join(KOK, gorsel)): gorsel = None
+            if not gorsel and os.path.exists(os.path.join(KOK, MAGAZA_GORSEL, f"{kimlik}.webp")):
+                gorsel = f"{MAGAZA_GORSEL}/{kimlik}.webp"
+            urunler.append({"id": kimlik, "ad": {"tr": tr, "en": en}, "yuva": yuva, "durum": durum,
+                            "magaza": url, "fiyat": fiyat_kisa(u.get("fiyat")), "gorsel": gorsel})
+    else:
+        env = envanter_oku(a.kaynak)
+        tarih = (env.get("olusturma") or "")[:10]
+    for u in ([] if a.magaza else env["urunler"]):
         url = (u.get("ikas_url") or "").strip()
         if not url: continue  # mağazada sayfası yok: depoya girmez
         if not url.startswith(MAGAZA_KOK): sys.exit(f"Mağaza adresi {MAGAZA_KOK} ile başlamıyor: {url[:60]}")
@@ -138,6 +176,11 @@ def main():
     if a.diorama:  # diorama plakaları: ilandaki gerçek ad/açıklama + görseller (bellekte; yazım en sonda, hepsi birlikte)
         dioramalar, dozet, bekleyen = dio.hazirla(a.diorama, a.diorama_video, a.dry_run, a.videosuz)
         print("diorama:", json.dumps(dozet, ensure_ascii=False))
+        sku_kimlik = {sku: t[0] for sku, t in dio.DIORAMA.items()}
+        kimlik_magaza = {sku_kimlik[s]: m for s, m in dio_magaza.items() if s in sku_kimlik}
+        if set(dio_magaza) - set(sku_kimlik): sys.exit(f"Paket dışı planlı SKU: {', '.join(sorted(set(dio_magaza) - set(sku_kimlik)))}")
+        for g in dioramalar:  # mağazada yayına girmiş plaka: satın al düğmesi mağazaya gider
+            g.update(kimlik_magaza.get(g["id"], {}))
         dio_sira = {g["id"]: i for i, g in enumerate(dioramalar)}  # yuvada paketin (SKU) sırası
         urunler += dioramalar
     if len({x["id"] for x in urunler}) != len(urunler): sys.exit("Aynı kimlikli iki ürün var")

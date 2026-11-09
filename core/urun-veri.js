@@ -1,4 +1,4 @@
-// Otomatik üretildi: scripts/urun-veri.py (depo dışındaki ürün envanteri, 2026-11-01). Elle düzenleme; betik yeniden yazar.
+// Otomatik üretildi: scripts/urun-veri.py (depo dışındaki ürün envanteri, 2026-11-09). Elle düzenleme; betik yeniden yazar.
 // Envanterden yalnız mağazada sayfası olan ürünler. durum: satista | stok-yok | sayfa-yok. fiyat: mağaza fiyatı (tek doğru yer mağaza).
 // gorsel: ürün görseli (yoksa null; Blender renderı assets/urunler/ altına gelecek). Yuvada ürün yoksa (urun: 0) yuva gizli;
 // oda: false olan yuva yalnız odada gizli (ürünleri /urunler/'de görünür).
@@ -7,7 +7,7 @@
 // (g genişlik, d derinlik, y yükseklik), parca: plaka sayısı, video: ürüne yakın kırpılmış dönüş videosu ya da null,
 // video_boyut: videonun piksel boyutu (g, y), video_kapak: videonun ilk karesi (poster).
 // Ürünler gerçek adları ve gerçek görselleriyle. ESKI_KIMLIK: eski kimlik → bugünkü (ürün sayfası yönlendirir).
-export const URUN_VERI_TARIHI = "2026-11-01";
+export const URUN_VERI_TARIHI = "2026-11-09";
 
 export const YUVALAR = [
   {
@@ -17,7 +17,7 @@ export const YUVALAR = [
       "tr": "Sticker'lar",
       "en": "Stickers"
     },
-    "urun": 0
+    "urun": 21
   },
   {
     "id": "anahtarlik",
@@ -26,7 +26,7 @@ export const YUVALAR = [
       "tr": "Kart anahtarlıklar",
       "en": "Card keychains"
     },
-    "urun": 5
+    "urun": 15
   },
   {
     "id": "figur",
@@ -44,7 +44,7 @@ export const YUVALAR = [
       "tr": "Diorama plakaları",
       "en": "Diorama plates"
     },
-    "urun": 10
+    "urun": 24
   },
   {
     "id": "kilic",
@@ -77,6 +77,258 @@ export const YUVALAR = [
 
 export const URUNLER = [
   {
+    "id": "ash-ve-pikachu-bagi",
+    "ad": {
+      "tr": "Bonded Forever",
+      "en": "Bonded Forever"
+    },
+    "yuva": "sticker",
+    "durum": "stok-yok",
+    "magaza": "https://oktosworkshop.com/ash-ve-pikachu-bagi-sticker---laptop--telefon-ve-defter-etiketi--9-x-5-6-cm-",
+    "fiyat": "70 TL",
+    "gorsel": "assets/urunler/magaza/ash-ve-pikachu-bagi.webp"
+  },
+  {
+    "id": "ash-ve-pikachu-dag-yamacinda",
+    "ad": {
+      "tr": "Catching Time!",
+      "en": "Catching Time!"
+    },
+    "yuva": "sticker",
+    "durum": "stok-yok",
+    "magaza": "https://oktosworkshop.com/ash-ve-pikachu-dag-yamacinda-sticker---laptop--telefon-ve-defter-etiketi--9-x-5-6-cm-",
+    "fiyat": "70 TL",
+    "gorsel": "assets/urunler/magaza/ash-ve-pikachu-dag-yamacinda.webp"
+  },
+  {
+    "id": "bmo",
+    "ad": {
+      "tr": "CMO (Cowboy BMO)",
+      "en": "CMO (Cowboy BMO)"
+    },
+    "yuva": "sticker",
+    "durum": "stok-yok",
+    "magaza": "https://oktosworkshop.com/bmo-sticker---laptop--telefon-ve-defter-etiketi--9-x-5-6-cm-",
+    "fiyat": "70 TL",
+    "gorsel": "assets/urunler/magaza/bmo.webp"
+  },
+  {
+    "id": "brook-aynada",
+    "ad": {
+      "tr": "Destiny of Brook",
+      "en": "Destiny of Brook"
+    },
+    "yuva": "sticker",
+    "durum": "stok-yok",
+    "magaza": "https://oktosworkshop.com/brook-aynada-sticker---laptop--telefon-ve-defter-etiketi--9-x-5-6-cm-",
+    "fiyat": "70 TL",
+    "gorsel": "assets/urunler/magaza/brook-aynada.webp"
+  },
+  {
+    "id": "clefable-ve-charizard",
+    "ad": {
+      "tr": "Coinflip",
+      "en": "Coinflip"
+    },
+    "yuva": "sticker",
+    "durum": "stok-yok",
+    "magaza": "https://oktosworkshop.com/clefable-ve-charizard-sticker---laptop--telefon-ve-defter-etiketi--9-x-5-6-cm-",
+    "fiyat": "70 TL",
+    "gorsel": "assets/urunler/magaza/clefable-ve-charizard.webp"
+  },
+  {
+    "id": "gardevoir-ay-isiginda",
+    "ad": {
+      "tr": "Keep Trainer Safe",
+      "en": "Keep Trainer Safe"
+    },
+    "yuva": "sticker",
+    "durum": "stok-yok",
+    "magaza": "https://oktosworkshop.com/gardevoir-ay-isiginda-sticker---laptop--telefon-ve-defter-etiketi--9-x-5-6-cm-",
+    "fiyat": "70 TL",
+    "gorsel": "assets/urunler/magaza/gardevoir-ay-isiginda.webp"
+  },
+  {
+    "id": "gastly-ve-ditto",
+    "ad": {
+      "tr": "Ghast Terror",
+      "en": "Ghast Terror"
+    },
+    "yuva": "sticker",
+    "durum": "stok-yok",
+    "magaza": "https://oktosworkshop.com/gastly-ve-ditto-sticker---laptop--telefon-ve-defter-etiketi--9-x-5-6-cm-",
+    "fiyat": "70 TL",
+    "gorsel": "assets/urunler/magaza/gastly-ve-ditto.webp"
+  },
+  {
+    "id": "jigglypuff-ve-flareon-lar",
+    "ad": {
+      "tr": "Wild Pokemons",
+      "en": "Wild Pokemons"
+    },
+    "yuva": "sticker",
+    "durum": "stok-yok",
+    "magaza": "https://oktosworkshop.com/jigglypuff-ve-flareon-lar-sticker---laptop--telefon-ve-defter-etiketi--9-x-5-6-cm-",
+    "fiyat": "70 TL",
+    "gorsel": "assets/urunler/magaza/jigglypuff-ve-flareon-lar.webp"
+  },
+  {
+    "id": "magara-adami-ve-poke-topu",
+    "ad": {
+      "tr": "First Poke-Catch",
+      "en": "First Poke-Catch"
+    },
+    "yuva": "sticker",
+    "durum": "stok-yok",
+    "magaza": "https://oktosworkshop.com/magara-adami-ve-poke-topu-sticker---laptop--telefon-ve-defter-etiketi--9-x-5-6-cm-",
+    "fiyat": "70 TL",
+    "gorsel": "assets/urunler/magaza/magara-adami-ve-poke-topu.webp"
+  },
+  {
+    "id": "mew-ve-madenci-lambasi",
+    "ad": {
+      "tr": "Roots",
+      "en": "Roots"
+    },
+    "yuva": "sticker",
+    "durum": "stok-yok",
+    "magaza": "https://oktosworkshop.com/mew-ve-madenci-lambasi-sticker---laptop--telefon-ve-defter-etiketi--9-x-5-6-cm-",
+    "fiyat": "70 TL",
+    "gorsel": "assets/urunler/magaza/mew-ve-madenci-lambasi.webp"
+  },
+  {
+    "id": "mihawk-ve-kilici",
+    "ad": {
+      "tr": "Greatest Swordsman",
+      "en": "Greatest Swordsman"
+    },
+    "yuva": "sticker",
+    "durum": "stok-yok",
+    "magaza": "https://oktosworkshop.com/mihawk-ve-kilici-sticker---laptop--telefon-ve-defter-etiketi--9-x-5-6-cm-",
+    "fiyat": "70 TL",
+    "gorsel": "assets/urunler/magaza/mihawk-ve-kilici.webp"
+  },
+  {
+    "id": "misty-ve-togepi",
+    "ad": {
+      "tr": "Out Of Pokeballs!",
+      "en": "Out Of Pokeballs!"
+    },
+    "yuva": "sticker",
+    "durum": "stok-yok",
+    "magaza": "https://oktosworkshop.com/misty-ve-togepi-sticker---laptop--telefon-ve-defter-etiketi--9-x-5-6-cm-",
+    "fiyat": "70 TL",
+    "gorsel": "assets/urunler/magaza/misty-ve-togepi.webp"
+  },
+  {
+    "id": "ralts-kirlia-ve-gardevoir-evrimi",
+    "ad": {
+      "tr": "Gardevoir Panic",
+      "en": "Gardevoir Panic"
+    },
+    "yuva": "sticker",
+    "durum": "stok-yok",
+    "magaza": "https://oktosworkshop.com/ralts--kirlia-ve-gardevoir-evrimi-sticker---laptop--telefon-ve-defter-etiketi--9-x-5-6-cm-",
+    "fiyat": "70 TL",
+    "gorsel": "assets/urunler/magaza/ralts-kirlia-ve-gardevoir-evrimi.webp"
+  },
+  {
+    "id": "snorlax-be-sweet",
+    "ad": {
+      "tr": "Be - Sweet",
+      "en": "Be - Sweet"
+    },
+    "yuva": "sticker",
+    "durum": "stok-yok",
+    "magaza": "https://oktosworkshop.com/snorlax-be-sweet-sticker---laptop--telefon-ve-defter-etiketi--9-x-5-6-cm-",
+    "fiyat": "70 TL",
+    "gorsel": "assets/urunler/magaza/snorlax-be-sweet.webp"
+  },
+  {
+    "id": "sogeking-ve-chopper",
+    "ad": {
+      "tr": "Sniper King",
+      "en": "Sniper King"
+    },
+    "yuva": "sticker",
+    "durum": "stok-yok",
+    "magaza": "https://oktosworkshop.com/sogeking-ve-chopper-sticker---laptop--telefon-ve-defter-etiketi--9-x-5-6-cm-",
+    "fiyat": "70 TL",
+    "gorsel": "assets/urunler/magaza/sogeking-ve-chopper.webp"
+  },
+  {
+    "id": "team-rocket-meowth-ve-james",
+    "ad": {
+      "tr": "Prepare for Trouble, Make it Double",
+      "en": "Prepare for Trouble, Make it Double"
+    },
+    "yuva": "sticker",
+    "durum": "stok-yok",
+    "magaza": "https://oktosworkshop.com/team-rocket--meowth-ve-james-sticker---laptop--telefon-ve-defter-etiketi--9-x-5-6-cm-",
+    "fiyat": "70 TL",
+    "gorsel": "assets/urunler/magaza/team-rocket-meowth-ve-james.webp"
+  },
+  {
+    "id": "the-lich",
+    "ad": {
+      "tr": "The Lich",
+      "en": "The Lich"
+    },
+    "yuva": "sticker",
+    "durum": "stok-yok",
+    "magaza": "https://oktosworkshop.com/the-lich-sticker---laptop--telefon-ve-defter-etiketi--9-x-5-6-cm-",
+    "fiyat": "70 TL",
+    "gorsel": "assets/urunler/magaza/the-lich.webp"
+  },
+  {
+    "id": "tursu-kavanozu",
+    "ad": {
+      "tr": "Over-Pickled Rick",
+      "en": "Over-Pickled Rick"
+    },
+    "yuva": "sticker",
+    "durum": "stok-yok",
+    "magaza": "https://oktosworkshop.com/tursu-kavanozu-sticker---laptop--telefon-ve-defter-etiketi--9-x-5-6-cm-",
+    "fiyat": "70 TL",
+    "gorsel": "assets/urunler/magaza/tursu-kavanozu.webp"
+  },
+  {
+    "id": "usopp-ve-chopper-topun-icinden",
+    "ad": {
+      "tr": "Last Ball",
+      "en": "Last Ball"
+    },
+    "yuva": "sticker",
+    "durum": "stok-yok",
+    "magaza": "https://oktosworkshop.com/usopp-ve-chopper-topun-icinden-sticker---laptop--telefon-ve-defter-etiketi--9-x-5-6-cm-",
+    "fiyat": "70 TL",
+    "gorsel": "assets/urunler/magaza/usopp-ve-chopper-topun-icinden.webp"
+  },
+  {
+    "id": "zindanda-iki-sovalye",
+    "ad": {
+      "tr": "Brotherhood!",
+      "en": "Brotherhood!"
+    },
+    "yuva": "sticker",
+    "durum": "stok-yok",
+    "magaza": "https://oktosworkshop.com/zindanda-iki-sovalye-sticker---laptop--telefon-ve-defter-etiketi--9-x-5-6-cm-",
+    "fiyat": "70 TL",
+    "gorsel": "assets/urunler/magaza/zindanda-iki-sovalye.webp"
+  },
+  {
+    "id": "zoro-ucurum-kenarinda",
+    "ad": {
+      "tr": "I Don't Know Where I Am",
+      "en": "I Don't Know Where I Am"
+    },
+    "yuva": "sticker",
+    "durum": "stok-yok",
+    "magaza": "https://oktosworkshop.com/zoro-ucurum-kenarinda-sticker---laptop--telefon-ve-defter-etiketi--9-x-5-6-cm-",
+    "fiyat": "70 TL",
+    "gorsel": "assets/urunler/magaza/zoro-ucurum-kenarinda.webp"
+  },
+  {
     "id": "black-lotus",
     "ad": {
       "tr": "Black Lotus anahtarlık",
@@ -85,7 +337,7 @@ export const URUNLER = [
     "yuva": "anahtarlik",
     "durum": "satista",
     "magaza": "https://oktosworkshop.com/black-lotus-anahtarlik-canta-takisi-magic-thr-gathering",
-    "fiyat": "139 TL",
+    "fiyat": "180 TL",
     "gorsel": "assets/oda/anahtarlik-black-lotus.webp"
   },
   {
@@ -97,8 +349,20 @@ export const URUNLER = [
     "yuva": "anahtarlik",
     "durum": "satista",
     "magaza": "https://oktosworkshop.com/blastoise-anahtarlik-canta-takisi-pokemon",
-    "fiyat": "109 TL",
+    "fiyat": "180 TL",
     "gorsel": "assets/oda/anahtarlik-blastoise.webp"
+  },
+  {
+    "id": "bubble-mew",
+    "ad": {
+      "tr": "Bubble Mew anahtarlık",
+      "en": "Bubble Mew keychain"
+    },
+    "yuva": "anahtarlik",
+    "durum": "stok-yok",
+    "magaza": "https://oktosworkshop.com/bubble-mew-anahtarlik-canta-takisi-pokemon",
+    "fiyat": "180 TL",
+    "gorsel": "assets/urunler/magaza/bubble-mew.webp"
   },
   {
     "id": "charizard",
@@ -109,8 +373,20 @@ export const URUNLER = [
     "yuva": "anahtarlik",
     "durum": "satista",
     "magaza": "https://oktosworkshop.com/charizard-anahtarlik-canta-takisi-pokemon",
-    "fiyat": "149 TL",
+    "fiyat": "180 TL",
     "gorsel": "assets/oda/anahtarlik-charizard.webp"
+  },
+  {
+    "id": "chopper",
+    "ad": {
+      "tr": "Chopper anahtarlık",
+      "en": "Chopper keychain"
+    },
+    "yuva": "anahtarlik",
+    "durum": "stok-yok",
+    "magaza": "https://oktosworkshop.com/chopper-anahtarlik-canta-takisi-one-piece",
+    "fiyat": "180 TL",
+    "gorsel": "assets/urunler/magaza/chopper.webp"
   },
   {
     "id": "dark-magician",
@@ -121,8 +397,92 @@ export const URUNLER = [
     "yuva": "anahtarlik",
     "durum": "satista",
     "magaza": "https://oktosworkshop.com/dark-magician-anahtarlik-canta-takisi-yu-gi-oh",
-    "fiyat": "109 TL",
+    "fiyat": "180 TL",
     "gorsel": "assets/oda/anahtarlik-dark-magician.webp"
+  },
+  {
+    "id": "luffy",
+    "ad": {
+      "tr": "Luffy anahtarlık",
+      "en": "Luffy keychain"
+    },
+    "yuva": "anahtarlik",
+    "durum": "stok-yok",
+    "magaza": "https://oktosworkshop.com/luffy-anahtarlik-canta-takisi-one-piece",
+    "fiyat": "180 TL",
+    "gorsel": "assets/urunler/magaza/luffy.webp"
+  },
+  {
+    "id": "nami",
+    "ad": {
+      "tr": "Nami anahtarlık",
+      "en": "Nami keychain"
+    },
+    "yuva": "anahtarlik",
+    "durum": "stok-yok",
+    "magaza": "https://oktosworkshop.com/nami-anahtarlik-canta-takisi-one-piece",
+    "fiyat": "180 TL",
+    "gorsel": "assets/urunler/magaza/nami.webp"
+  },
+  {
+    "id": "poke-portrait",
+    "ad": {
+      "tr": "Poke Portrait anahtarlık",
+      "en": "Poke Portrait keychain"
+    },
+    "yuva": "anahtarlik",
+    "durum": "stok-yok",
+    "magaza": "https://oktosworkshop.com/poke-portrait-anahtarlik-canta-takisi-pokemon",
+    "fiyat": "180 TL",
+    "gorsel": "assets/urunler/magaza/poke-portrait.webp"
+  },
+  {
+    "id": "pot-of-greed",
+    "ad": {
+      "tr": "Pot of Greed anahtarlık",
+      "en": "Pot of Greed keychain"
+    },
+    "yuva": "anahtarlik",
+    "durum": "stok-yok",
+    "magaza": "https://oktosworkshop.com/pot-of-greed-anahtarlik-canta-takisi-yu-gi-oh",
+    "fiyat": "180 TL",
+    "gorsel": "assets/urunler/magaza/pot-of-greed.webp"
+  },
+  {
+    "id": "sanji",
+    "ad": {
+      "tr": "Sanji anahtarlık",
+      "en": "Sanji keychain"
+    },
+    "yuva": "anahtarlik",
+    "durum": "stok-yok",
+    "magaza": "https://oktosworkshop.com/sanji-anahtarlik-canta-takisi-one-piece",
+    "fiyat": "180 TL",
+    "gorsel": "assets/urunler/magaza/sanji.webp"
+  },
+  {
+    "id": "sylveon",
+    "ad": {
+      "tr": "Sylveon anahtarlık",
+      "en": "Sylveon keychain"
+    },
+    "yuva": "anahtarlik",
+    "durum": "stok-yok",
+    "magaza": "https://oktosworkshop.com/sylveon-anahtarlik-canta-takisi-pokemon",
+    "fiyat": "180 TL",
+    "gorsel": "assets/urunler/magaza/sylveon.webp"
+  },
+  {
+    "id": "umbreon",
+    "ad": {
+      "tr": "Umbreon anahtarlık",
+      "en": "Umbreon keychain"
+    },
+    "yuva": "anahtarlik",
+    "durum": "stok-yok",
+    "magaza": "https://oktosworkshop.com/umbreon-anahtarlik-canta-takisi-pokemon",
+    "fiyat": "180 TL",
+    "gorsel": "assets/urunler/magaza/umbreon.webp"
   },
   {
     "id": "venusaur",
@@ -133,8 +493,20 @@ export const URUNLER = [
     "yuva": "anahtarlik",
     "durum": "satista",
     "magaza": "https://oktosworkshop.com/venasaur-anahtarlik-canta-takisi-pokemon",
-    "fiyat": "109 TL",
+    "fiyat": "180 TL",
     "gorsel": "assets/oda/anahtarlik-venusaur.webp"
+  },
+  {
+    "id": "zoro",
+    "ad": {
+      "tr": "Zoro anahtarlık",
+      "en": "Zoro keychain"
+    },
+    "yuva": "anahtarlik",
+    "durum": "stok-yok",
+    "magaza": "https://oktosworkshop.com/zoro-anahtarlik-canta-takisi-one-piece",
+    "fiyat": "180 TL",
+    "gorsel": "assets/urunler/magaza/zoro.webp"
   },
   {
     "id": "imperium-clankers",
@@ -185,6 +557,138 @@ export const URUNLER = [
     "gorsel": "assets/urunler/magaza/ultra-on-cepheciler.webp"
   },
   {
+    "id": "abra-evrim-silindiri",
+    "ad": {
+      "tr": "Abra Evrim Silindiri (3'lü)",
+      "en": "Abra Evolution Cylinder (set of 3)"
+    },
+    "yuva": "raf",
+    "durum": "stok-yok",
+    "magaza": "https://oktosworkshop.com/abra-evrim-silindiri-diorama",
+    "fiyat": "1–500 TL",
+    "gorsel": "assets/urunler/magaza/abra-evrim-silindiri.webp"
+  },
+  {
+    "id": "bulbasaur-evrim-silindiri",
+    "ad": {
+      "tr": "Bulbasaur Evrim Silindiri (3'lü)",
+      "en": "Bulbasaur Evolution Cylinder (set of 3)"
+    },
+    "yuva": "raf",
+    "durum": "stok-yok",
+    "magaza": "https://oktosworkshop.com/bulbasaur-evrim-silindiri-diorama",
+    "fiyat": "1–500 TL",
+    "gorsel": "assets/urunler/magaza/bulbasaur-evrim-silindiri.webp"
+  },
+  {
+    "id": "caterpie-evrim-silindiri",
+    "ad": {
+      "tr": "Caterpie Evrim Silindiri (3'lü)",
+      "en": "Caterpie Evolution Cylinder (set of 3)"
+    },
+    "yuva": "raf",
+    "durum": "stok-yok",
+    "magaza": "https://oktosworkshop.com/caterpie-evrim-silindiri-diorama",
+    "fiyat": "1–500 TL",
+    "gorsel": "assets/urunler/magaza/caterpie-evrim-silindiri.webp"
+  },
+  {
+    "id": "charmander-evrim-silindiri",
+    "ad": {
+      "tr": "Charmander Evrim Silindiri (3'lü)",
+      "en": "Charmander Evolution Cylinder (set of 3)"
+    },
+    "yuva": "raf",
+    "durum": "stok-yok",
+    "magaza": "https://oktosworkshop.com/charmander-evrim-silindiri-diorama",
+    "fiyat": "1–500 TL",
+    "gorsel": "assets/urunler/magaza/charmander-evrim-silindiri.webp"
+  },
+  {
+    "id": "dratini-evrim-silindiri",
+    "ad": {
+      "tr": "Dratini Evrim Silindiri (3'lü)",
+      "en": "Dratini Evolution Cylinder (set of 3)"
+    },
+    "yuva": "raf",
+    "durum": "stok-yok",
+    "magaza": "https://oktosworkshop.com/dratini-evrim-silindiri-diorama",
+    "fiyat": "1–500 TL",
+    "gorsel": "assets/urunler/magaza/dratini-evrim-silindiri.webp"
+  },
+  {
+    "id": "eevee-evrim-silindiri",
+    "ad": {
+      "tr": "Eevee Evrim Silindiri (8'li)",
+      "en": "Eevee Evolution Cylinder (set of 8)"
+    },
+    "yuva": "raf",
+    "durum": "stok-yok",
+    "magaza": "https://oktosworkshop.com/eevee-evrim-silindiri-diorama",
+    "fiyat": "1–500 TL",
+    "gorsel": "assets/urunler/magaza/eevee-evrim-silindiri.webp"
+  },
+  {
+    "id": "gastly-evrim-silindiri",
+    "ad": {
+      "tr": "Gastly Evrim Silindiri (3'lü)",
+      "en": "Gastly Evolution Cylinder (set of 3)"
+    },
+    "yuva": "raf",
+    "durum": "stok-yok",
+    "magaza": "https://oktosworkshop.com/gastly-evrim-silindiri-diorama",
+    "fiyat": "1–500 TL",
+    "gorsel": "assets/urunler/magaza/gastly-evrim-silindiri.webp"
+  },
+  {
+    "id": "growlithe-evrim-silindiri",
+    "ad": {
+      "tr": "Growlithe Evrim Silindiri (2'li)",
+      "en": "Growlithe Evolution Cylinder (set of 2)"
+    },
+    "yuva": "raf",
+    "durum": "stok-yok",
+    "magaza": "https://oktosworkshop.com/growlithe-evrim-silindiri-diorama",
+    "fiyat": "1–200 TL",
+    "gorsel": "assets/urunler/magaza/growlithe-evrim-silindiri.webp"
+  },
+  {
+    "id": "magikarp-evrim-silindiri",
+    "ad": {
+      "tr": "Magikarp Evrim Silindiri (2'li)",
+      "en": "Magikarp Evolution Cylinder (set of 2)"
+    },
+    "yuva": "raf",
+    "durum": "stok-yok",
+    "magaza": "https://oktosworkshop.com/magikarp-evrim-silindiri-diorama",
+    "fiyat": "1–200 TL",
+    "gorsel": "assets/urunler/magaza/magikarp-evrim-silindiri.webp"
+  },
+  {
+    "id": "meowth-evrim-silindiri",
+    "ad": {
+      "tr": "Meowth Evrim Silindiri (2'li)",
+      "en": "Meowth Evolution Cylinder (set of 2)"
+    },
+    "yuva": "raf",
+    "durum": "stok-yok",
+    "magaza": "https://oktosworkshop.com/meowth-evrim-silindiri-diorama",
+    "fiyat": "1–200 TL",
+    "gorsel": "assets/urunler/magaza/meowth-evrim-silindiri.webp"
+  },
+  {
+    "id": "pikachu-evrim-silindiri",
+    "ad": {
+      "tr": "Pikachu Evrim Silindiri (3'lü)",
+      "en": "Pikachu Evolution Cylinder (set of 3)"
+    },
+    "yuva": "raf",
+    "durum": "stok-yok",
+    "magaza": "https://oktosworkshop.com/pikachu-evrim-silindiri-diorama",
+    "fiyat": "1–500 TL",
+    "gorsel": "assets/urunler/magaza/pikachu-evrim-silindiri.webp"
+  },
+  {
     "id": "pokemon-karagoz-savasi",
     "ad": {
       "tr": "Pokémon Karagöz Savaşı: Pika-göz ve Haci-Squirtle",
@@ -192,9 +696,9 @@ export const URUNLER = [
     },
     "yuva": "raf",
     "grup": "diorama",
-    "durum": "sayfa-yok",
-    "magaza": null,
-    "fiyat": null,
+    "durum": "stok-yok",
+    "magaza": "https://oktosworkshop.com/pokemon-karagoz-savasi-diorama",
+    "fiyat": "1–800 TL",
     "gorsel": "assets/urunler/diorama/pokemon-karagoz-savasi/kart.webp",
     "galeri": [
       "assets/urunler/diorama/pokemon-karagoz-savasi/1.webp",
@@ -239,6 +743,42 @@ export const URUNLER = [
     "video_kapak": "assets/urunler/diorama/pokemon-karagoz-savasi/donus.webp"
   },
   {
+    "id": "psyduck-evrim-silindiri",
+    "ad": {
+      "tr": "Psyduck Evrim Silindiri (2'li)",
+      "en": "Psyduck Evolution Cylinder (set of 2)"
+    },
+    "yuva": "raf",
+    "durum": "stok-yok",
+    "magaza": "https://oktosworkshop.com/psyduck-evrim-silindiri-diorama",
+    "fiyat": "1–200 TL",
+    "gorsel": "assets/urunler/magaza/psyduck-evrim-silindiri.webp"
+  },
+  {
+    "id": "squirtle-evrim-silindiri",
+    "ad": {
+      "tr": "Squirtle Evrim Silindiri (3'lü)",
+      "en": "Squirtle Evolution Cylinder (set of 3)"
+    },
+    "yuva": "raf",
+    "durum": "stok-yok",
+    "magaza": "https://oktosworkshop.com/squirtle-evrim-silindiri-diorama",
+    "fiyat": "1–500 TL",
+    "gorsel": "assets/urunler/magaza/squirtle-evrim-silindiri.webp"
+  },
+  {
+    "id": "vulpix-evrim-silindiri",
+    "ad": {
+      "tr": "Vulpix Evrim Silindiri (2'li)",
+      "en": "Vulpix Evolution Cylinder (set of 2)"
+    },
+    "yuva": "raf",
+    "durum": "stok-yok",
+    "magaza": "https://oktosworkshop.com/vulpix-evrim-silindiri-diorama",
+    "fiyat": "1–200 TL",
+    "gorsel": "assets/urunler/magaza/vulpix-evrim-silindiri.webp"
+  },
+  {
     "id": "doom-1993-koridoru",
     "ad": {
       "tr": "Doom (1993) Ahşap Koridor: Cacodemon ve Chaingunner",
@@ -246,9 +786,9 @@ export const URUNLER = [
     },
     "yuva": "raf",
     "grup": "diorama",
-    "durum": "sayfa-yok",
-    "magaza": null,
-    "fiyat": null,
+    "durum": "stok-yok",
+    "magaza": "https://oktosworkshop.com/doom-1993-koridoru-diorama",
+    "fiyat": "1–800 TL",
     "gorsel": "assets/urunler/diorama/doom-1993-koridoru/kart.webp",
     "galeri": [
       "assets/urunler/diorama/doom-1993-koridoru/1.webp",
@@ -300,9 +840,9 @@ export const URUNLER = [
     },
     "yuva": "raf",
     "grup": "diorama",
-    "durum": "sayfa-yok",
-    "magaza": null,
-    "fiyat": null,
+    "durum": "stok-yok",
+    "magaza": "https://oktosworkshop.com/mortal-kombat-the-pit-diorama",
+    "fiyat": "1–800 TL",
     "gorsel": "assets/urunler/diorama/mortal-kombat-the-pit/kart.webp",
     "galeri": [
       "assets/urunler/diorama/mortal-kombat-the-pit/1.webp",
@@ -354,9 +894,9 @@ export const URUNLER = [
     },
     "yuva": "raf",
     "grup": "diorama",
-    "durum": "sayfa-yok",
-    "magaza": null,
-    "fiyat": null,
+    "durum": "stok-yok",
+    "magaza": "https://oktosworkshop.com/super-mario-1-1-diorama",
+    "fiyat": "1–800 TL",
     "gorsel": "assets/urunler/diorama/super-mario-1-1/kart.webp",
     "galeri": [
       "assets/urunler/diorama/super-mario-1-1/1.webp",
@@ -408,9 +948,9 @@ export const URUNLER = [
     },
     "yuva": "raf",
     "grup": "diorama",
-    "durum": "sayfa-yok",
-    "magaza": null,
-    "fiyat": null,
+    "durum": "stok-yok",
+    "magaza": "https://oktosworkshop.com/duck-hunt-diorama",
+    "fiyat": "1–800 TL",
     "gorsel": "assets/urunler/diorama/duck-hunt/kart.webp",
     "galeri": [
       "assets/urunler/diorama/duck-hunt/1.webp",
@@ -462,9 +1002,9 @@ export const URUNLER = [
     },
     "yuva": "raf",
     "grup": "diorama",
-    "durum": "sayfa-yok",
-    "magaza": null,
-    "fiyat": null,
+    "durum": "stok-yok",
+    "magaza": "https://oktosworkshop.com/undertale-karanliklar-efendisi-diorama",
+    "fiyat": "1–800 TL",
     "gorsel": "assets/urunler/diorama/undertale-karanliklar-efendisi/kart.webp",
     "galeri": [
       "assets/urunler/diorama/undertale-karanliklar-efendisi/1.webp",
@@ -516,9 +1056,9 @@ export const URUNLER = [
     },
     "yuva": "raf",
     "grup": "diorama",
-    "durum": "sayfa-yok",
-    "magaza": null,
-    "fiyat": null,
+    "durum": "stok-yok",
+    "magaza": "https://oktosworkshop.com/itachi-nin-tahti-diorama",
+    "fiyat": "1–800 TL",
     "gorsel": "assets/urunler/diorama/itachi-nin-tahti/kart.webp",
     "galeri": [
       "assets/urunler/diorama/itachi-nin-tahti/1.webp",
@@ -570,9 +1110,9 @@ export const URUNLER = [
     },
     "yuva": "raf",
     "grup": "diorama",
-    "durum": "sayfa-yok",
-    "magaza": null,
-    "fiyat": null,
+    "durum": "stok-yok",
+    "magaza": "https://oktosworkshop.com/iroh-un-agidi-diorama",
+    "fiyat": "1–800 TL",
     "gorsel": "assets/urunler/diorama/iroh-un-agidi/kart.webp",
     "galeri": [
       "assets/urunler/diorama/iroh-un-agidi/1.webp",
@@ -624,9 +1164,9 @@ export const URUNLER = [
     },
     "yuva": "raf",
     "grup": "diorama",
-    "durum": "sayfa-yok",
-    "magaza": null,
-    "fiyat": null,
+    "durum": "stok-yok",
+    "magaza": "https://oktosworkshop.com/rock-lee-ve-gaara-diorama",
+    "fiyat": "1–800 TL",
     "gorsel": "assets/urunler/diorama/rock-lee-ve-gaara/kart.webp",
     "galeri": [
       "assets/urunler/diorama/rock-lee-ve-gaara/1.webp",
@@ -678,9 +1218,9 @@ export const URUNLER = [
     },
     "yuva": "raf",
     "grup": "diorama",
-    "durum": "sayfa-yok",
-    "magaza": null,
-    "fiyat": null,
+    "durum": "stok-yok",
+    "magaza": "https://oktosworkshop.com/kara-sakal-ve-hasir-sapkalilar-diorama",
+    "fiyat": "1–800 TL",
     "gorsel": "assets/urunler/diorama/kara-sakal-ve-hasir-sapkalilar/kart.webp",
     "galeri": [
       "assets/urunler/diorama/kara-sakal-ve-hasir-sapkalilar/1.webp",
